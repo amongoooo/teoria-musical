@@ -54,6 +54,8 @@ function useVisibleOctaves(ref, max) {
  *  - octaves (2): octavas totales disponibles.
  *  - showLabels (true): nombre de la nota en las teclas blancas.
  *  - onNoteOn / onNoteOff: callbacks opcionales (útiles para ejercicios).
+ *  - marcadas ([]): notas resaltadas en ámbar (p. ej. la nota de referencia).
+ *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
  */
 export default function Piano({
   startOctave = 4,
@@ -61,6 +63,8 @@ export default function Piano({
   showLabels = true,
   onNoteOn,
   onNoteOff,
+  marcadas = [],
+  compacto = false,
 }) {
   const wrapperRef = useRef(null)
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
@@ -186,7 +190,7 @@ export default function Piano({
         ref={wrapperRef}
         role="group"
         aria-label="Piano"
-        className="relative h-56 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm select-none sm:h-64"
+        className={`relative w-full ${compacto ? 'h-44 sm:h-56' : 'h-56 sm:h-64'} overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm select-none`}
         style={{ touchAction: 'none', WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -201,7 +205,11 @@ export default function Piano({
               key={note}
               data-note={note}
               className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
-                active.has(note) ? 'bg-sky-200 text-sky-900' : 'bg-white text-zinc-400'
+                active.has(note)
+                  ? 'bg-sky-200 text-sky-900'
+                  : marcadas.includes(note)
+                    ? 'bg-amber-200 text-amber-900'
+                    : 'bg-white text-zinc-400'
               }`}
             >
               {showLabels && (
@@ -219,7 +227,7 @@ export default function Piano({
             key={note}
             data-note={note}
             className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
-              active.has(note) ? 'bg-sky-500' : 'bg-zinc-900'
+              active.has(note) ? 'bg-sky-500' : marcadas.includes(note) ? 'bg-amber-500' : 'bg-zinc-900'
             }`}
             style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
           />

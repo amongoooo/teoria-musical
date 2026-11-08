@@ -102,3 +102,64 @@ export function releaseAll() {
   if (sampler && status === 'ready') sampler.releaseAll()
   if (synth) synth.releaseAll()
 }
+
+// ---------------------------------------------------------------------------
+// Reproducción programada (para lecciones y ejercicios)
+// ---------------------------------------------------------------------------
+
+/**
+ * Toca una o varias notas.
+ *  - notes: 'C4' o ['C4', 'E4', 'G4']
+ *  - modo: 'secuencia' (una tras otra) o 'acorde' (todas a la vez)
+ *  - duracion: segundos que suena cada nota
+ *  - intervalo: segundos entre notas en modo secuencia
+ *  - velocidad: 0–1 (fuerza / volumen)
+ * Devuelve los segundos que dura en total.
+ */
+export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo = 0.45, velocidad = 0.8 } = {}) {
+  const list = Array.isArray(notes) ? notes : [notes]
+  startAudio()
+  initPiano()
+  const inst = instrument()
+  const t0 = Tone.now() + 0.05
+  list.forEach((note, i) => {
+    const t = modo === 'acorde' ? t0 : t0 + i * intervalo
+    inst.triggerAttackRelease(note, duracion, t, velocidad)
+  })
+  return modo === 'acorde' ? duracion : (list.length - 1) * intervalo + duracion
+}
+
+// Onda pura (seno) para demostrar frecuencias en Hz.
+let sine = null
+function getSine() {
+  if (!sine) {
+    sine = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.03, decay: 0.1, sustain: 0.9, release: 0.25 },
+    }).toDestination()
+    sine.volume.value = -10
+  }
+  return sine
+}
+
+/** Toca una frecuencia pura (Hz) durante `duracion` segundos. */
+export function playFrequency(hz, duracion = 1.2) {
+  startAudio()
+  getSine().triggerAttackRelease(hz, duracion, Tone.now() + 0.05)
+  return duracion
+}
+
+/** Empieza una onda pura sostenida (para el pad de frecuencias). */
+export function toneStart(hz) {
+  startAudio()
+  getSine().triggerAttack(hz, Tone.now())
+}
+
+/** Cambia la frecuencia de la onda sostenida, con un deslizamiento suave. */
+export function toneSet(hz) {
+  if (sine) sine.frequency.rampTo(hz, 0.04)
+}
+
+export function toneStop() {
+  if (sine) sine.triggerRelease(Tone.now())
+}

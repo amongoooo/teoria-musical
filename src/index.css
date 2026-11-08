@@ -10,3 +10,25 @@ body {
   color: #18181b;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Entrada suave de cada paso de lección */
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-entrada {
+  animation: entrada 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-entrada {
+    animation: none;
+  }
+}
