@@ -62,10 +62,12 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~12 %**
+**Avance: ~15 %**
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
 - ✅ Lección 1.1 «Qué es una nota: frecuencia y altura» (11 pasos).
+- ✅ Lección 1.2 «Las 12 notas y la octava» (12 pasos): nuevo objetivo `octavas` en TocaEnPiano (tocar una nota en todas las octavas), teclado sin etiquetas (`showLabels: false`), sonidos con notas dobladas a la octava.
+- ✅ Audio en iPhone más robusto: `navigator.audioSession = 'playback'` (suena con el interruptor de silencio) y desbloqueo del audio también al soltar el dedo. En lecciones, si la barra inferior crece y tapa el piano, la página se desplaza sola.
 
-**Siguiente tarea:** lección 1.2 «Las 12 notas y la octava» (toca la misma nota en 3 octavas), reutilizando los ejercicios existentes.
+**Siguiente tarea:** lección 1.3 «Teclas blancas y negras: sostenidos y bemoles» (♯/♭, enarmonía, semitonos), reutilizando los ejercicios existentes.

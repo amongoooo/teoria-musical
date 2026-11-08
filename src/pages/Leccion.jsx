@@ -153,7 +153,7 @@ function BarraAccion({ accion }) {
   const { feedback } = accion
   const bien = feedback?.tipo === 'bien'
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 backdrop-blur">
+    <div data-barra-accion className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-col gap-2 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {feedback && (
           <div

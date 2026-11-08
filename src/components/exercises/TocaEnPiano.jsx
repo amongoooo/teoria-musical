@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
-import { compararAltura, frecuencia, hz, nombre } from '../../theory/notas.js'
+import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
 import Piano from '../Piano.jsx'
 
@@ -12,12 +12,14 @@ import Piano from '../Piano.jsx'
  *  - { tipo: 'explorar', cantidad: 5 }  → tocar N teclas distintas
  *  - { tipo: 'extremos' }               → tocar la tecla más grave y la más aguda
  *  - { tipo: 'comparar', rondas: [{ referencia: 'G4', direccion: 'agudo' | 'grave' }] }
+ *  - { tipo: 'octavas', rondas: [{ nota: 'A' }] }   → tocar esa nota en TODAS las octavas del teclado
  */
 export default function TocaEnPiano(props) {
   const { objetivo } = props.paso
   if (objetivo.tipo === 'explorar') return <Explorar {...props} />
   if (objetivo.tipo === 'extremos') return <Extremos {...props} />
   if (objetivo.tipo === 'comparar') return <Comparar {...props} />
+  if (objetivo.tipo === 'octavas') return <Octavas {...props} />
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
 
@@ -42,11 +44,15 @@ function Explorar({ paso, setAccion, siguiente }) {
       disabled: !listo,
       ayuda: listo ? null : `Toca ${cantidad} teclas distintas (${tocadas.length}/${cantidad})`,
       feedback: listo
-        ? { tipo: 'bien', titulo: '¡Eso es!', texto: 'Cuanto más a la derecha, más rápido vibra la cuerda del piano y más aguda suena la nota.' }
+        ? {
+            tipo: 'bien',
+            titulo: '¡Eso es!',
+            texto: paso.objetivo.mensaje ?? 'Cuanto más a la derecha, más rápido vibra la cuerda del piano y más aguda suena la nota.',
+          }
         : null,
       onClick: siguiente,
     })
-  }, [listo, tocadas.length, cantidad, setAccion, siguiente])
+  }, [listo, tocadas.length, cantidad, paso.objetivo.mensaje, setAccion, siguiente])
 
   const ultima = tocadas[tocadas.length - 1]
 
@@ -217,6 +223,126 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
       </div>
 
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia]} />
+    </div>
+  )
+}
+
+/** La misma nota (p. ej. 'A') en cada octava del teclado: ['A3', 'A4', 'A5']. */
+function enCadaOctava(nota, piano = {}) {
+  const start = piano.startOctave ?? 4
+  const octaves = piano.octaves ?? 2
+  return Array.from({ length: octaves }, (_, i) => `${nota}${start + i}`)
+}
+
+const mismaNota = (a, b) => (midi(a) - midi(b)) % 12 === 0
+
+function Octavas({ paso, setAccion, siguiente, completar }) {
+  const rondas = paso.objetivo.rondas
+  const [r, setR] = useState(0)
+  const [encontradas, setEncontradas] = useState([])
+  const [intento, setIntento] = useState(null) // { nota, tipo: 'nueva' | 'repetida' | 'otra' }
+  const [fallos, setFallos] = useState(0) // fallos en la ronda actual
+  const [aciertos, setAciertos] = useState(0) // rondas sin fallos
+  const ronda = rondas[r]
+  const objetivos = enCadaOctava(ronda.nota, paso.piano)
+  const listo = encontradas.length === objetivos.length
+  const ultima = r === rondas.length - 1
+  const nombreSolo = nombre(objetivos[0], { octava: false })
+
+  const onNoteOn = useCallback(
+    (nota) => {
+      if (listo) return
+      if (!mismaNota(nota, objetivos[0])) {
+        setFallos((f) => f + 1)
+        setIntento({ nota, tipo: 'otra' })
+        return
+      }
+      const objetivo = objetivos.find((o) => midi(o) === midi(nota))
+      if (encontradas.includes(objetivo)) {
+        setIntento({ nota, tipo: 'repetida' })
+        return
+      }
+      const nuevas = [...encontradas, objetivo]
+      setEncontradas(nuevas)
+      setIntento({ nota, tipo: 'nueva' })
+      if (nuevas.length === objetivos.length) {
+        const total = aciertos + (fallos === 0 ? 1 : 0)
+        setAciertos(total)
+        if (ultima) completar({ aciertos: total, total: rondas.length })
+      }
+    },
+    [listo, objetivos, encontradas, aciertos, fallos, ultima, rondas.length, completar],
+  )
+
+  useEffect(() => {
+    let feedback = null
+    if (listo) {
+      const lista = objetivos.map((o) => `**${nombre(o)}** (${hz(frecuencia(o))})`).join(', ')
+      feedback = {
+        tipo: 'bien',
+        titulo: `¡Todas las ${nombreSolo}!`,
+        texto: `${lista}. Mismo nombre, distinta octava: cada una vibra el **doble** de rápido que la anterior.`,
+      }
+    } else if (intento?.tipo === 'otra') {
+      feedback = {
+        tipo: 'mal',
+        titulo: `Esa es ${nombre(intento.nota)}.`,
+        texto: ronda.pista ?? `Buscamos **${nombreSolo}**. Fíjate en el nombre de las teclas.`,
+      }
+    } else if (intento?.tipo === 'repetida') {
+      feedback = { tipo: 'mal', titulo: `Ya tienes ${nombre(intento.nota)}.`, texto: 'Busca la misma nota en otra octava, más a la izquierda o a la derecha.' }
+    }
+
+    setAccion({
+      label: ultima ? 'Continuar' : 'Siguiente',
+      disabled: !listo,
+      ayuda: listo || feedback ? null : `Toca todas las ${nombreSolo} (${encontradas.length}/${objetivos.length})`,
+      feedback,
+      onClick: () => {
+        if (ultima) return siguiente()
+        setR(r + 1)
+        setEncontradas([])
+        setIntento(null)
+        setFallos(0)
+      },
+    })
+  }, [listo, intento, ronda, objetivos, encontradas.length, nombreSolo, ultima, r, setAccion, siguiente])
+
+  return (
+    <div className="flex flex-col gap-4">
+      {rondas.length > 1 && (
+        <div className="flex items-center gap-2" aria-label={`Ronda ${r + 1} de ${rondas.length}`}>
+          {rondas.map((_, i) => (
+            <span
+              key={i}
+              className={`h-2 flex-1 rounded-full ${i < r || (i === r && listo) ? 'bg-zinc-800' : i === r ? 'bg-zinc-400' : 'bg-zinc-200'}`}
+            />
+          ))}
+        </div>
+      )}
+
+      <p key={r} className="animate-entrada text-lg font-semibold leading-snug sm:text-2xl">
+        Toca <span className="underline decoration-amber-400 decoration-4 underline-offset-4">todas</span> las{' '}
+        <span className="rounded-md bg-amber-200 px-1.5">{nombreSolo}</span> del teclado
+      </p>
+
+      <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${objetivos.length}, minmax(0, 1fr))` }}>
+        {objetivos.map((o) => (
+          <Check key={o} ok={encontradas.includes(o)}>
+            {nombre(o)}
+          </Check>
+        ))}
+      </ul>
+
+      {listo && (
+        <BotonSonido
+          sonido={{ notas: objetivos, intervalo: 0.6 }}
+          etiqueta={`Escuchar las ${objetivos.length} ${nombreSolo}`}
+          className="animate-entrada"
+        />
+      )}
+
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={encontradas} />
     </div>
   )
 }

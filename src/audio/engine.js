@@ -44,6 +44,7 @@ function getSynth() {
 export function initPiano() {
   if (initialized) return
   initialized = true
+  instalarDesbloqueo()
   try {
     sampler = new Tone.Sampler({
       urls: SALAMANDER_NOTES,
@@ -80,7 +81,39 @@ export function isAudioRunning() {
 /** Activa el audio. Debe llamarse dentro de un gesto del usuario. */
 export function startAudio() {
   if (isAudioRunning()) return Promise.resolve()
+  usarCanalDeReproduccion()
   return Tone.start()
+}
+
+/**
+ * En iPhone el audio web se silencia con el interruptor de silencio, salvo que
+ * la página se declare como "reproducción" (Safari 17+). Sin esto, el piano
+ * puede no sonar aunque todo funcione.
+ */
+/**
+ * Safari en iPhone a veces solo acepta activar el audio al SOLTAR el dedo
+ * (touchend / click), no al apoyarlo. Escuchamos esos gestos en toda la página
+ * hasta que el audio quede activo, para que la primera tecla no quede muda.
+ */
+function instalarDesbloqueo() {
+  if (typeof document === 'undefined') return
+  const eventos = ['touchend', 'pointerup', 'click', 'keydown']
+  const desbloquear = () => {
+    startAudio().then(() => {
+      if (isAudioRunning()) eventos.forEach((ev) => document.removeEventListener(ev, desbloquear, true))
+    })
+  }
+  eventos.forEach((ev) => document.addEventListener(ev, desbloquear, true))
+}
+
+function usarCanalDeReproduccion() {
+  try {
+    if (navigator.audioSession && navigator.audioSession.type !== 'playback') {
+      navigator.audioSession.type = 'playback'
+    }
+  } catch {
+    // Navegadores sin audioSession: no hace falta nada.
+  }
 }
 
 function instrument() {

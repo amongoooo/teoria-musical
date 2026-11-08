@@ -85,6 +85,33 @@ export default function Piano({
     return onStatusChange(setStatus)
   }, [])
 
+  // En las lecciones (compacto) la barra inferior crece al mostrar un mensaje y
+  // puede tapar el teclado en el celular: si pasa, desplazamos lo justo para verlo.
+  useEffect(() => {
+    if (!compacto) return
+    const barra = document.querySelector('[data-barra-accion]')
+    if (!barra) return
+    let primera = true
+    let frame = 0
+    const ajustar = () => {
+      const el = wrapperRef.current
+      if (!el) return
+      const limite = window.innerHeight - barra.offsetHeight - 8
+      const tapado = el.getBoundingClientRect().bottom - limite
+      if (tapado > 1) window.scrollBy({ top: tapado, behavior: 'smooth' })
+    }
+    const ro = new ResizeObserver(() => {
+      if (primera) return void (primera = false) // al montar no movemos nada
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(ajustar)
+    })
+    ro.observe(barra)
+    return () => {
+      cancelAnimationFrame(frame)
+      ro.disconnect()
+    }
+  }, [compacto])
+
   // Recalcular el número de dedos activos -> teclas iluminadas
   const refreshActive = useCallback(() => {
     setActive(new Set(pointers.current.values()))
@@ -134,7 +161,7 @@ export default function Piano({
 
   const handlePointerDown = (e) => {
     e.preventDefault()
-    if (!isAudioRunning()) startAudio().then(() => setAudioOn(true))
+    if (!audioOn) startAudio().then(() => setAudioOn(isAudioRunning()))
     // Liberamos la captura implícita (táctil) para poder deslizar entre teclas.
     e.target.releasePointerCapture?.(e.pointerId)
     press(e.pointerId, noteAt(e.clientX, e.clientY))

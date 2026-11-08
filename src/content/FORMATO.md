@@ -30,7 +30,8 @@ En los textos se puede usar `**negrita**`.
 Donde se pida un sonido:
 
 ```js
-{ notas: ['C4', 'E4', 'G4'], modo: 'secuencia' | 'acorde', velocidad: 0.8, etiqueta: 'Escuchar' }
+{ notas: ['C4', 'E4', 'G4'], modo: 'secuencia' | 'acorde', velocidad: 0.8, intervalo: 0.45, duracion: 0.9, etiqueta: 'Escuchar' }
+{ notas: [['C3', 'C4'], ['E3', 'E4']] }                  // en secuencia, un array = notas a la vez (p. ej. doblar a la octava)
 { frecuencia: 440, duracion: 1.2, etiqueta: '440 Hz' }   // onda pura
 ```
 
@@ -72,10 +73,13 @@ Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`).
 ```js
 {
   tipo: 'tocar',
-  piano: { startOctave: 4, octaves: 2 },
-  objetivo: { tipo: 'explorar', cantidad: 5 },        // N teclas distintas
+  piano: { startOctave: 4, octaves: 2, showLabels: true },  // showLabels: false = teclas sin nombre
+  objetivo: { tipo: 'explorar', cantidad: 5, mensaje: '…' }, // N teclas distintas (mensaje: texto al terminar)
   // objetivo: { tipo: 'extremos' }                    // la más grave y la más aguda
   // objetivo: { tipo: 'comparar', rondas: [{ referencia: 'G4', direccion: 'agudo' | 'grave' }] }
+  // objetivo: { tipo: 'octavas', rondas: [{ nota: 'A', pista: '…' }] }
+  //   → tocar esa nota en TODAS las octavas del teclado (con 3 octavas: La3, La4, La5).
+  //     `pista` (opcional) se muestra al tocar una nota equivocada.
 }
 ```
 
