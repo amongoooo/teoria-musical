@@ -17,6 +17,13 @@ const FILA = 196 // separación vertical entre islas en el celular
 const ETIQUETA = 168 // ancho máximo del título de cada isla
 const ONDA = 26 // ondulación del camino horizontal
 const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mitad)
+// Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
+// cuelga un globo con la información. El centro de la bola queda en el punto del camino.
+const BOLA = 112 // diámetro de la isla abierta
+const ARO = 16 // el aro de avance sobresale de la bola
+const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
+const ALTO_ESTIMADO = BOLA + SEPARA + 210 // alto de bola + globo hasta medirlo
+const Y_ANCHO = 124 // altura del centro de la isla abierta en pantallas anchas
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -56,7 +63,7 @@ export function retosDelModulo(modulo, progreso) {
  * Camino de lecciones en forma de islas.
  *  - Celular (< 560 px): vertical en zigzag. Pantallas anchas: horizontal y ondulado.
  *  - Empieza con un cuadrado con el número del módulo.
- *  - Al tocar una isla, crece hasta un círculo grande con su información y botones;
+ *  - Al tocar una isla, crece (BOLA) y debajo sale un globo con su información y botones;
  *    las demás se apartan. Se cierra con ✕, tocando fuera o con Escape.
  *  - Con una isla abierta funciona como un CARRUSEL CONTINUO: la posición es un número real
  *    `p` (índice de la isla abierta + arrastre). Cada isla se coloca interpolando entre las
@@ -80,7 +87,8 @@ export default function CaminoLecciones({ modulo, progreso }) {
   const [verModulos, setVerModulos] = useState(false)
   const [verRetos, setVerRetos] = useState(false)
   const vertical = ancho < 560
-  const grande = vertical ? Math.min(ancho - 8, 320) : Math.min(340, Math.max(290, ancho * 0.36))
+  const grande = vertical ? Math.min(ancho - 24, 340) : 320 // ancho del globo
+  const [altos, setAltos] = useState({}) // alto real (bola + globo) de cada isla abierta, medido
   const X = vertical ? Math.max(100, ancho * DESLIZAR.umbralCelular) : DESLIZAR.umbralAncho
   const reducir = useReducedMotion()
   const resorte = reducir ? { duration: 0 } : RESORTE.pantalla
@@ -93,8 +101,14 @@ export default function CaminoLecciones({ modulo, progreso }) {
 
   // Disposición del camino cerrado y con cada isla abierta.
   const layouts = useMemo(
-    () => (ancho ? { cerrado: calcular({ ancho, vertical, n, abierta: null, grande }), abiertas: Array.from({ length: n }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande })) } : null),
-    [ancho, vertical, n, grande],
+    () =>
+      ancho
+        ? {
+            cerrado: calcular({ ancho, vertical, n, abierta: null, grande }),
+            abiertas: Array.from({ length: n }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
+          }
+        : null,
+    [ancho, vertical, n, grande, altos],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
@@ -213,7 +227,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
         if (els.escala[0]) els.escala[0].style.transform = `scale(${esc})`
         continue
       }
-      const tam = lerp(esc, grande / ISLA, o) // escala de la isla pequeña
+      const tam = lerp(esc, BOLA / ISLA, o) // escala de la isla pequeña (crece hasta el tamaño de la bola)
       const chica = els.chica[li]
       if (chica) {
         chica.style.transform = `scale(${tam * lerp(0.3, 1, Math.max(0, dsp))})`
@@ -222,7 +236,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
       }
       const gr = els.grande[li]
       if (gr) {
-        gr.style.transform = `translate(-50%, -50%) scale(${(tam * ISLA) / grande})`
+        gr.style.transform = `translate(-50%, ${-BOLA / 2}px) scale(${(tam * ISLA) / BOLA})`
         gr.style.opacity = String(opacidadDisco(o))
         gr.style.setProperty('--contenido', String(opacidadContenido(o)))
         gr.style.visibility = o > 0.002 ? 'visible' : 'hidden'
@@ -253,6 +267,28 @@ export default function CaminoLecciones({ modulo, progreso }) {
     ultimaP.current = p
     cont.dataset.posicion = p.toFixed(3) // posición continua del carrusel (útil para pruebas)
   }
+  // Mide el alto real de cada isla abierta (bola + globo) para apartar lo justo a las de abajo.
+  useLayoutEffect(() => {
+    if (!ancho || typeof ResizeObserver === 'undefined') return
+    const medir = () =>
+      setAltos((prev) => {
+        let cambio = false
+        const sig = { ...prev }
+        els.grande.forEach((el, i) => {
+          const h = el?.offsetHeight
+          if (h && Math.abs((prev[i] ?? 0) - h) > 1) {
+            sig[i] = h
+            cambio = true
+          }
+        })
+        return cambio ? sig : prev
+      })
+    medir()
+    const ro = new ResizeObserver(medir)
+    els.grande.forEach((el) => el && ro.observe(el))
+    return () => ro.disconnect()
+  }, [ancho, grande, n, els])
+
   const actualizarRef = useRef(actualizar)
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
@@ -302,16 +338,19 @@ export default function CaminoLecciones({ modulo, progreso }) {
     return () => clearTimeout(t)
   }, [ancho])
 
-  // En el celular, al abrir una isla, que el círculo quede a la vista.
+  // Al abrir una isla, que la isla y su globo queden a la vista (por encima de la barra de puntitos).
   useEffect(() => {
-    if (!abiertaSiNo || !vertical) return
+    if (!abiertaSiNo) return
     const t = setTimeout(() => {
-      const el = els.grande[abiertaRef.current]
-      const r = el?.getBoundingClientRect()
-      if (r && (r.top < 8 || r.bottom > window.innerHeight - 96)) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const r = els.grande[abiertaRef.current]?.getBoundingClientRect()
+      if (!r) return
+      const arriba = r.top - ARO - 8
+      const abajo = r.bottom - (window.innerHeight - 100)
+      const dy = arriba < 0 ? arriba : abajo > 0 ? Math.min(abajo, arriba) : 0
+      if (Math.abs(dy) > 4) window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
     }, 300)
     return () => clearTimeout(t)
-  }, [abiertaSiNo, vertical, els])
+  }, [abiertaSiNo, els, reducir])
 
   const entrada = (indice) => ({
     initial: { scale: 0.6, opacity: 0 },
@@ -401,11 +440,11 @@ export default function CaminoLecciones({ modulo, progreso }) {
                         )}
                       </span>
                     </div>
-                    <div ref={guardar('grande', i)} className="absolute left-0 top-0 origin-center" style={{ visibility: 'hidden', opacity: 0 }}>
+                    <div ref={guardar('grande', i)} className="absolute left-0 top-0" style={{ visibility: 'hidden', opacity: 0, width: grande, transformOrigin: `50% ${BOLA / 2}px` }}>
                       {l.esRetos ? (
-                        <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} tam={grande} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
+                        <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
                       ) : (
-                        <IslaAbierta meta={l} modulo={modulo} progreso={progreso} tam={grande} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
+                        <IslaAbierta meta={l} modulo={modulo} progreso={progreso} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
                       )}
                     </div>
                   </div>
@@ -519,18 +558,21 @@ function focoY(L, p, n) {
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
-function calcular({ ancho, vertical, n, abierta, grande }) {
+function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO }) {
   const nodos = []
   if (!ancho) return { nodos: Array.from({ length: n + 1 }, () => ({ x: 0, y: 0, escala: 1 })), alto: 0 }
 
   if (vertical) {
     const amplitud = Math.max(0, Math.min(72, ancho / 2 - ETIQUETA / 2 - 4))
-    const extra = abierta === null ? 0 : grande - ISLA + 8
     nodos.push({ x: ancho / 2, y: INSIGNIA / 2 + 8, escala: 1 })
     const y0 = INSIGNIA + 8 + 56 + ISLA / 2
+    // Centro de la bola abierta y cuánto bajan las islas siguientes para dejar sitio al globo.
+    const yAbierta = abierta === null ? 0 : y0 + abierta * FILA + 10
+    const finAbierta = yAbierta - BOLA / 2 + altoAbierta
+    const extra = abierta === null ? 0 : Math.max(0, finAbierta + 36 - (y0 + (abierta + 1) * FILA - ISLA / 2))
     for (let i = 0; i < n; i++) {
       const base = y0 + i * FILA
-      if (i === abierta) nodos.push({ x: ancho / 2, y: base + (grande - ISLA) / 2, escala: 1 })
+      if (i === abierta) nodos.push({ x: ancho / 2, y: yAbierta, escala: 1 })
       else
         nodos.push({
           x: ancho / 2 + amplitud * Math.round(Math.sin(((i + 1) * Math.PI) / 2)),
@@ -541,7 +583,7 @@ function calcular({ ancho, vertical, n, abierta, grande }) {
         })
     }
     const ultimo = nodos[nodos.length - 1]
-    const alto = ultimo.y + (abierta === n - 1 ? grande / 2 + 16 : ISLA / 2 + 80)
+    const alto = abierta === n - 1 ? finAbierta + 24 : ultimo.y + ISLA / 2 + 80
     return { nodos, alto }
   }
 
@@ -556,8 +598,8 @@ function calcular({ ancho, vertical, n, abierta, grande }) {
     return { nodos, alto: base + ONDA + ISLA / 2 + 24 }
   }
 
-  const alto = Math.max(base + ONDA + ISLA / 2 + 24, grande + 40)
-  const cy = alto / 2
+  const cy = Y_ANCHO // la bola abierta y las islas de los lados, a la misma altura
+  const alto = Math.max(base + ONDA + ISLA / 2 + 24, cy - BOLA / 2 + altoAbierta + 28)
   const hueco = 20
   const izq = abierta + 1 // insignia + lecciones antes de la abierta
   const der = n - 1 - abierta
@@ -647,8 +689,12 @@ function Anillo({ tam, acento, avance = 0, grosor = 6 }) {
   )
 }
 
-/** La isla abierta: círculo grande con información y acciones. */
-function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onIr }) {
+/**
+ * Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
+ * aparece un globo que apunta a ella con el título, el estado y los botones a lo ancho.
+ * El globo sale de la isla con `--contenido` (lo escribe el carrusel en cada fotograma).
+ */
+function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) {
   const estado = estadoLeccion(meta.id, progreso)
   const leccion = getLeccion(meta.id)
   const p = progreso.lecciones[meta.id]
@@ -656,72 +702,134 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
   const anterior = leccionAnterior(meta.id)
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
   const porcentaje = estado === 'hecha' ? 100 : estado === 'empezada' ? Math.round((p.paso / pasos) * 100) : 0
+  const acento = modulo.acento
   const ir = (reiniciar = false) => {
     if (reiniciar) reiniciarLeccion(meta.id)
     navegar(rutas.leccion(meta.id))
   }
-  const color = lleno ? 'text-blanco' : 'text-zinc-700'
-  const botonPrincipal = `flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 text-lg font-bold ${lleno ? 'bg-blanco' : 'bg-zinc-900 text-white'}`
+  const tema = lleno ? 'color' : estado === 'bloqueada' ? 'gris' : 'blanco'
+
+  let detalle
+  if (estado === 'nueva') detalle = <><IconoReloj /> ~{leccion.minutos} min · {pasos} pasos</>
+  else if (estado === 'empezada') detalle = <>Paso {p.paso + 1} de {pasos} · {porcentaje} % · ~{leccion.minutos} min</>
+  else if (estado === 'hecha') detalle = <><IconoCheck className="size-4" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}</>
+  else if (estado === 'bloqueada') detalle = <><IconoCandado className="size-4" /> Termina la {anterior?.id} antes</>
+  else detalle = <>Llega pronto</>
 
   return (
-    <div className="relative grid place-items-center" style={{ width: tam, height: tam }} role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
-      <Anillo tam={tam + 28} acento={modulo.acento} avance={porcentaje / 100} grosor={4} />
-      <div
-        className={`relative flex size-full flex-col items-center justify-center gap-2 rounded-full px-10 text-center ${color} ${estado === 'proximamente' ? 'border-2 border-dashed border-zinc-300' : ''}`}
-        style={{ backgroundColor: lleno ? oscuro(modulo.acento) : estado === 'bloqueada' ? GRIS : 'var(--color-white)', boxShadow: lleno ? `0 8px 0 ${labio(modulo.acento)}` : estado === 'bloqueada' ? `0 8px 0 ${LABIO_GRIS}` : undefined }}
-      >
-        <div className="flex flex-col items-center gap-2" style={{ opacity: 'var(--contenido, 1)' }}>
-          <Pulsable
-            onClick={onCerrar}
-            aria-label="Cerrar"
-            className={`absolute grid size-11 place-items-center rounded-full text-xl ${lleno ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
-            style={{ top: tam * 0.1, right: tam * 0.1 }}
-          >
-            ✕
-          </Pulsable>
-
-          <span className="text-2xl font-bold tabular-nums">{meta.id}</span>
-          <h3 className="line-clamp-2 text-lg font-bold leading-tight">{meta.titulo}</h3>
-          {leccion && (
-            <p className={`text-sm ${lleno ? 'text-blanco/85' : 'text-zinc-600'}`}>
-              ~{leccion.minutos} min · {pasos} pasos
-            </p>
-          )}
-
-          {(estado === 'nueva' || estado === 'empezada' || estado === 'hecha') && (
-            <Pulsable data-foco onClick={() => ir(estado === 'hecha')} className={botonPrincipal} style={{ color: oscuro(modulo.acento) }}>
-              <span aria-hidden>{estado === 'hecha' ? '↻' : '▶'}</span>
-              {estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir'}
-            </Pulsable>
-          )}
-          {estado === 'empezada' && (
-            <Pulsable onClick={() => ir(true)} className="-my-1 min-h-11 rounded-xl px-3 text-base font-semibold text-blanco/90 underline underline-offset-4 active:bg-blanco/15">
-              Empezar de cero
-            </Pulsable>
-          )}
-          {estado === 'bloqueada' && anterior && (
-            <>
-              <p className="flex items-center gap-1.5 text-base leading-snug">
-                <IconoCandado className="size-5 shrink-0" /> Termina la {anterior.id} antes
-              </p>
-              <Pulsable data-foco onClick={() => onIr(indice - 1)} className={botonPrincipal}>
-                Ir a la {anterior.id}
-              </Pulsable>
-            </>
-          )}
-          {estado === 'proximamente' && <p className="text-base">Llega pronto</p>}
-
-          {lleno && (
-            <span className="text-xl font-bold tabular-nums">
-              {porcentaje} %{estado === 'hecha' && p?.total ? <span className="ml-1 text-sm font-semibold text-blanco/85">· {p.aciertos}/{p.total} a la primera</span> : null}
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col items-center" role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
+      <Bola acento={acento} estado={estado} avance={lleno ? porcentaje / 100 : null}>
+        {estado === 'hecha' ? <IconoCheck className="size-11" /> : estado === 'bloqueada' ? <IconoCandado className="size-10" /> : estado === 'proximamente' ? '…' : meta.id}
+      </Bola>
+      <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
+        <h3 className="pr-10 text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{meta.titulo}</h3>
+        <p className={`flex flex-wrap items-center gap-1.5 text-base font-medium ${tema === 'color' ? 'text-blanco/90' : 'text-zinc-600'}`}>{detalle}</p>
+        {lleno && (
+          <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => ir(estado === 'hecha')}>
+            {estado === 'hecha' ? <IconoOtraVez /> : <IconoPlay />}
+            {estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir'}
+          </BotonGlobo>
+        )}
+        {estado === 'empezada' && (
+          <BotonGlobo tema={tema} acento={acento} onClick={() => ir(true)}>
+            Empezar de cero
+          </BotonGlobo>
+        )}
+        {estado === 'bloqueada' && anterior && (
+          <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => onIr(indice - 1)}>
+            Ir a la {anterior.id}
+          </BotonGlobo>
+        )}
+      </Globo>
       <span className="sr-only">
         Lección {indice + 1} de {total}. Desliza a los lados para ver las demás.
       </span>
     </div>
+  )
+}
+
+/** La isla en grande (BOLA px) con su labio y, si se da `avance` (0–1), el aro de avance alrededor. */
+function Bola({ acento, estado, avance = null, children, retos = false }) {
+  const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
+  let estilo
+  if (retos) {
+    estilo = lleno
+      ? { backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }
+      : { backgroundColor: 'var(--color-white)', border: `3px solid ${acento}`, color: tinta(acento), boxShadow: `0 7px 0 ${claro(acento)}` }
+  } else if (lleno) estilo = { backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }
+  else if (estado === 'bloqueada') estilo = { backgroundColor: GRIS, boxShadow: `0 7px 0 ${LABIO_GRIS}` }
+  else estilo = { backgroundColor: 'var(--color-white)' }
+  return (
+    <div className="relative grid shrink-0 place-items-center" style={{ width: BOLA, height: BOLA }}>
+      {avance !== null && <Anillo tam={BOLA + ARO * 2} acento={acento} avance={avance} grosor={7} />}
+      <div
+        className={`grid size-full place-items-center rounded-full text-3xl font-bold tabular-nums ${
+          lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : retos ? '' : 'border-2 border-dashed border-zinc-300 text-zinc-500'
+        }`}
+        style={estilo}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Globo bajo la isla abierta, con un piquito que apunta a ella y la ✕ arriba a la derecha.
+ * tema: 'color' (acento oscurecido, texto blanco) · 'gris' (bloqueada) · 'blanco' (próximamente) · 'borde' (retos a medias).
+ */
+function Globo({ tema, acento, onCerrar, children }) {
+  const fondo = { color: oscuro(acento), gris: GRIS, blanco: 'var(--color-white)', borde: 'var(--color-white)' }[tema]
+  const borde = tema === 'blanco' ? '2px dashed var(--color-zinc-300)' : tema === 'borde' ? `2px solid ${acento}` : undefined
+  return (
+    <div
+      className="w-full"
+      style={{
+        marginTop: SEPARA,
+        opacity: 'var(--contenido, 1)',
+        transform: 'translateY(calc((1 - var(--contenido, 1)) * -14px)) scale(calc(0.94 + 0.06 * var(--contenido, 1)))',
+        transformOrigin: '50% 0',
+      }}
+    >
+      <div
+        className={`relative flex flex-col gap-3 rounded-3xl p-5 ${tema === 'color' ? 'text-blanco' : 'text-zinc-900'}`}
+        style={{ backgroundColor: fondo, border: borde }}
+      >
+        {/* Piquito que apunta a la isla */}
+        <span
+          aria-hidden
+          className="absolute left-1/2 top-0 size-5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[4px]"
+          style={{ backgroundColor: fondo, borderLeft: borde, borderTop: borde, marginTop: borde ? -1 : 0 }}
+        />
+        <Pulsable
+          onClick={onCerrar}
+          aria-label="Cerrar"
+          className={`absolute right-2 top-2 grid size-11 place-items-center rounded-full ${tema === 'color' ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
+        >
+          <IconoCerrar />
+        </Pulsable>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** Botón a lo ancho dentro del globo: principal (relleno) o secundario (con borde). */
+function BotonGlobo({ tema, acento, principal = false, className = '', ...props }) {
+  const enColor = tema === 'color'
+  const clase = principal
+    ? enColor
+      ? 'bg-blanco'
+      : 'bg-zinc-900 text-white'
+    : enColor
+      ? 'border-2 border-blanco/35 text-blanco active:bg-blanco/10'
+      : 'border-2 border-zinc-300 text-zinc-800'
+  return (
+    <Pulsable
+      {...props}
+      className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 font-bold ${principal ? 'min-h-13 text-lg' : 'min-h-12 text-base'} ${clase} ${className}`}
+      style={principal && enColor ? { color: oscuro(acento) } : undefined}
+    />
   )
 }
 
@@ -741,43 +849,25 @@ function IslaRetos({ acento, completo, descripcion, onClick }) {
   )
 }
 
-/** Isla de Retos abierta: reto del módulo, cuántos van y botón para ver la lista completa. */
-function RetosAbierta({ modulo, retos, hechos, tam, onCerrar, onVer }) {
+/** Isla de Retos abierta: trofeo en grande y globo con el reto del módulo, cuántos van y «Ver retos». */
+function RetosAbierta({ modulo, retos, hechos, onCerrar, onVer }) {
   const completo = hechos === retos.length
+  const tema = completo ? 'color' : 'borde'
   return (
-    <div className="relative grid place-items-center" style={{ width: tam, height: tam }} role="group" aria-label="Retos del módulo">
-      <Anillo tam={tam + 28} acento={modulo.acento} avance={hechos / retos.length} grosor={4} />
-      <div
-        className={`relative flex size-full flex-col items-center justify-center gap-2 rounded-full px-10 text-center ${completo ? 'text-blanco' : 'border-[3px] text-zinc-900'}`}
-        style={completo ? { backgroundColor: oscuro(modulo.acento), boxShadow: `0 8px 0 ${labio(modulo.acento)}` } : { backgroundColor: 'var(--color-white)', borderColor: modulo.acento, boxShadow: `0 8px 0 ${claro(modulo.acento)}` }}
-      >
-        <div className="flex flex-col items-center gap-2" style={{ opacity: 'var(--contenido, 1)' }}>
-          <Pulsable
-            onClick={onCerrar}
-            aria-label="Cerrar"
-            className={`absolute grid size-11 place-items-center rounded-full text-xl ${completo ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
-            style={{ top: tam * 0.1, right: tam * 0.1 }}
-          >
-            ✕
-          </Pulsable>
-          <span style={completo ? undefined : { color: tinta(modulo.acento) }}>
-            <IconoTrofeo className="size-9" />
-          </span>
-          <h3 className="text-lg font-bold leading-tight">Retos en FL Studio</h3>
-          <p className={`line-clamp-3 text-sm leading-snug ${completo ? 'text-blanco/85' : 'text-zinc-600'}`}>{modulo.reto}</p>
-          <Pulsable
-            data-foco
-            onClick={onVer}
-            className={`flex min-h-12 items-center justify-center rounded-2xl px-6 text-lg font-bold ${completo ? 'bg-blanco' : 'bg-zinc-900 text-white'}`}
-            style={completo ? { color: oscuro(modulo.acento) } : undefined}
-          >
-            Ver retos
-          </Pulsable>
-          <span className="text-base font-bold tabular-nums">
-            {hechos}/{retos.length} hechos
-          </span>
-        </div>
-      </div>
+    <div className="flex flex-col items-center" role="group" aria-label="Retos del módulo">
+      <Bola acento={modulo.acento} estado={completo ? 'hecha' : 'retos'} avance={hechos / retos.length} retos>
+        <IconoTrofeo className="size-11" />
+      </Bola>
+      <Globo tema={tema} acento={modulo.acento} onCerrar={onCerrar}>
+        <h3 className="pr-10 text-xl font-bold leading-tight tracking-tight">Retos en FL Studio</h3>
+        <p className={`line-clamp-3 text-base leading-snug ${completo ? 'text-blanco/90' : 'text-zinc-600'}`}>{modulo.reto}</p>
+        <p className="text-base font-semibold tabular-nums" style={completo ? undefined : { color: tinta(modulo.acento) }}>
+          {hechos}/{retos.length} hechos
+        </p>
+        <BotonGlobo tema={tema} acento={modulo.acento} principal data-foco onClick={onVer}>
+          Ver retos
+        </BotonGlobo>
+      </Globo>
     </div>
   )
 }
@@ -845,9 +935,43 @@ function IconoTrofeo({ className = 'size-8' }) {
   )
 }
 
-function IconoCheck() {
+function IconoPlay() {
   return (
-    <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg className="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z" />
+    </svg>
+  )
+}
+
+function IconoOtraVez() {
+  return (
+    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4.5h4.5" />
+    </svg>
+  )
+}
+
+function IconoReloj() {
+  return (
+    <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  )
+}
+
+function IconoCerrar() {
+  return (
+    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  )
+}
+
+function IconoCheck({ className = 'size-9' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M5 12.5l4.5 4.5L19 7.5" />
     </svg>
   )
