@@ -101,17 +101,22 @@ Reglas:
 
 ## 3b. Gestos (swipe)
 
-**Todos los deslizamientos de la app** usan el hook **`useDeslizar`** (`src/ui/useDeslizar.js`) con las constantes `DESLIZAR` de `movimiento.js`:
+**Todos los deslizamientos de la app** usan el hook **`useDeslizar`** (`src/ui/useDeslizar.js`) con las constantes `DESLIZAR` de `movimiento.js`.
+El hook no mueve píxeles: devuelve **`progreso`** (MotionValue en «pasos», 0 = en su sitio, ±1 = el vecino ya en su lugar) y la pantalla dibuja la posición continua `índice + progreso`.
 
-1. El gesto empieza **en cuanto se presiona** (dedo o ratón); el contenido sigue al dedo.
-2. **Zona muerta** (`zonaMuerta`, 14 px): al principio casi no se mueve nada (curva cuadrática que se vuelve lineal, sin saltos). Un temblor del dedo no se nota.
-3. **Umbral X** (cada pantalla elige el suyo; islas: 150 px en ancho, 30 % del ancho en el celular): al superarlo **pasa a la siguiente sin soltar**, y el arrastre continúa desde ahí.
-4. **Retorno**: si después se regresa **1/5 de X** (`retorno`), vuelve a la anterior.
-5. **Gesto rápido**: si se suelta antes de X pero a ≥ `velocidad` (0,45 px/ms) en la misma dirección, también pasa.
-6. Al soltar, lo que quede vuelve a su sitio con `RESORTE.pantalla` heredando la velocidad del dedo.
-7. **Extremos**: resistencia tipo goma (`goma`).
-8. Si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll). El contenedor lleva `touch-action: pan-y`.
-9. Tras arrastrar, el «click» de soltar no activa botones.
+1. **Zona muerta REAL** (`zonaMuerta`, 14 px): mientras el dedo o el ratón no se aleje más de eso de donde se apoyó, **no se mueve NADA** (ni una curva suave). Al salir, el movimiento empieza **desde 0**, sin salto.
+2. **Barrera del 75 %** (`barrera`, `fuerza`): del 0 al 75 % de la distancia X el contenido sigue al dedo **1:1**; del 75 % al 100 % una fuerza en contra hace que avance cada vez menos que el dedo (la pendiente baja de 1 a 0,2). Se nota que hay una barrera… que se puede pasar.
+3. **Al 100 % pasa sin soltar**, y el contenido completa el cambio con `RESORTE.pantalla` (sin salto: el progreso se compensa y se asienta).
+4. **Una isla por swipe** (`unaPorGesto`): un mismo gesto nunca se aleja más de un elemento del de partida; si se sigue arrastrando, goma. Para pasar otra hay que soltar y volver a deslizar.
+5. **Regreso**: ya pasado, si en el mismo gesto se regresa **1/5 de X** (`retorno`) vuelve al anterior. Ese regreso tiene **su propia zona muerta** (desde el punto donde pasó) y **su barrera del 75 %**.
+6. **Gesto rápido**: si se suelta antes de X pero a ≥ `velocidad` (0,45 px/ms) en esa dirección, también pasa (solo uno). Al soltar, lo que quede vuelve o se completa con `RESORTE.pantalla` heredando la velocidad del dedo.
+7. **Distancia X**: en pantallas anchas `umbralAncho` (240 px); en el celular `umbralCelular` × ancho (35 %, mínimo 100 px).
+8. **Extremos**: si no hay más, resistencia tipo goma (`goma`, se satura en 1/4 de X).
+9. **Carrusel continuo**: mientras se arrastra, **todo se mueve con el dedo**: lo que se va se encoge y se desplaza, lo que llega crece y se acerca al centro, interpolando posiciones y tamaños según el progreso (0 → 1). Sin cortes ni cambios de golpe al pasar.
+10. Si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll). El contenedor lleva `touch-action: pan-y`.
+11. Tras arrastrar, el «click» de soltar no activa botones.
+
+**Barra de puntitos** (paginador): cuando hay un carrusel abierto (p. ej. una isla), **sube desde abajo** con `RESORTE.pantalla`, fija en la parte inferior y respetando `env(safe-area-inset-bottom)`; al cerrar, baja y se oculta. Píldora blanca `rounded-full border shadow-sm`, un puntito por elemento en celdas de **44 × 56 px** (`DESLIZAR.puntitos.separacion`). Hechos: opacos (`oscuro(acento)`); pendientes: atenuados (acento al 35 %). El del elemento actual mide 16 px y los demás 8 px, y el tamaño **sigue al progreso** del carrusel (crece/encoge con el resorte). **Tocar** un puntito va directo a ese elemento. **Arrastrar** por encima (`useDeslizar` con `sentido: 1`, `unaPorGesto: false`, `anclaExacta: true`, zona muerta 8 px) pasa de uno en uno: entre puntito y puntito se ve la zona muerta y la barrera del 75 %, y pasa al cruzar el siguiente puntito. `touch-action: none` en la barra.
 
 ## 4. Componentes
 
@@ -126,7 +131,7 @@ Reglas:
 - **Contenido futuro** ("Próximamente"): muchos elementos → lista compacta dentro de un recuadro con borde punteado (Inicio);
   pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
 - **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo que empiezan con una **insignia** (cuadrado `rounded-3xl` de 72 px con el número del módulo). Celular (< 560 px): vertical en zigzag con el título **debajo**; ancho: horizontal ondulado con el título **encima**. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; relieve plano, no sombra difusa). Estados: hecha (acento oscurecido + ✓), actual (número + anillo `claro(acento)` con arco de avance), bloqueada (`#e4e4e7` + candado), próximamente (blanca, borde punteado, «…»). Camino: curva SVG punteada gris; los tramos hacia islas alcanzables se pintan con el acento. Títulos sobre fondo `#fafafa` para que el camino pase por detrás.
-- **Isla abierta**: al tocar una isla crece (escala desde 80 px, `RESORTE.pantalla`) hasta un círculo grande (≤ 320 px en el celular, ~340 en ancho) con número, título, minutos y pasos, botón blanco principal (▶ Empezar / Continuar / ↻ Repetir), «Empezar de cero» si está a medias y el **%** abajo; anillo exterior con el avance. Las demás islas se apartan con resorte (en horizontal se encogen hasta 0.55 y esconden el título si no caben). Con la isla abierta, **deslizar de lado** pasa a la anterior/siguiente (ver «Gestos»). Se cierra con ✕, tocando fuera o con Escape. Bloqueada: «Termina la X antes» + «Ir a la X».
+- **Isla abierta**: al tocar una isla crece (escala desde 80 px, `RESORTE.pantalla`) hasta un círculo grande (≤ 320 px en el celular, ~340 en ancho) con número, título, minutos y pasos, botón blanco principal (▶ Empezar / Continuar / ↻ Repetir), «Empezar de cero» si está a medias y el **%** abajo; anillo exterior con el avance. Las demás islas se apartan con resorte (en horizontal se encogen hasta 0.55 y esconden el título si no caben). Con la isla abierta, el camino es un **carrusel continuo** (ver «Gestos»): deslizar de lado o arrastrar por la **barra de puntitos** de abajo mueve todas las islas con el dedo; la abierta se encoge y vuelve a su sitio del camino mientras la vecina crece. Al cruzarse, primero el **disco** grande tapa la isla pequeña y después aparece su **contenido** (nunca dos círculos translúcidos uno encima de otro); los títulos se ocultan pronto. En el celular, la página se desplaza para que la isla abierta pase siempre por el mismo sitio de la pantalla, y la que se va sale un poco hacia el lado del dedo. Flechas ← → del teclado también cambian de isla. Se cierra con ✕, tocando fuera o con Escape. Bloqueada: «Termina la X antes» + «Ir a la X».
 - **Hoja inferior** (`src/ui/Hoja.jsx`): bottom sheet tipo iOS disponible para detalles y confirmaciones (de momento sin uso: el módulo usa la isla abierta). Fondo `bg-black/40` con fundido; la hoja sube con `RESORTE.pantalla`, `rounded-t-3xl`, asa gris arriba y ✕ de 44 px; se cierra tocando el fondo, con Escape o **arrastrándola hacia abajo**. En pantallas anchas flota centrada (`max-w-lg`, `rounded-3xl`). Botones apilados a lo ancho: principal negro y secundario con borde. El primer botón lleva `data-foco` (recibe el foco al abrir).
 - **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
 - **Piano** (`components/Piano.jsx`): Pointer Events, `touch-action: none`, `compacto` en lecciones, 1 octava con ◀ ▶ en < 560 px.
@@ -156,6 +161,8 @@ Reglas:
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: (pedido del usuario) Swipe corregido y ampliado para toda la app: **zona muerta real**, **barrera del 75 %** con fuerza en contra, pasa al 100 %, **una isla por swipe**, regreso de 1/5 con su zona muerta y barrera, X = 240 px en ancho / 35 % en el celular, **carrusel continuo** (todo sigue al dedo) y **barra de puntitos** inferior para tocar o arrastrar entre islas (sección 3b).
 
 - 2026-11-10: (según bocetos del usuario) Camino con **insignia del módulo**, títulos encima en horizontal, **isla abierta** que crece en lugar de la hoja inferior, y **reglas de swipe** para toda la app (sección 3b, `useDeslizar`). `Volver` pasa a píldora gris; cabecera de Módulo con barra arriba y título centrado.
 

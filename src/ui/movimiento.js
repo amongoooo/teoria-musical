@@ -58,10 +58,24 @@ export const SUBE = {
 export const SALTO = { scale: [1, 1.05, 1] }
 
 /**
- * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño):
- *  - zonaMuerta: px iniciales que casi no mueven nada (curva suave).
+ * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño, sección 3b):
+ *  - zonaMuerta: px desde donde se apoyó el dedo en los que NO se mueve nada.
+ *  - barrera: fracción de X hasta la que el contenido sigue al dedo 1:1 (75 %).
+ *  - fuerza: cuánto frena la barrera entre el 75 % y el 100 % (la pendiente baja de 1 a 1 - fuerza).
+ *  - retorno: fracción de X que hay que regresar para deshacer un paso ya dado (1/5).
  *  - velocidad: px/ms a partir de los que un gesto corto cuenta como swipe.
- *  - retorno: fracción del umbral que hay que regresar para deshacer un paso ya dado (1/5).
- *  - goma: resistencia en los extremos.
+ *  - goma: resistencia cuando no hay más (extremos o ya se pasó una isla en este gesto).
+ *  - umbralAncho / umbralCelular: X en pantallas anchas (px) y en el celular (fracción del ancho).
+ *  - puntitos: separación entre puntitos de la barra (px, = X al arrastrar por ella) y su zona muerta.
  */
-export const DESLIZAR = { zonaMuerta: 14, velocidad: 0.45, retorno: 0.2, goma: 0.35 }
+export const DESLIZAR = {
+  zonaMuerta: 14,
+  barrera: 0.75,
+  fuerza: 0.8,
+  retorno: 0.2,
+  velocidad: 0.45,
+  goma: 0.35,
+  umbralAncho: 240,
+  umbralCelular: 0.35,
+  puntitos: { separacion: 44, zonaMuerta: 8 },
+}

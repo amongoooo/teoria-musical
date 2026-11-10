@@ -32,7 +32,7 @@ export default function Modulo({ numero }) {
       variants={lista}
       initial="oculta"
       animate="visible"
-      className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-8 px-5 py-4 sm:py-6"
+      className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-8 px-5 pt-4 pb-28 sm:pt-6"
     >
       {/* Barra superior: volver + progreso del módulo */}
       <motion.div variants={itemLista} className="flex items-center gap-4">
@@ -55,7 +55,7 @@ export default function Modulo({ numero }) {
 
       <motion.section variants={itemLista} aria-label="Lecciones del módulo" className="py-2 sm:py-6">
         <CaminoLecciones modulo={modulo} progreso={progreso} />
-        <p className="mt-2 text-center text-sm text-zinc-500">Toca una isla para ver la lección. Con una abierta, desliza a los lados.</p>
+        <p className="mt-2 text-center text-sm text-zinc-500">Toca una isla para ver la lección. Con una abierta, desliza a los lados o usa los puntitos de abajo.</p>
       </motion.section>
 
       <motion.section variants={itemLista} className="mx-auto flex w-full max-w-2xl flex-col gap-4 rounded-3xl bg-zinc-100 p-5">
