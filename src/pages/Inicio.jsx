@@ -1,5 +1,6 @@
 import Piano from '../components/Piano.jsx'
 import { leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
+import { META_SEGUNDOS, datosDeHoy, rachaActual, useOido } from '../progress/oido.js'
 import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 
@@ -41,6 +42,8 @@ export default function Inicio() {
           </a>
         </section>
       )}
+
+      <TarjetaOido />
 
       <section className="flex flex-col gap-4">
         <h2 className="text-2xl font-bold tracking-tight">Módulos</h2>
@@ -92,5 +95,39 @@ export default function Inicio() {
         <Piano />
       </section>
     </main>
+  )
+}
+
+/** Acceso al entrenamiento de oído con la racha y el avance de hoy. */
+function TarjetaOido() {
+  const oido = useOido()
+  const dia = datosDeHoy(oido)
+  const racha = rachaActual(oido)
+  const avance = Math.min(1, dia.segundos / META_SEGUNDOS)
+  const cumplida = avance >= 1
+  return (
+    <a
+      href={rutas.oido()}
+      className="flex flex-col gap-4 rounded-3xl border border-zinc-200 bg-white p-5 transition active:scale-[0.99]"
+    >
+      <div className="flex items-center gap-4">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-sky-100 text-2xl" aria-hidden>
+          👂
+        </span>
+        <span className="flex flex-1 flex-col gap-0.5">
+          <span className="text-xl font-bold leading-snug">Entrenamiento de oído</span>
+          <span className="text-sm text-zinc-500">
+            {cumplida ? '¡Hecho por hoy!' : 'Práctica diaria de 5 minutos'} · 🔥 {racha} {racha === 1 ? 'día' : 'días'}
+          </span>
+        </span>
+        <span aria-hidden className="text-2xl text-zinc-300">›</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+        <div
+          className={`h-full rounded-full ${cumplida ? 'bg-emerald-500' : 'bg-sky-500'}`}
+          style={{ width: `${avance * 100}%` }}
+        />
+      </div>
+    </a>
   )
 }

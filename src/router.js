@@ -6,6 +6,7 @@ function parse(hash) {
   const partes = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
   if (partes[0] === 'modulo' && partes[1]) return { pagina: 'modulo', id: partes[1] }
   if (partes[0] === 'leccion' && partes[1]) return { pagina: 'leccion', id: partes[1] }
+  if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
 
@@ -26,6 +27,7 @@ export const rutas = {
   inicio: () => '#/',
   modulo: (numero) => `#/modulo/${numero}`,
   leccion: (id) => `#/leccion/${id}`,
+  oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
 }
 
 export function navegar(href) {

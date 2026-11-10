@@ -38,3 +38,10 @@ export function hz(valor) {
 export function compararAltura(a, b) {
   return midi(a) - midi(b)
 }
+
+const NOMBRES_MIDI = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+/** Nota a partir de su número MIDI (60 -> 'C4'), con sostenidos. */
+export function notaDesdeMidi(m) {
+  return `${NOMBRES_MIDI[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`
+}

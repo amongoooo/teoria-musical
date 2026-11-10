@@ -149,7 +149,8 @@ function Visor({ leccion, onRepetir }) {
   )
 }
 
-function BarraAccion({ accion }) {
+/** Barra fija de abajo con el botón grande (también la usa el entrenamiento de oído). */
+export function BarraAccion({ accion }) {
   const { feedback } = accion
   const bien = feedback?.tipo === 'bien'
   return (

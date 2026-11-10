@@ -44,7 +44,9 @@ src/
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
   progress/progreso.js  # localStorage: useProgreso, guardarPaso, completarLeccion, guardarReto
-  pages/                # Inicio, Modulo, Leccion (visor paso a paso)
+  theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
+  progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
+  pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
@@ -63,18 +65,20 @@ public/samples/         # Samples de audio propios
 ## Decisiones de contenido
 
 - **Módulo 1 (sonido, notas y teclado) se mantiene** como repaso: el usuario ya sabe algo de música. Mantener las lecciones ágiles e incluir ejercicios de oído desde el principio. Más adelante: una prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
-- **Sección aparte «Entrenamiento de oído»** (práctica diaria de ~5 min, fuera de las lecciones; prevista):
+- **Sección aparte «Entrenamiento de oído»** (práctica diaria de ~5 min, fuera de las lecciones; ✅ hecha, ver Estado):
   - Oído relativo (lo principal): intervalos, acordes mayor/menor, grados de la escala.
   - Reto de «oído absoluto» tipo juego: adivinar la nota sin referencia, empezando con 2 notas y sumando más según los aciertos, con estadísticas. Sin prometer que se adquiera (en adultos es difícil); se presenta como juego.
 
 ## Estado del proyecto
 
-**Avance: ~15 %**
+**Avance: ~22 %**
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
 - ✅ Lección 1.1 «Qué es una nota: frecuencia y altura» (11 pasos).
 - ✅ Lección 1.2 «Las 12 notas y la octava» (12 pasos): nuevo objetivo `octavas` en TocaEnPiano (tocar una nota en todas las octavas), teclado sin etiquetas (`showLabels: false`), sonidos con notas dobladas a la octava.
 - ✅ Audio en iPhone más robusto: `navigator.audioSession = 'playback'` (suena con el interruptor de silencio) y desbloqueo del audio también al soltar el dedo. En lecciones, si la barra inferior crece y tapa el piano, la página se desplaza sola.
+
+- ✅ **Entrenamiento de oído** (`#/oido`, tarjeta en Inicio con racha y avance del día): meta de 5 min/día, racha de días (fecha local), últimos 7 días y estadísticas por elemento. Tres modos con niveles que suben al acertar 8 de las últimas 10: **Intervalos** (8 niveles, de 3ªM y 5ªJ al tritono; subiendo, bajando o a la vez), **Acordes** mayor/menor (arpegio + acorde → solo acorde → inversiones y registros), **Oído absoluto** como juego (empieza con Do y Sol y suma una nota por nivel hasta las 12; cambia de octava desde 5 notas). Tras responder se puede tocar cada opción para comparar y se ve en el Piano. Reutiliza `BarraAccion` de `Leccion.jsx`, `reproducir()`, `Piano`. Datos en `localStorage` clave `teoria-musical:oido:v1`.
 
 **Siguiente tarea:** lección 1.3 «Teclas blancas y negras: sostenidos y bemoles» (♯/♭, enarmonía, semitonos), reutilizando los ejercicios existentes.
