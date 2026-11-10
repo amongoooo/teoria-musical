@@ -2,6 +2,7 @@
 // Usa los samples Salamander (Tone.Sampler) y, si fallan o aún no cargan,
 // un Tone.PolySynth de respaldo para que nunca quede en silencio.
 import * as Tone from 'tone'
+import { NOMBRES_BATERIA, golpe } from './bateria.js'
 
 const SALAMANDER_URL = 'https://tonejs.github.io/audio/salamander/'
 
@@ -120,8 +121,17 @@ function instrument() {
   return status === 'ready' && sampler ? sampler : getSynth()
 }
 
+/** Toca una nota (o un acorde, o un golpe de batería como 'kick') en el instante `t`. */
+function sonar(inst, nota, duracion, t, velocidad) {
+  const lista = Array.isArray(nota) ? nota : [nota]
+  const tonos = lista.filter((n) => !NOMBRES_BATERIA.includes(n))
+  lista.filter((n) => NOMBRES_BATERIA.includes(n)).forEach((n) => golpe(n, t, velocidad))
+  if (tonos.length) inst.triggerAttackRelease(tonos.length === 1 ? tonos[0] : tonos, duracion, t, velocidad)
+}
+
 export function noteOn(note, velocity = 0.8) {
   startAudio()
+  if (NOMBRES_BATERIA.includes(note)) return golpe(note, Tone.now(), velocity)
   instrument().triggerAttack(note, Tone.now(), velocity)
 }
 
@@ -158,7 +168,7 @@ export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo
   const t0 = Tone.now() + 0.05 + retraso
   list.forEach((note, i) => {
     const t = modo === 'acorde' ? t0 : t0 + i * intervalo
-    inst.triggerAttackRelease(note, duracion, t, velocidad)
+    sonar(inst, note, duracion, t, velocidad)
   })
   return modo === 'acorde' ? duracion : (list.length - 1) * intervalo + duracion
 }
@@ -175,10 +185,67 @@ export function playPattern(notas, { paso = 0.3 } = {}) {
   const t0 = Tone.now() + 0.05
   let fin = 0
   notas.forEach(({ nota, inicio, duracion = 1, velocity = 0.8 }) => {
-    inst.triggerAttackRelease(nota, Math.max(0.1, duracion * paso * 0.95), t0 + inicio * paso, velocity)
+    sonar(inst, nota, Math.max(0.1, duracion * paso * 0.95), t0 + inicio * paso, velocity)
     fin = Math.max(fin, inicio + duracion)
   })
   return fin * paso
+}
+
+// ---------------------------------------------------------------------------
+// Ritmo en bucle (metrónomo / groove) con tiempos exactos
+// ---------------------------------------------------------------------------
+
+/** Tiempo actual del reloj de audio (segundos, sin margen de programación). */
+export function tiempoAudio() {
+  return Tone.getContext().rawContext.currentTime
+}
+
+/** Retraso entre programar un sonido y oírlo (salida del dispositivo), en segundos. */
+export function latenciaAudio() {
+  const ctx = Tone.getContext().rawContext
+  return (ctx.outputLatency || 0) + (ctx.baseLatency || 0)
+}
+
+let ritmoActual = null
+
+/**
+ * Repite un patrón de 1 compás (eventos en casillas) a `bpm` hasta llamar a parar().
+ * Devuelve { inicio, pulso, parar } — `inicio`: tiempo de audio del primer tiempo,
+ * `pulso`: segundos entre tiempos. Solo suena un ritmo a la vez.
+ */
+export function iniciarRitmo(eventos, { bpm = 90, casillas = 8, porTiempo = 2 } = {}) {
+  pararRitmo()
+  startAudio()
+  initPiano()
+  const pulso = 60 / bpm
+  const paso = pulso / porTiempo
+  const compas = casillas * paso
+  const inicio = tiempoAudio() + 0.15
+  let siguiente = 0 // índice de compás ya programado
+  const programar = () => {
+    const limite = tiempoAudio() + 0.25
+    while (inicio + siguiente * compas < limite) {
+      const base = inicio + siguiente * compas
+      eventos.forEach((e) => sonar(instrument(), e.nota, Math.max(0.1, (e.duracion ?? 1) * paso * 0.95), base + e.inicio * paso, e.velocity ?? 0.8))
+      siguiente += 1
+    }
+  }
+  programar()
+  const id = setInterval(programar, 50)
+  const ritmo = {
+    inicio,
+    pulso,
+    parar: () => {
+      clearInterval(id)
+      if (ritmoActual === ritmo) ritmoActual = null
+    },
+  }
+  ritmoActual = ritmo
+  return ritmo
+}
+
+export function pararRitmo() {
+  ritmoActual?.parar()
 }
 
 // Onda pura (seno) para demostrar frecuencias en Hz.

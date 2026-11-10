@@ -115,6 +115,8 @@ Reglas:
 - **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4). En lecciones son `Pulsable tipo="tarjeta"` y la correcta da un `SALTO`.
 - **Rondas** (`components/exercises/Rondas.jsx`): puntos de progreso de un ejercicio; la ronda actual crece en vertical con `RESORTE.pulsar`, el color cambia con fundido.
 - **Mini Piano Roll** (`components/PianoRoll.jsx`): tarjeta `rounded-3xl` con teclado a la izquierda (`w-14`, filas negras `bg-zinc-800`), números de tiempo arriba, líneas más marcadas cada tiempo, filas de teclas negras en `bg-zinc-100`. Notas = acento del módulo, más claras cuanta menos velocity (`color-mix`), aparecen con `RESORTE.pulsar`; las notas guía («fantasma») son contornos punteados grises (verdes al resolver). Filas `h-10` si hay ≤ 6, `h-8` si hay más. Las casillas miden ~35 × 32 px: excepción aceptada, como las teclas del piano (es una rejilla para arrastrar, no botones sueltos). Botón «Reproducir» como `BotonSonido`; el cabezal es una columna azul que avanza por casillas (sin animación: funciona igual con «reducir movimiento»). Selector de nombres «Esta app / FL Studio»: control segmentado `bg-zinc-100 p-1`, opción activa `bg-white shadow-sm`.
+- **Pad de pulso** (`exercises/Pulso.jsx`): botón enorme (`h-40 rounded-3xl`, fondo `oscuro(acento)`, texto blanco) que responde en `onPointerDown` (no en `click`, para medir el tiempo). Con ayuda visual, un círculo blanco late en cada tiempo (fundido de 350 ms). Encima, el **medidor antes/tarde**: carril `h-10 rounded-full bg-zinc-100` con la zona buena en `emerald-100`, línea central y una bola que se desplaza con `RESORTE.pulsar` (verde a tiempo, ámbar fuera). Debajo del medidor, puntos de aciertos que dan un `SALTO`. Botón Empezar/Parar: `min-h-14 border-2`, negro al empezar y blanco mientras suena.
+- **Selector de tempos**: tarjetas `Pulsable tipo="tarjeta"` en 2 columnas (BPM grande + género en `text-sm`); activa en negro. Arriba, tarjeta con el BPM en `text-4xl` y un círculo del acento que late en cada tiempo (más intenso en el 1).
 - **`useSobreBarra(ref)`** (`src/ui/useSobreBarra.js`): si la barra inferior crece y tapa el piano o el roll, desplaza la página lo justo. Úsalo en cualquier elemento interactivo que viva cerca de la barra.
 
 ## 5. Evitar
@@ -136,6 +138,8 @@ Reglas:
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: Lección 2.1 y ejercicio **Pulso** (pad de pulso con medidor antes/tarde, tap tempo, selector de tempos). El Piano Roll admite filas de batería (Bombo, Caja, Hi-hat) con columna de nombres más ancha. Los latidos visuales usan fundidos cortos con `easeOut` (marcan el tiempo, no son respuesta al dedo).
 
 - 2026-11-10: Lección 1.4 y **mini Piano Roll** táctil (ver componentes). Todos los ejercicios pasan a `Pulsable` + `motion` (`ENTRA_DERECHA`, `SUBE`, `SALTO`, `Rondas`); se elimina la animación CSS `animate-entrada`. Pantalla final de lección con entrada escalonada del resumen. Hook `useSobreBarra` compartido por Piano y Piano Roll.
 

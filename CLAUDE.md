@@ -8,7 +8,7 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 ## Preferencias del usuario (¡seguir siempre!)
 
 - **Responder siempre en español.**
-- **Indicar el porcentaje de avance del proyecto en cada respuesta.**
+- **Indicar el porcentaje de avance del proyecto en cada respuesta**, y también el **avance aproximado de la tarea en curso** (p. ej. «Tarea actual: ~40 %»).
 - **Hacer push después de cada commit.**
 - **Al terminar una tarea, mandar el link de la página:** https://amongoooo.github.io/teoria-musical/
 - **Al terminar, recomendar** para la siguiente tarea: chat (seguir en el mismo o abrir uno nuevo), modelo, nivel de esfuerzo y el prompt listo para copiar.
@@ -44,10 +44,12 @@ src/
     BotonSonido.jsx     # Botón que reproduce un sonido del contenido
     Rich.jsx            # Texto con **negritas**
     pasos/              # Pasos no interactivos: PasoTexto, PasoSiente, Nota
-    exercises/          # EscuchaElige, TocaEnPiano, ExploraFrecuencia, RetoFL, PianoRollEjercicio, Rondas
-  audio/engine.js       # Tone.js: initPiano, noteOn/Off, playNotes, playFrequency, toneStart/Set/Stop
+    exercises/          # EscuchaElige, TocaEnPiano, ExploraFrecuencia, RetoFL, PianoRollEjercicio, Pulso, Rondas
+  audio/engine.js       # Tone.js: initPiano, noteOn/Off, playNotes, playPattern, iniciarRitmo/pararRitmo, tiempoAudio/latenciaAudio, playFrequency, toneStart/Set/Stop
+  audio/bateria.js      # Batería sintetizada: golpe('kick' | 'snare' | 'hat' | 'clap' | 'click')
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
+  theory/bateria.js     # Nombres de percusión, claveNota y GROOVES (click, basico, bombo)
   progress/progreso.js  # localStorage: useProgreso, guardarPaso, completarLeccion, guardarReto
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
@@ -78,7 +80,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~34 %** (módulo 1 completo)
+**Avance: ~37 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -95,4 +97,6 @@ public/samples/         # Samples de audio propios
 - ✅ **Lección 1.4 «Leer el Piano Roll»** (13 pasos, cierra el módulo 1): filas = notas, columnas = tiempo, duración, velocity y la octava de FL (Do4 de la app = **C5** en FL; regla «FL = app + 1»). Nuevo tipo de paso **`pianoroll`** con el **mini Piano Roll** táctil (`components/PianoRoll.jsx`): tocar = crear, arrastrar = alargar, tocar nota = borrar, carril de velocity, Reproducir con cabezal, nombres app/FL. Objetivos `libre`, `copiar` (con notas fantasma, explica qué falta/sobra y ofrece la solución tras 2 fallos) y `velocity` (acentos). `texto` y `elegir` aceptan `roll` de solo lectura. `playPattern()` en `engine.js`.
 - ✅ Ejercicios con la skill (pendiente de la sección 7): `Pulsable` en todas las opciones, tarjetas, retos, `BotonSonido` y flechas del Piano; preguntas que entran con `ENTRA_DERECHA`, `SALTO` al acertar, `Rondas` animadas; sin `animate-entrada`. Resumen de la pantalla final con entrada escalonada.
 
-**Siguiente tarea:** prueba rápida al inicio del módulo 1 (saltar lo que ya se domina) o empezar el **módulo 2 «Ritmo y groove»** con la lección 2.1 «Pulso y tempo» (reutilizando el mini Piano Roll como secuenciador de batería).
+- ✅ **Lección 2.1 «Pulso y tempo»** (11 pasos, abre el módulo 2): pulso, tiempos, BPM, tempos por género, tap tempo y el beat básico (bombo 1 y 3, caja 2 y 4, hi-hat en corcheas). **Batería sintetizada** (`audio/bateria.js`, sin samples) que se puede usar como «nota» en todo (`playNotes`, `playPattern`, Piano Roll). Sonidos `{ groove, bpm, compases }`. Nuevo tipo de paso **`pulso`** (`exercises/Pulso.jsx`): **seguir** (tocar al pulso con medidor antes/tarde y compensación automática del retraso del dispositivo), **tempo** (tap tempo; medio/doble tempo cuenta como bien) y **explorar** (mismo beat a varios BPM). `iniciarRitmo()` programa el bucle con el reloj de audio (preciso aunque el navegador vaya lento). El Piano Roll acepta filas de batería.
+
+**Siguiente tarea:** lección 2.2 «Compás y tiempos fuertes» (4/4 y 3/4, tiempo fuerte, contar «1 y 2 y», medio tiempo del trap), reutilizando `pulso` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

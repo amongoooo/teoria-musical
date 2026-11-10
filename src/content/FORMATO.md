@@ -33,9 +33,12 @@ Donde se pida un sonido:
 { notas: ['C4', 'E4', 'G4'], modo: 'secuencia' | 'acorde', velocidad: 0.8, intervalo: 0.45, duracion: 0.9, etiqueta: 'Escuchar' }
 { notas: [['C3', 'C4'], ['E3', 'E4']] }                  // en secuencia, un array = notas a la vez (p. ej. doblar a la octava)
 { frecuencia: 440, duracion: 1.2, etiqueta: '440 Hz' }   // onda pura
+{ groove: 'basico', bpm: 90, compases: 2 }              // batería: 'click' | 'basico' | 'bombo' (theory/bateria.js)
 ```
 
-Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`).
+Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
+`'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
+sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 'snare', 'kick']`).
 
 ## Tipos de paso
 
@@ -48,6 +51,7 @@ Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`).
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
 | `reto` | `components/exercises/RetoFL.jsx` | Reto en FL Studio con "Lo hice" y reflexión |
 | `pianoroll` | `components/exercises/PianoRollEjercicio.jsx` | Mini Piano Roll táctil: dibujar, copiar, velocity |
+| `pulso` | `components/exercises/Pulso.jsx` | Ritmo en bucle: tocar al pulso, tap tempo, explorar tempos |
 
 `texto` y las rondas de `elegir` aceptan además `roll: { …config, notas }` para mostrar un
 Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregunta.
@@ -131,6 +135,20 @@ objetivo: { tipo: 'velocity', fuertes: [0, 4], explicacion: '…' }
 
 Gestos (pensados para el dedo): tocar casilla vacía = crear nota; arrastrar a la derecha =
 alargarla; tocar una nota = borrarla; deslizar arriba/abajo en el carril «Vel.» = velocity.
+
+### `pulso`
+
+Un ritmo suena en bucle (`iniciarRitmo()` de `engine.js`) con un botón Empezar/Parar.
+
+```js
+objetivo: { tipo: 'seguir', rondas: [{ pregunta, bpm: 90, groove: 'click', meta: 8, visual: true, mensaje }] }
+  // tocar el botón grande al pulso; cuenta los toques a ±90 ms. Medidor «antes / tarde».
+  // Si todos los toques caen igual de desplazados (auriculares bluetooth), compensa solo (máx. 200 ms).
+objetivo: { tipo: 'tempo', rondas: [{ bpm: 100, groove: 'basico', pregunta }] }
+  // tap tempo: marcar el pulso (≥ 6 toques) y comprobar los BPM (±5 %; medio o doble tempo cuenta como bien).
+objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, genero: 'Hip hop' }], mensaje }
+  // el mismo groove a distintos tempos, con un círculo que late en cada tiempo.
+```
 
 ## Crear un tipo de paso nuevo
 

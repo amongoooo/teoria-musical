@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getModulo } from '../../content/index.js'
-import { midi, nombre } from '../../theory/notas.js'
+import { PERCUSION, claveNota, esPercusion } from '../../theory/bateria.js'
+import { nombre } from '../../theory/notas.js'
 import PianoRoll, { conIds, nombreFL } from '../PianoRoll.jsx'
 import Rich from '../Rich.jsx'
 
@@ -28,7 +29,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
   }
 
   const modo = roll.etiquetas === 'fl' ? 'fl' : 'app'
-  const nom = (n) => `**${modo === 'fl' ? nombreFL(n) : nombre(n)}**`
+  const nom = (n) => `**${esPercusion(n) ? PERCUSION[n].toLowerCase() : modo === 'fl' ? nombreFL(n) : nombre(n)}**`
   const porTiempo = roll.porTiempo ?? 2
 
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
   )
 }
 
-const igual = (a, b) => midi(a.nota) === midi(b.nota) && a.inicio === b.inicio && a.duracion === b.duracion
+const igual = (a, b) => claveNota(a.nota) === claveNota(b.nota) && a.inicio === b.inicio && a.duracion === b.duracion
 
 /** Momento de la casilla en palabras: «en el tiempo 2» / «a mitad del tiempo 2». */
 function momento(c, porTiempo) {
@@ -135,13 +136,13 @@ function revisarCopia(notas, solucion, { nom, porTiempo }) {
   const problemas = []
   for (const s of solucion) {
     if (notas.some((n) => igual(n, s))) continue
-    const parecida = notas.find((n) => midi(n.nota) === midi(s.nota) && n.inicio === s.inicio)
+    const parecida = notas.find((n) => claveNota(n.nota) === claveNota(s.nota) && n.inicio === s.inicio)
     if (parecida) problemas.push(`${nom(s.nota)} ${momento(s.inicio, porTiempo)} debe durar ${largo(s.duracion, porTiempo)}.`)
     else problemas.push(`Falta ${nom(s.nota)} ${momento(s.inicio, porTiempo)}.`)
   }
   for (const n of notas) {
     if (solucion.some((s) => igual(n, s))) continue
-    if (solucion.some((s) => midi(s.nota) === midi(n.nota) && s.inicio === n.inicio)) continue // ya avisada
+    if (solucion.some((s) => claveNota(s.nota) === claveNota(n.nota) && s.inicio === n.inicio)) continue // ya avisada
     problemas.push(`Sobra ${nom(n.nota)} ${momento(n.inicio, porTiempo)}.`)
   }
   if (!problemas.length) return { ok: true }

@@ -5,12 +5,14 @@ import leccion11 from './modulo-01/leccion-1-1.js'
 import leccion12 from './modulo-01/leccion-1-2.js'
 import leccion13 from './modulo-01/leccion-1-3.js'
 import leccion14 from './modulo-01/leccion-1-4.js'
+import leccion21 from './modulo-02/leccion-2-1.js'
 
 const LECCIONES = {
   [leccion11.id]: leccion11,
   [leccion12.id]: leccion12,
   [leccion13.id]: leccion13,
   [leccion14.id]: leccion14,
+  [leccion21.id]: leccion21,
 }
 
 export { MODULOS }

@@ -1,9 +1,10 @@
 import { motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { initPiano, releaseAll, toneStop } from '../audio/engine.js'
+import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
 import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
 import ExploraFrecuencia from '../components/exercises/ExploraFrecuencia.jsx'
 import PianoRollEjercicio from '../components/exercises/PianoRollEjercicio.jsx'
+import Pulso from '../components/exercises/Pulso.jsx'
 import RetoFL from '../components/exercises/RetoFL.jsx'
 import TocaEnPiano from '../components/exercises/TocaEnPiano.jsx'
 import PasoSiente from '../components/pasos/PasoSiente.jsx'
@@ -24,6 +25,7 @@ const PASOS = {
   frecuencia: ExploraFrecuencia,
   reto: RetoFL,
   pianoroll: PianoRollEjercicio,
+  pulso: Pulso,
 }
 
 /**
@@ -60,6 +62,7 @@ function Visor({ leccion, onRepetir }) {
     return () => {
       releaseAll()
       toneStop()
+      pararRitmo()
     }
   }, [])
 

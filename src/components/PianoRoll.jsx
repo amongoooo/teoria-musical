@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { playNotes, playPattern } from '../audio/engine.js'
+import { PERCUSION, claveNota, esPercusion } from '../theory/bateria.js'
 import { midi, nombre, notaDesdeMidi, parseNota } from '../theory/notas.js'
 import { RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
@@ -32,6 +33,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const [cabezal, setCabezal] = useState(null) // columna que suena al reproducir
   const [ultimaVel, setUltimaVel] = useState(null)
   const alto = filas.length > 6 ? 'h-8' : 'h-10'
+  const ancho = filas.some(esPercusion) ? 'w-[4.5rem]' : 'w-14'
 
   const areaRef = useRef(null)
   const cajaRef = useRef(null)
@@ -41,7 +43,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const reloj = useRef(0)
   useEffect(() => () => cancelAnimationFrame(reloj.current), [])
 
-  const fila = (nota) => filas.findIndex((f) => midi(f) === midi(nota))
+  const fila = (nota) => filas.findIndex((f) => claveNota(f) === claveNota(nota))
 
   const reproducir = () => {
     cancelAnimationFrame(reloj.current)
@@ -158,7 +160,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
       <div ref={cajaRef} className="overflow-hidden rounded-3xl border border-zinc-200 bg-white select-none" onContextMenu={(e) => e.preventDefault()}>
         {/* Números de tiempo */}
         <div className="flex border-b border-zinc-200 bg-zinc-50">
-          <div className="w-14 shrink-0" />
+          <div className={`${ancho} shrink-0`} />
           <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${tiempos}, minmax(0, 1fr))` }}>
             {Array.from({ length: tiempos }, (_, t) => (
               <span key={t} className="border-l border-zinc-300 py-1 pl-1.5 text-sm font-semibold tabular-nums text-zinc-500">
@@ -170,9 +172,9 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
 
         <div className="flex">
           {/* Teclado de la izquierda: tocar una fila hace sonar su nota */}
-          <div className="w-14 shrink-0 border-r border-zinc-200">
+          <div className={`${ancho} shrink-0 border-r border-zinc-200`}>
             {filas.map((f) => {
-              const negra = parseNota(f).alteracion !== 0
+              const negra = esNegra(f)
               return (
                 <button
                   key={f}
@@ -182,7 +184,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
                     negra ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-200 bg-white text-zinc-800'
                   }`}
                   style={{ touchAction: 'manipulation' }}
-                  aria-label={`${nombre(f)} (en FL Studio ${nombreFL(f)})`}
+                  aria-label={esPercusion(f) ? PERCUSION[f] : `${nombre(f)} (en FL Studio ${nombreFL(f)})`}
                 >
                   <Etiqueta nota={f} modo={etiquetas} />
                 </button>
@@ -203,7 +205,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
             {filas.map((f) => (
               <div
                 key={f}
-                className={`grid border-b last:border-b-0 ${alto} ${parseNota(f).alteracion !== 0 ? 'border-zinc-200 bg-zinc-100' : 'border-zinc-100 bg-white'}`}
+                className={`grid border-b last:border-b-0 ${alto} ${esNegra(f) ? 'border-zinc-200 bg-zinc-100' : 'border-zinc-100 bg-white'}`}
                 style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))` }}
               >
                 {Array.from({ length: columnas }, (_, c) => (
@@ -249,7 +251,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
 
         {roll.velocity && (
           <div className="flex border-t border-zinc-200 bg-zinc-50">
-            <div className="flex w-14 shrink-0 flex-col justify-center border-r border-zinc-200 px-1.5 text-center text-sm font-semibold leading-tight text-zinc-600">
+            <div className={`flex ${ancho} shrink-0 flex-col justify-center border-r border-zinc-200 px-1.5 text-center text-sm font-semibold leading-tight text-zinc-600`}>
               Vel.
               {ultimaVel !== null && <span className="tabular-nums text-zinc-500">{ultimaVel}</span>}
             </div>
@@ -306,6 +308,7 @@ function Rect({ n, fila, filas, columnas, children }) {
 }
 
 function Etiqueta({ nota, modo }) {
+  if (esPercusion(nota)) return <span className="text-sm font-semibold">{PERCUSION[nota]}</span>
   if (modo === 'fl') return <span className="text-base font-semibold">{nombreFL(nota)}</span>
   if (modo === 'ambas')
     return (
@@ -340,6 +343,8 @@ function SelectorEtiquetas({ valor, onCambio }) {
     </div>
   )
 }
+
+const esNegra = (f) => !esPercusion(f) && parseNota(f).alteracion !== 0
 
 let contador = 0
 export function nuevoId() {
