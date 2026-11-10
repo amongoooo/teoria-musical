@@ -12,17 +12,20 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *    se toca: el navegador hace su «tirar para recargar» de siempre.
  * Fases: zona muerta (DESLIZAR.zonaMuerta px) → resistencia fuerte hasta el 30 % de X (como mucho
  * DESLIZAR.resistencia × X) → alcanza al dedo con RESORTE.pulsar y lo sigue 1:1 (por debajo del 26 %
- * vuelve la resistencia) → al 50 % de X, sin soltar, `onPasar(dir)`. Soltar antes: vuelve con
- * RESORTE.pantalla. Si `puede(dir)` es false: goma.
+ * vuelve la resistencia) → pasado el 50 % de X sigue al dedo con goma y `listo` vale ±1 («Suelta para
+ * ir»): **solo al soltar ahí** llama a `onPasar(dir)`. Si el dedo vuelve por debajo del 50 %, `listo`
+ * vuelve a 0 y al soltar regresa con RESORTE.pantalla. Si `puede(dir)` es false: goma.
  *
  * Usa eventos táctiles (con el scroll, el navegador se queda con los Pointer Events). Cuando el gesto
  * es nuestro se cancela el touchmove, así no hay rebote ni recarga a la vez. Además, lejos de arriba
  * `html` lleva `overscroll-behavior-y: none` (sin rebote propio al final) y arriba del todo `auto`
  * (para que funcione «tirar para recargar»).
- * Devuelve `progreso` (MotionValue en fracciones de X con signo: +0,5 pasa abajo, −0,5 pasa arriba).
+ * Devuelve { progreso, listo }: `progreso` en fracciones de X con signo (+ abajo, − arriba; ±0,5 = punto
+ * de pasar) y `listo` (±1 si al soltar ahora pasaría, 0 si no).
  */
 export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAbajo = DESLIZAR.pagina.desdeAbajo }) {
   const progreso = useMotionValue(0)
+  const listo = useMotionValue(0)
   const op = useRef(null)
   op.current = { activo, umbral, puede, onPasar, desdeAbajo }
 
@@ -98,6 +101,7 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
         if (g.fase !== 'quieto') ir(0, RESORTE.pantalla)
         g.fase = 'quieto'
         g.sigue = false
+        listo.set(0)
         return
       }
       if (e.cancelable) e.preventDefault()
@@ -115,21 +119,26 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
         fase = g.sigue ? 'sigue' : 'inicio'
         valor = g.sigue ? r / X : resistencia(r, zm, X) / X
       }
-      if (fase !== 'goma' && valor >= DESLIZAR.iman) {
-        g.pasado = true
-        progreso.set(dir * valor)
-        op.current.onPasar(dir)
-        return
-      }
+      // Pasado el 50 %: «Suelta para ir». Sigue al dedo, cada vez más duro (goma); pasa solo al soltar.
+      const l = fase !== 'goma' && valor >= DESLIZAR.iman ? dir : 0
+      if (l) valor = DESLIZAR.iman + goma(r - X * DESLIZAR.iman, 0, X) / X
+      if (l !== listo.get()) listo.set(l)
       const resorte = fase === 'sigue' ? RESORTE.pulsar : RESORTE.pantalla
       if (fase !== g.fase || anim) ir(dir * valor, resorte) // cambio de fase (o aún persiguiendo): con resorte
       else ir(dir * valor)
       g.fase = fase
     }
 
-    const soltar = () => {
+    const soltar = (e) => {
       if (!g) return
-      if (!g.pasado && g.fase !== 'quieto') ir(0, RESORTE.pantalla)
+      const l = listo.get()
+      listo.set(0)
+      if (l && e?.type === 'touchend' && op.current.puede(l)) {
+        g.pasado = true
+        g = null
+        return op.current.onPasar(l)
+      }
+      if (g.fase !== 'quieto') ir(0, RESORTE.pantalla)
       g = null
     }
 
@@ -149,7 +158,7 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
       window.removeEventListener('touchcancel', soltar, pasivo)
       window.removeEventListener('scroll', ajustarRebote, pasivo)
     }
-  }, [progreso])
+  }, [progreso, listo])
 
-  return progreso
+  return { progreso, listo }
 }

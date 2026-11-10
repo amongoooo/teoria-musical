@@ -25,6 +25,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *     sigue al dedo sin resistencia ni paradas en cada isla o puntito; al frenar vuelven las reglas.
  *  9. `eje`: si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll).
  *
+ * `soltarParaPasar` (swipe de página): no hay imán sin soltar. Pasado el 50 % el contenido sigue al dedo
+ * (con goma más allá) y `listo` vale ±1 («Suelta para ir»); solo pasa AL SOLTAR ahí. Si el dedo vuelve
+ * por debajo del 50 %, `listo` vuelve a 0 y al soltar regresa a su sitio.
+ *
  * `cadena` (barra de puntitos): el imán se repite entre cada par de puntitos (una isla por cada
  * puntito que se cruza, mismo 50 % en los dos sentidos) y no hay avance continuo.
  *
@@ -45,8 +49,9 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  */
 export default function useDeslizar(opciones) {
   const progreso = useMotionValue(0)
+  const listo = useMotionValue(0) // soltarParaPasar: ±1 si al soltar ahora pasaría (0 si no)
   const op = useRef(opciones)
-  op.current = { sentido: -1, zonaMuerta: DESLIZAR.zonaMuerta, rapido: true, eje: true, cadena: false, continuo: true, activo: true, ...opciones }
+  op.current = { sentido: -1, zonaMuerta: DESLIZAR.zonaMuerta, rapido: true, eje: true, cadena: false, continuo: true, activo: true, soltarParaPasar: false, ...opciones }
   const g = useRef(null)
   const ultimoMovido = useRef(false)
   // Lo que se ve = dedo + rv. `dedo` es donde el gesto quiere el contenido (sigue al dedo al instante,
@@ -166,6 +171,8 @@ export default function useDeslizar(opciones) {
     if (!op.current.puede(dir)) return { fase: 'goma', valor: (dir * goma(r, zm, X)) / X }
     const sigue = s.sigue === dir ? r >= X * DESLIZAR.sigueSale : r >= X * DESLIZAR.inicio
     s.sigue = sigue ? dir : 0
+    // Soltar para pasar: más allá del 50 % sigue al dedo, pero cada vez más duro (goma).
+    if (sigue && op.current.soltarParaPasar && r > X * DESLIZAR.iman) return { fase: 'sigue', valor: dir * (DESLIZAR.iman + goma(r - X * DESLIZAR.iman, 0, X) / X) }
     if (sigue) return { fase: 'sigue', valor: gr }
     return { fase: 'inicio', valor: (dir * resistencia(r, zm, X)) / X }
   }
@@ -182,7 +189,13 @@ export default function useDeslizar(opciones) {
     if (s.veloz) s.revisar = setTimeout(() => g.current === s && colocar(s, s.d), 60)
     let resorte = null
     // Imán al 50 %, igual en los dos sentidos (en el carrusel, como mucho un vecino; en la barra, encadenado).
-    for (let vueltas = 0; vueltas < 30; vueltas++) {
+    // Con soltarParaPasar no hay imán: solo se marca si al soltar pasaría.
+    if (op.current.soltarParaPasar) {
+      const dir = Math.sign(s.F)
+      const l = Math.abs(s.F) >= DESLIZAR.iman && op.current.puede(dir) ? dir : 0
+      if (l !== listo.get()) listo.set(l)
+    }
+    for (let vueltas = 0; vueltas < 30 && !op.current.soltarParaPasar; vueltas++) {
       const gr = s.F - s.off
       const dir = gr >= DESLIZAR.iman ? 1 : gr <= -DESLIZAR.iman ? -1 : 0
       if (!dir || (!cadena && Math.abs(s.off + dir) > 1) || !op.current.puede(dir)) break
@@ -275,9 +288,13 @@ export default function useDeslizar(opciones) {
     const vel = ultimo.t > previo.t ? (ultimo.d - previo.d) / (ultimo.t - previo.t) : 0 // px/ms hacia «siguiente»
     const dir = Math.sign(s.d)
     // Gesto rápido: soltar con velocidad (aún sin haber pasado ninguno) también pasa uno.
+    // Soltar para pasar: pasa solo si al soltar el dedo estaba más allá del 50 %.
+    const suelta = !cancelado && op.current.soltarParaPasar && listo.get() !== 0 && op.current.puede(listo.get())
+    listo.set(0)
     const rapido = !cancelado && op.current.rapido && s.k === 0 && s.llegada === 0 && Math.abs(s.d) > zonaMuerta && Math.sign(vel) === dir && Math.abs(vel) >= DESLIZAR.velocidad && op.current.puede(dir)
     soltarDedo()
-    if (rapido) cambiar(dir)
+    if (suelta) cambiar(Math.sign(s.F))
+    else if (rapido) cambiar(dir)
     emitir()
     // Si el contenido seguía al dedo, hereda su velocidad (el tope la limita igualmente).
     asentar(RESORTE.pantalla, !cancelado && s.fase === 'sigue' ? (vel / X) * 1000 : 0)
@@ -303,6 +320,7 @@ export default function useDeslizar(opciones) {
 
   return {
     progreso,
+    listo,
     handlers: {
       onPointerDown,
       onPointerMove,

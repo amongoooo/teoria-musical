@@ -1,9 +1,10 @@
-import { motion, useMotionValue, useTransform } from 'motion/react'
+import { motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getModulo, moduloDisponible } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
-import { DESLIZAR } from '../ui/movimiento.js'
+import { tinta } from '../ui/color.js'
+import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import useDeslizar from '../ui/useDeslizar.js'
 import useTirarBordes from '../ui/useTirarBordes.js'
 import { Cuadrito } from './NavegadorModulos.jsx'
@@ -14,9 +15,10 @@ import { Cuadrito } from './NavegadorModulos.jsx'
  *  - Tirar «más abajo» del final de la página (celular): módulo siguiente.
  *  - Tirar hacia abajo estando arriba del todo: módulo anterior, solo si el dedo se apoyó en el 25 %
  *    inferior de la pantalla (DESLIZAR.pagina.desdeAbajo); más arriba, el navegador recarga la página.
- * Mismas reglas que el resto de swipes (zona muerta, resistencia fuerte hasta el 30 %, sigue al dedo y
- * pasa al 50 % sin soltar), pero con una X más larga (DESLIZAR.pagina) y sin gesto rápido ni avance
- * continuo: cambiar de página tiene que ser a propósito. Si el vecino no existe o aún no tiene
+ * Reglas de los swipes (zona muerta, resistencia fuerte hasta el 30 %, sigue al dedo) con una X más larga
+ * (DESLIZAR.pagina), sin gesto rápido ni avance continuo y **soltar para pasar**: pasado el 50 % el
+ * indicador dice «Suelta para ir» y la página solo cambia al soltar el dedo ahí; si el dedo vuelve atrás
+ * antes de soltar, no pasa nada. Cambiar de página tiene que ser a propósito. Si el vecino no existe o aún no tiene
  * lecciones, resistencia tipo goma y el indicador dice «Próximamente».
  *
  * Devuelve { handlers, estilo, indicadores }: los handlers y el estilo (x / y) van en el <main> de la
@@ -48,11 +50,12 @@ export default function useCambioModulo(modulo, { activo }) {
     rapido: false,
     continuo: false,
     veloz: [Infinity, Infinity],
+    soltarParaPasar: true,
   })
   const bordes = useTirarBordes({ activo, umbral: XV, puede: (dir) => !saliendo.current && puede(dir), onPasar: pasar })
 
   const px = useCongelado(lado.progreso, saliendo)
-  const py = useCongelado(bordes, saliendo)
+  const py = useCongelado(bordes.progreso, saliendo)
   const x = useTransform(px, (p) => -p * X)
   const y = useTransform(py, (p) => -p * XV)
 
@@ -68,10 +71,10 @@ export default function useCambioModulo(modulo, { activo }) {
 
   const indicadores = createPortal(
     <>
-      <Asoma lado="derecha" progreso={px} modulo={vecino(1)} disponible={puede(1)} />
-      <Asoma lado="izquierda" progreso={px} modulo={vecino(-1)} disponible={puede(-1)} />
-      <Asoma lado="abajo" progreso={py} modulo={vecino(1)} disponible={puede(1)} />
-      <Asoma lado="arriba" progreso={py} modulo={vecino(-1)} disponible={puede(-1)} />
+      <Asoma lado="derecha" progreso={px} listo={lado.listo} modulo={vecino(1)} disponible={puede(1)} />
+      <Asoma lado="izquierda" progreso={px} listo={lado.listo} modulo={vecino(-1)} disponible={puede(-1)} />
+      <Asoma lado="abajo" progreso={py} listo={bordes.listo} modulo={vecino(1)} disponible={puede(1)} />
+      <Asoma lado="arriba" progreso={py} listo={bordes.listo} modulo={vecino(-1)} disponible={puede(-1)} />
     </>,
     document.body,
   )
@@ -101,8 +104,11 @@ function useAncho() {
  * (0 → escondido, 0,5 = el punto en que pasa → del todo dentro). Solo se ve si el gesto va hacia él.
  * Si el módulo aún no tiene lecciones, se ve entero con poco recorrido y dice «Próximamente».
  */
-function Asoma({ lado, progreso, modulo, disponible }) {
+function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
   const signo = lado === 'izquierda' || lado === 'arriba' ? -1 : 1
+  // «Suelta para ir»: el gesto ya pasó el punto y, si se suelta ahora, cambia de módulo.
+  const [listo, setListo] = useState(false)
+  useMotionValueEvent(listoMV, 'change', (l) => setListo(l === signo))
   // Sin módulo disponible el gesto es una goma (apenas se mueve): el indicador «Próximamente» se ve antes.
   const lleno = disponible ? DESLIZAR.iman : 0.12
   const vis = useTransform(progreso, (p) => Math.max(0, Math.min(1, (p * signo) / lleno)))
@@ -112,12 +118,21 @@ function Asoma({ lado, progreso, modulo, disponible }) {
   const xLado = useTransform(desplazar, (d) => `${d * signo}%`)
   if (!modulo) return null
 
-  const texto = (
-    <span className="flex flex-col items-center gap-0.5 text-center">
-      <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">{signo > 0 ? 'Siguiente' : 'Anterior'}</span>
-      <span className="text-base font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
-      {!disponible && <span className="text-sm font-semibold text-zinc-500">Próximamente</span>}
+  const encabezado = (
+    <span
+      className={`text-sm font-semibold uppercase tracking-wider transition-colors duration-150 ${listo ? '' : 'text-zinc-500'}`}
+      style={listo ? { color: tinta(modulo.acento) } : undefined}
+    >
+      {listo ? 'Suelta para ir' : signo > 0 ? 'Siguiente' : 'Anterior'}
     </span>
+  )
+  // El cuadrito crece un poco (resorte) cuando ya se puede soltar.
+  const cuadrito = (
+    <motion.span style={{ scale: escala }}>
+      <motion.span className="block" animate={{ scale: listo ? 1.12 : 1 }} transition={RESORTE.pulsar}>
+        <Cuadrito modulo={modulo} disponible={disponible} tam={56} />
+      </motion.span>
+    </motion.span>
   )
 
   if (lado === 'abajo' || lado === 'arriba') {
@@ -130,11 +145,9 @@ function Asoma({ lado, progreso, modulo, disponible }) {
         style={{ opacity: vis, y: yVertical }}
       >
         <div className="flex items-center gap-4">
-          <motion.span style={{ scale: escala }}>
-            <Cuadrito modulo={modulo} disponible={disponible} tam={56} />
-          </motion.span>
+          {cuadrito}
           <span className="flex flex-col">
-            <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">{signo > 0 ? 'Siguiente' : 'Anterior'}</span>
+            {encabezado}
             <span className="text-lg font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
             <span className="text-base text-zinc-600">{disponible ? modulo.titulo : 'Próximamente'}</span>
           </span>
@@ -146,13 +159,15 @@ function Asoma({ lado, progreso, modulo, disponible }) {
   return (
     <motion.div
       aria-hidden
-      className={`pointer-events-none fixed top-1/2 z-20 flex w-28 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl bg-fondo/90 py-3 ${signo > 0 ? 'right-1' : 'left-1'}`}
+      className={`pointer-events-none fixed top-1/2 z-20 flex w-32 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl bg-fondo/90 py-3 ${signo > 0 ? 'right-1' : 'left-1'}`}
       style={{ opacity: vis, x: xLado }}
     >
-      <motion.span style={{ scale: escala }}>
-        <Cuadrito modulo={modulo} disponible={disponible} tam={56} />
-      </motion.span>
-      {texto}
+      {cuadrito}
+      <span className="flex flex-col items-center gap-0.5 text-center">
+        {encabezado}
+        <span className="text-base font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
+        {!disponible && <span className="text-sm font-semibold text-zinc-500">Próximamente</span>}
+      </span>
     </motion.div>
   )
 }
