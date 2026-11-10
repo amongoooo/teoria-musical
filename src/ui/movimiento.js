@@ -73,6 +73,7 @@ export const SALTO = { scale: [1, 1.05, 1] }
  *  - umbralAncho / umbralCelular: X en pantallas anchas (px) y en el celular (fracción del ancho).
  *  - puntitos: separación entre puntitos de la barra (px, = X al arrastrar por ella), su zona muerta y su
  *    modo rápido (más bajo: los puntitos están mucho más juntos que las islas).
+ *  - pagina: X del swipe de página (cambiar de módulo), lateral y vertical.
  */
 export const DESLIZAR = {
   zonaMuerta: 14,
@@ -95,4 +96,7 @@ export const DESLIZAR = {
   umbralAncho: 240,
   umbralCelular: 0.35,
   puntitos: { separacion: 44, zonaMuerta: 8, veloz: [0.25, 0.12] },
+  // Swipe de página (cambiar de módulo): X más larga para que sea a propósito.
+  // Lateral: 60 % del ancho en el celular (mín. 160 px) o 320 px en ancho; vertical (tirar más allá del final): 240 px.
+  pagina: { umbralCelular: 0.6, umbralAncho: 320, umbralVertical: 240 },
 }

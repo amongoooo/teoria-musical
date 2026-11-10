@@ -19,10 +19,14 @@ export default function App() {
   const clave = `${ruta.pagina}:${ruta.id ?? ''}${ruta.reto ? ':reto' : ''}`
 
   // Dirección: 1 = avanzar (entra por la derecha), -1 = volver.
-  const anterior = useRef({ clave, prof: profundidad(ruta), dir: 1 })
+  // Entre módulos (swipe de página o pestaña de Módulos): el siguiente entra por la derecha y el anterior por la izquierda.
+  const anterior = useRef({ clave, ruta, prof: profundidad(ruta), dir: 1 })
   if (anterior.current.clave !== clave) {
     const prof = profundidad(ruta)
-    anterior.current = { clave, prof, dir: prof >= anterior.current.prof ? 1 : -1 }
+    const previa = anterior.current.ruta
+    const entreModulos = ruta.pagina === 'modulo' && previa.pagina === 'modulo'
+    const dir = entreModulos ? (Number(ruta.id) > Number(previa.id) ? 1 : -1) : prof >= anterior.current.prof ? 1 : -1
+    anterior.current = { clave, ruta, prof, dir }
   }
   const dir = anterior.current.dir
 

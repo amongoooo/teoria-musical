@@ -72,7 +72,7 @@ export function retosDelModulo(modulo, progreso) {
  *    barra de puntitos de abajo mueve p; al soltar todo se asienta con resortes.
  *  - Las posiciones se escriben directamente en el DOM (sin re-render) en cada fotograma.
  */
-export default function CaminoLecciones({ modulo, progreso }) {
+export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const ref = useRef(null)
   const ancho = useAncho(ref)
   const lecciones = modulo.lecciones
@@ -157,6 +157,8 @@ export default function CaminoLecciones({ modulo, progreso }) {
     if (Math.abs(desfase) > 0.001) animate(base, sig, resorte)
   }
   const puede = (dir) => abiertaRef.current !== null && abiertaRef.current + dir >= 0 && abiertaRef.current + dir < n
+
+  useEffect(() => onAbierta?.(abierta !== null), [abierta, onAbierta])
 
   const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla })
   const puntos = useDeslizar({
