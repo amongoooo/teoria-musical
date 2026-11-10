@@ -3,15 +3,17 @@
 //   En 'secuencia', un elemento puede ser un array para tocar varias notas a la vez:
 //   { notas: [['C3', 'C4'], ['E3', 'E4']] }  (melodía doblada a la octava)
 //   { frecuencia: 440, duracion: 1.2 }
+// `retraso` (segundos) en el segundo argumento retrasa el inicio.
 import { playFrequency, playNotes } from './engine.js'
 
 /** Toca el sonido y devuelve su duración en segundos. */
-export function reproducir(sonido) {
+export function reproducir(sonido, { retraso = 0 } = {}) {
   if (sonido.frecuencia) return playFrequency(sonido.frecuencia, sonido.duracion ?? 1.2)
   return playNotes(sonido.notas, {
     modo: sonido.modo,
     velocidad: sonido.velocidad,
     duracion: sonido.duracion,
     intervalo: sonido.intervalo,
+    retraso,
   })
 }

@@ -71,7 +71,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~22 %**
+**Avance: ~25 %**
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -80,5 +80,7 @@ public/samples/         # Samples de audio propios
 - ✅ Audio en iPhone más robusto: `navigator.audioSession = 'playback'` (suena con el interruptor de silencio) y desbloqueo del audio también al soltar el dedo. En lecciones, si la barra inferior crece y tapa el piano, la página se desplaza sola.
 
 - ✅ **Entrenamiento de oído** (`#/oido`, tarjeta en Inicio con racha y avance del día): meta de 5 min/día, racha de días (fecha local), últimos 7 días y estadísticas por elemento. Tres modos con niveles que suben al acertar 8 de las últimas 10: **Intervalos** (8 niveles, de 3ªM y 5ªJ al tritono; subiendo, bajando o a la vez), **Acordes** mayor/menor (arpegio + acorde → solo acorde → inversiones y registros), **Oído absoluto** como juego (empieza con Do y Sol y suma una nota por nivel hasta las 12; cambia de octava desde 5 notas). Tras responder se puede tocar cada opción para comparar y se ve en el Piano. Reutiliza `BarraAccion` de `Leccion.jsx`, `reproducir()`, `Piano`. Datos en `localStorage` clave `teoria-musical:oido:v1`.
+- ✅ Oído absoluto sin trampa: entre pregunta y pregunta suena un «borrador» (ráfaga de notas cromáticas al azar de Do2 a Do6 + soplo de ruido rosa y un silencio) con `limpiarOido()` de `engine.js`; el modo lo activa con `limpiar: true`. Mientras suena, las opciones están desactivadas. `playNotes`/`reproducir` aceptan `retraso`.
+- ✅ Lección 1.3 «Teclas blancas y negras: sostenidos y bemoles» (11 pasos): semitono y tono, ♯/♭, enarmonía, ejercicio principal encontrar **Do♯/Re♭** en todas las octavas (con y sin nombres), más Fa♯, Si♭, Mi♭; oído «¿semitono o tono?», quiz, «¿Qué se siente?» y reto en FL. El Piano resalta `marcadas` por altura (así `Db4` marca la tecla de `C#4`).
 
-**Siguiente tarea:** lección 1.3 «Teclas blancas y negras: sostenidos y bemoles» (♯/♭, enarmonía, semitonos), reutilizando los ejercicios existentes.
+**Siguiente tarea:** lección 1.4 «Leer el Piano Roll» (cierra el módulo 1), y quizá una prueba rápida al inicio del módulo para saltar lo que ya se domina.

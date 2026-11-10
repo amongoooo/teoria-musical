@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { initPiano, releaseAll } from '../audio/engine.js'
+import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir } from '../audio/sonido.js'
 import Piano from '../components/Piano.jsx'
 import Rich from '../components/Rich.jsx'
@@ -217,10 +217,15 @@ function Entrenador({ modo }) {
   const [resultado, setResultado] = useState(null) // lo que devuelve registrarRespuesta
   const [sesion, setSesion] = useState({ aciertos: 0, total: 0 })
   const contador = useRef(0)
+  const [limpiando, setLimpiando] = useState(false)
+  const temporizador = useRef(null)
 
   useEffect(() => {
     initPiano()
-    return () => releaseAll()
+    return () => {
+      clearTimeout(temporizador.current)
+      releaseAll()
+    }
   }, [])
 
   const nueva = () => {
@@ -231,7 +236,18 @@ function Entrenador({ modo }) {
     setRespuesta(null)
     setResultado(null)
     window.scrollTo(0, 0)
-    reproducir(p.sonido)
+    clearTimeout(temporizador.current)
+    // Modos sin referencia (oído absoluto): entre pregunta y pregunta suena un
+    // "borrador" (notas al azar + ruido) para que la nota anterior no ayude.
+    if (modo.limpiar && pregunta) {
+      const retraso = limpiarOido()
+      setLimpiando(true)
+      temporizador.current = setTimeout(() => setLimpiando(false), retraso * 1000)
+      reproducir(p.sonido, { retraso })
+    } else {
+      setLimpiando(false)
+      reproducir(p.sonido)
+    }
   }
 
   const empezar = () => {
@@ -241,6 +257,7 @@ function Entrenador({ modo }) {
   }
 
   const responder = (id) => {
+    if (limpiando) return
     if (respuesta) {
       // Ya respondida: tocar una opción la hace sonar para comparar.
       reproducir(pregunta.sonidoDe(id))
@@ -255,6 +272,8 @@ function Entrenador({ modo }) {
   let accion
   if (!jugando) {
     accion = { label: 'Empezar', onClick: empezar }
+  } else if (limpiando) {
+    accion = { label: 'Borrando la referencia…', disabled: true, onClick: () => {}, ayuda: 'Escucha: ahora viene la nota' }
   } else if (!respuesta) {
     accion = { label: '▶ Escuchar otra vez', onClick: () => reproducir(pregunta.sonido), ayuda: 'Toca tu respuesta arriba' }
   } else {
@@ -325,7 +344,8 @@ function Entrenador({ modo }) {
                   key={op.id}
                   type="button"
                   onClick={() => responder(op.id)}
-                  className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition active:scale-[0.98] ${claseOpcion(op.id, pregunta.item, respuesta)}`}
+                  disabled={limpiando}
+                  className={`min-h-16 disabled:opacity-50 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition active:scale-[0.98] ${claseOpcion(op.id, pregunta.item, respuesta)}`}
                 >
                   {op.label}
                 </button>
@@ -407,7 +427,8 @@ function Portada({ modo, datos }) {
           <Rich>
             Es un **juego**: suena una nota sin ninguna referencia y adivinas cuál es. Empiezas con 2 notas y se suma una
             cada vez que aciertas 8 de 10. En adultos el oído absoluto es muy difícil de adquirir, así que tómalo como un
-            reto divertido, no como una promesa.
+            reto divertido, no como una promesa. Entre nota y nota suenan unas notas al azar y un ruido corto: así la
+            nota anterior no te sirve de pista.
           </Rich>
         </p>
       )}

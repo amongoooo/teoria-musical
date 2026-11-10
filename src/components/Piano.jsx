@@ -9,6 +9,7 @@ import {
   releaseAll,
   startAudio,
 } from '../audio/engine.js'
+import { notaDesdeMidi, midi } from '../theory/notas.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -70,6 +71,8 @@ export default function Piano({
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
   const [offset, setOffset] = useState(0) // octava desplazada cuando no caben todas
   const [active, setActive] = useState(() => new Set())
+  // Marcadas normalizadas a sostenidos (así "Db4" resalta la tecla C#4).
+  const marcadasSet = new Set(marcadas.map((n) => notaDesdeMidi(midi(n))))
   const [status, setStatus] = useState(getStatus)
   const [audioOn, setAudioOn] = useState(isAudioRunning)
 
@@ -234,7 +237,7 @@ export default function Piano({
               className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
                 active.has(note)
                   ? 'bg-sky-200 text-sky-900'
-                  : marcadas.includes(note)
+                  : marcadasSet.has(note)
                     ? 'bg-amber-200 text-amber-900'
                     : 'bg-white text-zinc-400'
               }`}
@@ -254,7 +257,7 @@ export default function Piano({
             key={note}
             data-note={note}
             className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
-              active.has(note) ? 'bg-sky-500' : marcadas.includes(note) ? 'bg-amber-500' : 'bg-zinc-900'
+              active.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-amber-500' : 'bg-zinc-900'
             }`}
             style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
           />

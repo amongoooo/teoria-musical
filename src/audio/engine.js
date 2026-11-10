@@ -147,14 +147,15 @@ export function releaseAll() {
  *  - duracion: segundos que suena cada nota
  *  - intervalo: segundos entre notas en modo secuencia
  *  - velocidad: 0–1 (fuerza / volumen)
+ *  - retraso: segundos de espera antes de empezar
  * Devuelve los segundos que dura en total.
  */
-export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo = 0.45, velocidad = 0.8 } = {}) {
+export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo = 0.45, velocidad = 0.8, retraso = 0 } = {}) {
   const list = Array.isArray(notes) ? notes : [notes]
   startAudio()
   initPiano()
   const inst = instrument()
-  const t0 = Tone.now() + 0.05
+  const t0 = Tone.now() + 0.05 + retraso
   list.forEach((note, i) => {
     const t = modo === 'acorde' ? t0 : t0 + i * intervalo
     inst.triggerAttackRelease(note, duracion, t, velocidad)
@@ -195,4 +196,43 @@ export function toneSet(hz) {
 
 export function toneStop() {
   if (sine) sine.triggerRelease(Tone.now())
+}
+
+// ---------------------------------------------------------------------------
+// "Borrador" de oído: notas al azar + ruido corto, para que la nota anterior
+// no sirva de referencia (oído absoluto).
+// ---------------------------------------------------------------------------
+
+let ruido = null
+function getRuido() {
+  if (!ruido) {
+    const filtro = new Tone.Filter(2500, 'lowpass').toDestination()
+    ruido = new Tone.NoiseSynth({
+      noise: { type: 'pink' },
+      envelope: { attack: 0.01, decay: 0.15, sustain: 0.6, release: 0.2 },
+    }).connect(filtro)
+    ruido.volume.value = -16
+  }
+  return ruido
+}
+
+/**
+ * Toca una ráfaga de notas cromáticas al azar repartidas por todo el teclado y
+ * un soplo de ruido. Devuelve los segundos que hay que esperar antes de la
+ * siguiente nota (incluye un silencio para "limpiar" la memoria).
+ */
+export function limpiarOido({ cantidad = 7 } = {}) {
+  startAudio()
+  initPiano()
+  const inst = instrument()
+  const t0 = Tone.now() + 0.05
+  const paso = 0.09
+  for (let i = 0; i < cantidad; i++) {
+    const m = 36 + Math.floor(Math.random() * 49) // de Do2 a Do6
+    const nota = Tone.Frequency(m, 'midi').toNote()
+    inst.triggerAttackRelease(nota, 0.25, t0 + i * paso, 0.45 + Math.random() * 0.25)
+  }
+  const fin = cantidad * paso
+  getRuido().triggerAttackRelease(0.45, t0 + fin)
+  return fin + 0.45 + 0.9 // ráfaga + ruido + silencio
 }

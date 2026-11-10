@@ -169,6 +169,7 @@ export const modoAbsoluto = {
   acento: '#f59e0b',
   descripcion: 'Un juego: adivina la nota sin ninguna referencia.',
   pregunta: '¿Qué nota es?',
+  limpiar: true, // borrador de oído entre preguntas (ver limpiarOido en audio/engine.js)
   niveles: ORDEN_ABSOLUTO.length - 1,
   nombreNivel: (nivel) => `${nivel + 1} notas`,
   nuevosEnNivel: (nivel) =>
