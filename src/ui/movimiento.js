@@ -56,3 +56,12 @@ export const SUBE = {
 
 /** «Salto» de celebración (respuesta correcta, casilla conseguida). Uso: animate={ok ? SALTO : { scale: 1 }} */
 export const SALTO = { scale: [1, 1.05, 1] }
+
+/**
+ * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño):
+ *  - zonaMuerta: px iniciales que casi no mueven nada (curva suave).
+ *  - velocidad: px/ms a partir de los que un gesto corto cuenta como swipe.
+ *  - retorno: fracción del umbral que hay que regresar para deshacer un paso ya dado (1/5).
+ *  - goma: resistencia en los extremos.
+ */
+export const DESLIZAR = { zonaMuerta: 14, velocidad: 0.45, retorno: 0.2, goma: 0.35 }

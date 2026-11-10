@@ -55,7 +55,7 @@ src/
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
   pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
-  ui/                   # movimiento.js (resortes + ENTRA_DERECHA/SUBE/SALTO), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
+  ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
 .claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
@@ -82,7 +82,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~39 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
+**Avance: ~40 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -101,5 +101,6 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Lección 2.1 «Pulso y tempo»** (11 pasos, abre el módulo 2): pulso, tiempos, BPM, tempos por género, tap tempo y el beat básico (bombo 1 y 3, caja 2 y 4, hi-hat en corcheas). **Batería sintetizada** (`audio/bateria.js`, sin samples) que se puede usar como «nota» en todo (`playNotes`, `playPattern`, Piano Roll). Sonidos `{ groove, bpm, compases }`. Nuevo tipo de paso **`pulso`** (`exercises/Pulso.jsx`): **seguir** (tocar al pulso con medidor antes/tarde y compensación automática del retraso del dispositivo), **tempo** (tap tempo; medio/doble tempo cuenta como bien) y **explorar** (mismo beat a varios BPM). `iniciarRitmo()` programa el bucle con el reloj de audio (preciso aunque el navegador vaya lento). El Piano Roll acepta filas de batería.
 - ✅ **Módulo como camino de islas** (tipo Duolingo): `CaminoLecciones` vertical en zigzag en el celular y horizontal en pantallas anchas, tramos coloreados al completar, anillo con el avance de la lección actual, desbloqueo progresivo dentro del módulo. Al tocar una isla se abre una **hoja inferior** (`ui/Hoja.jsx`) con detalles y acciones: **Empezar**, **Continuar / Empezar de cero** (a medias), **Repetir lección** (completada), **Ir a la lección anterior** (bloqueada). `reiniciarLeccion(id)` en `progreso.js`.
+- ✅ **Camino según los bocetos del usuario**: insignia con el número del módulo al inicio, títulos encima (horizontal) o debajo (celular); al tocar una isla **crece en un círculo grande** con info, botones (Empezar / Continuar + Empezar de cero / Repetir; bloqueada → Ir a la anterior) y % de avance, y las demás se apartan. Con una abierta, **swipe lateral** pasa de isla. **Reglas de swipe para toda la app** en `ui/useDeslizar.js` + `DESLIZAR` (zona muerta, umbral que cambia sin soltar, retorno de 1/5, gesto rápido, goma en extremos); documentadas en la skill (sección 3b). La hoja inferior (`ui/Hoja.jsx`) queda disponible pero sin uso.
 
 **Siguiente tarea:** lección 2.2 «Compás y tiempos fuertes» (4/4 y 3/4, tiempo fuerte, contar «1 y 2 y», medio tiempo del trap), reutilizando `pulso` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

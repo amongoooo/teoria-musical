@@ -99,19 +99,35 @@ Reglas:
     su regla en `@media (prefers-reduced-motion: reduce)` de `src/index.css`.
 11. No uses vibración (`navigator.vibrate`): no funciona en iPhone y el usuario no la necesita.
 
+## 3b. Gestos (swipe)
+
+**Todos los deslizamientos de la app** usan el hook **`useDeslizar`** (`src/ui/useDeslizar.js`) con las constantes `DESLIZAR` de `movimiento.js`:
+
+1. El gesto empieza **en cuanto se presiona** (dedo o ratón); el contenido sigue al dedo.
+2. **Zona muerta** (`zonaMuerta`, 14 px): al principio casi no se mueve nada (curva cuadrática que se vuelve lineal, sin saltos). Un temblor del dedo no se nota.
+3. **Umbral X** (cada pantalla elige el suyo; islas: 150 px en ancho, 30 % del ancho en el celular): al superarlo **pasa a la siguiente sin soltar**, y el arrastre continúa desde ahí.
+4. **Retorno**: si después se regresa **1/5 de X** (`retorno`), vuelve a la anterior.
+5. **Gesto rápido**: si se suelta antes de X pero a ≥ `velocidad` (0,45 px/ms) en la misma dirección, también pasa.
+6. Al soltar, lo que quede vuelve a su sitio con `RESORTE.pantalla` heredando la velocidad del dedo.
+7. **Extremos**: resistencia tipo goma (`goma`).
+8. Si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll). El contenedor lleva `touch-action: pan-y`.
+9. Tras arrastrar, el «click» de soltar no activa botones.
+
 ## 4. Componentes
 
 - **`BarraAccion`** (`pages/Leccion.jsx`, también en Oído): barra fija abajo con feedback + ayuda + botón grande. Respeta `env(safe-area-inset-bottom)`.
 - **Cabecera de lección/entrenador**: pegajosa, botón ✕ (`Pulsable`, `size-11`), `BarraProgreso alAparecer={false}` con el acento, contador `tabular-nums`.
-- **`Volver`** (`src/ui/Volver.jsx`): enlace «‹ Inicio» de arriba en pantallas de nivel 1 (Módulo, panel de Oído). Área de 44 px y se hunde.
+- **`Volver`** (`src/ui/Volver.jsx`): píldora gris «‹ Inicio» (`bg-zinc-200/70`) arriba a la izquierda en pantallas de nivel 1 (Módulo, panel de Oído). Área de 44 px y se hunde.
+- **Cabecera de Módulo**: fila con `Volver` + barra de progreso del módulo centrada; debajo, título grande centrado (`text-4xl sm:text-6xl`). La pantalla de Módulo usa `max-w-5xl` para que el camino respire.
 - **Pantalla tipo lista** (Inicio, Módulo, panel de Oído, portada del entrenador): `motion.main` con `variants={lista}` y cada bloque con `variants={itemLista}`.
 - **Chips seleccionables** (niveles, dirección): `Pulsable` `min-h-12 border-2`; activo `bg-zinc-900 text-white`, inactivo `bg-white border-zinc-200`.
 - **Tarjeta de navegación**: `Pulsable tipo="tarjeta"`, `rounded-3xl border bg-white`, icono `size-12 rounded-2xl` a la izquierda, título `text-lg font-semibold`, subtítulo `text-sm text-zinc-500`, `›` gris a la derecha.
 - **Tarjeta destacada** (siguiente lección): fondo = acento oscurecido, texto blanco, botón blanco dentro.
 - **Contenido futuro** ("Próximamente"): muchos elementos → lista compacta dentro de un recuadro con borde punteado (Inicio);
   pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
-- **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo. Celular (< 560 px): vertical en zigzag; ancho: horizontal con ligera ondulación. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; es un relieve plano, no una sombra difusa). Estados: hecha (acento oscurecido + ✓), actual (acento oscurecido + número, anillo `claro(acento)` y arco de avance si está a medias), bloqueada (`#e4e4e7` + candado), próximamente (blanca con borde punteado y «…»). Camino: curva SVG punteada gris; los tramos ya recorridos se dibujan con el acento (`pathLength` con `RESORTE.suave`). Título y estado bajo cada isla sobre fondo `#fafafa` para que el camino pase por detrás. Las islas entran escalonadas con `RESORTE.pulsar`; si la actual queda fuera de la pantalla, se centra sola.
-- **Hoja inferior** (`src/ui/Hoja.jsx`): bottom sheet tipo iOS para detalles y confirmaciones (p. ej. al tocar una isla). Fondo `bg-black/40` con fundido; la hoja sube con `RESORTE.pantalla`, `rounded-t-3xl`, asa gris arriba y ✕ de 44 px; se cierra tocando el fondo, con Escape o **arrastrándola hacia abajo**. En pantallas anchas flota centrada (`max-w-lg`, `rounded-3xl`). Botones apilados a lo ancho: principal negro y secundario con borde. El primer botón lleva `data-foco` (recibe el foco al abrir).
+- **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo que empiezan con una **insignia** (cuadrado `rounded-3xl` de 72 px con el número del módulo). Celular (< 560 px): vertical en zigzag con el título **debajo**; ancho: horizontal ondulado con el título **encima**. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; relieve plano, no sombra difusa). Estados: hecha (acento oscurecido + ✓), actual (número + anillo `claro(acento)` con arco de avance), bloqueada (`#e4e4e7` + candado), próximamente (blanca, borde punteado, «…»). Camino: curva SVG punteada gris; los tramos hacia islas alcanzables se pintan con el acento. Títulos sobre fondo `#fafafa` para que el camino pase por detrás.
+- **Isla abierta**: al tocar una isla crece (escala desde 80 px, `RESORTE.pantalla`) hasta un círculo grande (≤ 320 px en el celular, ~340 en ancho) con número, título, minutos y pasos, botón blanco principal (▶ Empezar / Continuar / ↻ Repetir), «Empezar de cero» si está a medias y el **%** abajo; anillo exterior con el avance. Las demás islas se apartan con resorte (en horizontal se encogen hasta 0.55 y esconden el título si no caben). Con la isla abierta, **deslizar de lado** pasa a la anterior/siguiente (ver «Gestos»). Se cierra con ✕, tocando fuera o con Escape. Bloqueada: «Termina la X antes» + «Ir a la X».
+- **Hoja inferior** (`src/ui/Hoja.jsx`): bottom sheet tipo iOS disponible para detalles y confirmaciones (de momento sin uso: el módulo usa la isla abierta). Fondo `bg-black/40` con fundido; la hoja sube con `RESORTE.pantalla`, `rounded-t-3xl`, asa gris arriba y ✕ de 44 px; se cierra tocando el fondo, con Escape o **arrastrándola hacia abajo**. En pantallas anchas flota centrada (`max-w-lg`, `rounded-3xl`). Botones apilados a lo ancho: principal negro y secundario con borde. El primer botón lleva `data-foco` (recibe el foco al abrir).
 - **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
 - **Piano** (`components/Piano.jsx`): Pointer Events, `touch-action: none`, `compacto` en lecciones, 1 octava con ◀ ▶ en < 560 px.
 - **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4). En lecciones son `Pulsable tipo="tarjeta"` y la correcta da un `SALTO`.
@@ -140,6 +156,8 @@ Reglas:
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: (según bocetos del usuario) Camino con **insignia del módulo**, títulos encima en horizontal, **isla abierta** que crece en lugar de la hoja inferior, y **reglas de swipe** para toda la app (sección 3b, `useDeslizar`). `Volver` pasa a píldora gris; cabecera de Módulo con barra arriba y título centrado.
 
 - 2026-11-10: Módulo como **camino de islas** (vertical en el celular, horizontal en pantallas anchas) con desbloqueo progresivo dentro del módulo, y **hoja inferior** al tocar una isla (Empezar / Continuar / Empezar de cero / Repetir; bloqueada → ir a la anterior). Se admite el «labio» sólido bajo las islas como relieve táctil.
 
