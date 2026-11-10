@@ -20,11 +20,18 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
-// «Tilt» al chocar con un extremo (isla abierta) o al arrastrar la barra de puntitos (px, grados, ms).
-// En la barra, el tilt y el desplazamiento lateral dependen de lo lejos del centro que esté el dedo
-// (f = −1 borde izquierdo … 0 centro … +1 borde derecho); el desplazamiento vertical es siempre igual.
-// `minimo`: lo que queda del desplazamiento lateral en el centro (para que también ahí se note).
-const TILT = { x: 12, grados: 3, vuelve: 250, barra: { x: 10, y: 8, grados: 3, minimo: 0.35 } }
+// «Tilt» de la isla abierta al chocar con un extremo del camino (px, grados, ms).
+const TILT = { x: 12, grados: 3, vuelve: 250 }
+// Barra de puntitos (dos animaciones):
+//  - FLOTA: mientras el dedo está apoyado, la barra lo sigue con resistencia (como si flotara): en
+//    vertical siempre; en horizontal solo si el dedo sale más allá del primer o del último puntito.
+//    Se acerca a `max` px sin llegar nunca; al soltar vuelve a su sitio con RESORTE.suave.
+//  - MATRACA: cada vez que el dedo pasa a otro puntito, la barra da un golpe de inclinación hacia el lado
+//    del movimiento, más fuerte cuanto más lejos está el dedo del eje de la barra (por arriba gira en un
+//    sentido, por abajo en el otro; sobre el eje casi nada). `distancia`: px desde el eje para la fuerza
+//    máxima. La inclinación vuelve a 0 a los `vuelve` ms. Contra un extremo también suena (con `minimo`).
+const FLOTA = { factor: 0.5, max: 14 }
+const MATRACA = { grados: 5, distancia: 56, vuelve: 250, minimo: 0.35 }
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
@@ -178,23 +185,17 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   }
   useEffect(() => () => clearTimeout(tilt.current), [])
 
-  // La barra de puntitos tampoco se mueve: al arrastrar sobre ella hacia arriba/abajo (o de lado cuando
-  // ya no hay más islas) hace el mismo «tilt» + desplazamiento corto hacia el dedo y vuelve a los 0,25 s.
-  const pildora = useRef(null)
+  // Barra de puntitos: flota con el dedo (flotaX / flotaY) y hace de matraca (giro) al pasar de puntito.
+  const flotaX = useMotionValue(0)
+  const flotaY = useMotionValue(0)
+  const giro = useMotionValue(0)
   const tiltBarra = useRef(null)
-  const dedoBarra = useRef(null) // última x del dedo sobre la barra
-  /** −1 (borde izquierdo de la barra) … 0 (centro) … +1 (borde derecho), según la x del dedo. */
-  const lejosDelCentro = (x) => {
-    const r = pildora.current?.getBoundingClientRect()
-    if (!r || x == null) return 0
-    return limitar((x - (r.left + r.width / 2)) / (r.width / 2), -1, 1)
-  }
-  const inclinarBarra = ({ x = 0, y = 0, rotate = 0 }) => {
-    const el = pildora.current
-    if (!el || reducir) return
+  const fuerzaBarra = useRef(0) // −1…1: dónde está el dedo respecto al eje de la barra (+ arriba)
+  const matraca = (dir, fuerza) => {
+    if (reducir || !dir) return
     clearTimeout(tiltBarra.current)
-    animate(el, { x, y, rotate }, RESORTE.pulsar)
-    tiltBarra.current = setTimeout(() => animate(el, { x: 0, y: 0, rotate: 0 }, RESORTE.suave), TILT.vuelve)
+    animate(giro, dir * fuerza * MATRACA.grados, RESORTE.pulsar)
+    tiltBarra.current = setTimeout(() => animate(giro, 0, RESORTE.suave), MATRACA.vuelve)
   }
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
@@ -210,11 +211,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     eje: false,
     onPaso: paso,
     puede,
-    // Contra un extremo: se empuja hacia el dedo; cuanto más lejos del centro, más se inclina y se desplaza.
+    // Contra un extremo: un golpe de matraca hacia el dedo (con un mínimo, para que se note también sobre el eje).
     alTope: (lado) => {
-      const f = Math.abs(lejosDelCentro(dedoBarra.current))
-      const peso = TILT.barra.minimo + (1 - TILT.barra.minimo) * f
-      inclinarBarra({ x: lado * TILT.barra.x * peso, rotate: lado * TILT.barra.grados * f })
+      const f = fuerzaBarra.current
+      matraca(lado, f >= 0 ? Math.max(f, MATRACA.minimo) : Math.min(f, -MATRACA.minimo))
     },
     // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
     origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
@@ -301,7 +301,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     cont.style.height = `${lerp(C.alto, lerp(A.alto, B.alto, f), a)}px`
     for (let s = 0; s < n; s++) {
       const d = curva(pos[s], pos[s + 1], vertical)
-      if (els.gris[s]) els.gris[s].style.opacity = String(limitar((td - DESPLIEGUE.espera - s * DESPLIEGUE.entre) / DESPLIEGUE.dura * 3, 0, 1))
+      if (els.gris[s]) els.gris[s].style.opacity = String(limitar(((td - DESPLIEGUE.espera - s * DESPLIEGUE.entre) / DESPLIEGUE.dura) * 3, 0, 1))
       els.gris[s]?.setAttribute('d', d)
       els.color[s]?.setAttribute('d', d)
     }
@@ -479,15 +479,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                         {l.esRetos ? (
                           <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i)} />
                         ) : (
-                        <Isla
-                          leccion={l}
-                          estado={estado}
-                          esActual={i === actual}
-                          avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
-                          acento={modulo.acento}
-                          descripcion={texto}
-                          onClick={() => irA(i)}
-                        />
+                          <Isla
+                            leccion={l}
+                            estado={estado}
+                            esActual={i === actual}
+                            avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
+                            acento={modulo.acento}
+                            descripcion={texto}
+                            onClick={() => irA(i)}
+                          />
                         )}
                       </div>
                       <span
@@ -495,7 +495,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                         className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-fondo px-2 py-0.5"
                         style={{ opacity: 0, ...(vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }) }}
                       >
-                        <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' ? 'text-zinc-500' : 'text-zinc-900'}`}>{l.titulo}</span>
+                        <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                          {l.titulo}
+                        </span>
                         {vertical && (
                           <span className={`text-center text-sm font-semibold ${i === actual ? '' : 'text-zinc-500'}`} style={i === actual ? { color: tinta(modulo.acento) } : undefined}>
                             {texto}
@@ -532,11 +534,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
               guardar={guardar}
               handlers={puntos.handlers}
               onIr={irA}
-              pildora={pildora}
-              dedo={dedoBarra}
-              // Arriba/abajo: siempre se desplaza igual; se inclina hacia el lado del dedo, proporcional a su
-              // distancia al centro de la barra (en el centro solo baja o sube, sin inclinarse).
-              onVertical={(dy, x) => inclinarBarra({ y: Math.sign(dy) * TILT.barra.y, rotate: lejosDelCentro(x) * Math.sign(dy) * TILT.barra.grados })}
+              flotaX={flotaX}
+              flotaY={flotaY}
+              giro={giro}
+              fuerza={fuerzaBarra}
+              reducir={reducir}
+              onMatraca={matraca}
             />
           )}
         </AnimatePresence>,
@@ -553,14 +556,17 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * resorte y respeta la zona segura. Tocar un puntito va a esa isla; arrastrar por encima pasa
  * de isla en isla con las mismas reglas del swipe (una isla cada vez que se cruza un puntito).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, pildora, dedo, onVertical }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, flotaX, flotaY, giro, fuerza, reducir, onMatraca }) {
   const sep = DESLIZAR.puntitos.separacion
-  // Arrastre vertical sobre la barra: avisa una vez por sentido (arriba / abajo) con la x del dedo,
-  // para inclinarla hacia ese lado. Además guarda la x del dedo (tilt en los extremos).
-  const vert = useRef(null)
+  const pildora = useRef(null)
+  const g = useRef(null) // gesto sobre la barra
   const { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, ...resto } = handlers
-  const fin = (e, f) => {
-    vert.current = null
+  const soltar = (e, f) => {
+    if (g.current?.id === e.pointerId) {
+      g.current = null
+      animate(flotaX, 0, RESORTE.suave)
+      animate(flotaY, 0, RESORTE.suave)
+    }
     f?.(e)
   }
   return (
@@ -569,71 +575,119 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
       data-puntitos
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pt-12"
       // Lo que queda debajo de la barra se desvanece hacia el fondo (así se lee que es otra capa).
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)', background: 'linear-gradient(to top, var(--color-fondo) 40%, color-mix(in oklab, var(--color-fondo) 70%, transparent) 70%, transparent)' }}
+      style={{
+        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+        background: 'linear-gradient(to top, var(--color-fondo) 40%, color-mix(in oklab, var(--color-fondo) 70%, transparent) 70%, transparent)',
+      }}
       initial={{ y: '120%' }}
       animate={{ y: 0 }}
       exit={{ y: '120%' }}
       transition={RESORTE.pantalla}
     >
-      <div
-        role="group"
-        aria-label="Lecciones del módulo"
-        ref={pildora}
-        className="pointer-events-auto flex select-none items-center rounded-full border border-zinc-200 bg-white/95 px-3 shadow-sm backdrop-blur"
-        style={{ touchAction: 'none' }}
-        {...resto}
-        onPointerDown={(e) => {
-          vert.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dir: 0 }
-          dedo.current = e.clientX
-          onPointerDown?.(e)
-        }}
-        onPointerMove={(e) => {
-          dedo.current = e.clientX
-          onPointerMove?.(e)
-          const v = vert.current
-          if (!v || v.id !== e.pointerId) return
-          const dx = e.clientX - v.x0
-          const dy = e.clientY - v.y0
-          const dir = Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) ? Math.sign(dy) : 0
-          if (dir && dir !== v.dir) onVertical(dy, e.clientX)
-          if (Math.abs(dy) < 6) v.dir = 0
-          else if (dir) v.dir = dir
-        }}
-        onPointerUp={(e) => fin(e, onPointerUp)}
-        onPointerCancel={(e) => fin(e, onPointerCancel)}
-      >
-        {lecciones.map((l, i) => {
-          const hecha = estados[i] === 'hecha'
-          // Islas aún no desbloqueadas (o sin contenido): puntito gris.
-          const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
-          return (
-            <button
-              key={l.id}
-              type="button"
-              data-punto={i}
-              onClick={() => onIr(i)}
-              aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
-              aria-current={i === abierta ? 'true' : undefined}
-              className="grid h-14 place-items-center"
-              style={{ width: sep }}
-            >
-              <span
-                ref={guardar('punto', i)}
-                className={`block ${l.esRetos ? 'rounded-[5px]' : 'rounded-full'}`}
-                style={{
-                  width: PUNTO,
-                  height: PUNTO,
-                  backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha ? oscuro(acento) : acento,
-                  opacity: cerrada || hecha ? 1 : 0.35,
-                  transform: `scale(${i === abierta ? 1 : 0.5})`,
-                }}
-              />
-            </button>
-          )
-        })}
-      </div>
+      {/* Capa que flota con el dedo */}
+      <motion.div style={{ x: flotaX, y: flotaY }}>
+        {/* Capa de la matraca (giro) */}
+        <motion.div
+          role="group"
+          aria-label="Lecciones del módulo"
+          ref={pildora}
+          className="pointer-events-auto flex select-none items-center rounded-full border border-zinc-200 bg-white/95 px-3 shadow-sm backdrop-blur"
+          style={{ touchAction: 'none', rotate: giro }}
+          {...resto}
+          onPointerDown={(e) => {
+            const r = pildora.current.getBoundingClientRect()
+            const centros = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
+              const c = b.getBoundingClientRect()
+              return c.left + c.width / 2
+            })
+            flotaX.stop()
+            flotaY.stop()
+            g.current = {
+              id: e.pointerId,
+              // Desde donde ya estaba (si aún volvía a su sitio), sin saltos.
+              y0: e.clientY - desflotar(flotaY.get()),
+              eje: r.top + r.height / 2 - flotaY.get(),
+              centros,
+              punto: masCercano(centros, e.clientX),
+            }
+            fuerza.current = limitar((g.current.eje - e.clientY) / MATRACA.distancia, -1, 1)
+            onPointerDown?.(e)
+          }}
+          onPointerMove={(e) => {
+            const s = g.current
+            if (s && s.id === e.pointerId) fuerza.current = limitar((s.eje - e.clientY) / MATRACA.distancia, -1, 1)
+            onPointerMove?.(e)
+            if (!s || s.id !== e.pointerId) return
+            if (!reducir) {
+              // Flota: sigue al dedo en vertical (con resistencia) y en horizontal solo fuera de los puntitos.
+              flotaY.set(flotar(e.clientY - s.y0))
+              const fuera = e.clientX - limitar(e.clientX, s.centros[0], s.centros[s.centros.length - 1])
+              flotaX.set(flotar(fuera))
+            }
+            // Matraca: al pasar a otro puntito, golpe de inclinación hacia donde va el dedo.
+            const p = masCercano(s.centros, e.clientX)
+            if (p !== s.punto) {
+              onMatraca(Math.sign(p - s.punto), fuerza.current)
+              s.punto = p
+            }
+          }}
+          onPointerUp={(e) => soltar(e, onPointerUp)}
+          onPointerCancel={(e) => soltar(e, onPointerCancel)}
+        >
+          {lecciones.map((l, i) => {
+            const hecha = estados[i] === 'hecha'
+            // Islas aún no desbloqueadas (o sin contenido): puntito gris.
+            const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
+            return (
+              <button
+                key={l.id}
+                type="button"
+                data-punto={i}
+                onClick={() => onIr(i)}
+                aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
+                aria-current={i === abierta ? 'true' : undefined}
+                className="grid h-14 place-items-center"
+                style={{ width: sep }}
+              >
+                <span
+                  ref={guardar('punto', i)}
+                  className={`block ${l.esRetos ? 'rounded-[5px]' : 'rounded-full'}`}
+                  style={{
+                    width: PUNTO,
+                    height: PUNTO,
+                    backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha ? oscuro(acento) : acento,
+                    opacity: cerrada || hecha ? 1 : 0.35,
+                    transform: `scale(${i === abierta ? 1 : 0.5})`,
+                  }}
+                />
+              </button>
+            )
+          })}
+        </motion.div>
+      </motion.div>
     </motion.div>
   )
+}
+
+/** Desplazamiento de la barra que flota: sigue al dedo cada vez más duro, sin pasar de FLOTA.max. */
+function flotar(d) {
+  const e = Math.abs(d) * FLOTA.factor
+  return Math.sign(d) * (e / (1 + e / FLOTA.max))
+}
+
+/** Inversa de flotar(): cuánto dedo hace falta para ese desplazamiento. */
+function desflotar(v) {
+  const a = Math.min(Math.abs(v), FLOTA.max * 0.99)
+  return (Math.sign(v) * (a / (1 - a / FLOTA.max))) / FLOTA.factor
+}
+
+/** Índice del valor de `centros` más cercano a x. */
+function masCercano(centros, x) {
+  let mejor = 0
+  centros.forEach((c, i) => {
+    if (Math.abs(c - x) < Math.abs(centros[mejor] - x)) mejor = i
+  })
+  return mejor
 }
 
 /** Índice del puntito más cercano a la x del dedo (o null si no hay barra). */
@@ -660,9 +714,7 @@ function centroPunto(puntos, i) {
 
 /** Curva del camino entre dos puntos (vertical: en S de arriba abajo; horizontal: de lado). */
 function curva(a, b, vertical) {
-  return vertical
-    ? `M ${a.x} ${a.y} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y}`
-    : `M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`
+  return vertical ? `M ${a.x} ${a.y} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y}` : `M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`
 }
 
 /** Altura (dentro del camino) del centro de la isla abierta para la posición continua p. */
@@ -826,10 +878,30 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   const tema = lleno ? 'color' : estado === 'bloqueada' ? 'gris' : 'blanco'
 
   let detalle
-  if (estado === 'nueva') detalle = <><IconoReloj /> ~{leccion.minutos} min · {pasos} pasos</>
-  else if (estado === 'empezada') detalle = <>Paso {p.paso + 1} de {pasos} · {porcentaje} % · ~{leccion.minutos} min</>
-  else if (estado === 'hecha') detalle = <><IconoCheck className="size-4" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}</>
-  else if (estado === 'bloqueada') detalle = <><IconoCandado className="size-4" /> Termina la {anterior?.id} antes</>
+  if (estado === 'nueva')
+    detalle = (
+      <>
+        <IconoReloj /> ~{leccion.minutos} min · {pasos} pasos
+      </>
+    )
+  else if (estado === 'empezada')
+    detalle = (
+      <>
+        Paso {p.paso + 1} de {pasos} · {porcentaje} % · ~{leccion.minutos} min
+      </>
+    )
+  else if (estado === 'hecha')
+    detalle = (
+      <>
+        <IconoCheck className="size-4" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}
+      </>
+    )
+  else if (estado === 'bloqueada')
+    detalle = (
+      <>
+        <IconoCandado className="size-4" /> Termina la {anterior?.id} antes
+      </>
+    )
   else detalle = <>Llega pronto</>
 
   return (
@@ -907,10 +979,7 @@ function Globo({ tema, acento, onCerrar, children }) {
         transformOrigin: '50% 0',
       }}
     >
-      <div
-        className={`relative flex flex-col gap-3 rounded-3xl p-5 ${tema === 'color' ? 'text-blanco' : 'text-zinc-900'}`}
-        style={{ backgroundColor: fondo, border: borde }}
-      >
+      <div className={`relative flex flex-col gap-3 rounded-3xl p-5 ${tema === 'color' ? 'text-blanco' : 'text-zinc-900'}`} style={{ backgroundColor: fondo, border: borde }}>
         {/* Piquito que apunta a la isla */}
         <span
           aria-hidden
@@ -933,13 +1002,7 @@ function Globo({ tema, acento, onCerrar, children }) {
 /** Botón a lo ancho dentro del globo: principal (relleno) o secundario (con borde). */
 function BotonGlobo({ tema, acento, principal = false, className = '', ...props }) {
   const enColor = tema === 'color'
-  const clase = principal
-    ? enColor
-      ? 'bg-blanco'
-      : 'bg-zinc-900 text-white'
-    : enColor
-      ? 'border-2 border-blanco/35 text-blanco active:bg-blanco/10'
-      : 'border-2 border-zinc-300 text-zinc-800'
+  const clase = principal ? (enColor ? 'bg-blanco' : 'bg-zinc-900 text-white') : enColor ? 'border-2 border-blanco/35 text-blanco active:bg-blanco/10' : 'border-2 border-zinc-300 text-zinc-800'
   return (
     <Pulsable
       {...props}
@@ -957,7 +1020,11 @@ function IslaRetos({ acento, completo, descripcion, onClick }) {
         onClick={onClick}
         aria-label={`Retos del módulo. ${descripcion}`}
         className={`grid size-full place-items-center rounded-full ${completo ? 'text-blanco' : 'border-[3px]'}`}
-        style={completo ? { backgroundColor: oscuro(acento), boxShadow: `0 6px 0 ${labio(acento)}` } : { backgroundColor: 'var(--color-white)', borderColor: acento, color: tinta(acento), boxShadow: `0 6px 0 ${claro(acento)}` }}
+        style={
+          completo
+            ? { backgroundColor: oscuro(acento), boxShadow: `0 6px 0 ${labio(acento)}` }
+            : { backgroundColor: 'var(--color-white)', borderColor: acento, color: tinta(acento), boxShadow: `0 6px 0 ${claro(acento)}` }
+        }
       >
         <IconoTrofeo />
       </Pulsable>
@@ -1016,12 +1083,18 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
               const hecha = progreso.lecciones[r.clave]?.completada
               const contenido = (
                 <>
-                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-base font-bold ${r.hecho ? 'bg-emerald-600 text-blanco' : 'bg-zinc-100 text-zinc-600'}`}>{r.hecho ? '✓' : r.clave}</span>
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-base font-bold ${r.hecho ? 'bg-emerald-600 text-blanco' : 'bg-zinc-100 text-zinc-600'}`}>
+                    {r.hecho ? '✓' : r.clave}
+                  </span>
                   <span className="flex flex-1 flex-col">
                     <span className="text-base font-semibold leading-snug text-zinc-900">{r.titulo}</span>
                     <span className="text-sm text-zinc-500">{r.hecho ? 'Hecho' : hecha ? 'Pendiente' : `Termina la lección ${r.clave} para llegar`}</span>
                   </span>
-                  {hecha && <span aria-hidden className="text-2xl text-zinc-400">›</span>}
+                  {hecha && (
+                    <span aria-hidden className="text-2xl text-zinc-400">
+                      ›
+                    </span>
+                  )}
                 </>
               )
               const clase = 'flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-left'
