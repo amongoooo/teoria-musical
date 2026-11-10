@@ -47,6 +47,10 @@ Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`).
 | `tocar` | `components/exercises/TocaEnPiano.jsx` | Responder tocando el piano |
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
 | `reto` | `components/exercises/RetoFL.jsx` | Reto en FL Studio con "Lo hice" y reflexión |
+| `pianoroll` | `components/exercises/PianoRollEjercicio.jsx` | Mini Piano Roll táctil: dibujar, copiar, velocity |
+
+`texto` y las rondas de `elegir` aceptan además `roll: { …config, notas }` para mostrar un
+Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregunta.
 
 ### `elegir`
 
@@ -96,6 +100,37 @@ Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`).
   reflexion: '¿Qué sentiste…?',
 }
 ```
+
+### `pianoroll` (y `roll`)
+
+Configuración del roll (componente `components/PianoRoll.jsx`):
+
+```js
+roll: {
+  rango: ['C4', 'C5'], soloBlancas: true,  // filas de la más aguda (arriba) a la más grave
+  // filas: ['C5', 'B4', …]                // o la lista exacta de filas
+  columnas: 8, porTiempo: 2, bpm: 100,     // 8 casillas = 4 tiempos (cada casilla, medio tiempo)
+  etiquetas: 'app' | 'fl' | 'ambas',       // 'fl' = nombres de FL Studio (Do4 → C5)
+  alternar: true,                          // selector «Esta app / FL Studio»
+  velocity: true,                          // carril de velocity abajo
+  notas: [{ nota: 'C4', inicio: 0, duracion: 2, velocity: 0.8 }],  // inicio/duración en casillas
+}
+```
+
+Objetivos del paso `pianoroll`:
+
+```js
+objetivo: { tipo: 'libre', cantidad: 4, mensaje: '…' }   // dibujar N notas
+objetivo: { tipo: 'copiar', notas: [...], fantasma: true, instruccion: '…', pista: '…', explicacion: '…' }
+  // dibujar exactamente esas notas (fantasma: contornos punteados de guía).
+  // Al fallar explica qué falta/sobra/dura distinto; tras 2 fallos ofrece «Ver la solución».
+objetivo: { tipo: 'velocity', fuertes: [0, 4], explicacion: '…' }
+  // con las notas de roll.notas: subir la velocity de las que empiezan en esas casillas (≥ 0.75)
+  // y dejar las demás por debajo de la mitad (≤ 0.55). Solo se edita la velocity.
+```
+
+Gestos (pensados para el dedo): tocar casilla vacía = crear nota; arrastrar a la derecha =
+alargarla; tocar una nota = borrarla; deslizar arriba/abajo en el carril «Vel.» = velocity.
 
 ## Crear un tipo de paso nuevo
 

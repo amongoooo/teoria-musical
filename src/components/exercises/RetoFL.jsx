@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { getReto, guardarReto, useProgreso } from '../../progress/progreso.js'
+import { motion } from 'motion/react'
+import { SALTO } from '../../ui/movimiento.js'
+import Pulsable from '../../ui/Pulsable.jsx'
 import Nota from '../pasos/Nota.jsx'
 import Rich from '../Rich.jsx'
 
@@ -41,26 +44,29 @@ export default function RetoFL({ paso, leccionId }) {
           const ok = marcados.has(i)
           return (
             <li key={i}>
-              <button
-                type="button"
+              <Pulsable
+                tipo="tarjeta"
                 onClick={() => alternar(i)}
                 aria-pressed={ok}
-                className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-base leading-relaxed transition ${
+                className={`flex min-h-14 w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-base leading-relaxed transition-colors duration-200 ${
                   ok ? 'border-emerald-200 bg-emerald-50 text-zinc-500' : 'border-zinc-200 bg-white text-zinc-700'
                 }`}
               >
-                <span
+                <motion.span
                   aria-hidden
-                  className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold ${
-                    ok ? 'bg-emerald-500 text-white' : 'bg-zinc-100 text-zinc-600'
+                  initial={false}
+                  animate={ok ? SALTO : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors duration-200 ${
+                    ok ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-600'
                   }`}
                 >
                   {ok ? '✓' : i + 1}
-                </span>
+                </motion.span>
                 <span>
                   <Rich>{texto}</Rich>
                 </span>
-              </button>
+              </Pulsable>
             </li>
           )
         })}
@@ -84,15 +90,17 @@ export default function RetoFL({ paso, leccionId }) {
         </label>
       )}
 
-      <button
-        type="button"
-        onClick={() => guardarReto(leccionId, { hecho: !reto.hecho })}
-        className={`min-h-14 rounded-2xl border-2 px-5 text-lg font-semibold transition active:scale-[0.99] ${
-          reto.hecho ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-zinc-900 bg-white text-zinc-900'
-        }`}
-      >
-        {reto.hecho ? '✓ ¡Reto hecho!' : 'Lo hice'}
-      </button>
+      <motion.div initial={false} animate={reto.hecho ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
+        <Pulsable
+          onClick={() => guardarReto(leccionId, { hecho: !reto.hecho })}
+          aria-pressed={Boolean(reto.hecho)}
+          className={`min-h-14 w-full rounded-2xl border-2 px-5 text-lg font-semibold transition-colors duration-200 ${
+            reto.hecho ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-zinc-900 bg-white text-zinc-900'
+          }`}
+        >
+          {reto.hecho ? '✓ ¡Reto hecho!' : 'Lo hice'}
+        </Pulsable>
+      </motion.div>
       <p className="-mt-3 text-center text-sm text-zinc-500">Puedes continuar y hacer el reto más tarde.</p>
     </div>
   )

@@ -40,10 +40,11 @@ src/
     modulo-01/leccion-1-1.js
   components/
     Piano.jsx           # Piano táctil (multitouch, glissando, octavas, teclas marcadas)
+    PianoRoll.jsx       # Mini Piano Roll táctil (dibujar/alargar/borrar notas, velocity, nombres app/FL)
     BotonSonido.jsx     # Botón que reproduce un sonido del contenido
     Rich.jsx            # Texto con **negritas**
     pasos/              # Pasos no interactivos: PasoTexto, PasoSiente, Nota
-    exercises/          # EscuchaElige, TocaEnPiano, ExploraFrecuencia, RetoFL
+    exercises/          # EscuchaElige, TocaEnPiano, ExploraFrecuencia, RetoFL, PianoRollEjercicio, Rondas
   audio/engine.js       # Tone.js: initPiano, noteOn/Off, playNotes, playFrequency, toneStart/Set/Stop
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
@@ -51,7 +52,7 @@ src/
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
   pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
-  ui/                   # movimiento.js (resortes), Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
+  ui/                   # movimiento.js (resortes + ENTRA_DERECHA/SUBE/SALTO), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
 .claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
@@ -77,7 +78,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~29 %**
+**Avance: ~34 %** (módulo 1 completo)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -91,4 +92,7 @@ public/samples/         # Samples de audio propios
 - ✅ **Diseño tipo iOS (primera parte)**: revisión de diseño a 375 px; skill de diseño del proyecto; `motion` con resortes; transiciones entre pantallas según la dirección (App.jsx, `MotionConfig reducedMotion="user"`); en Inicio entrada escalonada, tarjeta destacada con contraste corregido (acento oscurecido), módulos «Próximamente» compactos y barras animadas; en el visor de lecciones pasos que entran con resorte, barra de progreso con resorte, feedback con título en su línea y todos los botones con `Pulsable`. Pendientes de la revisión en la sección 7 de la skill.
 - ✅ **Diseño tipo iOS (segunda parte)**: Módulo y Entrenamiento de oído (panel, portada y entrenador) con la skill: `Volver` de 44 px, `BarraProgreso` con resorte (también mini barra en lecciones a medias), entrada escalonada, todo lo tocable con `Pulsable`, preguntas que entran desde la derecha, la opción correcta da un salto, días de racha que aparecen uno a uno, contraste corregido (sin `text-xs` ni `zinc-400` en texto, color con `oscuro()`), feedback de oído absoluto sin repetir la nota.
 
-**Siguiente tarea:** lección 1.4 «Leer el Piano Roll» (cierra el módulo 1), y quizá una prueba rápida al inicio del módulo para saltar lo que ya se domina.
+- ✅ **Lección 1.4 «Leer el Piano Roll»** (13 pasos, cierra el módulo 1): filas = notas, columnas = tiempo, duración, velocity y la octava de FL (Do4 de la app = **C5** en FL; regla «FL = app + 1»). Nuevo tipo de paso **`pianoroll`** con el **mini Piano Roll** táctil (`components/PianoRoll.jsx`): tocar = crear, arrastrar = alargar, tocar nota = borrar, carril de velocity, Reproducir con cabezal, nombres app/FL. Objetivos `libre`, `copiar` (con notas fantasma, explica qué falta/sobra y ofrece la solución tras 2 fallos) y `velocity` (acentos). `texto` y `elegir` aceptan `roll` de solo lectura. `playPattern()` en `engine.js`.
+- ✅ Ejercicios con la skill (pendiente de la sección 7): `Pulsable` en todas las opciones, tarjetas, retos, `BotonSonido` y flechas del Piano; preguntas que entran con `ENTRA_DERECHA`, `SALTO` al acertar, `Rondas` animadas; sin `animate-entrada`. Resumen de la pantalla final con entrada escalonada.
+
+**Siguiente tarea:** prueba rápida al inicio del módulo 1 (saltar lo que ya se domina) o empezar el **módulo 2 «Ritmo y groove»** con la lección 2.1 «Pulso y tempo» (reutilizando el mini Piano Roll como secuenciador de batería).

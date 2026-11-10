@@ -163,6 +163,24 @@ export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo
   return modo === 'acorde' ? duracion : (list.length - 1) * intervalo + duracion
 }
 
+/**
+ * Toca un patrón de Piano Roll: [{ nota, inicio, duracion, velocity }] con
+ * `inicio` y `duracion` en casillas. `paso` = segundos por casilla.
+ * Devuelve la duración total en segundos.
+ */
+export function playPattern(notas, { paso = 0.3 } = {}) {
+  startAudio()
+  initPiano()
+  const inst = instrument()
+  const t0 = Tone.now() + 0.05
+  let fin = 0
+  notas.forEach(({ nota, inicio, duracion = 1, velocity = 0.8 }) => {
+    inst.triggerAttackRelease(nota, Math.max(0.1, duracion * paso * 0.95), t0 + inicio * paso, velocity)
+    fin = Math.max(fin, inicio + duracion)
+  })
+  return fin * paso
+}
+
 // Onda pura (seno) para demostrar frecuencias en Hz.
 let sine = null
 function getSine() {

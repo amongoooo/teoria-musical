@@ -1,9 +1,15 @@
+import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { reproducir } from '../../audio/sonido.js'
+import { getModulo } from '../../content/index.js'
 import { frecuencia, hz, nombre } from '../../theory/notas.js'
+import { ENTRA_DERECHA, SALTO } from '../../ui/movimiento.js'
+import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
 import BotonSonido from '../BotonSonido.jsx'
+import PianoRoll, { conIds } from '../PianoRoll.jsx'
 import Rich from '../Rich.jsx'
+import Rondas from './Rondas.jsx'
 
 const LETRAS = ['A', 'B', 'C', 'D']
 
@@ -27,8 +33,9 @@ function mezclar(indices) {
  *  - mezclar: true para ordenar los sonidos al azar
  *  - mostrarNotas: true para enseñar nota y Hz de cada sonido al responder
  *  - explicacion: texto que se muestra al comprobar
+ *  - roll: { ...config del PianoRoll, notas } para leer un Piano Roll (solo lectura)
  */
-export default function EscuchaElige({ paso, setAccion, siguiente, completar }) {
+export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [orden] = useState(() =>
@@ -40,6 +47,8 @@ export default function EscuchaElige({ paso, setAccion, siguiente, completar }) 
   const [seleccion, setSeleccion] = useState(null)
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
   const [aciertos, setAciertos] = useState(0)
+  const [notasRoll] = useState(() => rondas.map((ronda) => (ronda.roll ? conIds(ronda.roll.notas) : null)))
+  const color = getModulo(Number(String(leccionId).split('.')[0]))?.acento
 
   const ronda = rondas[r]
   const sonidos = orden[r].map((i) => ronda.sonidos[i])
@@ -84,20 +93,12 @@ export default function EscuchaElige({ paso, setAccion, siguiente, completar }) 
 
   return (
     <div className="flex flex-col gap-6">
-      {rondas.length > 1 && (
-        <div className="flex items-center gap-2" aria-label={`Ronda ${r + 1} de ${rondas.length}`}>
-          {rondas.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2 flex-1 rounded-full ${i < r ? 'bg-zinc-800' : i === r ? 'bg-zinc-400' : 'bg-zinc-200'}`}
-            />
-          ))}
-        </div>
-      )}
+      <Rondas total={rondas.length} actual={r} hecha={respondida} />
 
-      <p key={r} className="animate-entrada text-xl font-semibold leading-snug sm:text-2xl">
-        {ronda.pregunta}
-      </p>
+      <motion.div key={r} {...ENTRA_DERECHA} className="flex flex-col gap-4">
+        <p className="text-xl font-semibold leading-snug sm:text-2xl">{ronda.pregunta}</p>
+        {ronda.roll && <PianoRoll roll={ronda.roll} notas={notasRoll[r]} color={color} />}
+      </motion.div>
 
       {tarjetasSonOpciones ? (
         <div className="grid grid-cols-2 gap-3">
@@ -126,15 +127,17 @@ export default function EscuchaElige({ paso, setAccion, siguiente, completar }) 
             {ronda.opciones.map((op, i) => {
               const estado = respondida ? (i === correcta ? 'bien' : i === seleccion ? 'mal' : null) : null
               return (
-                <button
-                  key={`${r}-${i}`}
-                  type="button"
-                  disabled={respondida}
-                  onClick={() => setSeleccion(i)}
-                  className={`min-h-14 rounded-2xl border-2 px-5 py-3 text-left text-lg font-medium transition active:scale-[0.99] ${claseEstado(estado, seleccion === i)}`}
-                >
-                  <Rich>{op}</Rich>
-                </button>
+                <motion.div key={`${r}-${i}`} animate={estado === 'bien' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
+                  <Pulsable
+                    tipo="tarjeta"
+                    disabled={respondida}
+                    onClick={() => setSeleccion(i)}
+                    aria-pressed={seleccion === i}
+                    className={`min-h-14 w-full rounded-2xl border-2 px-5 py-3 text-left text-lg font-medium transition-colors duration-200 ${claseEstado(estado, seleccion === i)}`}
+                  >
+                    <Rich>{op}</Rich>
+                  </Pulsable>
+                </motion.div>
               )
             })}
           </div>
@@ -166,11 +169,12 @@ function TarjetaSonido({ letra, sonido, seleccionada, estado, detalle, onClick }
   }
 
   return (
-    <button
-      type="button"
+    <motion.div animate={estado === 'bien' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
+    <Pulsable
+      tipo="tarjeta"
       onClick={tocar}
       aria-pressed={seleccionada}
-      className={`flex aspect-[4/3] flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition active:scale-[0.98] ${claseEstado(estado, seleccionada)}`}
+      className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-colors duration-200 ${claseEstado(estado, seleccionada)}`}
     >
       <IconoPlay sonando={sonando} />
       <span className="text-2xl font-bold">{letra}</span>
@@ -179,6 +183,7 @@ function TarjetaSonido({ letra, sonido, seleccionada, estado, detalle, onClick }
           {nombre(detalle)} · {hz(frecuencia(detalle))}
         </span>
       )}
-    </button>
+    </Pulsable>
+    </motion.div>
   )
 }

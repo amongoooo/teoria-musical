@@ -72,6 +72,11 @@ Presets en **`src/ui/movimiento.js`**; no inventes valores sueltos, usa estos:
 | `RESORTE.suave` | paneles que aparecen, barras de progreso, listas | stiffness 320, damping 30 |
 | `RESORTE.pantalla` | cambio de pantalla o de paso | stiffness 380, damping 36, mass 0.9 |
 
+Presets de entrada (también en `movimiento.js`):
+- **`ENTRA_DERECHA`**: algo nuevo dentro de un paso (pregunta, ronda) entra desde la derecha: `<motion.div key={r} {...ENTRA_DERECHA}>`.
+- **`SUBE`**: aparece subiendo 16 px (botón o panel que se desbloquea).
+- **`SALTO`**: celebración `scale: [1, 1.05, 1]`: `animate={ok ? SALTO : { scale: 1 }}` (opción correcta, casilla ✓, «Lo hice»).
+
 Reglas:
 1. **Todo lo tocable se hunde**: usa **`<Pulsable>`** (`src/ui/Pulsable.jsx`) en lugar de `<button>`/`<a>`.
    `tipo="boton"` se hunde a 0.96; `tipo="tarjeta"` a 0.98 (superficies grandes). No uses `active:scale-*` de Tailwind.
@@ -107,7 +112,10 @@ Reglas:
   pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
 - **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
 - **Piano** (`components/Piano.jsx`): Pointer Events, `touch-action: none`, `compacto` en lecciones, 1 octava con ◀ ▶ en < 560 px.
-- **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4).
+- **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4). En lecciones son `Pulsable tipo="tarjeta"` y la correcta da un `SALTO`.
+- **Rondas** (`components/exercises/Rondas.jsx`): puntos de progreso de un ejercicio; la ronda actual crece en vertical con `RESORTE.pulsar`, el color cambia con fundido.
+- **Mini Piano Roll** (`components/PianoRoll.jsx`): tarjeta `rounded-3xl` con teclado a la izquierda (`w-14`, filas negras `bg-zinc-800`), números de tiempo arriba, líneas más marcadas cada tiempo, filas de teclas negras en `bg-zinc-100`. Notas = acento del módulo, más claras cuanta menos velocity (`color-mix`), aparecen con `RESORTE.pulsar`; las notas guía («fantasma») son contornos punteados grises (verdes al resolver). Filas `h-10` si hay ≤ 6, `h-8` si hay más. Las casillas miden ~35 × 32 px: excepción aceptada, como las teclas del piano (es una rejilla para arrastrar, no botones sueltos). Botón «Reproducir» como `BotonSonido`; el cabezal es una columna azul que avanza por casillas (sin animación: funciona igual con «reducir movimiento»). Selector de nombres «Esta app / FL Studio»: control segmentado `bg-zinc-100 p-1`, opción activa `bg-white shadow-sm`.
+- **`useSobreBarra(ref)`** (`src/ui/useSobreBarra.js`): si la barra inferior crece y tapa el piano o el roll, desplaza la página lo justo. Úsalo en cualquier elemento interactivo que viva cerca de la barra.
 
 ## 5. Evitar
 
@@ -125,10 +133,11 @@ Reglas:
 ## 7. Pendiente (de la revisión de diseño)
 
 - Emojis como iconos (👂 🎯 🎹 ↕️): valorar iconos propios sencillos más adelante.
-- Ejercicios de lección (`components/exercises/*`, `pasos/*`): aún usan `<button>` y `animate-entrada` de CSS; pasarlos a `Pulsable` y `motion`.
-- Pantalla final de lección: añadir entrada escalonada al resumen.
+- Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: Lección 1.4 y **mini Piano Roll** táctil (ver componentes). Todos los ejercicios pasan a `Pulsable` + `motion` (`ENTRA_DERECHA`, `SUBE`, `SALTO`, `Rondas`); se elimina la animación CSS `animate-entrada`. Pantalla final de lección con entrada escalonada del resumen. Hook `useSobreBarra` compartido por Piano y Piano Roll.
 
 - 2026-11-10: Módulo y Entrenamiento de oído con la skill: `Volver`, `BarraProgreso`, helpers `oscuro`/`claro` en `src/ui/color.js`, entrada escalonada, opciones con `Pulsable` y salto de la correcta, días de racha que aparecen uno a uno, mini barra en lecciones a medias. Prohibido `text-xs`; texto de color con `oscuro()`. Feedback de oído absoluto: «Era Sol. Elegiste Do. Sonó Sol4 (392 Hz).».
 - 2026-11-10: Se crea la skill. Movimiento con `motion` y resortes, `Pulsable`, transiciones entre pantallas y pasos, contraste del acento oscurecido, "Próximamente" compacto en Inicio.

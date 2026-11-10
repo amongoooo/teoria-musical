@@ -39,3 +39,20 @@ export const itemLista = {
   oculta: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: RESORTE.suave },
 }
+
+/** Algo nuevo dentro de un paso (pregunta, ronda) entra desde la derecha. Uso: <motion.div key={r} {...ENTRA_DERECHA}> */
+export const ENTRA_DERECHA = {
+  initial: { opacity: 0, x: 24 },
+  animate: { opacity: 1, x: 0 },
+  transition: { ...RESORTE.pantalla, opacity: { duration: 0.2 } },
+}
+
+/** Aparece subiendo 16 px (paneles, botones que se desbloquean). */
+export const SUBE = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: RESORTE.suave,
+}
+
+/** «Salto» de celebración (respuesta correcta, casilla conseguida). Uso: animate={ok ? SALTO : { scale: 1 }} */
+export const SALTO = { scale: [1, 1.05, 1] }

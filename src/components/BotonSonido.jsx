@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { reproducir } from '../audio/sonido.js'
+import Pulsable from '../ui/Pulsable.jsx'
 
 /** Botón grande que reproduce un sonido del contenido y se ilumina mientras suena. */
 export default function BotonSonido({ sonido, etiqueta, className = '', onPlay }) {
@@ -17,16 +18,15 @@ export default function BotonSonido({ sonido, etiqueta, className = '', onPlay }
   }
 
   return (
-    <button
-      type="button"
+    <Pulsable
       onClick={tocar}
-      className={`flex min-h-14 items-center gap-3 rounded-2xl border px-5 py-3 text-left text-base font-medium transition active:scale-[0.98] ${
+      className={`flex min-h-14 items-center gap-3 rounded-2xl border px-5 py-3 text-left text-base font-medium transition-colors duration-200 ${
         sonando ? 'border-sky-300 bg-sky-50 text-sky-900' : 'border-zinc-200 bg-white text-zinc-800'
       } ${className}`}
     >
       <IconoPlay sonando={sonando} />
       <span>{etiqueta ?? sonido.etiqueta ?? 'Escuchar'}</span>
-    </button>
+    </Pulsable>
   )
 }
 

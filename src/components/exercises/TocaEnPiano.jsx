@@ -1,8 +1,11 @@
+import { motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
+import { ENTRA_DERECHA, RESORTE, SALTO, SUBE } from '../../ui/movimiento.js'
 import Piano from '../Piano.jsx'
+import Rondas from './Rondas.jsx'
 
 /**
  * "Toca en el teclado": el usuario responde tocando el Piano.
@@ -120,14 +123,19 @@ function UltimaNota({ nota }) {
 
 function Check({ ok, children }) {
   return (
-    <li
-      className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 py-2 text-base font-medium ${
+    <motion.li
+      initial={false}
+      animate={ok ? SALTO : { scale: 1 }}
+      transition={{ duration: 0.35 }}
+      className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 py-2 text-base font-medium transition-colors duration-200 ${
         ok ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-zinc-200 bg-white text-zinc-500'
       }`}
     >
-      <span aria-hidden>{ok ? '✓' : '○'}</span>
+      <motion.span aria-hidden key={ok ? 'si' : 'no'} initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={RESORTE.pulsar}>
+        {ok ? '✓' : '○'}
+      </motion.span>
       {children}
-    </li>
+    </motion.li>
   )
 }
 
@@ -199,18 +207,9 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {rondas.length > 1 && (
-        <div className="flex items-center gap-2" aria-label={`Ronda ${r + 1} de ${rondas.length}`}>
-          {rondas.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2 flex-1 rounded-full ${i < r || (i === r && resuelta) ? 'bg-zinc-800' : i === r ? 'bg-zinc-400' : 'bg-zinc-200'}`}
-            />
-          ))}
-        </div>
-      )}
+      <Rondas total={rondas.length} actual={r} hecha={resuelta} />
 
-      <div key={r} className="animate-entrada flex items-center justify-between gap-3">
+      <motion.div key={r} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
         <p className="text-xl font-semibold leading-snug sm:text-2xl">
           Toca una nota <span className="underline decoration-amber-400 decoration-4 underline-offset-4">{palabra}</span>{' '}
           que <span className="rounded-md bg-amber-200 px-1.5">{nombre(ronda.referencia)}</span>
@@ -220,7 +219,7 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
           etiqueta={nombre(ronda.referencia)}
           className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
         />
-      </div>
+      </motion.div>
 
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia]} />
     </div>
@@ -310,21 +309,12 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {rondas.length > 1 && (
-        <div className="flex items-center gap-2" aria-label={`Ronda ${r + 1} de ${rondas.length}`}>
-          {rondas.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2 flex-1 rounded-full ${i < r || (i === r && listo) ? 'bg-zinc-800' : i === r ? 'bg-zinc-400' : 'bg-zinc-200'}`}
-            />
-          ))}
-        </div>
-      )}
+      <Rondas total={rondas.length} actual={r} hecha={listo} />
 
-      <p key={r} className="animate-entrada text-lg font-semibold leading-snug sm:text-2xl">
+      <motion.p key={r} {...ENTRA_DERECHA} className="text-lg font-semibold leading-snug sm:text-2xl">
         Toca <span className="underline decoration-amber-400 decoration-4 underline-offset-4">todas</span> las{' '}
         <span className="rounded-md bg-amber-200 px-1.5">{nombreSolo}</span> del teclado
-      </p>
+      </motion.p>
 
       <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${objetivos.length}, minmax(0, 1fr))` }}>
         {objetivos.map((o) => (
@@ -335,11 +325,13 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
       </ul>
 
       {listo && (
-        <BotonSonido
-          sonido={{ notas: objetivos, intervalo: 0.6 }}
-          etiqueta={`Escuchar las ${objetivos.length} ${nombreSolo}`}
-          className="animate-entrada"
-        />
+        <motion.div {...SUBE}>
+          <BotonSonido
+            sonido={{ notas: objetivos, intervalo: 0.6 }}
+            etiqueta={`Escuchar las ${objetivos.length} ${nombreSolo}`}
+            className="w-full"
+          />
+        </motion.div>
       )}
 
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={encontradas} />

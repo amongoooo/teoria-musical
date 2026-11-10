@@ -10,6 +10,8 @@ import {
   startAudio,
 } from '../audio/engine.js'
 import { notaDesdeMidi, midi } from '../theory/notas.js'
+import Pulsable from '../ui/Pulsable.jsx'
+import useSobreBarra from '../ui/useSobreBarra.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -88,32 +90,8 @@ export default function Piano({
     return onStatusChange(setStatus)
   }, [])
 
-  // En las lecciones (compacto) la barra inferior crece al mostrar un mensaje y
-  // puede tapar el teclado en el celular: si pasa, desplazamos lo justo para verlo.
-  useEffect(() => {
-    if (!compacto) return
-    const barra = document.querySelector('[data-barra-accion]')
-    if (!barra) return
-    let primera = true
-    let frame = 0
-    const ajustar = () => {
-      const el = wrapperRef.current
-      if (!el) return
-      const limite = window.innerHeight - barra.offsetHeight - 8
-      const tapado = el.getBoundingClientRect().bottom - limite
-      if (tapado > 1) window.scrollBy({ top: tapado, behavior: 'smooth' })
-    }
-    const ro = new ResizeObserver(() => {
-      if (primera) return void (primera = false) // al montar no movemos nada
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(ajustar)
-    })
-    ro.observe(barra)
-    return () => {
-      cancelAnimationFrame(frame)
-      ro.disconnect()
-    }
-  }, [compacto])
+  // En lecciones (compacto), que la barra inferior no tape el teclado.
+  useSobreBarra(wrapperRef, compacto)
 
   // Recalcular el número de dedos activos -> teclas iluminadas
   const refreshActive = useCallback(() => {
@@ -193,25 +171,23 @@ export default function Piano({
 
         {maxOffset > 0 && (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Pulsable
               onClick={() => setOffset((o) => Math.max(0, o - 1))}
               disabled={offset === 0}
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-zinc-700 disabled:opacity-30"
+              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 disabled:opacity-30"
               aria-label="Octava anterior"
             >
               ◀
-            </button>
+            </Pulsable>
             <span className="tabular-nums">Octava {firstOctave}</span>
-            <button
-              type="button"
+            <Pulsable
               onClick={() => setOffset((o) => Math.min(maxOffset, o + 1))}
               disabled={offset >= maxOffset}
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-zinc-700 disabled:opacity-30"
+              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 disabled:opacity-30"
               aria-label="Octava siguiente"
             >
               ▶
-            </button>
+            </Pulsable>
           </div>
         )}
       </div>

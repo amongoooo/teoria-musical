@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, releaseAll, toneStop } from '../audio/engine.js'
 import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
 import ExploraFrecuencia from '../components/exercises/ExploraFrecuencia.jsx'
+import PianoRollEjercicio from '../components/exercises/PianoRollEjercicio.jsx'
 import RetoFL from '../components/exercises/RetoFL.jsx'
 import TocaEnPiano from '../components/exercises/TocaEnPiano.jsx'
 import PasoSiente from '../components/pasos/PasoSiente.jsx'
@@ -11,7 +12,7 @@ import Rich from '../components/Rich.jsx'
 import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
-import { RESORTE } from '../ui/movimiento.js'
+import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
@@ -22,6 +23,7 @@ const PASOS = {
   tocar: TocaEnPiano,
   frecuencia: ExploraFrecuencia,
   reto: RetoFL,
+  pianoroll: PianoRollEjercicio,
 }
 
 /**
@@ -211,8 +213,8 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
   const proximaLista = proxima && leccionDisponible(proxima.id)
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
-      <div className="flex flex-col items-center gap-3 text-center">
+    <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
+      <motion.div variants={itemLista} className="flex flex-col items-center gap-3 text-center">
         <motion.div
           className="grid size-20 place-items-center rounded-full text-4xl text-white"
           style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
@@ -232,25 +234,25 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
             {suma.aciertos} de {suma.total} a la primera
           </p>
         )}
-      </div>
+      </motion.div>
 
       {leccion.resumen && (
-        <section className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
+        <motion.section variants={itemLista} className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
           <h2 className="text-xl font-bold">Lo que aprendiste</h2>
-          <ul className="flex flex-col gap-2 text-base leading-relaxed text-zinc-600">
+          <motion.ul variants={lista} className="flex flex-col gap-2 text-base leading-relaxed text-zinc-600">
             {leccion.resumen.map((r, i) => (
-              <li key={i} className="flex gap-2">
+              <motion.li key={i} variants={itemLista} className="flex gap-2">
                 <span aria-hidden className="text-zinc-400">•</span>
                 <span>
                   <Rich>{r}</Rich>
                 </span>
-              </li>
+              </motion.li>
             ))}
-          </ul>
-        </section>
+          </motion.ul>
+        </motion.section>
       )}
 
-      <div className="flex flex-col gap-3">
+      <motion.div variants={itemLista} className="flex flex-col gap-3">
         {proximaLista ? (
           <Pulsable
             href={rutas.leccion(proxima.id)}
@@ -282,8 +284,8 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
         >
           Repetir lección
         </Pulsable>
-      </div>
-    </main>
+      </motion.div>
+    </motion.main>
   )
 }
 
