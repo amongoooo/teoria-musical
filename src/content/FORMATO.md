@@ -17,7 +17,7 @@ export default {
 }
 ```
 
-En los textos se puede usar `**negrita**`.
+En los textos se puede usar `**negrita**` y `*cursiva*`.
 
 ## Campos comunes de cada paso
 
@@ -33,8 +33,14 @@ Donde se pida un sonido:
 { notas: ['C4', 'E4', 'G4'], modo: 'secuencia' | 'acorde', velocidad: 0.8, intervalo: 0.45, duracion: 0.9, etiqueta: 'Escuchar' }
 { notas: [['C3', 'C4'], ['E3', 'E4']] }                  // en secuencia, un array = notas a la vez (p. ej. doblar a la octava)
 { frecuencia: 440, duracion: 1.2, etiqueta: '440 Hz' }   // onda pura
-{ groove: 'basico', bpm: 90, compases: 2 }              // batería: 'click' | 'basico' | 'bombo' (theory/bateria.js)
+{ groove: 'basico', bpm: 90, compases: 2 }              // groove de theory/bateria.js (lista abajo)
+{ groove: [{ nota: 'click', inicio: 0, velocity: 1 }, …], tiempos: 3, porTiempo: 2 }  // patrón propio
 ```
+
+Grooves (`GROOVES` de `theory/bateria.js`; `formaGroove()` da su compás y resolución):
+`click`, `basico`, `bombo` (4/4) · `click3`, `vals`, `valsPiano` (3/4) · `marchaPiano` (4/4 al piano) ·
+`trap` (medio tiempo, caja en el 3) y `trapNormal` (caja en 2 y 4), ambos en semicorcheas.
+Un patrón propio puede indicar `tiempos` (tiempos por vuelta, 4 por defecto) y `porTiempo` (casillas por tiempo, 2).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -114,6 +120,7 @@ roll: {
   rango: ['C4', 'C5'], soloBlancas: true,  // filas de la más aguda (arriba) a la más grave
   // filas: ['C5', 'B4', …]                // o la lista exacta de filas
   columnas: 8, porTiempo: 2, bpm: 100,     // 8 casillas = 4 tiempos (cada casilla, medio tiempo)
+  compas: 3,                               // opcional: tiempos por compás (numera «1 2 3 1 2 3» y marca la línea de compás)
   etiquetas: 'app' | 'fl' | 'ambas',       // 'fl' = nombres de FL Studio (Do4 → C5)
   alternar: true,                          // selector «Esta app / FL Studio»
   velocity: true,                          // carril de velocity abajo
@@ -144,6 +151,12 @@ Un ritmo suena en bucle (`iniciarRitmo()` de `engine.js`) con un botón Empezar/
 objetivo: { tipo: 'seguir', rondas: [{ pregunta, bpm: 90, groove: 'click', meta: 8, visual: true, mensaje }] }
   // tocar el botón grande al pulso; cuenta los toques a ±90 ms. Medidor «antes / tarde».
   // Si todos los toques caen igual de desplazados (auriculares bluetooth), compensa solo (máx. 200 ms).
+  // Opcionales de cada ronda:
+  //   cada: 4        → tiempos entre toque y toque (4 = solo en el 1 de un 4/4; 0.5 = «1 y 2 y»)
+  //   desfase: 2     → en qué tiempo cae el primer toque, contando desde 0 (2 = en el 3; 0.5 = en la «y»)
+  //   contar: 'tiempos' | 'y'  → muestra la cuenta del compás («1 2 3 4» o «1 y 2 y…»);
+  //                    se ilumina lo que suena y las casillas que hay que tocar llevan aro
+  //   ayuda, boton   → textos de la barra («Toca en el 1: 2/4 a tiempo») y del botón grande
 objetivo: { tipo: 'tempo', rondas: [{ bpm: 100, groove: 'basico', pregunta }] }
   // tap tempo: marcar el pulso (≥ 6 toques) y comprobar los BPM (±5 %; medio o doble tempo cuenta como bien).
 objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, genero: 'Hip hop' }], mensaje }

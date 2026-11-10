@@ -4,8 +4,9 @@
 //   { notas: [['C3', 'C4'], ['E3', 'E4']] }  (melodía doblada a la octava)
 //   { frecuencia: 440, duracion: 1.2 }
 //   { groove: 'basico', bpm: 90, compases: 2 }   (patrón de batería de theory/bateria.js)
+//   { groove: [{ nota: 'click', inicio: 0 }, …], tiempos: 3, porTiempo: 2 }  (patrón propio)
 // `retraso` (segundos) en el segundo argumento retrasa el inicio.
-import { GROOVES } from '../theory/bateria.js'
+import { formaGroove } from '../theory/bateria.js'
 import { playFrequency, playNotes, playPattern } from './engine.js'
 
 /** Toca el sonido y devuelve su duración en segundos. */
@@ -22,8 +23,8 @@ export function reproducir(sonido, { retraso = 0 } = {}) {
 }
 
 /** Toca `compases` vueltas de un groove a `bpm`. */
-function tocarGroove({ groove, bpm = 90, compases = 2 }) {
-  const eventos = GROOVES[groove] ?? groove
-  const todos = Array.from({ length: compases }, (_, c) => eventos.map((e) => ({ ...e, inicio: e.inicio + c * 8 }))).flat()
-  return playPattern(todos, { paso: 60 / bpm / 2 })
+function tocarGroove({ groove, bpm = 90, compases = 2, tiempos, porTiempo }) {
+  const forma = formaGroove(groove, { tiempos, porTiempo })
+  const todos = Array.from({ length: compases }, (_, c) => forma.eventos.map((e) => ({ ...e, inicio: e.inicio + c * forma.casillas }))).flat()
+  return playPattern(todos, { paso: 60 / bpm / forma.porTiempo })
 }

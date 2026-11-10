@@ -210,7 +210,7 @@ let ritmoActual = null
 
 /**
  * Repite un patrón de 1 compás (eventos en casillas) a `bpm` hasta llamar a parar().
- * Devuelve { inicio, pulso, parar } — `inicio`: tiempo de audio del primer tiempo,
+ * Devuelve { inicio, pulso, tiempos, parar } — `inicio`: tiempo de audio del primer tiempo,
  * `pulso`: segundos entre tiempos. Solo suena un ritmo a la vez.
  */
 export function iniciarRitmo(eventos, { bpm = 90, casillas = 8, porTiempo = 2 } = {}) {
@@ -235,6 +235,7 @@ export function iniciarRitmo(eventos, { bpm = 90, casillas = 8, porTiempo = 2 } 
   const ritmo = {
     inicio,
     pulso,
+    tiempos: casillas / porTiempo,
     parar: () => {
       clearInterval(id)
       if (ritmoActual === ritmo) ritmoActual = null

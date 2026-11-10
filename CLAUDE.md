@@ -37,7 +37,7 @@ src/
   content/              # Contenido (datos), ver content/FORMATO.md
     modulos.js          # Los 10 módulos y sus lecciones (título, acento, reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
-    modulo-01/leccion-1-1.js
+    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js
   components/
     Piano.jsx           # Piano táctil (multitouch, glissando, octavas, teclas marcadas)
     CaminoLecciones.jsx # Camino de islas de un módulo (vertical en celular, horizontal en ancho; carrusel + barra de puntitos)
@@ -52,7 +52,7 @@ src/
   audio/bateria.js      # Batería sintetizada: golpe('kick' | 'snare' | 'hat' | 'clap' | 'click')
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
-  theory/bateria.js     # Nombres de percusión, claveNota y GROOVES (click, basico, bombo)
+  theory/bateria.js     # Nombres de percusión, claveNota, GROOVES (4/4, 3/4, trap…) y formaGroove()
   progress/progreso.js  # localStorage: useProgreso, guardarPaso, completarLeccion, guardarReto
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
   progress/opciones.js  # localStorage de opciones (tema); aplicarTema() pone la clase `dark` en <html>
@@ -85,7 +85,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~43 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
+**Avance: ~46 %** (módulo 1 completo; módulo 2: 2 de 5 lecciones)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -110,4 +110,6 @@ public/samples/         # Samples de audio propios
 - ✅ **Módulos en cuadritos, pestaña de módulos y Retos**: en Inicio los módulos son cuadritos con su título (los que no existen, punteados); al tocarlos se abre el módulo y las islas **se despliegan desde la insignia**. Tocar la insignia abre la **pestaña de Módulos** (`NavegadorModulos.jsx`, carrusel lateral con las reglas de swipe). Al final del camino, la **isla de Retos**: reto del módulo (se marca con «Lo hice», clave `retos['M1']`) y retos de FL de cada lección (ruta `#/leccion/1.1/reto` abre la lección directo en su reto y al continuar vuelve al módulo). Se quitaron «¿Qué se siente?» y el reto como texto de la pantalla de Módulo. (El swipe de entonces se reemplazó por las nuevas reglas.)
 - ✅ **Nuevas reglas de swipe** (toda la app: islas, barra de puntitos y pestaña de Módulos; skill sección 3b): zona muerta de 14 px; **resistencia fuerte** hasta el 30 % de X (≤ 6,5 % de X); al pasar el 30 % **alcanza al dedo** con un resorte rápido y lo sigue 1:1; **imán al 50 % sin soltar y sin histéresis** (por encima se pega a la siguiente; por debajo se queda pegada a la de antes); soltar antes del 50 % vuelve (gesto rápido pasa uno); **avance continuo por zonas** ya pegado: dedo al 75–85 % de X → una isla cada 1000 ms, 85–90 → 700, 90–95 → 500, 95–98 → 350, 98–100 → 250; para al soltar, al bajar del 75 % o en el extremo; **tope de velocidad suave** solo para lo automático (`velocidadMax` 1,2 px/ms, crece si se queda atrás); **modo rápido** (`veloz`): con el dedo deprisa lo sigue sin resistencia ni paradas, así no se traba. La barra de puntitos mide desde el **centro del puntito tocado** (`origen`): la isla es siempre la del puntito más cercano al dedo. Barra de puntitos: `cadena` (misma curva y mismo 50 % entre puntitos, una isla por puntito, sin avance continuo). Los carruseles escriben `data-posicion`; medido con Playwright (ratón y táctil, 375 y 1280 px).
 
-**Siguiente tarea:** lección 2.2 «Compás y tiempos fuertes» (4/4 y 3/4, tiempo fuerte, contar «1 y 2 y», medio tiempo del trap), reutilizando `pulso` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
+- ✅ **Lección 2.2 «Compás y tiempos fuertes»** (16 pasos): compás, 4/4 y 3/4 (vals «um-pa-pa»), tiempos fuertes/débiles y *backbeat*, anacrusa, contar «1 y 2 y» (contratiempo) y el **medio tiempo del trap** (caja en el 3). Oído: «¿4/4 o 3/4?», «¿Dónde está el tiempo fuerte?» (anacrusas), «¿Medio tiempo o normal?»; quiz y reto en FL (trap a medio tiempo y un beat en 3/4 con *Time signature*). Nuevos grooves `click3`, `vals`, `valsPiano`, `marchaPiano`, `trap`, `trapNormal` y **`formaGroove()`** (compás y resolución de cada groove; los patrones propios aceptan `tiempos`/`porTiempo`). `pulso` → `seguir` acepta **`cada`** (tocar solo el 1, «1 y 2 y»), **`desfase`** (tocar en el 3 o en la «y»), **`contar`** (contador del compás) y textos `ayuda`/`boton`. Piano Roll con **`compas`** (numera «1 2 3 1 2 3» y marca la línea de compás). Probada de principio a fin con Playwright a 375 px.
+
+**Siguiente tarea:** lección 2.3 «Figuras: de redonda a semicorchea» (redonda, blanca, negra, corchea, semicorchea y sus silencios; el 4 de «4/4»; los 16 pasos del Channel rack), reutilizando el Piano Roll de batería y `pulso` (`cada: 0.25` para semicorcheas). Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

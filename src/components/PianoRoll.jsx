@@ -16,7 +16,8 @@ import { IconoPlay } from './BotonSonido.jsx'
  *  - Carril de velocity abajo: desliza el dedo arriba/abajo sobre una columna.
  *
  * Props:
- *  - roll: { filas | rango, soloBlancas, columnas, porTiempo, bpm, etiquetas, alternar, velocity }
+ *  - roll: { filas | rango, soloBlancas, columnas, porTiempo, compas, bpm, etiquetas, alternar, velocity }
+ *      compas: tiempos por compás (los números vuelven a 1 y la línea de compás es más marcada).
  *  - notas: [{ id, nota, inicio, duracion, velocity }]  (controlado)
  *  - onCambio(notas): si falta, el roll es solo de lectura.
  *  - soloVelocity: solo se puede cambiar la velocity (no crear ni borrar notas).
@@ -27,6 +28,8 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const filas = filasDe(roll)
   const columnas = roll.columnas ?? 8
   const porTiempo = roll.porTiempo ?? 2
+  const compas = roll.compas ?? null
+  const inicioCompas = (t) => compas && t > 0 && t % compas === 0
   const paso = 60 / (roll.bpm ?? 100) / porTiempo
   const editable = Boolean(onCambio)
   const [etiquetas, setEtiquetas] = useState(roll.etiquetas ?? 'app')
@@ -163,8 +166,13 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
           <div className={`${ancho} shrink-0`} />
           <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${tiempos}, minmax(0, 1fr))` }}>
             {Array.from({ length: tiempos }, (_, t) => (
-              <span key={t} className="border-l border-zinc-300 py-1 pl-1.5 text-sm font-semibold tabular-nums text-zinc-500">
-                {t + 1}
+              <span
+                key={t}
+                className={`border-l py-1 pl-1.5 text-sm tabular-nums ${inicioCompas(t) ? 'border-zinc-500' : 'border-zinc-300'} ${
+                  compas && t % compas === 0 ? 'font-bold text-zinc-800' : 'font-semibold text-zinc-500'
+                }`}
+              >
+                {compas ? (t % compas) + 1 : t + 1}
               </span>
             ))}
           </div>
@@ -209,7 +217,10 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
                 style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))` }}
               >
                 {Array.from({ length: columnas }, (_, c) => (
-                  <span key={c} className={`border-l ${c % porTiempo === 0 ? 'border-zinc-300' : 'border-zinc-100'}`} />
+                  <span
+                    key={c}
+                    className={`border-l ${c % porTiempo === 0 ? (inicioCompas(c / porTiempo) ? 'border-zinc-500' : 'border-zinc-300') : 'border-zinc-100'}`}
+                  />
                 ))}
               </div>
             ))}

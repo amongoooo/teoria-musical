@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { iniciarRitmo, latenciaAudio, tiempoAudio } from '../../audio/engine.js'
 import { getModulo } from '../../content/index.js'
-import { GROOVES } from '../../theory/bateria.js'
+import { formaGroove } from '../../theory/bateria.js'
 import { oscuro } from '../../ui/color.js'
 import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
@@ -12,8 +12,11 @@ import Rondas from './Rondas.jsx'
  * Paso `pulso`: ejercicios de pulso y tempo con un ritmo que suena en bucle.
  *
  * paso.objetivo:
- *  - { tipo: 'seguir', rondas: [{ bpm, groove, meta: 8, visual: true, mensaje }] }
+ *  - { tipo: 'seguir', rondas: [{ bpm, groove, meta: 8, visual: true, mensaje, cada, desfase, contar }] }
  *      → tocar el botón grande al pulso; cuenta los toques «a tiempo» (±90 ms).
+ *        cada: tiempos entre toque y toque (1 = cada tiempo, 0.5 = «1 y 2 y», 4 = solo el 1 en 4/4).
+ *        desfase: en qué tiempo cae el primer toque (0 = en el 1; 2 = en el 3).
+ *        contar: 'tiempos' | 'y' → muestra la cuenta del compás («1 2 3 4» o «1 y 2 y…»).
  *  - { tipo: 'tempo', rondas: [{ bpm, groove }] }
  *      → tap tempo: marcar el pulso de un ritmo y adivinar sus BPM.
  *  - { tipo: 'explorar', tempos: [{ bpm, genero }], minimo: 3, mensaje }
@@ -39,9 +42,10 @@ const MAX_AJUSTE = 0.2 // retraso máximo del dispositivo que se compensa solo
 function useRitmo() {
   const [ritmo, setRitmo] = useState(null)
   const ref = useRef(null)
-  const empezar = useCallback((groove, bpm) => {
+  const empezar = useCallback((groove, bpm, opciones) => {
     ref.current?.parar()
-    const r = iniciarRitmo(GROOVES[groove] ?? groove, { bpm })
+    const { eventos, casillas, porTiempo } = formaGroove(groove, opciones)
+    const r = iniciarRitmo(eventos, { bpm, casillas, porTiempo })
     ref.current = r
     setRitmo(r)
     return r
@@ -55,20 +59,23 @@ function useRitmo() {
   return { ritmo, empezar, parar }
 }
 
-/** Número de tiempo que se está oyendo ahora (‑1 antes de empezar). */
-function useLatido(ritmo) {
+/**
+ * Número de latido que se está oyendo ahora (‑1 antes de empezar).
+ * `periodo` y `desfase` en tiempos: (0.5) cuenta corcheas; (4, 2) cuenta cada compás desde el tiempo 3.
+ */
+function useLatido(ritmo, periodo = 1, desfase = 0) {
   const [latido, setLatido] = useState(-1)
   useEffect(() => {
     if (!ritmo) return setLatido(-1)
     let frame = 0
     const tic = () => {
-      const b = Math.floor((tiempoAudio() - latenciaAudio() - ritmo.inicio) / ritmo.pulso)
+      const b = Math.floor((tiempoAudio() - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso) / (periodo * ritmo.pulso))
       setLatido((prev) => (prev === b ? prev : b))
       frame = requestAnimationFrame(tic)
     }
     tic()
     return () => cancelAnimationFrame(frame)
-  }, [ritmo])
+  }, [ritmo, periodo, desfase])
   return latido
 }
 
@@ -143,8 +150,12 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
   const [r, setR] = useState(0)
   const ronda = rondas[r]
   const meta = ronda.meta ?? 8
+  const cada = ronda.cada ?? 1
+  const desfase = ronda.desfase ?? 0
   const { ritmo, empezar, parar } = useRitmo()
-  const latido = useLatido(ritmo)
+  const latido = useLatido(ritmo, cada, desfase)
+  const division = ronda.contar === 'y' ? 2 : 1
+  const sub = useLatido(ritmo, 1 / division)
   const color = useColor(leccionId)
   const [toques, setToques] = useState([]) // errores (s) ya compensados
   const [buenos, setBuenos] = useState(0)
@@ -156,10 +167,11 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
 
   const onToque = (e) => {
     if (!ritmo || hecho) return
-    const rel = momentoToque(e) - latenciaAudio() - ritmo.inicio
-    const k = Math.round(rel / ritmo.pulso)
+    const periodo = cada * ritmo.pulso
+    const rel = momentoToque(e) - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso
+    const k = Math.round(rel / periodo)
     if (k < 0) return
-    const bruto = rel - k * ritmo.pulso
+    const bruto = rel - k * periodo
     crudos.current.push(bruto)
     // Auriculares bluetooth y algunos móviles suenan con retraso: si todos los toques
     // caen igual de desplazados, lo tomamos como retraso del dispositivo y lo descontamos.
@@ -186,7 +198,7 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
       setAccion({
         label: ultima ? 'Continuar' : 'Siguiente',
         disabled: true,
-        ayuda: ritmo ? `Toca al pulso: ${buenos}/${meta} a tiempo` : 'Pulsa «Empezar» y toca al ritmo',
+        ayuda: ritmo ? `${ronda.ayuda ?? 'Toca al pulso'}: ${buenos}/${meta} a tiempo` : 'Pulsa «Empezar» y toca al ritmo',
         onClick: () => {},
       })
       return
@@ -218,12 +230,49 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
           <p className="text-xl font-semibold leading-snug">{ronda.pregunta ?? 'Toca con el pulso'}</p>
           <span className="shrink-0 text-base font-semibold tabular-nums text-zinc-500">{ronda.bpm} BPM</span>
         </div>
-        {!hecho && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'click', ronda.bpm))} />}
+        {!hecho && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'click', ronda.bpm, ronda))} />}
+        {ronda.contar && <Contador tiempos={formaGroove(ronda.groove ?? 'click', ronda).tiempos} division={division} actual={ritmo ? sub : -1} cada={cada} desfase={desfase} color={color} />}
         <Medidor error={ultimo} />
         <Puntos total={meta} hechos={buenos} />
-        <Pad onToque={onToque} latido={latido} mostrarLatido={ronda.visual !== false} color={color} disabled={!ritmo} texto={ritmo ? 'Toca aquí al pulso' : 'Primero, Empezar'} />
+        <Pad onToque={onToque} latido={latido} mostrarLatido={ronda.visual !== false} color={color} disabled={!ritmo} texto={ritmo ? ronda.boton ?? 'Toca aquí al pulso' : 'Primero, Empezar'} />
         {ajustado && <p className="text-base text-zinc-500">Ajustamos el retraso de tu teléfono o tus auriculares para medirte mejor.</p>}
       </motion.div>
+    </div>
+  )
+}
+
+/**
+ * Cuenta del compás: «1 2 3 4» (o «1 y 2 y…» con division 2). Se ilumina la casilla que suena;
+ * las que hay que tocar llevan un aro del acento. El 1 (tiempo fuerte) va más grande.
+ */
+function Contador({ tiempos, division, actual, cada, desfase, color }) {
+  const total = tiempos * division
+  const pos = actual >= 0 ? actual % total : -1
+  const objetivo = (i) => {
+    const x = (i / division - desfase) / cada
+    return Math.abs(x - Math.round(x)) < 1e-6
+  }
+  return (
+    <div className="flex gap-1.5" aria-hidden>
+      {Array.from({ length: total }, (_, i) => {
+        const tiempo = i % division === 0
+        const encendida = i === pos
+        const marca = objetivo(i)
+        return (
+          <span
+            key={i}
+            className={`grid h-12 min-w-0 flex-1 place-items-center rounded-2xl border-2 tabular-nums transition-colors duration-100 ${
+              tiempo ? 'text-xl font-bold' : 'text-base font-semibold'
+            } ${encendida ? 'text-blanco' : i === 0 ? 'bg-white text-zinc-900' : 'bg-white text-zinc-600'}`}
+            style={{
+              backgroundColor: encendida ? oscuro(color) : undefined,
+              borderColor: marca ? oscuro(color) : 'var(--color-zinc-200)',
+            }}
+          >
+            {tiempo ? i / division + 1 : 'y'}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -420,12 +469,12 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
               aria-hidden
               className="absolute inset-0 rounded-full"
               style={{ backgroundColor: color }}
-              initial={{ scale: 1, opacity: latido % 4 === 0 ? 0.9 : 0.55 }}
+              initial={{ scale: 1, opacity: latido % ritmo.tiempos === 0 ? 0.9 : 0.55 }}
               animate={{ scale: 0.55, opacity: 0.15 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           )}
-          <span className="relative text-base font-semibold tabular-nums text-zinc-800">{ritmo && latido >= 0 ? (latido % 4) + 1 : '·'}</span>
+          <span className="relative text-base font-semibold tabular-nums text-zinc-800">{ritmo && latido >= 0 ? (latido % ritmo.tiempos) + 1 : '·'}</span>
         </div>
         <div className="flex flex-col gap-0.5" aria-live="polite">
           <span className="text-4xl font-bold tabular-nums tracking-tight">

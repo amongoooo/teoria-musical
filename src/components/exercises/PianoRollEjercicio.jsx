@@ -31,6 +31,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
   const modo = roll.etiquetas === 'fl' ? 'fl' : 'app'
   const nom = (n) => `**${esPercusion(n) ? PERCUSION[n].toLowerCase() : modo === 'fl' ? nombreFL(n) : nombre(n)}**`
   const porTiempo = roll.porTiempo ?? 2
+  const compas = roll.compas ?? null
 
   useEffect(() => {
     if (objetivo.tipo === 'libre') {
@@ -58,7 +59,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
     }
 
     const comprobar = () => {
-      const r = objetivo.tipo === 'velocity' ? revisarVelocity(notas, objetivo) : revisarCopia(notas, objetivo.notas, { nom, porTiempo })
+      const r = objetivo.tipo === 'velocity' ? revisarVelocity(notas, objetivo) : revisarCopia(notas, objetivo.notas, { nom, porTiempo, compas })
       const total = intentos + 1
       setIntentos(total)
       setResultado(r)
@@ -118,10 +119,15 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
 
 const igual = (a, b) => claveNota(a.nota) === claveNota(b.nota) && a.inicio === b.inicio && a.duracion === b.duracion
 
-/** Momento de la casilla en palabras: «en el tiempo 2» / «a mitad del tiempo 2». */
-function momento(c, porTiempo) {
-  const t = Math.floor(c / porTiempo) + 1
-  return c % porTiempo === 0 ? `en el tiempo ${t}` : `a mitad del tiempo ${t}`
+/**
+ * Momento de la casilla en palabras: «en el tiempo 2» / «a mitad del tiempo 2».
+ * Con `compas` (tiempos por compás) y más de un compás: «en el tiempo 1 del compás 2».
+ */
+function momento(c, porTiempo, compas) {
+  const b = Math.floor(c / porTiempo)
+  const t = (compas ? b % compas : b) + 1
+  const enCompas = compas && b >= compas ? ` del compás ${Math.floor(b / compas) + 1}` : ''
+  return c % porTiempo === 0 ? `en el tiempo ${t}${enCompas}` : `a mitad del tiempo ${t}${enCompas}`
 }
 
 function largo(d, porTiempo) {
@@ -132,18 +138,18 @@ function largo(d, porTiempo) {
   return `${d} ${d === 1 ? 'casilla' : 'casillas'}`
 }
 
-function revisarCopia(notas, solucion, { nom, porTiempo }) {
+function revisarCopia(notas, solucion, { nom, porTiempo, compas }) {
   const problemas = []
   for (const s of solucion) {
     if (notas.some((n) => igual(n, s))) continue
     const parecida = notas.find((n) => claveNota(n.nota) === claveNota(s.nota) && n.inicio === s.inicio)
-    if (parecida) problemas.push(`${nom(s.nota)} ${momento(s.inicio, porTiempo)} debe durar ${largo(s.duracion, porTiempo)}.`)
-    else problemas.push(`Falta ${nom(s.nota)} ${momento(s.inicio, porTiempo)}.`)
+    if (parecida) problemas.push(`${nom(s.nota)} ${momento(s.inicio, porTiempo, compas)} debe durar ${largo(s.duracion, porTiempo)}.`)
+    else problemas.push(`Falta ${nom(s.nota)} ${momento(s.inicio, porTiempo, compas)}.`)
   }
   for (const n of notas) {
     if (solucion.some((s) => igual(n, s))) continue
     if (solucion.some((s) => claveNota(s.nota) === claveNota(n.nota) && s.inicio === n.inicio)) continue // ya avisada
-    problemas.push(`Sobra ${nom(n.nota)} ${momento(n.inicio, porTiempo)}.`)
+    problemas.push(`Sobra ${nom(n.nota)} ${momento(n.inicio, porTiempo, compas)}.`)
   }
   if (!problemas.length) return { ok: true }
   const extra = problemas.length > 2 ? ` (y ${problemas.length - 2} detalle${problemas.length > 3 ? 's' : ''} más)` : ''
