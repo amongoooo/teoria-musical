@@ -97,6 +97,8 @@ export const DESLIZAR = {
   umbralCelular: 0.35,
   puntitos: { separacion: 44, zonaMuerta: 8, veloz: [0.25, 0.12] },
   // Swipe de página (cambiar de módulo): X más larga para que sea a propósito.
-  // Lateral: 60 % del ancho en el celular (mín. 160 px) o 320 px en ancho; vertical (tirar más allá del final): 240 px.
-  pagina: { umbralCelular: 0.6, umbralAncho: 320, umbralVertical: 240 },
+  // Lateral: 60 % del ancho en el celular (mín. 160 px) o 320 px en ancho; vertical (tirar más allá del borde): 240 px.
+  // desdeAbajo: tirar desde arriba (módulo anterior) solo si el dedo se apoya por debajo del 75 % de la pantalla;
+  // más arriba se deja al navegador recargar la página.
+  pagina: { umbralCelular: 0.6, umbralAncho: 320, umbralVertical: 240, desdeAbajo: 0.75 },
 }

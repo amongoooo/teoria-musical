@@ -5,13 +5,15 @@ import { getModulo, moduloDisponible } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
 import { DESLIZAR } from '../ui/movimiento.js'
 import useDeslizar from '../ui/useDeslizar.js'
-import useTirarAbajo from '../ui/useTirarAbajo.js'
+import useTirarBordes from '../ui/useTirarBordes.js'
 import { Cuadrito } from './NavegadorModulos.jsx'
 
 /**
  * Cambio de módulo con un gesto de página (skill de diseño, sección 3b «Swipe de página»):
  *  - Deslizar de lado (con el camino cerrado): a la izquierda → módulo siguiente; a la derecha → anterior.
  *  - Tirar «más abajo» del final de la página (celular): módulo siguiente.
+ *  - Tirar hacia abajo estando arriba del todo: módulo anterior, solo si el dedo se apoyó en el 25 %
+ *    inferior de la pantalla (DESLIZAR.pagina.desdeAbajo); más arriba, el navegador recarga la página.
  * Mismas reglas que el resto de swipes (zona muerta, resistencia fuerte hasta el 30 %, sigue al dedo y
  * pasa al 50 % sin soltar), pero con una X más larga (DESLIZAR.pagina) y sin gesto rápido ni avance
  * continuo: cambiar de página tiene que ser a propósito. Si el vecino no existe o aún no tiene
@@ -47,22 +49,12 @@ export default function useCambioModulo(modulo, { activo }) {
     continuo: false,
     veloz: [Infinity, Infinity],
   })
-  const abajo = useTirarAbajo({ activo, umbral: XV, puede: () => puede(1), onPasar: () => pasar(1) })
+  const bordes = useTirarBordes({ activo, umbral: XV, puede: (dir) => !saliendo.current && puede(dir), onPasar: pasar })
 
   const px = useCongelado(lado.progreso, saliendo)
-  const py = useCongelado(abajo, saliendo)
+  const py = useCongelado(bordes, saliendo)
   const x = useTransform(px, (p) => -p * X)
   const y = useTransform(py, (p) => -p * XV)
-
-  // Mientras se está en un módulo, el navegador no hace su propio rebote al final (lo hacemos nosotros).
-  useEffect(() => {
-    const html = document.documentElement
-    const antes = html.style.overscrollBehaviorY
-    html.style.overscrollBehaviorY = 'none'
-    return () => {
-      html.style.overscrollBehaviorY = antes
-    }
-  }, [])
 
   // Los gestos que empiezan en una hoja o en la barra de puntitos (portales) no son de la página.
   const { onPointerDown, ...resto } = lado.handlers
@@ -79,6 +71,7 @@ export default function useCambioModulo(modulo, { activo }) {
       <Asoma lado="derecha" progreso={px} modulo={vecino(1)} disponible={puede(1)} />
       <Asoma lado="izquierda" progreso={px} modulo={vecino(-1)} disponible={puede(-1)} />
       <Asoma lado="abajo" progreso={py} modulo={vecino(1)} disponible={puede(1)} />
+      <Asoma lado="arriba" progreso={py} modulo={vecino(-1)} disponible={puede(-1)} />
     </>,
     document.body,
   )
@@ -109,13 +102,13 @@ function useAncho() {
  * Si el módulo aún no tiene lecciones, se ve entero con poco recorrido y dice «Próximamente».
  */
 function Asoma({ lado, progreso, modulo, disponible }) {
-  const signo = lado === 'izquierda' ? -1 : 1
+  const signo = lado === 'izquierda' || lado === 'arriba' ? -1 : 1
   // Sin módulo disponible el gesto es una goma (apenas se mueve): el indicador «Próximamente» se ve antes.
   const lleno = disponible ? DESLIZAR.iman : 0.12
   const vis = useTransform(progreso, (p) => Math.max(0, Math.min(1, (p * signo) / lleno)))
   const desplazar = useTransform(vis, (v) => (1 - v) * 110)
   const escala = useTransform(vis, (v) => 0.7 + 0.3 * v)
-  const yAbajo = useTransform(desplazar, (d) => `${d}%`)
+  const yVertical = useTransform(desplazar, (d) => `${d * signo}%`)
   const xLado = useTransform(desplazar, (d) => `${d * signo}%`)
   if (!modulo) return null
 
@@ -127,19 +120,21 @@ function Asoma({ lado, progreso, modulo, disponible }) {
     </span>
   )
 
-  if (lado === 'abajo') {
+  if (lado === 'abajo' || lado === 'arriba') {
     return (
       <motion.div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 flex justify-center bg-fondo/90 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
-        style={{ opacity: vis, y: yAbajo }}
+        className={`pointer-events-none fixed inset-x-0 z-20 flex justify-center bg-fondo/90 ${
+          signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'top-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-3'
+        }`}
+        style={{ opacity: vis, y: yVertical }}
       >
         <div className="flex items-center gap-4">
           <motion.span style={{ scale: escala }}>
             <Cuadrito modulo={modulo} disponible={disponible} tam={56} />
           </motion.span>
           <span className="flex flex-col">
-            <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Siguiente</span>
+            <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">{signo > 0 ? 'Siguiente' : 'Anterior'}</span>
             <span className="text-lg font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
             <span className="text-base text-zinc-600">{disponible ? modulo.titulo : 'Próximamente'}</span>
           </span>

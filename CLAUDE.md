@@ -44,7 +44,7 @@ src/
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar/alargar/borrar notas, velocity, nombres app/FL)
     BotonSonido.jsx     # Botón que reproduce un sonido del contenido
     NavegadorModulos.jsx # Pestaña de módulos (hoja con carrusel lateral) y `Cuadrito` del módulo
-    CambioModulo.jsx    # Swipe de página entre módulos (lateral y tirando más allá del final) + indicadores
+    CambioModulo.jsx    # Swipe de página entre módulos (lateral y tirando más allá del borde) + indicadores
     Opciones.jsx        # Botón de Opciones (engranaje) + hoja con Apariencia: Claro / Oscuro / Automático
     Rich.jsx            # Texto con **negritas**
     pasos/              # Pasos no interactivos: PasoTexto, PasoSiente, Nota
@@ -59,7 +59,7 @@ src/
   progress/opciones.js  # localStorage de opciones (tema); aplicarTema() pone la clase `dark` en <html>
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
   pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
-  ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe con zona muerta, barrera y progreso continuo), useTirarAbajo.js (tirar más allá del final de la página), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
+  ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe con zona muerta, barrera y progreso continuo), useTirarBordes.js (tirar más allá del borde de arriba/abajo de la página), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx, color.js (oscuro/claro)
 .claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
@@ -117,6 +117,6 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Lección 2.3 «Figuras: de redonda a semicorchea»** (15 pasos): negra = 1 tiempo, redonda/blanca/negra, corcheas y semicorcheas («1 e y a») con una **pirámide de figuras** en el Piano Roll (`roll.nombres`: filas con nombre propio), silencios (= casilla vacía), el 4 de abajo en 4/4 (la negra) y por qué el **Channel rack tiene 16 pasos** (4 tiempos × 4 semicorcheas; tiempos en 1, 5, 9, 13). Oído: «¿Qué figura suena?», «¿Cuántas notas por tiempo?» (hi-hat sobre clic, también a tempos engañosos), «¿Qué ritmo suena?» y «¿Dónde está el silencio?»; `pulso` de blancas a semicorcheas (`contar: 'e'`, contador en dos filas de 8, guía de hi-hat con `porTiempo: 4`); dibujar figuras y hi-hat en semicorcheas en el Piano Roll; quiz y reto en FL (hats en negras/corcheas/semicorcheas y *Snap* Bar/Beat/1/2 beat/Step). El Piano Roll explica los fallos con la figura («2 tiempos (una blanca, 4 casillas)») y sitúa las semicorcheas («en la "e" del tiempo 2»). Probada de principio a fin con Playwright a 375 px (claro y oscuro, 25/25).
 
-- ✅ **Swipe de página entre módulos** (`components/CambioModulo.jsx` + `ui/useTirarAbajo.js`): en la pantalla de Módulo, con el camino cerrado, deslizar de lado pasa al módulo siguiente/anterior y, en el celular, tirar «más abajo» del final de la página pasa al siguiente. Resistencia fuerte hasta el 30 % de X, sigue al dedo y pasa al 50 % sin soltar (X larga: `DESLIZAR.pagina`; sin gesto rápido ni avance continuo); asoma el módulo de destino por el borde; vecino sin lecciones → goma y «Próximamente». `App.jsx` anima la entrada desde el lado del gesto. Probado con Playwright (táctil 375 px y ratón 1280 px).
+- ✅ **Swipe de página entre módulos** (`components/CambioModulo.jsx` + `ui/useTirarBordes.js`): en la pantalla de Módulo, con el camino cerrado, deslizar de lado pasa al módulo siguiente/anterior; en el celular, tirar «más abajo» del final de la página pasa al siguiente y **tirar hacia abajo estando arriba del todo pasa al anterior solo si el dedo se apoya por debajo del 75 % de la pantalla** (más arriba, el navegador recarga la página como siempre; `DESLIZAR.pagina.desdeAbajo`). Resistencia fuerte hasta el 30 % de X, sigue al dedo y pasa al 50 % sin soltar (X larga: `DESLIZAR.pagina`; sin gesto rápido ni avance continuo); asoma el módulo de destino por el borde; vecino sin lecciones → goma y «Próximamente». `App.jsx` anima la entrada desde el lado del gesto. Probado con Playwright (táctil 375 px y ratón 1280 px).
 
 **Siguiente tarea:** lección 2.4 «Síncopa y anticipación» (acentos a contratiempo, notas que se adelantan a la «y» o a la «a», ligaduras sobre el tiempo, el dembow del reguetón y el *bounce* del hip hop), reutilizando `pulso` con `desfase` y `contar: 'y' | 'e'` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
