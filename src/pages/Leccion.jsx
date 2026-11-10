@@ -1,3 +1,4 @@
+import { motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, releaseAll, toneStop } from '../audio/engine.js'
 import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
@@ -10,6 +11,8 @@ import Rich from '../components/Rich.jsx'
 import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
+import { RESORTE } from '../ui/movimiento.js'
+import Pulsable from '../ui/Pulsable.jsx'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
 const PASOS = {
@@ -97,14 +100,13 @@ function Visor({ leccion, onRepetir }) {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 bg-[#fafafa]/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <button
-            type="button"
+          <Pulsable
             onClick={salir}
             aria-label="Salir de la lección"
             className="grid size-11 shrink-0 place-items-center rounded-full text-2xl text-zinc-500 active:bg-zinc-200"
           >
             ✕
-          </button>
+          </Pulsable>
           <div
             className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
             role="progressbar"
@@ -113,9 +115,12 @@ function Visor({ leccion, onRepetir }) {
             aria-valuenow={indice}
             aria-label={`Paso ${indice + 1} de ${total}`}
           >
-            <div
-              className="h-full rounded-full transition-[width] duration-300"
-              style={{ width: `${(indice / total) * 100}%`, backgroundColor: modulo?.acento ?? '#18181b' }}
+            <motion.div
+              className="h-full rounded-full"
+              initial={false}
+              animate={{ width: `${(indice / total) * 100}%` }}
+              transition={RESORTE.suave}
+              style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
             />
           </div>
           <span className="w-12 shrink-0 text-right text-sm tabular-nums text-zinc-500">
@@ -124,7 +129,14 @@ function Visor({ leccion, onRepetir }) {
         </div>
       </header>
 
-      <main key={indice} className="animate-entrada mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4">
+      {/* Cada paso entra desde la derecha con un resorte (como avanzar en iOS). */}
+      <motion.main
+        key={indice}
+        initial={{ opacity: 0, x: 40 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
+        className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4"
+      >
         <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{paso.titulo}</h1>
         {paso.intro && (
           <p className="text-lg leading-relaxed text-zinc-600">
@@ -142,7 +154,7 @@ function Visor({ leccion, onRepetir }) {
         ) : (
           <p className="text-red-600">Tipo de paso desconocido: {paso.tipo}</p>
         )}
-      </main>
+      </motion.main>
 
       <BarraAccion accion={boton} />
     </div>
@@ -157,33 +169,32 @@ export function BarraAccion({ accion }) {
     <div data-barra-accion className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-col gap-2 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {feedback && (
-          <div
+          <motion.div
             key={feedback.titulo + feedback.texto}
             role="status"
-            className={`animate-entrada rounded-2xl px-4 py-3 ${bien ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}`}
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={RESORTE.suave}
+            className={`flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}`}
           >
-            <p className="max-h-28 overflow-y-auto text-base leading-snug">
-              <strong className="font-bold">{feedback.titulo}</strong>
-              {feedback.texto && (
-                <>
-                  {' '}
-                  <Rich>{feedback.texto}</Rich>
-                </>
-              )}
-            </p>
-          </div>
+            <p className="text-base font-bold leading-snug">{feedback.titulo}</p>
+            {feedback.texto && (
+              <p className="text-base leading-snug">
+                <Rich>{feedback.texto}</Rich>
+              </p>
+            )}
+          </motion.div>
         )}
         {accion.ayuda && <p className="text-center text-sm text-zinc-500">{accion.ayuda}</p>}
-        <button
-          type="button"
+        <Pulsable
           onClick={accion.onClick}
           disabled={accion.disabled}
-          className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-300 disabled:text-zinc-500 ${
+          className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold text-white transition-colors duration-200 disabled:bg-zinc-300 disabled:text-zinc-500 ${
             bien ? 'bg-emerald-600' : 'bg-zinc-900'
           }`}
         >
           {accion.label}
-        </button>
+        </Pulsable>
       </div>
     </div>
   )
@@ -200,15 +211,18 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
   const proximaLista = proxima && leccionDisponible(proxima.id)
 
   return (
-    <main className="animate-entrada mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
+    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div
+        <motion.div
           className="grid size-20 place-items-center rounded-full text-4xl text-white"
           style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.1 }}
           aria-hidden
         >
           ✓
-        </div>
+        </motion.div>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">¡Lección completada!</h1>
         <p className="text-lg text-zinc-500">
           {leccion.id} · {leccion.titulo}
@@ -238,12 +252,12 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
 
       <div className="flex flex-col gap-3">
         {proximaLista ? (
-          <a
+          <Pulsable
             href={rutas.leccion(proxima.id)}
-            className="grid min-h-14 place-items-center rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white"
+            className="grid min-h-14 place-items-center rounded-2xl bg-zinc-900 px-6 text-center text-lg font-semibold text-white"
           >
             Siguiente: {proxima.titulo}
-          </a>
+          </Pulsable>
         ) : (
           proxima && (
             <p className="text-center text-base text-zinc-500">
@@ -251,16 +265,15 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
             </p>
           )
         )}
-        <a
+        <Pulsable
           href={rutas.modulo(leccion.modulo)}
           className={`grid min-h-14 place-items-center rounded-2xl px-6 text-lg font-semibold ${
             proximaLista ? 'border-2 border-zinc-200 bg-white text-zinc-800' : 'bg-zinc-900 text-white'
           }`}
         >
           Volver al módulo
-        </a>
-        <button
-          type="button"
+        </Pulsable>
+        <Pulsable
           onClick={() => {
             window.scrollTo(0, 0)
             onRepetir()
@@ -268,7 +281,7 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
           className="min-h-12 rounded-2xl px-6 text-base font-medium text-zinc-500"
         >
           Repetir lección
-        </button>
+        </Pulsable>
       </div>
     </main>
   )

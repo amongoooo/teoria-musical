@@ -20,9 +20,13 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 - **Vite + React en JavaScript** (`.jsx`, sin TypeScript).
 - **Tailwind CSS v4** (plugin `@tailwindcss/vite`, configurado en `src/index.css`).
 - **Tone.js** para el audio (piano con samples Salamander + sintetizador de respaldo).
-- Previstos: **Tonal.js** (teoría: escalas, acordes, intervalos), **@tonejs/midi** (leer/exportar MIDI), **Framer Motion** (animaciones), **localStorage** (progreso del usuario).
+- **motion** (Framer Motion) para animaciones con resortes: presets en `src/ui/movimiento.js`, botón/enlace que se hunde `src/ui/Pulsable.jsx`.
+- Previstos: **Tonal.js** (teoría: escalas, acordes, intervalos), **@tonejs/midi** (leer/exportar MIDI).
+- **localStorage** para el progreso del usuario.
 
 Estilo visual: minimalista, fondo blanco/gris muy claro (`#fafafa`), tipografía grande (Inter / system-ui), mucho espacio.
+
+**Diseño: antes de tocar cualquier pantalla, usar la skill del proyecto `.claude/skills/diseno/SKILL.md`** (tokens, componentes y movimiento tipo iOS). Actualizarla cuando el usuario apruebe un estilo nuevo.
 
 ## Estructura de carpetas
 
@@ -47,6 +51,8 @@ src/
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
   pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
+  ui/                   # movimiento.js (resortes), Pulsable.jsx (se hunde al tocar)
+.claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
@@ -71,7 +77,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~25 %**
+**Avance: ~27 %**
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -82,5 +88,6 @@ public/samples/         # Samples de audio propios
 - ✅ **Entrenamiento de oído** (`#/oido`, tarjeta en Inicio con racha y avance del día): meta de 5 min/día, racha de días (fecha local), últimos 7 días y estadísticas por elemento. Tres modos con niveles que suben al acertar 8 de las últimas 10: **Intervalos** (8 niveles, de 3ªM y 5ªJ al tritono; subiendo, bajando o a la vez), **Acordes** mayor/menor (arpegio + acorde → solo acorde → inversiones y registros), **Oído absoluto** como juego (empieza con Do y Sol y suma una nota por nivel hasta las 12; cambia de octava desde 5 notas). Tras responder se puede tocar cada opción para comparar y se ve en el Piano. Reutiliza `BarraAccion` de `Leccion.jsx`, `reproducir()`, `Piano`. Datos en `localStorage` clave `teoria-musical:oido:v1`.
 - ✅ Oído absoluto sin trampa: entre pregunta y pregunta suena un «borrador» (ráfaga de notas cromáticas al azar de Do2 a Do6 + soplo de ruido rosa y un silencio) con `limpiarOido()` de `engine.js`; el modo lo activa con `limpiar: true`. Mientras suena, las opciones están desactivadas. `playNotes`/`reproducir` aceptan `retraso`.
 - ✅ Lección 1.3 «Teclas blancas y negras: sostenidos y bemoles» (11 pasos): semitono y tono, ♯/♭, enarmonía, ejercicio principal encontrar **Do♯/Re♭** en todas las octavas (con y sin nombres), más Fa♯, Si♭, Mi♭; oído «¿semitono o tono?», quiz, «¿Qué se siente?» y reto en FL. El Piano resalta `marcadas` por altura (así `Db4` marca la tecla de `C#4`).
+- ✅ **Diseño tipo iOS (primera parte)**: revisión de diseño a 375 px; skill de diseño del proyecto; `motion` con resortes; transiciones entre pantallas según la dirección (App.jsx, `MotionConfig reducedMotion="user"`); en Inicio entrada escalonada, tarjeta destacada con contraste corregido (acento oscurecido), módulos «Próximamente» compactos y barras animadas; en el visor de lecciones pasos que entran con resorte, barra de progreso con resorte, feedback con título en su línea y todos los botones con `Pulsable`. Pendientes de la revisión en la sección 7 de la skill.
 
-**Siguiente tarea:** lección 1.4 «Leer el Piano Roll» (cierra el módulo 1), y quizá una prueba rápida al inicio del módulo para saltar lo que ya se domina.
+**Siguiente tarea:** aplicar la skill de diseño a Módulo y Entrenamiento de oído (pendientes de la sección 7), luego lección 1.4 «Leer el Piano Roll» (cierra el módulo 1), y quizá una prueba rápida al inicio del módulo para saltar lo que ya se domina.
