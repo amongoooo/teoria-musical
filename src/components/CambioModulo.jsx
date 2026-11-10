@@ -36,9 +36,11 @@ export default function useCambioModulo(modulo, { activo }) {
 
   // Al pasar, lo que se ve se congela (la página se va con su transición de salida).
   const saliendo = useRef(false)
+  const [seVa, setSeVa] = useState(false) // al pasar, los indicadores se desvanecen (la página nueva ya entra)
   const pasar = (dir) => {
     if (saliendo.current) return
     saliendo.current = true
+    setSeVa(true)
     navegar(rutas.modulo(modulo.numero + dir))
   }
 
@@ -70,12 +72,12 @@ export default function useCambioModulo(modulo, { activo }) {
   }
 
   const indicadores = createPortal(
-    <>
+    <motion.div animate={{ opacity: seVa ? 0 : 1 }} transition={{ duration: 0.15 }}>
       <Asoma lado="derecha" progreso={px} listo={lado.listo} modulo={vecino(1)} disponible={puede(1)} />
       <Asoma lado="izquierda" progreso={px} listo={lado.listo} modulo={vecino(-1)} disponible={puede(-1)} />
       <Asoma lado="abajo" progreso={py} listo={bordes.listo} modulo={vecino(1)} disponible={puede(1)} />
       <Asoma lado="arriba" progreso={py} listo={bordes.listo} modulo={vecino(-1)} disponible={puede(-1)} />
-    </>,
+    </motion.div>,
     document.body,
   )
 

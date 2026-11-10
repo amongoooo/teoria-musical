@@ -29,6 +29,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * (con goma más allá) y `listo` vale ±1 («Suelta para ir»); solo pasa AL SOLTAR ahí. Si el dedo vuelve
  * por debajo del 50 %, `listo` vuelve a 0 y al soltar regresa a su sitio.
  *
+ * `alTope(lado)`: si se da, en los extremos (no hay más) NO hay goma: el contenido no se mueve y se
+ * llama a `alTope` con el lado de la pantalla hacia el que va el dedo (−1 izquierda, +1 derecha), una
+ * vez cada vez que el gesto choca con el extremo (quien lo usa hace su «tilt»).
+ *
  * `cadena` (barra de puntitos): el imán se repite entre cada par de puntitos (una isla por cada
  * puntito que se cruza, mismo 50 % en los dos sentidos) y no hay avance continuo.
  *
@@ -162,19 +166,34 @@ export default function useDeslizar(opciones) {
     const dir = Math.sign(gr)
     if (pegado) {
       const px = Math.abs(gr) * X
+      if (!op.current.puede(dir) && op.current.alTope) return tope(s, dir, px > zm)
       const tir = op.current.puede(dir) ? tiron(px, X) : goma(px, 0, X)
       return { fase: 'pegado', valor: (dir * tir) / X }
     }
     const r = Math.abs(gr) * X
     if (s.veloz && op.current.puede(dir)) return { fase: 'sigue', valor: gr }
-    if (dir === 0 || r <= zm) return { fase: 'quieto', valor: 0 }
-    if (!op.current.puede(dir)) return { fase: 'goma', valor: (dir * goma(r, zm, X)) / X }
+    if (dir === 0 || r <= zm) {
+      s.tope = 0
+      return { fase: 'quieto', valor: 0 }
+    }
+    if (!op.current.puede(dir)) return op.current.alTope ? tope(s, dir, true) : { fase: 'goma', valor: (dir * goma(r, zm, X)) / X }
+    s.tope = 0
     const sigue = s.sigue === dir ? r >= X * DESLIZAR.sigueSale : r >= X * DESLIZAR.inicio
     s.sigue = sigue ? dir : 0
     // Soltar para pasar: más allá del 50 % sigue al dedo, pero cada vez más duro (goma).
     if (sigue && op.current.soltarParaPasar && r > X * DESLIZAR.iman) return { fase: 'sigue', valor: dir * (DESLIZAR.iman + goma(r - X * DESLIZAR.iman, 0, X) / X) }
     if (sigue) return { fase: 'sigue', valor: gr }
     return { fase: 'inicio', valor: (dir * resistencia(r, zm, X)) / X }
+  }
+
+  /** Extremo con `alTope`: no se mueve; avisa una vez por choque (el lado es el de la pantalla). */
+  const tope = (s, dir, choca) => {
+    if (!choca) s.tope = 0
+    if (choca && s.tope !== dir) {
+      s.tope = dir
+      op.current.alTope(dir * op.current.sentido) // lado de la pantalla hacia el que va el dedo
+    }
+    return { fase: 'tope', valor: 0 }
   }
 
   /** Recalcula todo para el dedo en `d` (px hacia «siguiente» desde donde se apoyó). */

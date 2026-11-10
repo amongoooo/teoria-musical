@@ -1,5 +1,6 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useRef } from 'react'
+import CabeceraModulo from './components/CabeceraModulo.jsx'
 import { useRuta } from './router.js'
 import Inicio from './pages/Inicio.jsx'
 import Leccion from './pages/Leccion.jsx'
@@ -34,6 +35,22 @@ export default function App() {
     // reducedMotion="user": si el teléfono pide reducir movimiento, se quitan los
     // desplazamientos y solo quedan fundidos.
     <MotionConfig reducedMotion="user">
+      {/* Cabecera de los módulos fuera de la transición: entre módulos se queda quieta (solo cambia la barra). */}
+      <AnimatePresence initial={false} custom={dir}>
+        {ruta.pagina === 'modulo' && (
+          <motion.div
+            key="cabecera-modulo"
+            custom={dir}
+            variants={variantesPantalla}
+            initial="entra"
+            animate="quieta"
+            exit="sale"
+            transition={{ ...RESORTE.pantalla, opacity: { duration: 0.18 } }}
+          >
+            <CabeceraModulo numero={ruta.id} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence mode="popLayout" initial={false} custom={dir}>
         <motion.div
           key={clave}

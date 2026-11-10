@@ -26,7 +26,7 @@ import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
-import Volver from '../ui/Volver.jsx'
+import { BotonInicio } from '../ui/Volver.jsx'
 import { BarraAccion } from './Leccion.jsx'
 
 /** #/oido → panel del día; #/oido/intervalos (etc.) → práctica. */
@@ -70,7 +70,7 @@ function Panel() {
       animate="visible"
       className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-6 sm:py-10"
     >
-      <Volver href={rutas.inicio()}>Inicio</Volver>
+      <BotonInicio />
 
       <motion.header variants={itemLista} className="flex flex-col gap-2">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Entrenamiento de oído</h1>

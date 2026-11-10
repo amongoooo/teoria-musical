@@ -20,6 +20,8 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
+const TILT = { x: 12, grados: 3, vuelve: 250 } // «tilt» de la isla abierta al chocar con un extremo (px, grados, ms)
+const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
 const ALTO_ESTIMADO = BOLA + SEPARA + 210 // alto de bola + globo hasta medirlo
@@ -112,7 +114,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   )
 
   // Elementos que se mueven a mano en cada fotograma.
-  const els = useRef({ nodo: [], escala: [], chica: [], grande: [], etiqueta: [], gris: [], color: [], punto: [] }).current
+  const els = useRef({ nodo: [], escala: [], chica: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], punto: [] }).current
   const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
 
@@ -160,7 +162,19 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
 
   useEffect(() => onAbierta?.(abierta !== null), [abierta, onAbierta])
 
-  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla })
+  // En los extremos (no hay más islas) la isla abierta no se mueve: hace un pequeño «tilt» y un
+  // desplazamiento corto hacia donde va el dedo, y a los 0,25 s vuelve a su sitio con un resorte.
+  const tilt = useRef(null)
+  const inclinar = (lado) => {
+    const el = els.inclina[abiertaRef.current]
+    if (!el || reducir) return
+    clearTimeout(tilt.current)
+    animate(el, { x: lado * TILT.x, rotate: lado * TILT.grados }, RESORTE.pulsar)
+    tilt.current = setTimeout(() => animate(el, { x: 0, rotate: 0 }, RESORTE.suave), TILT.vuelve)
+  }
+  useEffect(() => () => clearTimeout(tilt.current), [])
+
+  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla, alTope: inclinar })
   const puntos = useDeslizar({
     activo: abierta !== null,
     umbral: DESLIZAR.puntitos.separacion,
@@ -172,6 +186,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     eje: false,
     onPaso: paso,
     puede,
+    alTope: inclinar,
     // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
     origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
     alEmpezar: (e) => {
@@ -340,19 +355,36 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     return () => clearTimeout(t)
   }, [ancho])
 
-  // Al abrir una isla, que la isla y su globo queden a la vista (por encima de la barra de puntitos).
+  // Al abrir una isla o pasar a otra, que la isla y su globo queden a la vista (por encima de la barra
+  // de puntitos). Si el dedo sigue apoyado (aún deslizando), espera a que se suelte.
+  const dedo = useRef(false)
   useEffect(() => {
-    if (!abiertaSiNo) return
-    const t = setTimeout(() => {
+    const abajo = () => (dedo.current = true)
+    const arriba = () => (dedo.current = false)
+    window.addEventListener('pointerdown', abajo, true)
+    window.addEventListener('pointerup', arriba, true)
+    window.addEventListener('pointercancel', arriba, true)
+    return () => {
+      window.removeEventListener('pointerdown', abajo, true)
+      window.removeEventListener('pointerup', arriba, true)
+      window.removeEventListener('pointercancel', arriba, true)
+    }
+  }, [])
+  useEffect(() => {
+    if (abierta === null) return
+    let t
+    const revisar = () => {
+      if (dedo.current) return (t = setTimeout(revisar, 150))
       const r = els.grande[abiertaRef.current]?.getBoundingClientRect()
       if (!r) return
       const arriba = r.top - ARO - 8
-      const abajo = r.bottom - (window.innerHeight - 100)
+      const abajo = r.bottom - (window.innerHeight - BARRA_ALTO)
       const dy = arriba < 0 ? arriba : abajo > 0 ? Math.min(abajo, arriba) : 0
       if (Math.abs(dy) > 4) window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
-    }, 300)
+    }
+    t = setTimeout(revisar, 300)
     return () => clearTimeout(t)
-  }, [abiertaSiNo, els, reducir])
+  }, [abierta, els, reducir])
 
   const entrada = (indice) => ({
     initial: { scale: 0.6, opacity: 0 },
@@ -443,11 +475,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                       </span>
                     </div>
                     <div ref={guardar('grande', i)} className="absolute left-0 top-0" style={{ visibility: 'hidden', opacity: 0, width: grande, transformOrigin: `50% ${BOLA / 2}px` }}>
-                      {l.esRetos ? (
-                        <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
-                      ) : (
-                        <IslaAbierta meta={l} modulo={modulo} progreso={progreso} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
-                      )}
+                      <div ref={guardar('inclina', i)} style={{ transformOrigin: `50% ${BOLA / 2}px` }}>
+                        {l.esRetos ? (
+                          <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
+                        ) : (
+                          <IslaAbierta meta={l} modulo={modulo} progreso={progreso} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -482,8 +516,9 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
     <motion.div
       data-nodo
       data-puntitos
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pt-12"
+      // Lo que queda debajo de la barra se desvanece hacia el fondo (así se lee que es otra capa).
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)', background: 'linear-gradient(to top, var(--color-fondo) 40%, color-mix(in oklab, var(--color-fondo) 70%, transparent) 70%, transparent)' }}
       initial={{ y: '120%' }}
       animate={{ y: 0 }}
       exit={{ y: '120%' }}
@@ -498,13 +533,15 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
       >
         {lecciones.map((l, i) => {
           const hecha = estados[i] === 'hecha'
+          // Islas aún no desbloqueadas (o sin contenido): puntito gris.
+          const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
           return (
             <button
               key={l.id}
               type="button"
               data-punto={i}
               onClick={() => onIr(i)}
-              aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : ''}`}
+              aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
               aria-current={i === abierta ? 'true' : undefined}
               className="grid h-14 place-items-center"
               style={{ width: sep }}
@@ -512,7 +549,13 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
               <span
                 ref={guardar('punto', i)}
                 className={`block ${l.esRetos ? 'rounded-[5px]' : 'rounded-full'}`}
-                style={{ width: PUNTO, height: PUNTO, backgroundColor: hecha ? oscuro(acento) : acento, opacity: hecha ? 1 : 0.35, transform: `scale(${i === abierta ? 1 : 0.5})` }}
+                style={{
+                  width: PUNTO,
+                  height: PUNTO,
+                  backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha ? oscuro(acento) : acento,
+                  opacity: cerrada || hecha ? 1 : 0.35,
+                  transform: `scale(${i === abierta ? 1 : 0.5})`,
+                }}
               />
             </button>
           )

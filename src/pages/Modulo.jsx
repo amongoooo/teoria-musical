@@ -5,11 +5,9 @@ import useCambioModulo from '../components/CambioModulo.jsx'
 import { getModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
-import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { tinta } from '../ui/color.js'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
-import Volver from '../ui/Volver.jsx'
 
 export default function Modulo({ numero }) {
   const modulo = getModulo(numero)
@@ -32,8 +30,6 @@ function PaginaModulo({ modulo }) {
   // Con una isla abierta, el swipe lateral es del camino; con el camino cerrado, cambia de módulo.
   const [islaAbierta, setIslaAbierta] = useState(false)
   const cambio = useCambioModulo(modulo, { activo: !islaAbierta })
-  const hechas = modulo.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
-  const total = modulo.lecciones.length
 
   return (
     <>
@@ -45,21 +41,8 @@ function PaginaModulo({ modulo }) {
         style={cambio.estilo}
         {...cambio.handlers}
       >
-        {/* Barra superior: volver + progreso del módulo */}
-        <motion.div variants={itemLista} className="flex items-center gap-4">
-          <Volver href={rutas.inicio()}>Inicio</Volver>
-          <div className="mx-auto flex w-full max-w-xl items-center gap-3">
-            <BarraProgreso
-              valor={total ? hechas / total : 0}
-              color={modulo.acento}
-              className="flex-1"
-              aria-label={`${hechas} de ${total} lecciones completadas`}
-            />
-            <span className="text-sm tabular-nums text-zinc-500">
-              {hechas}/{total}
-            </span>
-          </div>
-        </motion.div>
+        {/* Hueco de la cabecera (casita + barra de progreso): vive en App.jsx y se queda quieta entre módulos. */}
+        <div aria-hidden className="h-11 shrink-0" />
 
         <motion.header variants={itemLista} className="flex flex-col items-center gap-2 text-center">
           <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
