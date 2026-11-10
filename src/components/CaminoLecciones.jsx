@@ -150,10 +150,9 @@ export default function CaminoLecciones({ modulo, progreso }) {
     umbral: DESLIZAR.puntitos.separacion,
     zonaMuerta: DESLIZAR.puntitos.zonaMuerta,
     sentido: 1, // por la barra, arrastrar a la derecha va a la siguiente
-    unaPorGesto: false, // una isla cada vez que se cruza un puntito
+    cadena: true, // una isla por cada puntito que se cruza, sin avance continuo
     rapido: false,
     eje: false,
-    anclaExacta: true,
     onPaso: paso,
     puede,
     alEmpezar: (e) => {
@@ -249,6 +248,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
       if (Math.abs(dy) > 0.5) window.scrollBy(0, dy)
     }
     ultimaP.current = p
+    cont.dataset.posicion = p.toFixed(3) // posición continua del carrusel (útil para pruebas)
   }
   const actualizarRef = useRef(actualizar)
   actualizarRef.current = actualizar

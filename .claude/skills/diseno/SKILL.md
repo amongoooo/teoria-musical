@@ -125,20 +125,22 @@ Reglas:
 **Todos los deslizamientos de la app** usan el hook **`useDeslizar`** (`src/ui/useDeslizar.js`) con las constantes `DESLIZAR` de `movimiento.js`.
 El hook no mueve píxeles: devuelve **`progreso`** (MotionValue en «pasos», 0 = en su sitio, ±1 = el vecino ya en su lugar) y la pantalla dibuja la posición continua `índice + progreso`.
 
-1. **Zona muerta REAL** (`zonaMuerta`, 14 px): mientras el dedo o el ratón no se aleje más de eso de donde se apoyó, **no se mueve NADA** (ni una curva suave). Al salir, el movimiento empieza **desde 0**, sin salto.
-2. **Resistencia al empezar** (`arranque`, `arranqueFuerza`): en el primer 25 % de X (tras la zona muerta) el contenido avanza menos que el dedo (pendiente 0,3 que sube suave hasta 1): cuesta arrancar.
-2b. **Barrera del 75 %** (`barrera`, `fuerza`): luego sigue al dedo **1:1** hasta el 75 % de X; del 75 % al 100 % una fuerza en contra hace que avance cada vez menos que el dedo (la pendiente baja de 1 a 0,2). Se nota que hay una barrera… que se puede pasar.
-3. **Al 100 % pasa sin soltar**, y el contenido completa el cambio con `RESORTE.pantalla` (sin salto: el progreso se compensa y se asienta).
-4. **Una isla por swipe** (`unaPorGesto`): un mismo gesto nunca se aleja más de un elemento del de partida; si se sigue arrastrando, goma. Para pasar otra hay que soltar y volver a deslizar.
-5. **Regreso**: ya pasado, si en el mismo gesto se regresa **1/5 de X** (`retorno`) vuelve al anterior. Ese regreso tiene **su propia zona muerta** (desde el punto donde pasó) y **su barrera del 75 %**.
-6. **Imán al soltar** (`iman`): si al soltar el dedo pasó el **50 % de X**, el cambio se completa; si no, vuelve a su sitio. **Gesto rápido**: si se suelta antes pero a ≥ `velocidad` (0,45 px/ms) en esa dirección, también pasa (solo uno). Al soltar, lo que quede vuelve o se completa con `RESORTE.pantalla` heredando la velocidad del dedo.
-7. **Distancia X**: en pantallas anchas `umbralAncho` (240 px); en el celular `umbralCelular` × ancho (35 %, mínimo 100 px).
+Todas las distancias son fracciones de **X** (la distancia de un paso, punto 7).
+
+1. **Zona muerta REAL** (`zonaMuerta`, 14 px): mientras el dedo o el ratón no se aleje más de eso de donde se apoyó, **no se mueve NADA**.
+2. **Resistencia de inicio fuerte** (`inicio`, `resistencia`): del final de la zona muerta al **30 % de X** el contenido **casi no se mueve**: como mucho el 6,5 % de X, con una curva que se aplana (cada vez más dura). Se nota claramente que cuesta arrancar.
+3. **Alcanza al dedo al 30 %**: al pasar el 30 % el contenido llega a la posición exacta del dedo con un resorte rápido (`RESORTE.pulsar`, ~130 ms, sin salto brusco) y desde ahí lo sigue **1:1**. Si el dedo regresa por debajo del 26 % (`sigueSale`), vuelve la resistencia (con resorte).
+4. **Imán al 50 %, sin soltar** (`iman`): al pasar el 50 % de X el contenido se **pega al vecino** con `RESORTE.pantalla` y ese pasa a ser el actual. Pegado, apenas se mueve (un tirón suave hacia el dedo). **Histéresis** (`vuelve`): si el dedo regresa por debajo del **40 %**, vuelve al anterior (y sigue al dedo); entre el 40 y el 50 % no tiembla.
+5. **Avance continuo al 95 %** (`continuoDesde`, `continuo`): si el dedo pasa el 95 % de X y se mantiene, pasa elemento por elemento solo: el primero al cabo de **1 s** y luego cada vez más rápido (**1000 → 700 → 500 → 350 → 250 ms**; máximo 4 por segundo). Cada paso automático se anima con `RESORTE.pantalla` en el carrusel continuo. Para **al soltar**, **al regresar por debajo del 95 %** o **al llegar al extremo** (ahí, goma). No hay límite de «una isla por swipe».
+6. **Al soltar**: si no se había pegado (antes del 50 %), vuelve a su sitio con `RESORTE.pantalla` (heredando la velocidad del dedo si lo seguía 1:1). **Gesto rápido**: si se suelta a ≥ `velocidad` (0,45 px/ms) en esa dirección, pasa uno. Si ya estaba pegado, se asienta en el nuevo.
+7. **Distancia X**: en pantallas anchas `umbralAncho` (240 px); en el celular `umbralCelular` × ancho del carrusel (35 %, mínimo 100 px).
 8. **Extremos**: si no hay más, resistencia tipo goma (`goma`, se satura en 1/4 de X).
 9. **Carrusel continuo**: mientras se arrastra, **todo se mueve con el dedo**: lo que se va se encoge y se desplaza, lo que llega crece y se acerca al centro, interpolando posiciones y tamaños según el progreso (0 → 1). Sin cortes ni cambios de golpe al pasar.
 10. Si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll). El contenedor lleva `touch-action: pan-y`.
 11. Tras arrastrar, el «click» de soltar no activa botones.
+12. Mismas reglas en **todos** los carruseles: camino de islas y pestaña de **Módulos**. Cada carrusel escribe su posición continua en `data-posicion` (sirve para medir el gesto con Playwright).
 
-**Barra de puntitos** (paginador): cuando hay un carrusel abierto (p. ej. una isla), **sube desde abajo** con `RESORTE.pantalla`, fija en la parte inferior y respetando `env(safe-area-inset-bottom)`; al cerrar, baja y se oculta. Píldora blanca `rounded-full border shadow-sm`, un puntito por elemento en celdas de **44 × 56 px** (`DESLIZAR.puntitos.separacion`). Hechos: opacos (`oscuro(acento)`); pendientes: atenuados (acento al 35 %). El del elemento actual mide 16 px y los demás 8 px, y el tamaño **sigue al progreso** del carrusel (crece/encoge con el resorte). **Tocar** un puntito va directo a ese elemento. **Arrastrar** por encima (`useDeslizar` con `sentido: 1`, `unaPorGesto: false`, `anclaExacta: true`, zona muerta 8 px) pasa de uno en uno: entre puntito y puntito se ve la zona muerta y la barrera del 75 %, y pasa al cruzar el siguiente puntito. `touch-action: none` en la barra.
+**Barra de puntitos** (paginador): cuando hay un carrusel abierto (p. ej. una isla), **sube desde abajo** con `RESORTE.pantalla`, fija en la parte inferior y respetando `env(safe-area-inset-bottom)`; al cerrar, baja y se oculta. Píldora blanca `rounded-full border shadow-sm`, un puntito por elemento en celdas de **44 × 56 px** (`DESLIZAR.puntitos.separacion`). Hechos: opacos (`oscuro(acento)`); pendientes: atenuados (acento al 35 %). El del elemento actual mide 16 px y los demás 8 px, y el tamaño **sigue al progreso** del carrusel (crece/encoge con el resorte). **Tocar** un puntito va directo a ese elemento. **Arrastrar** por encima (`useDeslizar` con `sentido: 1`, `cadena: true`, zona muerta 8 px; X = 44 px, la separación entre puntitos) pasa **una isla por cada puntito que se cruza**: entre puntito y puntito se repite la curva nueva (zona muerta, resistencia hasta el 30 %, 1:1, imán al 50 % con regreso por debajo del 40 %) y **sin avance continuo**. `touch-action: none` en la barra.
 
 ## 4. Componentes
 
@@ -185,6 +187,8 @@ El hook no mueve píxeles: devuelve **`progreso`** (MotionValue en «pasos», 0 
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: (pedido del usuario) **Nuevas reglas de swipe** para toda la app: resistencia fuerte hasta el 30 % de X (≤ 6,5 % de X), alcanza al dedo con resorte rápido y sigue 1:1, **imán al 50 % sin soltar** con histéresis (vuelve por debajo del 40 %), **avance continuo** con el dedo más allá del 95 % (1 s y acelera hasta 4 por segundo). Se quitan la barrera del 75 %, «pasa al 100 %», «una isla por swipe», el regreso de 1/5 y el imán al soltar. Barra de puntitos con la misma curva entre puntitos (`cadena`), sin avance continuo.
 
 - 2026-11-10: Inicio con módulos en **cuadritos** que despliegan sus islas; la insignia abre la pestaña de **Módulos** (carrusel lateral); isla de **Retos** al final del camino; fuera «¿Qué se siente?» y el reto del módulo como texto. Swipe: **resistencia al empezar** (primer 25 % de X) e **imán del 50 %** al soltar.
 

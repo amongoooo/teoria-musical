@@ -72,6 +72,7 @@ function Carrusel({ actual, onCerrar }) {
     const pc = limitar(p, 0, n - 1)
     const fuera = p - pc
     const sep = anchoTarjeta + 12
+    if (ref.current) ref.current.dataset.posicion = p.toFixed(3) // posición continua (útil para pruebas)
     tarjetas.current.forEach((el, i) => {
       if (!el) return
       const d = i - pc
