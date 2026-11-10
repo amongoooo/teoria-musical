@@ -65,11 +65,14 @@ export const SALTO = { scale: [1, 1.05, 1] }
  *  - sigueSale: ya siguiendo al dedo, por debajo del 26 % vuelve la resistencia (evita temblores en el 30 %).
  *  - iman: 50 %, igual en los dos sentidos: por encima se pega al vecino; por debajo, al de antes.
  *  - continuo: avance continuo ya pegado al vecino: [desde qué fracción de X, espera en ms entre islas].
- *  - velocidadMax: tope de velocidad del contenido (px/ms), al seguir al dedo y en los resortes.
+ *  - velocidadMax / alcance: tope SUAVE de velocidad de lo automático (resortes del imán, pasos automáticos,
+ *    soltar), en px/ms; crece `alcance` px/ms por cada px que se quede atrás. Lo que sigue al dedo no se frena.
+ *  - veloz: [entra, sale] px/ms: con el dedo así de rápido, el contenido lo sigue sin resistencia ni paradas.
  *  - velocidad: px/ms a partir de los que un gesto corto cuenta como swipe (pasa uno).
  *  - goma: resistencia cuando no hay más (extremos).
  *  - umbralAncho / umbralCelular: X en pantallas anchas (px) y en el celular (fracción del ancho).
- *  - puntitos: separación entre puntitos de la barra (px, = X al arrastrar por ella) y su zona muerta.
+ *  - puntitos: separación entre puntitos de la barra (px, = X al arrastrar por ella), su zona muerta y su
+ *    modo rápido (más bajo: los puntitos están mucho más juntos que las islas).
  */
 export const DESLIZAR = {
   zonaMuerta: 14,
@@ -85,9 +88,11 @@ export const DESLIZAR = {
     [0.98, 250],
   ],
   velocidadMax: 1.2,
+  alcance: 0.012,
+  veloz: [0.8, 0.4],
   velocidad: 0.45,
   goma: 0.35,
   umbralAncho: 240,
   umbralCelular: 0.35,
-  puntitos: { separacion: 44, zonaMuerta: 8 },
+  puntitos: { separacion: 44, zonaMuerta: 8, veloz: [0.25, 0.12] },
 }

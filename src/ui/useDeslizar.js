@@ -19,8 +19,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *     98 % → 250 ms). Para al soltar, al bajar del 75 % o en el extremo.
  *  6. Soltar antes del 50 % (sin haberse pegado): vuelve a su sitio. Gesto rápido: pasa uno.
  *  7. Sin vecino: resistencia tipo goma.
- *  8. Tope de velocidad: el contenido nunca va más rápido que DESLIZAR.velocidadMax (px/ms), ni
- *     siguiendo al dedo ni con los resortes.
+ *  8. Tope de velocidad SUAVE para lo automático (imán, pasos automáticos, soltar):
+ *     DESLIZAR.velocidadMax (px/ms), que crece cuanto más atrás se queda. Lo que sigue al dedo no se frena.
+ *  8b. Modo rápido: con el dedo a más de DESLIZAR.veloz[0] px/ms (hasta que baja de [1]) el contenido
+ *     sigue al dedo sin resistencia ni paradas en cada isla o puntito; al frenar vuelven las reglas.
  *  9. `eje`: si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll).
  *
  * `cadena` (barra de puntitos): el imán se repite entre cada par de puntitos (una isla por cada
@@ -36,8 +38,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *  - puede(dir): true si existe ese vecino.
  *  - umbral: X en px.   - sentido: -1 = arrastrar a la izquierda es «siguiente» (carrusel);
  *    +1 = arrastrar a la derecha es «siguiente» (barra de puntitos).
- *  - zonaMuerta, rapido (gesto rápido), eje, cadena, continuo (ver arriba).
+ *  - zonaMuerta, rapido (gesto rápido), eje, cadena, continuo (ver arriba); veloz: [entra, sale] del modo rápido.
  *  - alEmpezar(e): se llama al apoyar el dedo (antes de decidir el gesto).
+ *  - origen(e): clientX desde el que se mide el gesto (barra de puntitos: centro del puntito más
+ *    cercano, así cada imán cae justo a mitad de camino entre puntitos = el más cercano al dedo).
  */
 export default function useDeslizar(opciones) {
   const progreso = useMotionValue(0)
@@ -45,27 +49,30 @@ export default function useDeslizar(opciones) {
   op.current = { sentido: -1, zonaMuerta: DESLIZAR.zonaMuerta, rapido: true, eje: true, cadena: false, continuo: true, activo: true, ...opciones }
   const g = useRef(null)
   const ultimoMovido = useRef(false)
-  // Objetivo = dedo + resto. `dedo` es donde el gesto quiere el contenido; `resto` es lo que falta
-  // por asentar (resorte hacia 0). `visto` es lo que se muestra: persigue al objetivo con tope de velocidad.
-  const v = useRef({ dedo: 0, resto: 0, anim: null, visto: 0, t: null, raf: 0 })
+  // Lo que se ve = dedo + rv. `dedo` es donde el gesto quiere el contenido (sigue al dedo al instante,
+  // sin tope); `resto` es lo que falta por asentar (resorte hacia 0) y `rv` es el resto visible, que
+  // lo persigue con el tope de velocidad: así el tope solo frena lo automático, nunca al dedo.
+  const v = useRef({ dedo: 0, resto: 0, rv: 0, anim: null, t: null, raf: 0 })
 
   /**
-   * Muestra `visto` y, si va por detrás del objetivo, lo hace avanzar fotograma a fotograma sin
-   * pasar del tope de velocidad. (Las compensaciones de `cambiar` se muestran al instante.)
+   * Muestra la posición y, si el resto visible va por detrás del resorte, lo hace avanzar fotograma
+   * a fotograma con un tope SUAVE: DESLIZAR.velocidadMax, que crece cuanto más atrás se queda
+   * (DESLIZAR.alcance), así nunca se queda colgado ni avanza «a tirones».
    */
   const emitir = () => {
     const s = v.current
-    progreso.set(s.visto)
-    if (s.raf || s.visto === s.dedo + s.resto) return
+    progreso.set(s.dedo + s.rv)
+    if (s.raf || s.rv === s.resto) return
     const fotograma = (ts) => {
       const dt = s.t == null ? 1000 / 60 : Math.min(1000 / 60, ts - s.t) // como mucho un fotograma
       s.t = ts
-      const objetivo = s.dedo + s.resto
-      const max = (DESLIZAR.velocidadMax * dt) / op.current.umbral // pasos en este fotograma
-      const dif = objetivo - s.visto
-      s.visto = Math.abs(dif) <= max ? objetivo : s.visto + Math.sign(dif) * max
-      progreso.set(s.visto)
-      if (s.visto === objetivo) {
+      const X = op.current.umbral
+      const dif = s.resto - s.rv
+      const tope = DESLIZAR.velocidadMax + Math.abs(dif) * X * DESLIZAR.alcance // px/ms
+      const max = (tope * dt) / X // pasos en este fotograma
+      s.rv = Math.abs(dif) <= max ? s.resto : s.rv + Math.sign(dif) * max
+      progreso.set(s.dedo + s.rv)
+      if (s.rv === s.resto) {
         s.raf = 0
         s.t = null
       } else s.raf = requestAnimationFrame(fotograma)
@@ -73,14 +80,26 @@ export default function useDeslizar(opciones) {
     s.raf = requestAnimationFrame(fotograma)
   }
 
+  /** El dedo pasa a ser parte del resto (al apoyar o soltar): lo visible no cambia. */
+  const soltarDedo = () => {
+    const s = v.current
+    s.resto += s.dedo
+    s.rv += s.dedo
+    s.dedo = 0
+  }
+
   /** Lleva `resto` a 0 con un resorte (opcionalmente con velocidad inicial, en pasos/s). */
   const asentar = (resorte = RESORTE.pantalla, velocidad = 0) => {
     const s = v.current
+    // Al parar un resorte, motion aún llama a su onUpdate con el último valor: eso pisaría las
+    // compensaciones recién hechas (y el contenido «se trabaría» para recuperarlas). Solo cuenta el último.
+    const id = (s.gen = (s.gen ?? 0) + 1)
     s.anim?.stop()
     s.anim = animate(s.resto, 0, {
       ...resorte,
       velocity: velocidad,
       onUpdate: (r) => {
+        if (s.gen !== id) return
         s.resto = r
         emitir()
       },
@@ -91,7 +110,7 @@ export default function useDeslizar(opciones) {
   const cambiar = (dir) => {
     op.current.onPaso(dir)
     v.current.resto -= dir
-    v.current.visto -= dir
+    v.current.rv -= dir
   }
 
   const pararAuto = (s) => {
@@ -133,7 +152,8 @@ export default function useDeslizar(opciones) {
     const zm = Math.min(zonaMuerta, X * DESLIZAR.inicio * 0.6)
     const gr = s.F - s.off // posición del dedo respecto al elemento actual
     // Pegado: llegó por el imán y el dedo aún no ha cruzado su centro (o, en el carrusel, ya pasó uno).
-    const pegado = (!cadena && s.off !== 0) || (s.llegada !== 0 && gr * s.llegada <= 0)
+    // Modo rápido: con el dedo deprisa, sin paradas (en la barra, ni siquiera en cada puntito).
+    const pegado = (!cadena && s.off !== 0) || (!s.veloz && s.llegada !== 0 && gr * s.llegada <= 0)
     const dir = Math.sign(gr)
     if (pegado) {
       const px = Math.abs(gr) * X
@@ -141,6 +161,7 @@ export default function useDeslizar(opciones) {
       return { fase: 'pegado', valor: (dir * tir) / X }
     }
     const r = Math.abs(gr) * X
+    if (s.veloz && op.current.puede(dir)) return { fase: 'sigue', valor: gr }
     if (dir === 0 || r <= zm) return { fase: 'quieto', valor: 0 }
     if (!op.current.puede(dir)) return { fase: 'goma', valor: (dir * goma(r, zm, X)) / X }
     const sigue = s.sigue === dir ? r >= X * DESLIZAR.sigueSale : r >= X * DESLIZAR.inicio
@@ -153,6 +174,12 @@ export default function useDeslizar(opciones) {
   const colocar = (s, d) => {
     const { umbral: X, cadena } = op.current
     s.F = d / X
+    // ¿Va deprisa? (con histéresis). Mientras lo esté, se revisa otra vez al poco por si el dedo se para.
+    const vel = Math.abs(velocidadDedo(s, performance.now()))
+    const [entra, sale] = op.current.veloz ?? DESLIZAR.veloz
+    s.veloz = s.veloz ? vel > sale : vel > entra
+    clearTimeout(s.revisar)
+    if (s.veloz) s.revisar = setTimeout(() => g.current === s && colocar(s, s.d), 60)
     let resorte = null
     // Imán al 50 %, igual en los dos sentidos (en el carrusel, como mucho un vecino; en la barra, encadenado).
     for (let vueltas = 0; vueltas < 30; vueltas++) {
@@ -172,10 +199,12 @@ export default function useDeslizar(opciones) {
     // Cambio de fase: lo que separa el objetivo anterior del nuevo queda en `resto` y se asienta.
     if (fase !== s.fase && !resorte) resorte = fase === 'sigue' ? RESORTE.pulsar : RESORTE.pantalla
     s.fase = fase
-    const antes = v.current.dedo + v.current.resto
+    const viejo = v.current.dedo
     v.current.dedo = valor
     if (resorte) {
-      v.current.resto = antes - valor
+      // El salto del objetivo queda en el resto (y en el resto visible): se ve continuo y se asienta.
+      v.current.resto += viejo - valor
+      v.current.rv += viejo - valor
       asentar(resorte)
     }
     emitir()
@@ -195,12 +224,15 @@ export default function useDeslizar(opciones) {
     ultimoMovido.current = false
     if (!op.current.activo || (e.pointerType === 'mouse' && e.button !== 0)) return
     pararAuto(g.current)
+    clearTimeout(g.current?.revisar)
     op.current.alEmpezar?.(e)
     // Si aún se estaba asentando, lo que falte sigue asentándose; el dedo empieza en 0.
-    v.current.resto += v.current.dedo
-    v.current.dedo = 0
+    soltarDedo()
     if (v.current.resto !== 0) asentar()
-    g.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, d0: posicion(e), d: 0, F: 0, off: 0, llegada: 0, k: 0, sigue: 0, fase: 'quieto', auto: null, desde: null, ms: null, decidido: !op.current.eje, movido: false, muestras: [{ t: e.timeStamp, d: 0 }] }
+    // `origen`: punto de referencia (p. ej. el centro del puntito); si no, donde se apoyó el dedo.
+    const o = op.current.origen?.(e)
+    const d0 = o == null ? posicion(e) : posicion({ clientX: o })
+    g.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, d0, dp: posicion(e) - d0, libre: false, d: 0, F: 0, off: 0, llegada: 0, k: 0, sigue: 0, fase: 'quieto', auto: null, desde: null, ms: null, decidido: !op.current.eje, movido: false, veloz: false, revisar: null, muestras: [{ t: performance.now(), d: 0 }] }
     if (!op.current.eje) e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
@@ -219,9 +251,12 @@ export default function useDeslizar(opciones) {
       e.currentTarget.setPointerCapture?.(e.pointerId)
     }
     const d = posicion(e) - s.d0
+    // Zona muerta REAL alrededor de donde se apoyó el dedo (aunque el origen sea otro punto).
+    if (!s.libre && Math.abs(d - s.dp) <= op.current.zonaMuerta) return
+    s.libre = true
     s.d = d
-    s.muestras.push({ t: e.timeStamp, d })
-    if (s.muestras.length > 8) s.muestras.shift()
+    s.muestras.push({ t: performance.now(), d })
+    if (s.muestras.length > 12) s.muestras.shift()
     colocar(s, d)
   }
 
@@ -230,6 +265,7 @@ export default function useDeslizar(opciones) {
     if (!s || s.id !== e.pointerId) return
     g.current = null
     pararAuto(s)
+    clearTimeout(s.revisar)
     ultimoMovido.current = s.movido || s.k !== 0
     if (!s.decidido) return
     const { umbral: X, zonaMuerta } = op.current
@@ -240,8 +276,7 @@ export default function useDeslizar(opciones) {
     const dir = Math.sign(s.d)
     // Gesto rápido: soltar con velocidad (aún sin haber pasado ninguno) también pasa uno.
     const rapido = !cancelado && op.current.rapido && s.k === 0 && s.llegada === 0 && Math.abs(s.d) > zonaMuerta && Math.sign(vel) === dir && Math.abs(vel) >= DESLIZAR.velocidad && op.current.puede(dir)
-    v.current.resto += v.current.dedo
-    v.current.dedo = 0
+    soltarDedo()
     if (rapido) cambiar(dir)
     emitir()
     // Si el contenido seguía al dedo, hereda su velocidad (el tope la limita igualmente).
@@ -252,6 +287,7 @@ export default function useDeslizar(opciones) {
   useEffect(
     () => () => {
       pararAuto(g.current)
+      clearTimeout(g.current?.revisar)
       cancelAnimationFrame(v.current.raf)
     },
     [],
@@ -275,6 +311,14 @@ export default function useDeslizar(opciones) {
       onClickCapture,
     },
   }
+}
+
+/** Velocidad del dedo (px/ms hacia «siguiente») en los últimos ~50 ms, contando ahora. */
+function velocidadDedo(s, ahora) {
+  const m = s.muestras
+  let q = m[0]
+  for (const x of m) if (x.t <= ahora - 50) q = x
+  return ahora > q.t ? (s.d - q.d) / (ahora - q.t) : 0
 }
 
 /**

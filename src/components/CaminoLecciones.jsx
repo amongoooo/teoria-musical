@@ -149,12 +149,15 @@ export default function CaminoLecciones({ modulo, progreso }) {
     activo: abierta !== null,
     umbral: DESLIZAR.puntitos.separacion,
     zonaMuerta: DESLIZAR.puntitos.zonaMuerta,
+    veloz: DESLIZAR.puntitos.veloz,
     sentido: 1, // por la barra, arrastrar a la derecha va a la siguiente
     cadena: true, // una isla por cada puntito que se cruza, sin avance continuo
     rapido: false,
     eje: false,
     onPaso: paso,
     puede,
+    // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
+    origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
     alEmpezar: (e) => {
       // Tocar un puntito va directo a esa isla; el arrastre empieza desde ahí.
       const j = puntoMasCercano(els.punto, e.clientX)
@@ -492,6 +495,12 @@ function puntoMasCercano(puntos, x) {
     }
   })
   return mejor
+}
+
+/** x del centro de la celda del puntito i (o null). */
+function centroPunto(puntos, i) {
+  const r = i == null ? null : puntos[i]?.parentElement.getBoundingClientRect()
+  return r ? r.left + r.width / 2 : null
 }
 
 /** Curva del camino entre dos puntos (vertical: en S de arriba abajo; horizontal: de lado). */
