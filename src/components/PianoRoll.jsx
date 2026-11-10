@@ -172,7 +172,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
 
         <div className="flex">
           {/* Teclado de la izquierda: tocar una fila hace sonar su nota */}
-          <div className={`${ancho} shrink-0 border-r border-zinc-200`}>
+          <div className={`tema-claro ${ancho} shrink-0 border-r border-zinc-200`}>
             {filas.map((f) => {
               const negra = esNegra(f)
               return (
@@ -241,7 +241,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
                     animate={{ scale: suena ? 1.06 : 1, opacity: 1 }}
                     transition={RESORTE.pulsar}
                     className="size-full rounded-lg border border-black/15"
-                    style={{ backgroundColor: `color-mix(in oklab, ${color} ${Math.round(30 + 70 * (n.velocity ?? 0.8))}%, white)` }}
+                    style={{ backgroundColor: `color-mix(in oklab, ${color} ${Math.round(30 + 70 * (n.velocity ?? 0.8))}%, var(--color-white))` }}
                   />
                 </Rect>
               )

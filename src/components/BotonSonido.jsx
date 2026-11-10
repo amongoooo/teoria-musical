@@ -35,7 +35,7 @@ export function IconoPlay({ sonando }) {
     <span
       aria-hidden
       className={`grid size-9 shrink-0 place-items-center rounded-full text-sm ${
-        sonando ? 'animate-pulse bg-sky-500 text-white' : 'bg-zinc-900 text-white'
+        sonando ? 'animate-pulse bg-sky-500 text-blanco' : 'bg-zinc-900 text-white'
       }`}
     >
       ▶

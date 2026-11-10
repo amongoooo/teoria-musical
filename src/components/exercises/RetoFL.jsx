@@ -58,7 +58,7 @@ export default function RetoFL({ paso, leccionId }) {
                   animate={ok ? SALTO : { scale: 1 }}
                   transition={{ duration: 0.3 }}
                   className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors duration-200 ${
-                    ok ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-600'
+                    ok ? 'bg-emerald-600 text-blanco' : 'bg-zinc-100 text-zinc-600'
                   }`}
                 >
                   {ok ? '✓' : i + 1}

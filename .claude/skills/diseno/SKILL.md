@@ -42,6 +42,27 @@ También para **texto de color** sobre blanco (p. ej. «Nivel 1», «Módulo 1»
 Fondo suave de iconos: **`claro(acento)`** (acento al 14 % sobre blanco).
 Grises: `text-zinc-500` es el más claro permitido para texto que hay que leer; `text-zinc-400` solo decorativo (p. ej. `›`).
 
+### Modo oscuro (Opciones → Apariencia)
+La app tiene tema **Claro** (predeterminado), **Oscuro** y **Automático** (sigue al teléfono). Se guarda en
+`localStorage` (`teoria-musical:opciones:v1`, `src/progress/opciones.js`) y pone la clase **`dark`** en `<html>`;
+`index.html` lo aplica antes de pintar (sin destello) y ajusta `<meta name="theme-color">`.
+
+**Cómo funciona**: `src/index.css` **redefine la paleta** dentro de `.dark` (los `zinc` se invierten,
+`white` pasa a ser la superficie oscura `#1c1c1f`, los fondos de estado claros —`emerald-50`, `amber-50`, `sky-50`…—
+pasan a tonos oscuros y sus textos `-900` a claros). Así **casi nunca hace falta `dark:`**: escribe las clases
+de siempre y cada pareja fondo/texto conserva su contraste. Reglas:
+- Fondo de página y cabeceras pegajosas: **`bg-fondo`** (`bg-fondo/95`), nunca `#fafafa` a mano.
+- Texto **sobre el acento, `emerald-600`, `sky-500`…** (fondos que no cambian): **`text-blanco`** (blanco fijo),
+  no `text-white` (que en oscuro se vuelve oscuro). Botón blanco dentro de una tarjeta de color: `bg-blanco text-negro`.
+- Botón principal `bg-zinc-900 text-white`: se deja así (en oscuro queda claro con texto oscuro, como iOS).
+- Acento como **color de texto**: **`tinta(acento)`** (`src/ui/color.js`; oscurecido en claro, aclarado en oscuro).
+  `oscuro(acento)` es solo para **fondos** con `text-blanco`. `claro(acento)` se mezcla con la superficie del tema.
+- Colores en estilos JS: variables (`var(--color-zinc-200)`, `var(--color-white)`), no hex fijos.
+- Lo que debe verse **siempre claro** (teclas del Piano, columna de teclas del Piano Roll): clase **`tema-claro`**,
+  que restaura la paleta clara en ese bloque.
+- Si algo necesita un ajuste solo en oscuro: variante `dark:` (p. ej. opción activa del control segmentado `dark:bg-zinc-300`).
+- Al cambiar de tema, los colores pasan con un fundido de 250 ms (clase temporal `cambiando-tema`).
+
 ### Tipografía
 - Fuente: Inter / system-ui (`--font-sans` en `src/index.css`).
 - Título de página: `text-4xl font-bold tracking-tight` (Inicio) o `text-3xl` (otras).
@@ -120,10 +141,11 @@ El hook no mueve píxeles: devuelve **`progreso`** (MotionValue en «pasos», 0 
 
 ## 4. Componentes
 
+- **Botón de Opciones** (`components/Opciones.jsx`, arriba a la derecha en Inicio): círculo gris `size-11 bg-zinc-200/70` con engranaje; abre la **Hoja** «Opciones». Apariencia = control segmentado de 3 (`grid-cols-3 rounded-2xl bg-zinc-100 p-1`, opciones `min-h-16` con icono y texto; la activa con fondo `bg-white shadow-sm` que se desliza con `layoutId` y `RESORTE.pulsar`) y una frase que explica la opción.
 - **`BarraAccion`** (`pages/Leccion.jsx`, también en Oído): barra fija abajo con feedback + ayuda + botón grande. Respeta `env(safe-area-inset-bottom)`.
 - **Cabecera de lección/entrenador**: pegajosa, botón ✕ (`Pulsable`, `size-11`), `BarraProgreso alAparecer={false}` con el acento, contador `tabular-nums`.
 - **`Volver`** (`src/ui/Volver.jsx`): píldora gris «‹ Inicio» (`bg-zinc-200/70`) arriba a la izquierda en pantallas de nivel 1 (Módulo, panel de Oído). Área de 44 px y se hunde.
-- **Cabecera de Módulo**: fila con `Volver` + barra de progreso del módulo centrada; debajo, título grande centrado (`text-4xl sm:text-6xl`). La pantalla de Módulo usa `max-w-5xl` para que el camino respire.
+- **Cabecera de Módulo**: fila con `Volver` + barra de progreso del módulo centrada; debajo, «Módulo N» y el título grande centrado (`text-4xl sm:text-6xl`). Sin descripción ni texto de ayuda bajo el camino (lo pidió el usuario: que todo quepa mejor). La pantalla de Módulo usa `max-w-5xl` para que el camino respire.
 - **Pantalla tipo lista** (Inicio, Módulo, panel de Oído, portada del entrenador): `motion.main` con `variants={lista}` y cada bloque con `variants={itemLista}`.
 - **Chips seleccionables** (niveles, dirección): `Pulsable` `min-h-12 border-2`; activo `bg-zinc-900 text-white`, inactivo `bg-white border-zinc-200`.
 - **Tarjeta de navegación**: `Pulsable tipo="tarjeta"`, `rounded-3xl border bg-white`, icono `size-12 rounded-2xl` a la izquierda, título `text-lg font-semibold`, subtítulo `text-sm text-zinc-500`, `›` gris a la derecha.
@@ -161,6 +183,8 @@ El hook no mueve píxeles: devuelve **`progreso`** (MotionValue en «pasos», 0 
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: **Modo oscuro** con botón de **Opciones** en Inicio (Claro / Oscuro / Automático) redefiniendo la paleta en `.dark`; `text-blanco`, `bg-fondo`, `tinta()` y `tema-claro` (sección «Modo oscuro»). En Módulo se quitan la descripción y el texto «Toca una isla…».
 
 - 2026-11-10: (pedido del usuario) Swipe corregido y ampliado para toda la app: **zona muerta real**, **barrera del 75 %** con fuerza en contra, pasa al 100 %, **una isla por swipe**, regreso de 1/5 con su zona muerta y barrera, X = 240 px en ancho / 35 % en el celular, **carrusel continuo** (todo sigue al dedo) y **barra de puntitos** inferior para tocar o arrastrar entre islas (sección 3b).
 

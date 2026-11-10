@@ -7,6 +7,16 @@
     <meta name="description" content="Aprende teoría musical y producción en FL Studio con lecciones cortas e interactivas." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎹</text></svg>" />
     <title>Teoría Musical</title>
+    <script>
+      // Tema guardado en Opciones, aplicado antes de pintar (sin destello). Ver src/progress/opciones.js
+      try {
+        var t = (JSON.parse(localStorage.getItem('teoria-musical:opciones:v1') || '{}') || {}).tema
+        if (t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0e0e10')
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

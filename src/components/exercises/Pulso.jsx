@@ -101,7 +101,7 @@ function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pul
       }}
       whileTap={disabled ? undefined : { scale: 0.97 }}
       transition={RESORTE.pulsar}
-      className="relative grid h-40 w-full place-items-center overflow-hidden rounded-3xl text-xl font-semibold text-white select-none disabled:opacity-40"
+      className="relative grid h-40 w-full place-items-center overflow-hidden rounded-3xl text-xl font-semibold text-blanco select-none disabled:opacity-40"
       style={{ backgroundColor: oscuro(color), touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
       onContextMenu={(e) => e.preventDefault()}
     >

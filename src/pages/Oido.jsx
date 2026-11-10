@@ -23,7 +23,7 @@ import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
 import { DIRECCIONES, MODOS_OIDO, getModoOido } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
-import { claro, oscuro } from '../ui/color.js'
+import { claro, tinta } from '../ui/color.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import Volver from '../ui/Volver.jsx'
@@ -90,7 +90,7 @@ function Panel() {
             <span className="text-sm text-zinc-500">{racha === 1 ? 'día seguido' : 'días seguidos'}</span>
           </div>
         </div>
-        <BarraProgreso valor={avance} color={avance >= 1 ? '#10b981' : '#18181b'} fondo="bg-zinc-100" alto="h-3" />
+        <BarraProgreso valor={avance} color={avance >= 1 ? '#10b981' : 'var(--color-zinc-900)'} fondo="bg-zinc-100" alto="h-3" />
         <p className="text-base text-zinc-600">
           {avance >= 1
             ? '¡Meta de hoy cumplida! Si quieres, sigue un rato más.'
@@ -117,7 +117,7 @@ function Panel() {
               >
                 <span
                   className={`grid size-9 place-items-center rounded-full text-sm font-semibold ${
-                    meta ? 'bg-emerald-600 text-white' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500'
+                    meta ? 'bg-emerald-600 text-blanco' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500'
                   }`}
                   title={`${d.fecha}: ${minutos(d.segundos)} min`}
                 >
@@ -148,7 +148,7 @@ function Panel() {
               <span className="flex flex-1 flex-col gap-0.5">
                 <span className="text-lg font-semibold leading-snug">{m.titulo}</span>
                 <span className="text-sm leading-snug text-zinc-500">{m.descripcion}</span>
-                <span className="text-sm font-semibold" style={{ color: oscuro(m.acento) }}>
+                <span className="text-sm font-semibold" style={{ color: tinta(m.acento) }}>
                   {nombreNivel(m, d.nivel)}
                   {d.total > 0 && ` · ${porcentaje(d.aciertos, d.total)} % bien`}
                 </span>
@@ -310,7 +310,7 @@ function Entrenador({ modo }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 bg-[#fafafa]/95 backdrop-blur">
+      <header className="sticky top-0 z-10 bg-fondo/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Pulsable
             href={rutas.oido()}
@@ -343,7 +343,7 @@ function Entrenador({ modo }) {
             className="flex flex-col gap-5"
           >
             <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
-              <span className="font-semibold" style={{ color: oscuro(modo.acento) }}>
+              <span className="font-semibold" style={{ color: tinta(modo.acento) }}>
                 {modo.titulo} · {nombreNivel(modo, pregunta.nivel)}
               </span>
               <span className="tabular-nums">
@@ -423,7 +423,7 @@ function Ventana({ datos, niveles, acento }) {
             key={i}
             className="h-2 flex-1 rounded-full"
             initial={false}
-            animate={{ backgroundColor: v === true ? acento : v === false ? '#fcd34d' : '#e4e4e7' }}
+            animate={{ backgroundColor: v === true ? acento : v === false ? '#fcd34d' : 'var(--color-zinc-200)' }}
             transition={{ duration: 0.25 }}
           />
         ))}

@@ -196,7 +196,7 @@ export default function Piano({
         ref={wrapperRef}
         role="group"
         aria-label="Piano"
-        className={`relative w-full ${compacto ? 'h-44 sm:h-56' : 'h-56 sm:h-64'} overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm select-none`}
+        className={`relative w-full ${compacto ? 'h-44 sm:h-56' : 'h-56 sm:h-64'} tema-claro overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm select-none`}
         style={{ touchAction: 'none', WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

@@ -103,7 +103,7 @@ function Visor({ leccion, onRepetir }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 bg-[#fafafa]/95 backdrop-blur">
+      <header className="sticky top-0 z-10 bg-fondo/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Pulsable
             onClick={salir}
@@ -194,8 +194,8 @@ export function BarraAccion({ accion }) {
         <Pulsable
           onClick={accion.onClick}
           disabled={accion.disabled}
-          className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold text-white transition-colors duration-200 disabled:bg-zinc-300 disabled:text-zinc-500 ${
-            bien ? 'bg-emerald-600' : 'bg-zinc-900'
+          className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold transition-colors duration-200 disabled:bg-zinc-300 disabled:text-zinc-500 ${
+            bien ? 'bg-emerald-600 text-blanco' : 'bg-zinc-900 text-white'
           }`}
         >
           {accion.label}
@@ -219,7 +219,7 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
     <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
       <motion.div variants={itemLista} className="flex flex-col items-center gap-3 text-center">
         <motion.div
-          className="grid size-20 place-items-center rounded-full text-4xl text-white"
+          className="grid size-20 place-items-center rounded-full text-4xl text-blanco"
           style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
           initial={{ scale: 0.4, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

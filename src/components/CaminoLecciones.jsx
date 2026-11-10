@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, leccionAnterior } from '../content/index.js'
 import { reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
-import { claro, oscuro } from '../ui/color.js'
+import { claro, oscuro, tinta } from '../ui/color.js'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
@@ -274,7 +274,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
             <svg className="pointer-events-none absolute inset-0 overflow-visible" width="100%" height="100%" aria-hidden>
               {lecciones.map((l, s) => (
                 <g key={l.id}>
-                  <path ref={guardar('gris', s)} fill="none" stroke="#e4e4e7" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" />
+                  <path ref={guardar('gris', s)} fill="none" stroke="var(--color-zinc-200)" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" />
                   {estados[s] !== 'bloqueada' && estados[s] !== 'proximamente' && (
                     <motion.path
                       ref={guardar('color', s)}
@@ -296,7 +296,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
               <motion.div {...entrada(0)}>
                 <div ref={guardar('escala', 0)} className="absolute left-0 top-0">
                   <span
-                    className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl text-3xl font-bold text-white"
+                    className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl text-3xl font-bold text-blanco"
                     style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
                     aria-label={`Módulo ${modulo.numero}`}
                   >
@@ -328,12 +328,12 @@ export default function CaminoLecciones({ modulo, progreso }) {
                       </div>
                       <span
                         ref={guardar('etiqueta', i)}
-                        className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-[#fafafa] px-2 py-0.5"
+                        className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-fondo px-2 py-0.5"
                         style={vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }}
                       >
                         <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' ? 'text-zinc-500' : 'text-zinc-900'}`}>{l.titulo}</span>
                         {vertical && (
-                          <span className={`text-center text-sm font-semibold ${i === actual ? '' : 'text-zinc-500'}`} style={i === actual ? { color: oscuro(modulo.acento) } : undefined}>
+                          <span className={`text-center text-sm font-semibold ${i === actual ? '' : 'text-zinc-500'}`} style={i === actual ? { color: tinta(modulo.acento) } : undefined}>
                             {texto}
                           </span>
                         )}
@@ -523,12 +523,15 @@ export function textoEstado(estado, p, contenido) {
 }
 
 const labio = (acento) => `color-mix(in oklab, ${acento} 45%, black)`
+// Isla bloqueada: gris del tema (claro u oscuro) y su labio, un poco más oscuro.
+const GRIS = 'var(--color-zinc-200)'
+const LABIO_GRIS = 'color-mix(in oklab, var(--color-zinc-200) 82%, black)'
 
 /** Una isla pequeña: círculo con «labio» inferior que se hunde al tocarla. */
 function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick }) {
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
-  const fondo = lleno ? oscuro(acento) : estado === 'bloqueada' ? '#e4e4e7' : '#ffffff'
-  const sombra = lleno ? labio(acento) : estado === 'bloqueada' ? '#d4d4d8' : 'transparent'
+  const fondo = lleno ? oscuro(acento) : estado === 'bloqueada' ? GRIS : 'var(--color-white)'
+  const sombra = lleno ? labio(acento) : estado === 'bloqueada' ? LABIO_GRIS : 'transparent'
   return (
     <div className="relative grid place-items-center" style={{ width: ISLA, height: ISLA }}>
       {esActual && <Anillo tam={ISLA + 24} acento={acento} avance={avance} />}
@@ -536,7 +539,7 @@ function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick 
         onClick={onClick}
         aria-expanded={false}
         aria-label={`Lección ${leccion.id}: ${leccion.titulo}. ${descripcion}`}
-        className={`grid size-full place-items-center rounded-full text-2xl font-bold ${lleno ? 'text-white' : estado === 'bloqueada' ? 'text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
+        className={`grid size-full place-items-center rounded-full text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
         style={{ backgroundColor: fondo, boxShadow: `0 6px 0 ${sombra}` }}
       >
         {estado === 'hecha' ? <IconoCheck /> : estado === 'bloqueada' ? <IconoCandado /> : estado === 'proximamente' ? <span className="text-xl">…</span> : leccion.id}
@@ -583,21 +586,21 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
     if (reiniciar) reiniciarLeccion(meta.id)
     navegar(rutas.leccion(meta.id))
   }
-  const tinta = lleno ? 'text-white' : 'text-zinc-700'
-  const botonPrincipal = `flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 text-lg font-bold ${lleno ? 'bg-white' : 'bg-zinc-900 text-white'}`
+  const color = lleno ? 'text-blanco' : 'text-zinc-700'
+  const botonPrincipal = `flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 text-lg font-bold ${lleno ? 'bg-blanco' : 'bg-zinc-900 text-white'}`
 
   return (
     <div className="relative grid place-items-center" style={{ width: tam, height: tam }} role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
       <Anillo tam={tam + 28} acento={modulo.acento} avance={porcentaje / 100} grosor={4} />
       <div
-        className={`relative flex size-full flex-col items-center justify-center gap-2 rounded-full px-10 text-center ${tinta} ${estado === 'proximamente' ? 'border-2 border-dashed border-zinc-300' : ''}`}
-        style={{ backgroundColor: lleno ? oscuro(modulo.acento) : estado === 'bloqueada' ? '#e4e4e7' : '#ffffff', boxShadow: lleno ? `0 8px 0 ${labio(modulo.acento)}` : estado === 'bloqueada' ? '0 8px 0 #d4d4d8' : undefined }}
+        className={`relative flex size-full flex-col items-center justify-center gap-2 rounded-full px-10 text-center ${color} ${estado === 'proximamente' ? 'border-2 border-dashed border-zinc-300' : ''}`}
+        style={{ backgroundColor: lleno ? oscuro(modulo.acento) : estado === 'bloqueada' ? GRIS : 'var(--color-white)', boxShadow: lleno ? `0 8px 0 ${labio(modulo.acento)}` : estado === 'bloqueada' ? `0 8px 0 ${LABIO_GRIS}` : undefined }}
       >
         <div className="flex flex-col items-center gap-2" style={{ opacity: 'var(--contenido, 1)' }}>
           <Pulsable
             onClick={onCerrar}
             aria-label="Cerrar"
-            className={`absolute grid size-11 place-items-center rounded-full text-xl ${lleno ? 'text-white/90 active:bg-white/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
+            className={`absolute grid size-11 place-items-center rounded-full text-xl ${lleno ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
             style={{ top: tam * 0.1, right: tam * 0.1 }}
           >
             ✕
@@ -606,7 +609,7 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
           <span className="text-2xl font-bold tabular-nums">{meta.id}</span>
           <h3 className="line-clamp-2 text-lg font-bold leading-tight">{meta.titulo}</h3>
           {leccion && (
-            <p className={`text-sm ${lleno ? 'text-white/85' : 'text-zinc-600'}`}>
+            <p className={`text-sm ${lleno ? 'text-blanco/85' : 'text-zinc-600'}`}>
               ~{leccion.minutos} min · {pasos} pasos
             </p>
           )}
@@ -618,7 +621,7 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
             </Pulsable>
           )}
           {estado === 'empezada' && (
-            <Pulsable onClick={() => ir(true)} className="-my-1 min-h-11 rounded-xl px-3 text-base font-semibold text-white/90 underline underline-offset-4 active:bg-white/15">
+            <Pulsable onClick={() => ir(true)} className="-my-1 min-h-11 rounded-xl px-3 text-base font-semibold text-blanco/90 underline underline-offset-4 active:bg-blanco/15">
               Empezar de cero
             </Pulsable>
           )}
@@ -636,7 +639,7 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
 
           {lleno && (
             <span className="text-xl font-bold tabular-nums">
-              {porcentaje} %{estado === 'hecha' && p?.total ? <span className="ml-1 text-sm font-semibold text-white/85">· {p.aciertos}/{p.total} a la primera</span> : null}
+              {porcentaje} %{estado === 'hecha' && p?.total ? <span className="ml-1 text-sm font-semibold text-blanco/85">· {p.aciertos}/{p.total} a la primera</span> : null}
             </span>
           )}
         </div>

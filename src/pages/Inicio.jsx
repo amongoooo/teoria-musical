@@ -1,4 +1,5 @@
 import { motion } from 'motion/react'
+import BotonOpciones from '../components/Opciones.jsx'
 import Piano from '../components/Piano.jsx'
 import { leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
 import { META_SEGUNDOS, datosDeHoy, rachaActual, useOido } from '../progress/oido.js'
@@ -27,7 +28,10 @@ export default function Inicio() {
       className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-10 px-5 py-10 sm:py-16"
     >
       <motion.header variants={itemLista} className="flex flex-col gap-3">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">Teoría Musical</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">Teoría Musical</h1>
+          <BotonOpciones className="mt-0.5 sm:mt-3" />
+        </div>
         <p className="text-lg text-zinc-500 sm:text-xl">
           Aprende teoría musical y producción en FL Studio, paso a paso y tocando.
         </p>
@@ -36,19 +40,19 @@ export default function Inicio() {
       {destacada && (
         <motion.section
           variants={itemLista}
-          className="flex flex-col gap-4 rounded-3xl p-6 text-white"
+          className="flex flex-col gap-4 rounded-3xl p-6 text-blanco"
           style={{ backgroundColor: oscuro(destacada.modulo.acento) }}
         >
-          <span className="text-sm font-semibold uppercase tracking-wider text-white/90">
+          <span className="text-sm font-semibold uppercase tracking-wider text-blanco/90">
             {siguiente ? 'Tu siguiente lección' : '¡Todo al día!'} · Módulo {destacada.modulo.numero}
           </span>
           <h2 className="text-2xl font-bold leading-tight sm:text-3xl">
             {destacada.id} · {destacada.titulo}
           </h2>
-          {!siguiente && <p className="text-base text-white/90">Completaste todas las lecciones disponibles. Vienen más pronto.</p>}
+          {!siguiente && <p className="text-base text-blanco/90">Completaste todas las lecciones disponibles. Vienen más pronto.</p>}
           <Pulsable
             href={rutas.leccion(destacada.id)}
-            className="grid min-h-14 place-items-center rounded-2xl bg-white px-6 text-lg font-semibold text-zinc-900"
+            className="grid min-h-14 place-items-center rounded-2xl bg-blanco px-6 text-lg font-semibold text-negro"
           >
             {textoBoton}
           </Pulsable>
@@ -72,7 +76,7 @@ export default function Inicio() {
                   className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-3"
                 >
                   <span
-                    className="grid size-12 shrink-0 place-items-center rounded-2xl text-lg font-bold text-white"
+                    className="grid size-12 shrink-0 place-items-center rounded-2xl text-lg font-bold text-blanco"
                     style={{ backgroundColor: oscuro(m.acento) }}
                   >
                     {m.numero}

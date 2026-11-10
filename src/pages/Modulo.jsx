@@ -4,7 +4,7 @@ import { getModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
-import { oscuro } from '../ui/color.js'
+import { tinta } from '../ui/color.js'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import Volver from '../ui/Volver.jsx'
@@ -46,16 +46,14 @@ export default function Modulo({ numero }) {
       </motion.div>
 
       <motion.header variants={itemLista} className="flex flex-col items-center gap-2 text-center">
-        <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: oscuro(modulo.acento) }}>
+        <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
           Módulo {modulo.numero}
         </span>
         <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-6xl">{modulo.titulo}</h1>
-        <p className="max-w-xl text-lg text-zinc-600">{modulo.descripcion}</p>
       </motion.header>
 
       <motion.section variants={itemLista} aria-label="Lecciones del módulo" className="py-2 sm:py-6">
         <CaminoLecciones modulo={modulo} progreso={progreso} />
-        <p className="mt-2 text-center text-sm text-zinc-500">Toca una isla para ver la lección. Con una abierta, desliza a los lados o usa los puntitos de abajo.</p>
       </motion.section>
 
       <motion.section variants={itemLista} className="mx-auto flex w-full max-w-2xl flex-col gap-4 rounded-3xl bg-zinc-100 p-5">

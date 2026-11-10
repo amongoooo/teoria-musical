@@ -1,12 +1,103 @@
 @import "tailwindcss";
 
+/* Modo oscuro: clase `dark` en <html> (la pone src/progress/opciones.js y el script de index.html). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Fondo de página (cambia con el tema). */
+  --color-fondo: #fafafa;
+  /* Blanco y negro FIJOS: no cambian con el tema (texto sobre el acento, botón blanco en tarjeta de color). */
+  --color-blanco: #ffffff;
+  --color-negro: #18181b;
+}
+
+/*
+ * Tema oscuro: en lugar de añadir `dark:` a cada clase, se redefinen los colores de la paleta.
+ * Los grises se invierten (zinc-900 = texto claro, white = superficie oscura) y los colores de
+ * estado claros (emerald-50, amber-50…) pasan a tonos oscuros con texto claro. Así cada pareja
+ * fondo/texto mantiene su contraste. Ver la skill de diseño, sección «Modo oscuro».
+ */
+.dark {
+  color-scheme: dark;
+  --mezcla-tinta: white;
+  --color-fondo: #0e0e10;
+  --color-white: #1c1c1f;
+  --color-zinc-50: #1f1f23;
+  --color-zinc-100: #27272b;
+  --color-zinc-200: #34343a;
+  --color-zinc-300: #48484f;
+  --color-zinc-400: #71717a;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #b9b9c0;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #f4f4f5;
+  --color-emerald-50: #0c2a20;
+  --color-emerald-100: #10382a;
+  --color-emerald-200: #165a42;
+  --color-emerald-300: #1f7a58;
+  --color-emerald-700: #34d399;
+  --color-emerald-800: #6ee7b7;
+  --color-emerald-900: #a7f3d0;
+  --color-amber-50: #2d220c;
+  --color-amber-100: #3d2e0f;
+  --color-amber-200: #5c4512;
+  --color-amber-700: #fbbf24;
+  --color-amber-900: #fde68a;
+  --color-sky-50: #0b2433;
+  --color-sky-100: #0e3045;
+  --color-sky-200: #13405c;
+  --color-sky-300: #1e5f87;
+  --color-sky-900: #bae6fd;
+  --color-orange-100: #3b220f;
+  --color-orange-800: #fdba74;
+  --color-red-600: #f87171;
+}
+
+/* Zonas que se ven siempre claras, también en modo oscuro (teclas del piano, como uno real). */
+.tema-claro {
+  color-scheme: light;
+  --mezcla-tinta: black;
+  --color-fondo: #fafafa;
+  --color-white: #ffffff;
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-amber-200: #fde68a;
+  --color-amber-900: #78350f;
+  --color-sky-200: #bae6fd;
+  --color-sky-900: #0c4a6e;
 }
 
 html,
 body {
-  background-color: #fafafa;
-  color: #18181b;
+  background-color: var(--color-fondo);
+  color: var(--color-zinc-900);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Al cambiar de tema, los colores pasan con un fundido corto (solo durante el cambio). */
+html.cambiando-tema,
+html.cambiando-tema * {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    fill 250ms ease,
+    stroke 250ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.cambiando-tema,
+  html.cambiando-tema * {
+    transition: none !important;
+  }
 }
