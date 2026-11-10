@@ -62,11 +62,10 @@ export const SALTO = { scale: [1, 1.05, 1] }
  * Fracciones de X (la distancia de un paso):
  *  - zonaMuerta: px desde donde se apoyó el dedo en los que NO se mueve nada.
  *  - inicio / resistencia: hasta el 30 % de X el contenido casi no se mueve (como mucho el 6,5 % de X).
- *  - sigueSale: ya siguiendo al dedo, por debajo del 26 % vuelve la resistencia (histéresis).
- *  - iman: al 50 % de X, sin soltar, se pega al vecino. vuelve: si el dedo regresa por debajo del 40 %,
- *    vuelve al anterior. Al soltar antes del 50 %, vuelve a su sitio.
- *  - continuoDesde / continuo: más allá del 95 % pasa solo, con estas esperas (ms; la última se repite:
- *    máximo 4 por segundo).
+ *  - sigueSale: ya siguiendo al dedo, por debajo del 26 % vuelve la resistencia (evita temblores en el 30 %).
+ *  - iman: 50 %, igual en los dos sentidos: por encima se pega al vecino; por debajo, al de antes.
+ *  - continuo: avance continuo ya pegado al vecino: [desde qué fracción de X, espera en ms entre islas].
+ *  - velocidadMax: tope de velocidad del contenido (px/ms), al seguir al dedo y en los resortes.
  *  - velocidad: px/ms a partir de los que un gesto corto cuenta como swipe (pasa uno).
  *  - goma: resistencia cuando no hay más (extremos).
  *  - umbralAncho / umbralCelular: X en pantallas anchas (px) y en el celular (fracción del ancho).
@@ -78,9 +77,14 @@ export const DESLIZAR = {
   resistencia: 0.065,
   sigueSale: 0.26,
   iman: 0.5,
-  vuelve: 0.4,
-  continuoDesde: 0.95,
-  continuo: [1000, 700, 500, 350, 250],
+  continuo: [
+    [0.75, 1000],
+    [0.85, 700],
+    [0.9, 500],
+    [0.95, 350],
+    [0.98, 250],
+  ],
+  velocidadMax: 1.2,
   velocidad: 0.45,
   goma: 0.35,
   umbralAncho: 240,
