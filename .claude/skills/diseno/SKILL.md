@@ -110,6 +110,8 @@ Reglas:
 - **Tarjeta destacada** (siguiente lección): fondo = acento oscurecido, texto blanco, botón blanco dentro.
 - **Contenido futuro** ("Próximamente"): muchos elementos → lista compacta dentro de un recuadro con borde punteado (Inicio);
   pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
+- **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo. Celular (< 560 px): vertical en zigzag; ancho: horizontal con ligera ondulación. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; es un relieve plano, no una sombra difusa). Estados: hecha (acento oscurecido + ✓), actual (acento oscurecido + número, anillo `claro(acento)` y arco de avance si está a medias), bloqueada (`#e4e4e7` + candado), próximamente (blanca con borde punteado y «…»). Camino: curva SVG punteada gris; los tramos ya recorridos se dibujan con el acento (`pathLength` con `RESORTE.suave`). Título y estado bajo cada isla sobre fondo `#fafafa` para que el camino pase por detrás. Las islas entran escalonadas con `RESORTE.pulsar`; si la actual queda fuera de la pantalla, se centra sola.
+- **Hoja inferior** (`src/ui/Hoja.jsx`): bottom sheet tipo iOS para detalles y confirmaciones (p. ej. al tocar una isla). Fondo `bg-black/40` con fundido; la hoja sube con `RESORTE.pantalla`, `rounded-t-3xl`, asa gris arriba y ✕ de 44 px; se cierra tocando el fondo, con Escape o **arrastrándola hacia abajo**. En pantallas anchas flota centrada (`max-w-lg`, `rounded-3xl`). Botones apilados a lo ancho: principal negro y secundario con borde. El primer botón lleva `data-foco` (recibe el foco al abrir).
 - **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
 - **Piano** (`components/Piano.jsx`): Pointer Events, `touch-action: none`, `compacto` en lecciones, 1 octava con ◀ ▶ en < 560 px.
 - **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4). En lecciones son `Pulsable tipo="tarjeta"` y la correcta da un `SALTO`.
@@ -138,6 +140,8 @@ Reglas:
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-10: Módulo como **camino de islas** (vertical en el celular, horizontal en pantallas anchas) con desbloqueo progresivo dentro del módulo, y **hoja inferior** al tocar una isla (Empezar / Continuar / Empezar de cero / Repetir; bloqueada → ir a la anterior). Se admite el «labio» sólido bajo las islas como relieve táctil.
 
 - 2026-11-10: Lección 2.1 y ejercicio **Pulso** (pad de pulso con medidor antes/tarde, tap tempo, selector de tempos). El Piano Roll admite filas de batería (Bombo, Caja, Hi-hat) con columna de nombres más ancha. Los latidos visuales usan fundidos cortos con `easeOut` (marcan el tiempo, no son respuesta al dedo).
 

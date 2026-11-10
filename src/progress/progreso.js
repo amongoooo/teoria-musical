@@ -79,6 +79,11 @@ export function guardarPaso(id, paso) {
   escribir({ ...p, lecciones: { ...p.lecciones, [id]: { ...actual, paso } } })
 }
 
+/** Vuelve a empezar una lección desde el paso 1 (conserva si ya estaba completada). */
+export function reiniciarLeccion(id) {
+  guardarPaso(id, 0)
+}
+
 /** Marca una lección como completada con sus aciertos. */
 export function completarLeccion(id, { aciertos = 0, total = 0 } = {}) {
   const p = leer()

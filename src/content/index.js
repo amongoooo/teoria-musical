@@ -39,3 +39,27 @@ export function moduloDisponible(modulo) {
 export function leccionesDisponibles() {
   return MODULOS.flatMap((m) => m.lecciones.filter((l) => leccionDisponible(l.id)).map((l) => ({ ...l, modulo: m })))
 }
+
+/**
+ * Estado de una lección en el camino del módulo:
+ *  'proximamente' (aún sin contenido) · 'hecha' · 'empezada' · 'nueva' (desbloqueada) · 'bloqueada'.
+ * Desbloqueo progresivo DENTRO de cada módulo: la primera lección siempre está abierta y
+ * cada una se abre al completar la anterior (o si ya se empezó). Entre módulos no se bloquea
+ * (el usuario ya sabe algo de música y puede saltar al módulo que quiera).
+ */
+export function estadoLeccion(id, progreso) {
+  if (!leccionDisponible(id)) return 'proximamente'
+  const p = progreso.lecciones[id]
+  if (p?.completada) return 'hecha'
+  if (p?.paso > 0) return 'empezada'
+  const anterior = leccionAnterior(id)
+  if (!anterior || progreso.lecciones[anterior.id]?.completada) return 'nueva'
+  return 'bloqueada'
+}
+
+/** La lección anterior dentro del mismo módulo (o null si es la primera). */
+export function leccionAnterior(id) {
+  const modulo = MODULOS.find((m) => m.lecciones.some((l) => l.id === id))
+  const i = modulo?.lecciones.findIndex((l) => l.id === id) ?? -1
+  return i > 0 ? modulo.lecciones[i - 1] : null
+}
