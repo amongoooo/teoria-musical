@@ -60,6 +60,13 @@ public/samples/         # Samples de audio propios
 - **Progreso**: `localStorage` clave `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota } } }`. Se guarda el paso actual para continuar donde se dejó.
 - En las lecciones el piano usa `compacto` (teclas más bajas) para que quepa sobre la barra inferior en el celular.
 
+## Decisiones de contenido
+
+- **Módulo 1 (sonido, notas y teclado) se mantiene** como repaso: el usuario ya sabe algo de música. Mantener las lecciones ágiles e incluir ejercicios de oído desde el principio. Más adelante: una prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
+- **Sección aparte «Entrenamiento de oído»** (práctica diaria de ~5 min, fuera de las lecciones; prevista):
+  - Oído relativo (lo principal): intervalos, acordes mayor/menor, grados de la escala.
+  - Reto de «oído absoluto» tipo juego: adivinar la nota sin referencia, empezando con 2 notas y sumando más según los aciertos, con estadísticas. Sin prometer que se adquiera (en adultos es difícil); se presenta como juego.
+
 ## Estado del proyecto
 
 **Avance: ~15 %**
