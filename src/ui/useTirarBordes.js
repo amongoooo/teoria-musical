@@ -18,8 +18,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *
  * Usa eventos táctiles (con el scroll, el navegador se queda con los Pointer Events). Cuando el gesto
  * es nuestro se cancela el touchmove, así no hay rebote ni recarga a la vez. Además, lejos de arriba
- * `html` lleva `overscroll-behavior-y: none` (sin rebote propio al final) y arriba del todo `auto`
- * (para que funcione «tirar para recargar»).
+ * `html` y `body` llevan `overscroll-behavior-y: none` (sin rebote ni «estirón» propio del navegador:
+ * en Android, Chrome estira la página al pasar del borde y eso empujaba fuera de la pantalla lo que
+ * está fijo abajo, como la barra de puntitos) y arriba del todo `auto` (para que funcione «tirar para
+ * recargar»), salvo si el gesto está desactivado (p. ej. con una isla abierta): entonces siempre `none`.
  * Devuelve { progreso, listo }: `progreso` en fracciones de X con signo (+ abajo, − arriba; ±0,5 = punto
  * de pasar) y `listo` (±1 si al soltar ahora pasaría, 0 si no).
  */
@@ -28,13 +30,20 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
   const listo = useMotionValue(0)
   const op = useRef(null)
   op.current = { activo, umbral, puede, onPasar, desdeAbajo }
+  const rebote = useRef(null)
+  // Al activarse o desactivarse (abrir/cerrar una isla), el rebote del navegador cambia al momento.
+  useEffect(() => rebote.current?.(), [activo])
 
   useEffect(() => {
     const html = document.documentElement
-    const antes = html.style.overscrollBehaviorY
+    const body = document.body
+    const antes = [html.style.overscrollBehaviorY, body.style.overscrollBehaviorY]
     const ajustarRebote = () => {
-      html.style.overscrollBehaviorY = window.scrollY <= 0 ? 'auto' : 'none'
+      const valor = op.current.activo && window.scrollY <= 0 ? 'auto' : 'none'
+      html.style.overscrollBehaviorY = valor
+      body.style.overscrollBehaviorY = valor
     }
+    rebote.current = ajustarRebote
     ajustarRebote()
 
     let g = null
@@ -151,7 +160,8 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
     window.addEventListener('scroll', ajustarRebote, pasivo)
     return () => {
       anim?.stop()
-      html.style.overscrollBehaviorY = antes
+      ;[html.style.overscrollBehaviorY, body.style.overscrollBehaviorY] = antes
+      rebote.current = null
       window.removeEventListener('touchstart', empezar, pasivo)
       window.removeEventListener('touchmove', mover, activoEv)
       window.removeEventListener('touchend', soltar, pasivo)

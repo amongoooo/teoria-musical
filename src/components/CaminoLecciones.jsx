@@ -20,7 +20,8 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
-const TILT = { x: 12, grados: 3, vuelve: 250 } // «tilt» de la isla abierta al chocar con un extremo (px, grados, ms)
+// «Tilt» al chocar con un extremo (isla abierta) o al arrastrar la barra de puntitos (px, grados, ms).
+const TILT = { x: 12, grados: 3, vuelve: 250, barra: { x: 10, y: 8, grados: 2 } }
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
@@ -174,6 +175,19 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   }
   useEffect(() => () => clearTimeout(tilt.current), [])
 
+  // La barra de puntitos tampoco se mueve: al arrastrar sobre ella hacia arriba/abajo (o de lado cuando
+  // ya no hay más islas) hace el mismo «tilt» + desplazamiento corto hacia el dedo y vuelve a los 0,25 s.
+  const pildora = useRef(null)
+  const tiltBarra = useRef(null)
+  const inclinarBarra = ({ x = 0, y = 0, rotate = 0 }) => {
+    const el = pildora.current
+    if (!el || reducir) return
+    clearTimeout(tiltBarra.current)
+    animate(el, { x, y, rotate }, RESORTE.pulsar)
+    tiltBarra.current = setTimeout(() => animate(el, { x: 0, y: 0, rotate: 0 }, RESORTE.suave), TILT.vuelve)
+  }
+  useEffect(() => () => clearTimeout(tiltBarra.current), [])
+
   const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla, alTope: inclinar })
   const puntos = useDeslizar({
     activo: abierta !== null,
@@ -186,7 +200,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     eje: false,
     onPaso: paso,
     puede,
-    alTope: inclinar,
+    alTope: (lado) => inclinarBarra({ x: lado * TILT.barra.x, rotate: lado * TILT.barra.grados }),
     // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
     origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
     alEmpezar: (e) => {
@@ -494,7 +508,18 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       {createPortal(
         <AnimatePresence>
           {abierta !== null && (
-            <BarraPuntitos key="puntitos" lecciones={islasMeta} estados={estados} abierta={abierta} acento={modulo.acento} guardar={guardar} handlers={puntos.handlers} onIr={irA} />
+            <BarraPuntitos
+              key="puntitos"
+              lecciones={islasMeta}
+              estados={estados}
+              abierta={abierta}
+              acento={modulo.acento}
+              guardar={guardar}
+              handlers={puntos.handlers}
+              onIr={irA}
+              pildora={pildora}
+              onVertical={(dy, lado) => inclinarBarra({ y: Math.sign(dy) * TILT.barra.y, rotate: lado * Math.sign(dy) * TILT.barra.grados })}
+            />
           )}
         </AnimatePresence>,
         document.body,
@@ -510,8 +535,16 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * resorte y respeta la zona segura. Tocar un puntito va a esa isla; arrastrar por encima pasa
  * de isla en isla con las mismas reglas del swipe (una isla cada vez que se cruza un puntito).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, pildora, onVertical }) {
   const sep = DESLIZAR.puntitos.separacion
+  // Arrastre vertical sobre la barra: avisa una vez por sentido (arriba / abajo) con el lado de la
+  // barra donde está el dedo (−1 izquierda, +1 derecha), para inclinarla hacia ahí.
+  const vert = useRef(null)
+  const { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, ...resto } = handlers
+  const fin = (e, f) => {
+    vert.current = null
+    f?.(e)
+  }
   return (
     <motion.div
       data-nodo
@@ -527,9 +560,30 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
       <div
         role="group"
         aria-label="Lecciones del módulo"
+        ref={pildora}
         className="pointer-events-auto flex select-none items-center rounded-full border border-zinc-200 bg-white/95 px-3 shadow-sm backdrop-blur"
         style={{ touchAction: 'none' }}
-        {...handlers}
+        {...resto}
+        onPointerDown={(e) => {
+          vert.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dir: 0 }
+          onPointerDown?.(e)
+        }}
+        onPointerMove={(e) => {
+          onPointerMove?.(e)
+          const v = vert.current
+          if (!v || v.id !== e.pointerId) return
+          const dx = e.clientX - v.x0
+          const dy = e.clientY - v.y0
+          const dir = Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) ? Math.sign(dy) : 0
+          if (dir && dir !== v.dir) {
+            const r = pildora.current.getBoundingClientRect()
+            onVertical(dy, e.clientX >= r.left + r.width / 2 ? 1 : -1)
+          }
+          if (Math.abs(dy) < 6) v.dir = 0
+          else if (dir) v.dir = dir
+        }}
+        onPointerUp={(e) => fin(e, onPointerUp)}
+        onPointerCancel={(e) => fin(e, onPointerCancel)}
       >
         {lecciones.map((l, i) => {
           const hecha = estados[i] === 'hecha'
