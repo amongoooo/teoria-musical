@@ -37,7 +37,7 @@ src/
   content/              # Contenido (datos), ver content/FORMATO.md
     modulos.js          # Los 10 módulos y sus lecciones (título, acento, reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
-    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js
+    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js, leccion-2-3.js
   components/
     Piano.jsx           # Piano táctil (multitouch, glissando, octavas, teclas marcadas)
     CaminoLecciones.jsx # Camino de islas de un módulo (vertical en celular, horizontal en ancho; carrusel + barra de puntitos)
@@ -85,7 +85,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~46 %** (módulo 1 completo; módulo 2: 2 de 5 lecciones)
+**Avance: ~49 %** (módulo 1 completo; módulo 2: 3 de 5 lecciones)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -114,4 +114,6 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Isla abierta rediseñada: «isla + bocadillo»** (el usuario la eligió entre 4 propuestas en un artefacto): la isla crece hasta 112 px con su aro de avance y debajo sale un **globo** con piquito (título, estado, botones a lo ancho; ✕ arriba a la derecha). La altura del globo se mide (ResizeObserver) para apartar las islas de abajo; la isla de Retos sigue el mismo estilo. Componentes `Bola`, `Globo` y `BotonGlobo` en `CaminoLecciones.jsx`; swipe y barra de puntitos sin cambios.
 
-**Siguiente tarea:** lección 2.3 «Figuras: de redonda a semicorchea» (redonda, blanca, negra, corchea, semicorchea y sus silencios; el 4 de «4/4»; los 16 pasos del Channel rack), reutilizando el Piano Roll de batería y `pulso` (`cada: 0.25` para semicorcheas). Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
+- ✅ **Lección 2.3 «Figuras: de redonda a semicorchea»** (15 pasos): negra = 1 tiempo, redonda/blanca/negra, corcheas y semicorcheas («1 e y a») con una **pirámide de figuras** en el Piano Roll (`roll.nombres`: filas con nombre propio), silencios (= casilla vacía), el 4 de abajo en 4/4 (la negra) y por qué el **Channel rack tiene 16 pasos** (4 tiempos × 4 semicorcheas; tiempos en 1, 5, 9, 13). Oído: «¿Qué figura suena?», «¿Cuántas notas por tiempo?» (hi-hat sobre clic, también a tempos engañosos), «¿Qué ritmo suena?» y «¿Dónde está el silencio?»; `pulso` de blancas a semicorcheas (`contar: 'e'`, contador en dos filas de 8, guía de hi-hat con `porTiempo: 4`); dibujar figuras y hi-hat en semicorcheas en el Piano Roll; quiz y reto en FL (hats en negras/corcheas/semicorcheas y *Snap* Bar/Beat/1/2 beat/Step). El Piano Roll explica los fallos con la figura («2 tiempos (una blanca, 4 casillas)») y sitúa las semicorcheas («en la "e" del tiempo 2»). Probada de principio a fin con Playwright a 375 px (claro y oscuro, 25/25).
+
+**Siguiente tarea:** lección 2.4 «Síncopa y anticipación» (acentos a contratiempo, notas que se adelantan a la «y» o a la «a», ligaduras sobre el tiempo, el dembow del reguetón y el *bounce* del hip hop), reutilizando `pulso` con `desfase` y `contar: 'y' | 'e'` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

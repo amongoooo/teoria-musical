@@ -124,6 +124,7 @@ roll: {
   etiquetas: 'app' | 'fl' | 'ambas',       // 'fl' = nombres de FL Studio (Do4 → C5)
   alternar: true,                          // selector «Esta app / FL Studio»
   velocity: true,                          // carril de velocity abajo
+  nombres: { C4: 'Redonda', E4: 'Blanca' }, // opcional: texto propio en la columna de la izquierda (más ancha)
   notas: [{ nota: 'C4', inicio: 0, duracion: 2, velocity: 0.8 }],  // inicio/duración en casillas
 }
 ```
@@ -154,8 +155,10 @@ objetivo: { tipo: 'seguir', rondas: [{ pregunta, bpm: 90, groove: 'click', meta:
   // Opcionales de cada ronda:
   //   cada: 4        → tiempos entre toque y toque (4 = solo en el 1 de un 4/4; 0.5 = «1 y 2 y»)
   //   desfase: 2     → en qué tiempo cae el primer toque, contando desde 0 (2 = en el 3; 0.5 = en la «y»)
-  //   contar: 'tiempos' | 'y'  → muestra la cuenta del compás («1 2 3 4» o «1 y 2 y…»);
-  //                    se ilumina lo que suena y las casillas que hay que tocar llevan aro
+  //   contar: 'tiempos' | 'y' | 'e'  → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o
+  //                    «1 e y a 2 e y a…» en dos filas de 8); se ilumina lo que suena y las
+  //                    casillas que hay que tocar llevan aro
+  //   groove + porTiempo → un patrón propio con otra resolución (p. ej. hi-hat en semicorcheas, porTiempo: 4)
   //   ayuda, boton   → textos de la barra («Toca en el 1: 2/4 a tiempo») y del botón grande
 objetivo: { tipo: 'tempo', rondas: [{ bpm: 100, groove: 'basico', pregunta }] }
   // tap tempo: marcar el pulso (≥ 6 toques) y comprobar los BPM (±5 %; medio o doble tempo cuenta como bien).

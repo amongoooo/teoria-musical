@@ -16,7 +16,7 @@ import Rondas from './Rondas.jsx'
  *      → tocar el botón grande al pulso; cuenta los toques «a tiempo» (±90 ms).
  *        cada: tiempos entre toque y toque (1 = cada tiempo, 0.5 = «1 y 2 y», 4 = solo el 1 en 4/4).
  *        desfase: en qué tiempo cae el primer toque (0 = en el 1; 2 = en el 3).
- *        contar: 'tiempos' | 'y' → muestra la cuenta del compás («1 2 3 4» o «1 y 2 y…»).
+ *        contar: 'tiempos' | 'y' | 'e' → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o «1 e y a 2 e y a…»).
  *  - { tipo: 'tempo', rondas: [{ bpm, groove }] }
  *      → tap tempo: marcar el pulso de un ritmo y adivinar sus BPM.
  *  - { tipo: 'explorar', tempos: [{ bpm, genero }], minimo: 3, mensaje }
@@ -29,6 +29,11 @@ export default function Pulso(props) {
   if (objetivo.tipo === 'explorar') return <Explorar {...props} />
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
+
+/** Casillas por tiempo del contador: 'tiempos' «1 2 3 4», 'y' «1 y 2 y», 'e' «1 e y a» (semicorcheas). */
+const DIVISION = { tiempos: 1, y: 2, e: 4 }
+const SILABAS = ['', 'y']
+const SILABAS_SEMI = ['', 'e', 'y', 'a']
 
 const TOLERANCIA = 0.09 // segundos de margen para contar un toque «a tiempo»
 const RANGO = 0.25 // el medidor muestra ±250 ms
@@ -154,7 +159,7 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
   const desfase = ronda.desfase ?? 0
   const { ritmo, empezar, parar } = useRitmo()
   const latido = useLatido(ritmo, cada, desfase)
-  const division = ronda.contar === 'y' ? 2 : 1
+  const division = DIVISION[ronda.contar] ?? 1
   const sub = useLatido(ritmo, 1 / division)
   const color = useColor(leccionId)
   const [toques, setToques] = useState([]) // errores (s) ya compensados
@@ -242,18 +247,20 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
 }
 
 /**
- * Cuenta del compás: «1 2 3 4» (o «1 y 2 y…» con division 2). Se ilumina la casilla que suena;
- * las que hay que tocar llevan un aro del acento. El 1 (tiempo fuerte) va más grande.
+ * Cuenta del compás: «1 2 3 4», «1 y 2 y…» (division 2) o «1 e y a…» (division 4, en dos filas de 8).
+ * Se ilumina la casilla que suena; las que hay que tocar llevan un aro del acento.
  */
 function Contador({ tiempos, division, actual, cada, desfase, color }) {
   const total = tiempos * division
   const pos = actual >= 0 ? actual % total : -1
+  const silabas = division === 4 ? SILABAS_SEMI : SILABAS
   const objetivo = (i) => {
     const x = (i / division - desfase) / cada
     return Math.abs(x - Math.round(x)) < 1e-6
   }
+  const filas = total > 8
   return (
-    <div className="flex gap-1.5" aria-hidden>
+    <div className={filas ? 'grid grid-cols-8 gap-1.5' : 'flex gap-1.5'} aria-hidden>
       {Array.from({ length: total }, (_, i) => {
         const tiempo = i % division === 0
         const encendida = i === pos
@@ -263,13 +270,13 @@ function Contador({ tiempos, division, actual, cada, desfase, color }) {
             key={i}
             className={`grid h-12 min-w-0 flex-1 place-items-center rounded-2xl border-2 tabular-nums transition-colors duration-100 ${
               tiempo ? 'text-xl font-bold' : 'text-base font-semibold'
-            } ${encendida ? 'text-blanco' : i === 0 ? 'bg-white text-zinc-900' : 'bg-white text-zinc-600'}`}
+            } ${encendida ? 'text-blanco' : tiempo && (i === 0 || division > 1) ? 'bg-white text-zinc-900' : 'bg-white text-zinc-600'}`}
             style={{
               backgroundColor: encendida ? oscuro(color) : undefined,
               borderColor: marca ? oscuro(color) : 'var(--color-zinc-200)',
             }}
           >
-            {tiempo ? i / division + 1 : 'y'}
+            {tiempo ? i / division + 1 : silabas[i % division]}
           </span>
         )
       })}

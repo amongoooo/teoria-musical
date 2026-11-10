@@ -18,6 +18,7 @@ import { IconoPlay } from './BotonSonido.jsx'
  * Props:
  *  - roll: { filas | rango, soloBlancas, columnas, porTiempo, compas, bpm, etiquetas, alternar, velocity }
  *      compas: tiempos por compás (los números vuelven a 1 y la línea de compás es más marcada).
+ *      nombres: { C4: 'Redonda', … } → texto propio para la columna de la izquierda (más ancha).
  *  - notas: [{ id, nota, inicio, duracion, velocity }]  (controlado)
  *  - onCambio(notas): si falta, el roll es solo de lectura.
  *  - soloVelocity: solo se puede cambiar la velocity (no crear ni borrar notas).
@@ -36,7 +37,8 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const [cabezal, setCabezal] = useState(null) // columna que suena al reproducir
   const [ultimaVel, setUltimaVel] = useState(null)
   const alto = filas.length > 6 ? 'h-8' : 'h-10'
-  const ancho = filas.some(esPercusion) ? 'w-[4.5rem]' : 'w-14'
+  const nombres = roll.nombres ?? null
+  const ancho = nombres ? 'w-[6.5rem]' : filas.some(esPercusion) ? 'w-[4.5rem]' : 'w-14'
 
   const areaRef = useRef(null)
   const cajaRef = useRef(null)
@@ -192,9 +194,9 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
                     negra ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-200 bg-white text-zinc-800'
                   }`}
                   style={{ touchAction: 'manipulation' }}
-                  aria-label={esPercusion(f) ? PERCUSION[f] : `${nombre(f)} (en FL Studio ${nombreFL(f)})`}
+                  aria-label={nombres?.[f] ?? (esPercusion(f) ? PERCUSION[f] : `${nombre(f)} (en FL Studio ${nombreFL(f)})`)}
                 >
-                  <Etiqueta nota={f} modo={etiquetas} />
+                  {nombres?.[f] ? <span className="text-sm font-semibold">{nombres[f]}</span> : <Etiqueta nota={f} modo={etiquetas} />}
                 </button>
               )
             })}

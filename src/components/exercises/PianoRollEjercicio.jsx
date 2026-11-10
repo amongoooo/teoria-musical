@@ -127,15 +127,22 @@ function momento(c, porTiempo, compas) {
   const b = Math.floor(c / porTiempo)
   const t = (compas ? b % compas : b) + 1
   const enCompas = compas && b >= compas ? ` del compás ${Math.floor(b / compas) + 1}` : ''
-  return c % porTiempo === 0 ? `en el tiempo ${t}${enCompas}` : `a mitad del tiempo ${t}${enCompas}`
+  const r = c % porTiempo
+  if (r === 0) return `en el tiempo ${t}${enCompas}`
+  // En semicorcheas (4 por tiempo): «1 e y a».
+  if (porTiempo === 4 && r !== 2) return `en la «${r === 1 ? 'e' : 'a'}» del tiempo ${t}${enCompas}`
+  return `a mitad del tiempo ${t}${enCompas}`
 }
 
+const FIGURA = { 0.25: 'una semicorchea', 0.5: 'una corchea', 1: 'una negra', 2: 'una blanca', 4: 'una redonda' }
+
+/** Duración en palabras: «2 tiempos (una blanca, 4 casillas)». */
 function largo(d, porTiempo) {
-  if (porTiempo === 2) {
-    if (d === 1) return 'medio tiempo (1 casilla)'
-    return `${d / 2} ${d === 2 ? 'tiempo' : 'tiempos'} (${d} casillas)`
-  }
-  return `${d} ${d === 1 ? 'casilla' : 'casillas'}`
+  const casillas = `${d} ${d === 1 ? 'casilla' : 'casillas'}`
+  const t = d / porTiempo
+  const fig = FIGURA[t] ? `${FIGURA[t]}, ` : ''
+  const tiempos = t === 0.5 ? 'medio tiempo' : t === 0.25 ? 'un cuarto de tiempo' : Number.isInteger(t) ? `${t} ${t === 1 ? 'tiempo' : 'tiempos'}` : null
+  return tiempos ? `${tiempos} (${fig}${casillas})` : casillas
 }
 
 function revisarCopia(notas, solucion, { nom, porTiempo, compas }) {
