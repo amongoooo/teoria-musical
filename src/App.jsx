@@ -9,14 +9,14 @@ import { RESORTE, profundidad, variantesPantalla } from './ui/movimiento.js'
 
 function Pagina({ ruta }) {
   if (ruta.pagina === 'modulo') return <Modulo numero={ruta.id} />
-  if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} />
+  if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} soloReto={ruta.reto} />
   if (ruta.pagina === 'oido') return <Oido modo={ruta.id} />
   return <Inicio />
 }
 
 export default function App() {
   const ruta = useRuta()
-  const clave = `${ruta.pagina}:${ruta.id ?? ''}`
+  const clave = `${ruta.pagina}:${ruta.id ?? ''}${ruta.reto ? ':reto' : ''}`
 
   // Dirección: 1 = avanzar (entra por la derecha), -1 = volver.
   const anterior = useRef({ clave, prof: profundidad(ruta), dir: 1 })

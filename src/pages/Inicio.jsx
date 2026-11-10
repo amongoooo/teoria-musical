@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import BotonOpciones from '../components/Opciones.jsx'
+import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import Piano from '../components/Piano.jsx'
 import { leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
 import { META_SEGUNDOS, datosDeHoy, rachaActual, useOido } from '../progress/oido.js'
@@ -17,8 +18,6 @@ export default function Inicio() {
   const destacada = siguiente ?? disponibles[disponibles.length - 1]
   const p = destacada ? progreso.lecciones[destacada.id] : null
   const textoBoton = !siguiente ? 'Repasar' : p?.paso > 0 ? 'Continuar' : 'Empezar'
-  const abiertos = MODULOS.filter(moduloDisponible)
-  const proximos = MODULOS.filter((m) => !moduloDisponible(m))
 
   return (
     <motion.main
@@ -65,60 +64,38 @@ export default function Inicio() {
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <h2 className="text-2xl font-bold tracking-tight">Módulos</h2>
-        <ol className="flex flex-col gap-3">
-          {abiertos.map((m) => {
+        {/* Cada módulo es un cuadrito con su número y su título; al tocarlo se despliegan sus islas. */}
+        <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
+          {MODULOS.map((m) => {
+            const disponible = moduloDisponible(m)
             const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
+            const contenido = (
+              <>
+                <Cuadrito modulo={m} disponible={disponible} tam={76} />
+                <span className={`line-clamp-3 text-base font-semibold leading-snug ${disponible ? 'text-zinc-900' : 'text-zinc-500'}`}>{m.titulo}</span>
+                <span className="text-sm tabular-nums text-zinc-500">{disponible ? `${hechas}/${m.lecciones.length}` : 'Próximamente'}</span>
+              </>
+            )
             return (
               <li key={m.numero}>
-                <Pulsable
-                  href={rutas.modulo(m.numero)}
-                  tipo="tarjeta"
-                  className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-3"
-                >
-                  <span
-                    className="grid size-12 shrink-0 place-items-center rounded-2xl text-lg font-bold text-blanco"
-                    style={{ backgroundColor: oscuro(m.acento) }}
+                {disponible ? (
+                  <Pulsable
+                    href={rutas.modulo(m.numero)}
+                    tipo="tarjeta"
+                    aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
+                    className="flex min-h-11 flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
                   >
-                    {m.numero}
-                  </span>
-                  <span className="flex flex-1 flex-col gap-1.5">
-                    <span className="text-lg font-semibold leading-snug text-zinc-900">{m.titulo}</span>
-                    <span className="flex items-center gap-2 text-sm text-zinc-500">
-                      <span className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-100">
-                        <motion.span
-                          className="block h-full rounded-full"
-                          style={{ backgroundColor: m.acento }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(hechas / m.lecciones.length) * 100}%` }}
-                          transition={{ ...RESORTE.suave, delay: 0.25 }}
-                        />
-                      </span>
-                      {hechas}/{m.lecciones.length} lecciones
-                    </span>
-                  </span>
-                  <span aria-hidden className="text-2xl text-zinc-300">›</span>
-                </Pulsable>
+                    {contenido}
+                  </Pulsable>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`Módulo ${m.numero}: ${m.titulo}. Próximamente`}>
+                    {contenido}
+                  </div>
+                )}
               </li>
             )
           })}
         </ol>
-
-        {/* Los módulos que aún no existen: compactos, para no empujar todo hacia abajo. */}
-        {proximos.length > 0 && (
-          <div className="flex flex-col gap-1 rounded-3xl border border-dashed border-zinc-300 px-4 py-3">
-            <p className="py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500">Próximamente</p>
-            <ol className="flex flex-col">
-              {proximos.map((m) => (
-                <li key={m.numero} className="flex items-center gap-3 py-1.5 text-base text-zinc-600">
-                  <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-zinc-100 text-sm font-semibold text-zinc-500">
-                    {m.numero}
-                  </span>
-                  {m.titulo}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">

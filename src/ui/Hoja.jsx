@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useDragControls } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { RESORTE } from './movimiento.js'
 import Pulsable from './Pulsable.jsx'
@@ -7,9 +7,11 @@ import Pulsable from './Pulsable.jsx'
  * Hoja que sube desde abajo (bottom sheet tipo iOS). En pantallas anchas flota centrada.
  * Se cierra tocando el fondo, con ✕, con Escape o arrastrándola hacia abajo.
  *  - abierta, onCerrar, etiqueta (nombre accesible del diálogo), children
+ * Lo que lleve `data-sin-arrastre` (p. ej. un carrusel lateral) no arrastra la hoja.
  */
 export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
   const ref = useRef(null)
+  const arrastre = useDragControls()
 
   useEffect(() => {
     if (!abierta) return
@@ -51,6 +53,9 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
             exit={{ y: '110%' }}
             transition={RESORTE.pantalla}
             drag="y"
+            dragListener={false}
+            dragControls={arrastre}
+            onPointerDown={(e) => !e.target.closest('[data-sin-arrastre]') && arrastre.start(e)}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.7 }}
             onDragEnd={(_, info) => {

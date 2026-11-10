@@ -2,12 +2,14 @@ import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } fr
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, leccionAnterior } from '../content/index.js'
-import { reiniciarLeccion } from '../progress/progreso.js'
+import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { claro, oscuro, tinta } from '../ui/color.js'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
+import Hoja from '../ui/Hoja.jsx'
+import NavegadorModulos from './NavegadorModulos.jsx'
 
 const ISLA = 80 // diámetro de cada isla (px)
 const INSIGNIA = 72 // cuadrado con el número del módulo, al inicio del camino
@@ -29,6 +31,26 @@ const opacidadDisco = (o) => suave(o, 0.12, 0.32)
 const opacidadContenido = (o) => suave(o, 0.45, 0.85)
 const opacidadChica = (o) => 1 - suave(o, 0.3, 0.36)
 const opacidadTitulo = (o) => 1 - suave(o, 0, 0.25)
+/** Rebote al final (las islas se despliegan desde la insignia y se pasan un poco de su sitio). */
+const rebote = (t) => {
+  const c = 1.4
+  return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2
+}
+// Despliegue al entrar al módulo: cada isla sale de la insignia, una tras otra.
+const DESPLIEGUE = { espera: 0.12, entre: 0.07, dura: 0.5 }
+
+const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
+
+/** Retos del módulo: el reto del módulo (clave `M<número>`) y el reto de FL de cada lección que ya existe. */
+export function retosDelModulo(modulo, progreso) {
+  const lista = [{ clave: `M${modulo.numero}`, titulo: 'Reto del módulo', texto: modulo.reto, hecho: Boolean(progreso.retos[`M${modulo.numero}`]?.hecho) }]
+  for (const l of modulo.lecciones) {
+    const reto = getLeccion(l.id)?.pasos.find((p) => p.tipo === 'reto')
+    if (!reto) continue
+    lista.push({ clave: l.id, leccion: l, titulo: mayuscula(reto.titulo.replace(/^Reto en FL Studio:\s*/i, '')), texto: reto.objetivo, hecho: Boolean(progreso.retos[l.id]?.hecho) })
+  }
+  return lista
+}
 
 /**
  * Camino de lecciones en forma de islas.
@@ -47,9 +69,16 @@ export default function CaminoLecciones({ modulo, progreso }) {
   const ref = useRef(null)
   const ancho = useAncho(ref)
   const lecciones = modulo.lecciones
-  const n = lecciones.length
-  const estados = lecciones.map((l) => estadoLeccion(l.id, progreso))
+  // Islas del camino: las lecciones y, al final (lado opuesto a la insignia), la isla de Retos.
+  const islasMeta = [...lecciones, { id: 'retos', titulo: 'Retos', esRetos: true }]
+  const n = islasMeta.length
+  const retos = retosDelModulo(modulo, progreso)
+  const retosHechos = retos.filter((r) => r.hecho).length
+  const moduloCompleto = lecciones.every((l) => progreso.lecciones[l.id]?.completada)
+  const estados = [...lecciones.map((l) => estadoLeccion(l.id, progreso)), retosHechos === retos.length ? 'hecha' : 'retos']
   const actual = estados.findIndex((e) => e === 'nueva' || e === 'empezada')
+  const [verModulos, setVerModulos] = useState(false)
+  const [verRetos, setVerRetos] = useState(false)
   const vertical = ancho < 560
   const grande = vertical ? Math.min(ancho - 8, 320) : Math.min(340, Math.max(290, ancho * 0.36))
   const X = vertical ? Math.max(100, ancho * DESLIZAR.umbralCelular) : DESLIZAR.umbralAncho
@@ -60,6 +89,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
   const abiertaRef = useRef(null) // isla abierta (destino) o null
   const base = useMotionValue(0) // índice continuo de la isla abierta, sin contar el arrastre
   const apertura = useMotionValue(0) // 0 = camino cerrado, 1 = una isla abierta
+  const despliegue = useMotionValue(0) // segundos desde que empezó el despliegue inicial
 
   // Disposición del camino cerrado y con cada isla abierta.
   const layouts = useMemo(
@@ -69,6 +99,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
 
   // Elementos que se mueven a mano en cada fotograma.
   const els = useRef({ nodo: [], escala: [], chica: [], grande: [], etiqueta: [], gris: [], color: [], punto: [] }).current
+  const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
 
   // En el celular, al cambiar de isla, la página se desplaza para que la isla abierta quede
@@ -149,6 +180,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
     const B = L.abiertas[j]
     const C = L.cerrado
     const pos = []
+    const td = despliegue.get()
     for (let m = 0; m <= n; m++) {
       const lo = A.nodos[m]
       const hi = B.nodos[m]
@@ -159,9 +191,16 @@ export default function CaminoLecciones({ modulo, progreso }) {
       let ox = lerp(lo.x, hi.x, f) - fuera * X
       // En vertical, la que se va sale un poco hacia el lado del dedo y la que llega entra por el otro.
       if (vertical && m > 0) ox -= (pc - li) * cerca * ancho * 0.5
-      const x = lerp(c.x, ox, a)
-      const y = lerp(c.y, lerp(lo.y, hi.y, f), a)
+      let x = lerp(c.x, ox, a)
+      let y = lerp(c.y, lerp(lo.y, hi.y, f), a)
       const esc = lerp(c.escala, lerp(lo.escala, hi.escala, f), a)
+      // Despliegue inicial: la isla sale de la insignia (nodo 0) y llega a su sitio con un rebote.
+      const sale = m === 0 ? 1 : limitar((td - DESPLIEGUE.espera - (m - 1) * DESPLIEGUE.entre) / DESPLIEGUE.dura, 0, 1)
+      const dsp = m === 0 ? 1 : rebote(sale)
+      if (m > 0 && sale < 1) {
+        x = lerp(pos[0].x, x, dsp)
+        y = lerp(pos[0].y, y, dsp)
+      }
       pos.push({ x, y })
       const nodo = els.nodo[m]
       if (nodo) {
@@ -175,8 +214,8 @@ export default function CaminoLecciones({ modulo, progreso }) {
       const tam = lerp(esc, grande / ISLA, o) // escala de la isla pequeña
       const chica = els.chica[li]
       if (chica) {
-        chica.style.transform = `scale(${tam})`
-        chica.style.opacity = String(opacidadChica(o))
+        chica.style.transform = `scale(${tam * lerp(0.3, 1, Math.max(0, dsp))})`
+        chica.style.opacity = String(opacidadChica(o) * limitar(sale * 4, 0, 1))
         chica.inert = o >= 0.5
       }
       const gr = els.grande[li]
@@ -189,7 +228,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
       }
       const et = els.etiqueta[li]
       if (et) {
-        const conEtiqueta = lerp(c.etiqueta ? 1 : 0, lerp(lo.etiqueta ? 1 : 0, hi.etiqueta ? 1 : 0, f), a) * opacidadTitulo(o)
+        const conEtiqueta = lerp(c.etiqueta ? 1 : 0, lerp(lo.etiqueta ? 1 : 0, hi.etiqueta ? 1 : 0, f), a) * opacidadTitulo(o) * limitar(sale * 2 - 1, 0, 1)
         et.style.opacity = String(conEtiqueta)
         et.style.visibility = conEtiqueta > 0.01 ? 'visible' : 'hidden'
         et.style.width = `${lerp(c.anchoEtiqueta ?? ETIQUETA, lerp(lo.anchoEtiqueta ?? ETIQUETA, hi.anchoEtiqueta ?? ETIQUETA, f), a)}px`
@@ -200,6 +239,7 @@ export default function CaminoLecciones({ modulo, progreso }) {
     cont.style.height = `${lerp(C.alto, lerp(A.alto, B.alto, f), a)}px`
     for (let s = 0; s < n; s++) {
       const d = curva(pos[s], pos[s + 1], vertical)
+      if (els.gris[s]) els.gris[s].style.opacity = String(limitar((td - DESPLIEGUE.espera - s * DESPLIEGUE.entre) / DESPLIEGUE.dura * 3, 0, 1))
       els.gris[s]?.setAttribute('d', d)
       els.color[s]?.setAttribute('d', d)
     }
@@ -214,9 +254,18 @@ export default function CaminoLecciones({ modulo, progreso }) {
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
   useEffect(() => {
-    const quitar = [base, apertura, islas.progreso, puntos.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
+    const quitar = [base, apertura, despliegue, islas.progreso, puntos.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
     return () => quitar.forEach((q) => q())
-  }, [base, apertura, islas.progreso, puntos.progreso])
+  }, [base, apertura, despliegue, islas.progreso, puntos.progreso])
+
+  // Al entrar al módulo, las islas se despliegan desde la insignia (sin movimiento si se pide reducirlo).
+  const desplegado = useRef(false)
+  useEffect(() => {
+    if (!ancho || desplegado.current) return
+    desplegado.current = true
+    if (reducir) despliegue.set(finDespliegue)
+    else animate(despliegue, finDespliegue, { duration: finDespliegue, ease: 'linear' })
+  }, [ancho, reducir, despliegue, finDespliegue])
 
   // Escape o tocar fuera de las islas y de la barra cierra la isla abierta; flechas: anterior / siguiente.
   // (Tras un arrastre, useDeslizar anula ese «click», así que deslizar no cierra.)
@@ -228,11 +277,12 @@ export default function CaminoLecciones({ modulo, progreso }) {
   useEffect(() => {
     if (!abiertaSiNo) return
     const tecla = (e) => {
+      if (document.querySelector('[role=dialog]')) return // la hoja abierta se encarga
       if (e.key === 'Escape') cerrarRef.current()
       else if (e.key === 'ArrowRight') irARef.current(abiertaRef.current + 1)
       else if (e.key === 'ArrowLeft') irARef.current(abiertaRef.current - 1)
     }
-    const fuera = (e) => !e.target.closest?.('[data-nodo]') && cerrarRef.current()
+    const fuera = (e) => !e.target.closest?.('[data-nodo], [role=dialog]') && cerrarRef.current()
     document.addEventListener('keydown', tecla)
     document.addEventListener('click', fuera)
     return () => {
@@ -272,15 +322,15 @@ export default function CaminoLecciones({ modulo, progreso }) {
         {ancho > 0 && (
           <>
             <svg className="pointer-events-none absolute inset-0 overflow-visible" width="100%" height="100%" aria-hidden>
-              {lecciones.map((l, s) => (
+              {islasMeta.map((l, s) => (
                 <g key={l.id}>
-                  <path ref={guardar('gris', s)} fill="none" stroke="var(--color-zinc-200)" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" />
-                  {estados[s] !== 'bloqueada' && estados[s] !== 'proximamente' && (
+                  <path ref={guardar('gris', s)} fill="none" stroke="var(--color-zinc-200)" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" style={{ opacity: 0 }} />
+                  {(l.esRetos ? moduloCompleto : estados[s] !== 'bloqueada' && estados[s] !== 'proximamente') && (
                     <motion.path
                       ref={guardar('color', s)}
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
-                      transition={{ ...RESORTE.suave, delay: montado ? 0 : 0.15 + s * 0.08 }}
+                      transition={{ ...RESORTE.suave, delay: montado ? 0 : DESPLIEGUE.espera + s * DESPLIEGUE.entre + 0.2 }}
                       fill="none"
                       stroke={modulo.acento}
                       strokeWidth="6"
@@ -295,27 +345,35 @@ export default function CaminoLecciones({ modulo, progreso }) {
             <div ref={guardar('nodo', 0)} data-nodo className="absolute left-0 top-0 size-0">
               <motion.div {...entrada(0)}>
                 <div ref={guardar('escala', 0)} className="absolute left-0 top-0">
-                  <span
+                  <Pulsable
+                    onClick={() => {
+                      cerrar()
+                      setVerModulos(true)
+                    }}
+                    aria-label={`Módulo ${modulo.numero}. Ver los demás módulos`}
+                    aria-haspopup="dialog"
                     className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl text-3xl font-bold text-blanco"
                     style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
-                    aria-label={`Módulo ${modulo.numero}`}
                   >
                     {modulo.numero}
-                  </span>
+                  </Pulsable>
                 </div>
               </motion.div>
             </div>
 
-            {lecciones.map((l, i) => {
+            {islasMeta.map((l, i) => {
               const estado = estados[i]
               const p = progreso.lecciones[l.id]
               const contenido = getLeccion(l.id)
-              const texto = textoEstado(estado, p, contenido)
+              const texto = l.esRetos ? `${retosHechos}/${retos.length} hechos` : textoEstado(estado, p, contenido)
               return (
                 <div key={l.id} ref={guardar('nodo', i + 1)} data-nodo className="absolute left-0 top-0 size-0">
-                  <motion.div {...entrada(i + 1)}>
+                  <div>
                     <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
-                      <div ref={guardar('chica', i)}>
+                      <div ref={guardar('chica', i)} style={{ opacity: 0 }}>
+                        {l.esRetos ? (
+                          <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i)} />
+                        ) : (
                         <Isla
                           leccion={l}
                           estado={estado}
@@ -325,11 +383,12 @@ export default function CaminoLecciones({ modulo, progreso }) {
                           descripcion={texto}
                           onClick={() => irA(i)}
                         />
+                        )}
                       </div>
                       <span
                         ref={guardar('etiqueta', i)}
                         className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-fondo px-2 py-0.5"
-                        style={vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }}
+                        style={{ opacity: 0, ...(vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }) }}
                       >
                         <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' ? 'text-zinc-500' : 'text-zinc-900'}`}>{l.titulo}</span>
                         {vertical && (
@@ -340,9 +399,13 @@ export default function CaminoLecciones({ modulo, progreso }) {
                       </span>
                     </div>
                     <div ref={guardar('grande', i)} className="absolute left-0 top-0 origin-center" style={{ visibility: 'hidden', opacity: 0 }}>
-                      <IslaAbierta meta={l} modulo={modulo} progreso={progreso} tam={grande} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
+                      {l.esRetos ? (
+                        <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} tam={grande} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
+                      ) : (
+                        <IslaAbierta meta={l} modulo={modulo} progreso={progreso} tam={grande} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
+                      )}
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               )
             })}
@@ -353,11 +416,13 @@ export default function CaminoLecciones({ modulo, progreso }) {
       {createPortal(
         <AnimatePresence>
           {abierta !== null && (
-            <BarraPuntitos key="puntitos" lecciones={lecciones} estados={estados} abierta={abierta} acento={modulo.acento} guardar={guardar} handlers={puntos.handlers} onIr={irA} />
+            <BarraPuntitos key="puntitos" lecciones={islasMeta} estados={estados} abierta={abierta} acento={modulo.acento} guardar={guardar} handlers={puntos.handlers} onIr={irA} />
           )}
         </AnimatePresence>,
         document.body,
       )}
+      <NavegadorModulos abierta={verModulos} onCerrar={() => setVerModulos(false)} actual={modulo.numero} />
+      <HojaRetos abierta={verRetos} onCerrar={() => setVerRetos(false)} modulo={modulo} retos={retos} progreso={progreso} />
     </>
   )
 }
@@ -395,14 +460,14 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
               type="button"
               data-punto={i}
               onClick={() => onIr(i)}
-              aria-label={`Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : ''}`}
+              aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : ''}`}
               aria-current={i === abierta ? 'true' : undefined}
               className="grid h-14 place-items-center"
               style={{ width: sep }}
             >
               <span
                 ref={guardar('punto', i)}
-                className="block rounded-full"
+                className={`block ${l.esRetos ? 'rounded-[5px]' : 'rounded-full'}`}
                 style={{ width: PUNTO, height: PUNTO, backgroundColor: hecha ? oscuro(acento) : acento, opacity: hecha ? 1 : 0.35, transform: `scale(${i === abierta ? 1 : 0.5})` }}
               />
             </button>
@@ -648,6 +713,126 @@ function IslaAbierta({ meta, modulo, progreso, tam, indice, total, onCerrar, onI
         Lección {indice + 1} de {total}. Desliza a los lados para ver las demás.
       </span>
     </div>
+  )
+}
+
+/** Isla pequeña de Retos (al final del camino): trofeo; se rellena cuando todos los retos están hechos. */
+function IslaRetos({ acento, completo, descripcion, onClick }) {
+  return (
+    <div className="relative grid place-items-center" style={{ width: ISLA, height: ISLA }}>
+      <Pulsable
+        onClick={onClick}
+        aria-label={`Retos del módulo. ${descripcion}`}
+        className={`grid size-full place-items-center rounded-full ${completo ? 'text-blanco' : 'border-[3px]'}`}
+        style={completo ? { backgroundColor: oscuro(acento), boxShadow: `0 6px 0 ${labio(acento)}` } : { backgroundColor: 'var(--color-white)', borderColor: acento, color: tinta(acento), boxShadow: `0 6px 0 ${claro(acento)}` }}
+      >
+        <IconoTrofeo />
+      </Pulsable>
+    </div>
+  )
+}
+
+/** Isla de Retos abierta: reto del módulo, cuántos van y botón para ver la lista completa. */
+function RetosAbierta({ modulo, retos, hechos, tam, onCerrar, onVer }) {
+  const completo = hechos === retos.length
+  return (
+    <div className="relative grid place-items-center" style={{ width: tam, height: tam }} role="group" aria-label="Retos del módulo">
+      <Anillo tam={tam + 28} acento={modulo.acento} avance={hechos / retos.length} grosor={4} />
+      <div
+        className={`relative flex size-full flex-col items-center justify-center gap-2 rounded-full px-10 text-center ${completo ? 'text-blanco' : 'border-[3px] text-zinc-900'}`}
+        style={completo ? { backgroundColor: oscuro(modulo.acento), boxShadow: `0 8px 0 ${labio(modulo.acento)}` } : { backgroundColor: 'var(--color-white)', borderColor: modulo.acento, boxShadow: `0 8px 0 ${claro(modulo.acento)}` }}
+      >
+        <div className="flex flex-col items-center gap-2" style={{ opacity: 'var(--contenido, 1)' }}>
+          <Pulsable
+            onClick={onCerrar}
+            aria-label="Cerrar"
+            className={`absolute grid size-11 place-items-center rounded-full text-xl ${completo ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
+            style={{ top: tam * 0.1, right: tam * 0.1 }}
+          >
+            ✕
+          </Pulsable>
+          <span style={completo ? undefined : { color: tinta(modulo.acento) }}>
+            <IconoTrofeo className="size-9" />
+          </span>
+          <h3 className="text-lg font-bold leading-tight">Retos en FL Studio</h3>
+          <p className={`line-clamp-3 text-sm leading-snug ${completo ? 'text-blanco/85' : 'text-zinc-600'}`}>{modulo.reto}</p>
+          <Pulsable
+            data-foco
+            onClick={onVer}
+            className={`flex min-h-12 items-center justify-center rounded-2xl px-6 text-lg font-bold ${completo ? 'bg-blanco' : 'bg-zinc-900 text-white'}`}
+            style={completo ? { color: oscuro(modulo.acento) } : undefined}
+          >
+            Ver retos
+          </Pulsable>
+          <span className="text-base font-bold tabular-nums">
+            {hechos}/{retos.length} hechos
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Hoja con todos los retos del módulo: el del módulo (se marca aquí) y el de cada lección. */
+function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
+  const [delModulo, ...deLecciones] = retos
+  return (
+    <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta={`Retos del módulo ${modulo.numero}`}>
+      <div className="flex max-h-[70dvh] flex-col gap-5 overflow-y-auto">
+        <h2 className="text-2xl font-bold tracking-tight">Retos · Módulo {modulo.numero}</h2>
+        <section className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-4">
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
+            Reto del módulo
+          </span>
+          <p className="text-lg leading-snug text-zinc-800">{delModulo.texto}</p>
+          <Pulsable
+            data-foco
+            onClick={() => guardarReto(delModulo.clave, { hecho: !delModulo.hecho })}
+            aria-pressed={delModulo.hecho}
+            className={`min-h-12 rounded-2xl text-lg font-semibold ${delModulo.hecho ? 'bg-emerald-600 text-blanco' : 'border-2 border-zinc-900 text-zinc-900'}`}
+          >
+            {delModulo.hecho ? '✓ ¡Hecho!' : 'Lo hice'}
+          </Pulsable>
+        </section>
+        {deLecciones.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Retos de las lecciones</h3>
+            {deLecciones.map((r) => {
+              const hecha = progreso.lecciones[r.clave]?.completada
+              const contenido = (
+                <>
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-base font-bold ${r.hecho ? 'bg-emerald-600 text-blanco' : 'bg-zinc-100 text-zinc-600'}`}>{r.hecho ? '✓' : r.clave}</span>
+                  <span className="flex flex-1 flex-col">
+                    <span className="text-base font-semibold leading-snug text-zinc-900">{r.titulo}</span>
+                    <span className="text-sm text-zinc-500">{r.hecho ? 'Hecho' : hecha ? 'Pendiente' : `Termina la lección ${r.clave} para llegar`}</span>
+                  </span>
+                  {hecha && <span aria-hidden className="text-2xl text-zinc-400">›</span>}
+                </>
+              )
+              const clase = 'flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-left'
+              return hecha ? (
+                <Pulsable key={r.clave} tipo="tarjeta" href={rutas.reto(r.clave)} className={clase}>
+                  {contenido}
+                </Pulsable>
+              ) : (
+                <div key={r.clave} className={clase}>
+                  {contenido}
+                </div>
+              )
+            })}
+          </section>
+        )}
+      </div>
+    </Hoja>
+  )
+}
+
+function IconoTrofeo({ className = 'size-8' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z" />
+      <path d="M7 6H4.5a2.5 2.5 0 0 0 0 5H7M17 6h2.5a2.5 2.5 0 0 1 0 5H17" />
+    </svg>
   )
 }
 

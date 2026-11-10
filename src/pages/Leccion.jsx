@@ -38,18 +38,24 @@ const PASOS = {
  *  - completar({ aciertos, total }) guarda la puntuación del paso.
  *  - siguiente() avanza al siguiente paso.
  */
-export default function Leccion({ id }) {
+export default function Leccion({ id, soloReto = false }) {
   const leccion = getLeccion(id)
   const [vuelta, setVuelta] = useState(0)
   if (!leccion) return <NoEncontrada id={id} />
-  return <Visor key={vuelta} leccion={leccion} onRepetir={() => setVuelta((v) => v + 1)} />
+  return <Visor key={vuelta} leccion={leccion} soloReto={soloReto} onRepetir={() => setVuelta((v) => v + 1)} />
 }
 
-function Visor({ leccion, onRepetir }) {
+/**
+ * soloReto: abre directamente el paso «reto» (desde la isla de Retos del módulo); al continuar
+ * vuelve al módulo sin tocar el progreso de la lección.
+ */
+function Visor({ leccion, soloReto, onRepetir }) {
   const modulo = getModulo(leccion.modulo)
   const total = leccion.pasos.length
 
   const [indice, setIndice] = useState(() => {
+    const iReto = leccion.pasos.findIndex((p) => p.tipo === 'reto')
+    if (soloReto && iReto >= 0) return iReto
     const p = getProgresoLeccion(leccion.id)
     return p && !p.completada && p.paso > 0 && p.paso < total ? p.paso : 0
   })
@@ -72,6 +78,7 @@ function Visor({ leccion, onRepetir }) {
 
   const siguiente = useCallback(() => {
     const { indice: i, total: t } = estado.current
+    if (soloReto) return navegar(rutas.modulo(leccion.modulo))
     setAccion(null)
     window.scrollTo(0, 0)
     if (i < t - 1) {
@@ -85,7 +92,7 @@ function Visor({ leccion, onRepetir }) {
       completarLeccion(leccion.id, suma)
       setTerminado(true)
     }
-  }, [leccion.id])
+  }, [leccion.id, leccion.modulo, soloReto])
 
   const completar = useCallback((resultado) => {
     puntos.current[estado.current.indice] = resultado

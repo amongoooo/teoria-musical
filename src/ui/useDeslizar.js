@@ -7,12 +7,14 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *
  *  1. Zona muerta REAL: hasta que el dedo se aleja `zonaMuerta` px de donde se apoyó, no se mueve
  *     nada. Al salir, el movimiento empieza desde 0 (sin salto).
- *  2. Del 0 al 75 % del umbral X el contenido sigue al dedo 1:1; del 75 % al 100 % hay una fuerza
- *     en contra (avanza cada vez menos que el dedo): se nota la barrera.
+ *  2. Resistencia al empezar: en el primer 25 % de X el contenido avanza menos que el dedo y poco a
+ *     poco lo alcanza; luego lo sigue 1:1 hasta el 75 %; del 75 % al 100 % hay una fuerza en contra
+ *     (avanza cada vez menos que el dedo): se nota la barrera.
  *  3. Al llegar al 100 % pasa al siguiente SIN soltar. Desde ahí, regresar 1/5 de X vuelve al
  *     anterior; ese regreso tiene también su zona muerta y su barrera del 75 %.
  *  4. `unaPorGesto`: un mismo gesto nunca se aleja más de un paso del punto de partida.
- *  5. Gesto rápido: si se suelta antes de X pero a ≥ DESLIZAR.velocidad en esa dirección, pasa.
+ *  5. Imán al soltar: si el dedo pasó el 50 % de X, el cambio se completa; si no, vuelve.
+ *     Gesto rápido: si se suelta antes del 50 % pero a ≥ DESLIZAR.velocidad en esa dirección, también pasa.
  *  6. Sin más elementos (o ya pasado uno con `unaPorGesto`): resistencia tipo goma.
  *  7. `eje`: si el gesto empieza más vertical que horizontal, se ignora (deja hacer scroll).
  *
@@ -135,19 +137,13 @@ export default function useDeslizar(opciones) {
     const ultimo = m[m.length - 1]
     const previo = m.find((q) => ultimo.t - q.t <= 100) ?? m[0]
     const vel = ultimo.t > previo.t ? (ultimo.d - previo.d) / (ultimo.t - previo.t) : 0 // px/ms hacia «siguiente»
-    // Gesto rápido: pasa aunque no haya llegado a X (solo un paso por gesto).
+    // Imán: pasada la mitad del umbral, al soltar se completa. Gesto rápido: también pasa.
     const rel = ultimo.d - s.ancla
     const dir = Math.sign(rel)
-    if (
-      !cancelado &&
-      op.current.rapido &&
-      s.k === 0 &&
-      dir !== 0 &&
-      Math.abs(rel) > zonaMuerta &&
-      Math.sign(vel) === dir &&
-      Math.abs(vel) >= DESLIZAR.velocidad &&
-      puedeIr(s, dir)
-    ) {
+    const T = s.ultimo !== 0 && dir === -s.ultimo ? X * DESLIZAR.retorno : X
+    const iman = Math.abs(rel) >= T * DESLIZAR.iman
+    const rapido = op.current.rapido && s.k === 0 && Math.abs(rel) > zonaMuerta && Math.sign(vel) === dir && Math.abs(vel) >= DESLIZAR.velocidad
+    if (!cancelado && dir !== 0 && (iman || rapido) && puedeIr(s, dir)) {
       const total = v.current.dedo + v.current.resto
       op.current.onPaso(dir)
       v.current.dedo = 0
@@ -182,16 +178,25 @@ export default function useDeslizar(opciones) {
 
 /**
  * Cuánto se mueve el contenido (px) cuando el dedo lleva `r` px hacia un umbral `T`:
- * 0 dentro de la zona muerta, 1:1 hasta el 75 % y, de ahí al 100 %, cada vez menos
- * (fuerza en contra que crece; la pendiente baja de 1 a 1 - DESLIZAR.fuerza).
+ * 0 dentro de la zona muerta; resistencia al empezar (la pendiente sube de
+ * DESLIZAR.arranqueFuerza a 1 en el primer 25 % de T); 1:1 hasta el 75 %; y de ahí al 100 %,
+ * cada vez menos (fuerza en contra que crece; la pendiente baja de 1 a 1 - DESLIZAR.fuerza).
+ * Todo es continuo: sin saltos ni cambios bruscos de velocidad.
  */
 export function barrera(r, T, zm) {
   if (r <= zm) return 0
   const lin = T * DESLIZAR.barrera
-  if (r <= lin) return r - zm
+  const A = Math.max(0, Math.min(T * DESLIZAR.arranque, lin - zm)) // tramo con resistencia al empezar
+  const s0 = DESLIZAR.arranqueFuerza
+  const enArranque = A * (s0 + (1 - s0) / 2) // lo que avanza el contenido en ese tramo
+  if (r <= zm + A) {
+    const u = (r - zm) / A
+    return A * (s0 * u + ((1 - s0) * u * u) / 2)
+  }
+  if (r <= lin) return enArranque + (r - zm - A)
   const tramo = T - lin
   const u = Math.min(1, (r - lin) / tramo)
-  return lin - zm + tramo * (u - (DESLIZAR.fuerza * u * u) / 2)
+  return enArranque + (lin - zm - A) + tramo * (u - (DESLIZAR.fuerza * u * u) / 2)
 }
 
 /** Resistencia tipo goma cuando no se puede pasar: se mueve poco y cada vez menos. */

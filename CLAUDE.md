@@ -43,6 +43,7 @@ src/
     CaminoLecciones.jsx # Camino de islas de un módulo (vertical en celular, horizontal en ancho; carrusel + barra de puntitos)
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar/alargar/borrar notas, velocity, nombres app/FL)
     BotonSonido.jsx     # Botón que reproduce un sonido del contenido
+    NavegadorModulos.jsx # Pestaña de módulos (hoja con carrusel lateral) y `Cuadrito` del módulo
     Opciones.jsx        # Botón de Opciones (engranaje) + hoja con Apariencia: Claro / Oscuro / Automático
     Rich.jsx            # Texto con **negritas**
     pasos/              # Pasos no interactivos: PasoTexto, PasoSiente, Nota
@@ -72,7 +73,7 @@ public/samples/         # Samples de audio propios
 - Comandos: `npm run dev`, `npm run build`, `npm run preview` (abre `/teoria-musical/`).
 - **Lecciones**: cada lección es un archivo de datos en `src/content/modulo-XX/` registrado en `src/content/index.js`. Formato completo y tipos de paso en `src/content/FORMATO.md`. El visor (`pages/Leccion.jsx`) muestra un paso por pantalla, barra de progreso arriba y un único botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente/Continuar). El error nunca castiga: muestra la respuesta y la explica.
 - **Desbloqueo**: `estadoLeccion(id, progreso)` en `content/index.js` → `proximamente | hecha | empezada | nueva | bloqueada`. Progresivo **dentro de cada módulo** (la 1.ª lección de cada módulo siempre abierta; cada una se abre al completar la anterior). Entre módulos no se bloquea. Las URLs directas a una lección no se bloquean.
-- **Progreso**: `localStorage` clave `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota } } }`. Se guarda el paso actual para continuar donde se dejó.
+- **Progreso**: `localStorage` clave `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` (`M1` = reto del módulo 1). Se guarda el paso actual para continuar donde se dejó.
 - En las lecciones el piano usa `compacto` (teclas más bajas) para que quepa sobre la barra inferior en el celular.
 
 ## Decisiones de contenido
@@ -84,7 +85,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~42 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
+**Avance: ~43 %** (módulo 1 completo; módulo 2: 1 de 5 lecciones)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -106,5 +107,6 @@ public/samples/         # Samples de audio propios
 - ✅ **Camino según los bocetos del usuario**: insignia con el número del módulo al inicio, títulos encima (horizontal) o debajo (celular); al tocar una isla **crece en un círculo grande** con info, botones (Empezar / Continuar + Empezar de cero / Repetir; bloqueada → Ir a la anterior) y % de avance, y las demás se apartan. Con una abierta, **swipe lateral** pasa de isla. **Reglas de swipe para toda la app** en `ui/useDeslizar.js` + `DESLIZAR` (zona muerta, umbral que cambia sin soltar, retorno de 1/5, gesto rápido, goma en extremos); documentadas en la skill (sección 3b). La hoja inferior (`ui/Hoja.jsx`) queda disponible pero sin uso.
 - ✅ **Swipe corregido y carrusel continuo**: `useDeslizar` devuelve un `progreso` en «pasos» con **zona muerta real** (nada se mueve hasta 14 px), **barrera del 75 %** (1:1 y luego fuerza en contra), pasa al 100 % sin soltar, **una isla por gesto**, regreso de 1/5 de X con su zona muerta y barrera, gesto rápido; X = 240 px en ancho y 35 % del ancho en el celular (`DESLIZAR` en `movimiento.js`). `CaminoLecciones` es un **carrusel continuo**: posición real `p`, cada isla se interpola entre las disposiciones «abierta = floor(p)» y «ceil(p)» y crece según su cercanía (escrito en el DOM en cada fotograma, sin re-render). **Barra de puntitos** fija abajo (portal, safe-area): tocar va a la isla, arrastrar pasa de una en una. Probado con Playwright (ratón 1280 px y táctil 375 px).
 - ✅ **Opciones y modo oscuro**: botón de engranaje arriba a la derecha en Inicio que abre una hoja «Opciones» con **Apariencia: Claro / Oscuro / Automático** (sigue al teléfono). Guardado en `localStorage` clave `teoria-musical:opciones:v1`; `index.html` aplica el tema antes de pintar. El tema oscuro redefine la paleta en `.dark` (`src/index.css`), así las clases de siempre sirven; `text-blanco` para texto sobre el acento, `bg-fondo`, `tinta(acento)` para texto de color y `tema-claro` para las teclas del piano. En Módulo se quitaron la descripción y el texto de ayuda bajo el camino.
+- ✅ **Módulos en cuadritos, pestaña de módulos y Retos**: en Inicio los módulos son cuadritos con su título (los que no existen, punteados); al tocarlos se abre el módulo y las islas **se despliegan desde la insignia**. Tocar la insignia abre la **pestaña de Módulos** (`NavegadorModulos.jsx`, carrusel lateral con las reglas de swipe). Al final del camino, la **isla de Retos**: reto del módulo (se marca con «Lo hice», clave `retos['M1']`) y retos de FL de cada lección (ruta `#/leccion/1.1/reto` abre la lección directo en su reto y al continuar vuelve al módulo). Se quitaron «¿Qué se siente?» y el reto como texto de la pantalla de Módulo. Swipe con **resistencia al empezar** (primer 25 % de X) e **imán del 50 %** al soltar.
 
 **Siguiente tarea:** lección 2.2 «Compás y tiempos fuertes» (4/4 y 3/4, tiempo fuerte, contar «1 y 2 y», medio tiempo del trap), reutilizando `pulso` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

@@ -60,9 +60,12 @@ export const SALTO = { scale: [1, 1.05, 1] }
 /**
  * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño, sección 3b):
  *  - zonaMuerta: px desde donde se apoyó el dedo en los que NO se mueve nada.
+ *  - arranque / arranqueFuerza: resistencia al EMPEZAR: en el primer 25 % de X (tras la zona muerta)
+ *    el contenido avanza menos que el dedo (pendiente de 0,3 que sube hasta 1).
  *  - barrera: fracción de X hasta la que el contenido sigue al dedo 1:1 (75 %).
  *  - fuerza: cuánto frena la barrera entre el 75 % y el 100 % (la pendiente baja de 1 a 1 - fuerza).
  *  - retorno: fracción de X que hay que regresar para deshacer un paso ya dado (1/5).
+ *  - iman: al soltar, si el dedo pasó esta fracción de X (50 %) el cambio se completa; si no, vuelve.
  *  - velocidad: px/ms a partir de los que un gesto corto cuenta como swipe.
  *  - goma: resistencia cuando no hay más (extremos o ya se pasó una isla en este gesto).
  *  - umbralAncho / umbralCelular: X en pantallas anchas (px) y en el celular (fracción del ancho).
@@ -70,9 +73,12 @@ export const SALTO = { scale: [1, 1.05, 1] }
  */
 export const DESLIZAR = {
   zonaMuerta: 14,
+  arranque: 0.25,
+  arranqueFuerza: 0.3,
   barrera: 0.75,
   fuerza: 0.8,
   retorno: 0.2,
+  iman: 0.5,
   velocidad: 0.45,
   goma: 0.35,
   umbralAncho: 240,

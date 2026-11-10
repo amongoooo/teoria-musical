@@ -55,17 +55,6 @@ export default function Modulo({ numero }) {
       <motion.section variants={itemLista} aria-label="Lecciones del módulo" className="py-2 sm:py-6">
         <CaminoLecciones modulo={modulo} progreso={progreso} />
       </motion.section>
-
-      <motion.section variants={itemLista} className="mx-auto flex w-full max-w-2xl flex-col gap-4 rounded-3xl bg-zinc-100 p-5">
-        <div>
-          <h2 className="text-base font-semibold text-zinc-800">¿Qué se siente?</h2>
-          <p className="text-base text-zinc-600">{modulo.siente}</p>
-        </div>
-        <div>
-          <h2 className="text-base font-semibold text-zinc-800">Reto del módulo en FL Studio</h2>
-          <p className="text-base text-zinc-600">{modulo.reto}</p>
-        </div>
-      </motion.section>
     </motion.main>
   )
 }
