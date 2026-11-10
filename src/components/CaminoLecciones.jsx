@@ -21,7 +21,10 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
 // «Tilt» al chocar con un extremo (isla abierta) o al arrastrar la barra de puntitos (px, grados, ms).
-const TILT = { x: 12, grados: 3, vuelve: 250, barra: { x: 10, y: 8, grados: 2 } }
+// En la barra, el tilt y el desplazamiento lateral dependen de lo lejos del centro que esté el dedo
+// (f = −1 borde izquierdo … 0 centro … +1 borde derecho); el desplazamiento vertical es siempre igual.
+// `minimo`: lo que queda del desplazamiento lateral en el centro (para que también ahí se note).
+const TILT = { x: 12, grados: 3, vuelve: 250, barra: { x: 10, y: 8, grados: 3, minimo: 0.35 } }
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
@@ -179,6 +182,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   // ya no hay más islas) hace el mismo «tilt» + desplazamiento corto hacia el dedo y vuelve a los 0,25 s.
   const pildora = useRef(null)
   const tiltBarra = useRef(null)
+  const dedoBarra = useRef(null) // última x del dedo sobre la barra
+  /** −1 (borde izquierdo de la barra) … 0 (centro) … +1 (borde derecho), según la x del dedo. */
+  const lejosDelCentro = (x) => {
+    const r = pildora.current?.getBoundingClientRect()
+    if (!r || x == null) return 0
+    return limitar((x - (r.left + r.width / 2)) / (r.width / 2), -1, 1)
+  }
   const inclinarBarra = ({ x = 0, y = 0, rotate = 0 }) => {
     const el = pildora.current
     if (!el || reducir) return
@@ -200,7 +210,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     eje: false,
     onPaso: paso,
     puede,
-    alTope: (lado) => inclinarBarra({ x: lado * TILT.barra.x, rotate: lado * TILT.barra.grados }),
+    // Contra un extremo: se empuja hacia el dedo; cuanto más lejos del centro, más se inclina y se desplaza.
+    alTope: (lado) => {
+      const f = Math.abs(lejosDelCentro(dedoBarra.current))
+      const peso = TILT.barra.minimo + (1 - TILT.barra.minimo) * f
+      inclinarBarra({ x: lado * TILT.barra.x * peso, rotate: lado * TILT.barra.grados * f })
+    },
     // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
     origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
     alEmpezar: (e) => {
@@ -518,7 +533,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
               handlers={puntos.handlers}
               onIr={irA}
               pildora={pildora}
-              onVertical={(dy, lado) => inclinarBarra({ y: Math.sign(dy) * TILT.barra.y, rotate: lado * Math.sign(dy) * TILT.barra.grados })}
+              dedo={dedoBarra}
+              // Arriba/abajo: siempre se desplaza igual; se inclina hacia el lado del dedo, proporcional a su
+              // distancia al centro de la barra (en el centro solo baja o sube, sin inclinarse).
+              onVertical={(dy, x) => inclinarBarra({ y: Math.sign(dy) * TILT.barra.y, rotate: lejosDelCentro(x) * Math.sign(dy) * TILT.barra.grados })}
             />
           )}
         </AnimatePresence>,
@@ -535,10 +553,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * resorte y respeta la zona segura. Tocar un puntito va a esa isla; arrastrar por encima pasa
  * de isla en isla con las mismas reglas del swipe (una isla cada vez que se cruza un puntito).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, pildora, onVertical }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, pildora, dedo, onVertical }) {
   const sep = DESLIZAR.puntitos.separacion
-  // Arrastre vertical sobre la barra: avisa una vez por sentido (arriba / abajo) con el lado de la
-  // barra donde está el dedo (−1 izquierda, +1 derecha), para inclinarla hacia ahí.
+  // Arrastre vertical sobre la barra: avisa una vez por sentido (arriba / abajo) con la x del dedo,
+  // para inclinarla hacia ese lado. Además guarda la x del dedo (tilt en los extremos).
   const vert = useRef(null)
   const { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, ...resto } = handlers
   const fin = (e, f) => {
@@ -566,19 +584,18 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
         {...resto}
         onPointerDown={(e) => {
           vert.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dir: 0 }
+          dedo.current = e.clientX
           onPointerDown?.(e)
         }}
         onPointerMove={(e) => {
+          dedo.current = e.clientX
           onPointerMove?.(e)
           const v = vert.current
           if (!v || v.id !== e.pointerId) return
           const dx = e.clientX - v.x0
           const dy = e.clientY - v.y0
           const dir = Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) ? Math.sign(dy) : 0
-          if (dir && dir !== v.dir) {
-            const r = pildora.current.getBoundingClientRect()
-            onVertical(dy, e.clientX >= r.left + r.width / 2 ? 1 : -1)
-          }
+          if (dir && dir !== v.dir) onVertical(dy, e.clientX)
           if (Math.abs(dy) < 6) v.dir = 0
           else if (dir) v.dir = dir
         }}
