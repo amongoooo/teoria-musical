@@ -6,9 +6,7 @@ import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
-
-/** El acento oscurecido para que el texto blanco encima se lea bien (contraste ≥ 4.5:1). */
-const oscuro = (color) => `color-mix(in oklab, ${color} 72%, black)`
+import { oscuro } from '../ui/color.js'
 
 export default function Inicio() {
   const progreso = useProgreso()

@@ -5,7 +5,7 @@
 //  - sonido: lo que suena (formato de audio/sonido.js)
 //  - notas: notas para marcar en el piano al responder
 //  - sonidoDe(id): cómo sonaría otra opción (para comparar tras responder)
-import { midi, nombre, notaDesdeMidi } from './notas.js'
+import { frecuencia, hz, midi, nombre, notaDesdeMidi } from './notas.js'
 
 function azar(lista) {
   return lista[Math.floor(Math.random() * lista.length)]
@@ -187,7 +187,7 @@ export const modoAbsoluto = {
       sonido: { notas: [nota], modo: 'secuencia', duracion: 1.6 },
       notas: [nota],
       sonidoDe: (id) => ({ notas: [`${id}${octava}`], modo: 'secuencia', duracion: 1.6 }),
-      explicacion: `Era ${nombre(nota)}.`,
+      explicacion: `Sonó ${nombre(nota)} (${hz(frecuencia(nota))}).`,
     }
   },
 }

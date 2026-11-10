@@ -1,3 +1,4 @@
+import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir } from '../audio/sonido.js'
@@ -21,6 +22,11 @@ import {
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
 import { DIRECCIONES, MODOS_OIDO, getModoOido } from '../theory/oido.js'
+import BarraProgreso from '../ui/BarraProgreso.jsx'
+import { claro, oscuro } from '../ui/color.js'
+import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
+import Pulsable from '../ui/Pulsable.jsx'
+import Volver from '../ui/Volver.jsx'
 import { BarraAccion } from './Leccion.jsx'
 
 /** #/oido → panel del día; #/oido/intervalos (etc.) → práctica. */
@@ -58,22 +64,25 @@ function Panel() {
   const hayDatos = MODOS_OIDO.some((m) => datosModo(m.id, estado).total > 0)
 
   return (
-    <main className="animate-entrada mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-8 sm:py-12">
-      <a href={rutas.inicio()} className="-ml-2 inline-flex min-h-11 items-center gap-1 self-start rounded-full px-2 text-base text-zinc-500">
-        ‹ Inicio
-      </a>
+    <motion.main
+      variants={lista}
+      initial="oculta"
+      animate="visible"
+      className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-6 sm:py-10"
+    >
+      <Volver href={rutas.inicio()}>Inicio</Volver>
 
-      <header className="flex flex-col gap-2">
+      <motion.header variants={itemLista} className="flex flex-col gap-2">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Entrenamiento de oído</h1>
-        <p className="text-lg text-zinc-500">Unos 5 minutos al día. Poco pero seguido es lo que entrena el oído.</p>
-      </header>
+        <p className="text-lg text-zinc-600">Unos 5 minutos al día. Poco pero seguido es lo que entrena el oído.</p>
+      </motion.header>
 
-      <section className="flex flex-col gap-5 rounded-3xl border border-zinc-200 bg-white p-5">
+      <motion.section variants={itemLista} className="flex flex-col gap-5 rounded-3xl border border-zinc-200 bg-white p-5">
         <div className="flex items-end justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Hoy</span>
             <span className="text-3xl font-bold tabular-nums">
-              {minutos(dia.segundos)} <span className="text-xl font-medium text-zinc-400">/ 5 min</span>
+              {minutos(dia.segundos)} <span className="text-xl font-medium text-zinc-500">/ 5 min</span>
             </span>
           </div>
           <div className="flex flex-col items-end">
@@ -81,12 +90,7 @@ function Panel() {
             <span className="text-sm text-zinc-500">{racha === 1 ? 'día seguido' : 'días seguidos'}</span>
           </div>
         </div>
-        <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
-          <div
-            className={`h-full rounded-full transition-[width] duration-500 ${avance >= 1 ? 'bg-emerald-500' : 'bg-zinc-900'}`}
-            style={{ width: `${avance * 100}%` }}
-          />
-        </div>
+        <BarraProgreso valor={avance} color={avance >= 1 ? '#10b981' : '#18181b'} fondo="bg-zinc-100" alto="h-3" />
         <p className="text-base text-zinc-600">
           {avance >= 1
             ? '¡Meta de hoy cumplida! Si quieres, sigue un rato más.'
@@ -94,74 +98,84 @@ function Panel() {
               ? `Llevas ${dia.respuestas} respuestas hoy (${porcentaje(dia.aciertos, dia.respuestas)} % bien).`
               : 'Sugerencia: 2 min de intervalos, 1 de acordes y 2 de oído absoluto.'}
         </p>
-        <ol className="flex justify-between gap-1" aria-label="Últimos 7 días">
+        <motion.ol
+          className="flex justify-between gap-1"
+          aria-label="Últimos 7 días"
+          initial="oculta"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.035, delayChildren: 0.25 } } }}
+        >
           {semana.map((d) => {
             const [y, m, dd] = d.fecha.split('-').map(Number)
             const letra = INICIAL_DIA[new Date(y, m - 1, dd).getDay()]
             const meta = d.segundos >= META_SEGUNDOS
             return (
-              <li key={d.fecha} className="flex flex-col items-center gap-1">
+              <motion.li
+                key={d.fecha}
+                className="flex flex-col items-center gap-1"
+                variants={{ oculta: { opacity: 0, scale: 0.6 }, visible: { opacity: 1, scale: 1, transition: RESORTE.pulsar } }}
+              >
                 <span
                   className={`grid size-9 place-items-center rounded-full text-sm font-semibold ${
-                    meta ? 'bg-emerald-500 text-white' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-400'
+                    meta ? 'bg-emerald-600 text-white' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500'
                   }`}
                   title={`${d.fecha}: ${minutos(d.segundos)} min`}
                 >
                   {meta ? '✓' : d.respuestas ? '•' : ''}
                 </span>
-                <span className="text-xs text-zinc-500">{letra}</span>
-              </li>
+                <span className="text-sm text-zinc-500">{letra}</span>
+              </motion.li>
             )
           })}
-        </ol>
+        </motion.ol>
         {estado.mejorRacha > 0 && <p className="text-sm text-zinc-500">Mejor racha: {estado.mejorRacha} {estado.mejorRacha === 1 ? 'día' : 'días'}</p>}
-      </section>
+      </motion.section>
 
-      <section className="flex flex-col gap-3">
+      <motion.section variants={itemLista} className="flex flex-col gap-3">
         <h2 className="text-2xl font-bold tracking-tight">Ejercicios</h2>
         {MODOS_OIDO.map((m) => {
           const d = datosModo(m.id, estado)
           return (
-            <a
+            <Pulsable
               key={m.id}
               href={rutas.oido(m.id)}
-              className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-4 transition active:scale-[0.99]"
+              tipo="tarjeta"
+              className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-4"
             >
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ backgroundColor: `${m.acento}22` }} aria-hidden>
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ backgroundColor: claro(m.acento) }} aria-hidden>
                 {m.emoji}
               </span>
               <span className="flex flex-1 flex-col gap-0.5">
                 <span className="text-lg font-semibold leading-snug">{m.titulo}</span>
                 <span className="text-sm leading-snug text-zinc-500">{m.descripcion}</span>
-                <span className="text-sm font-medium" style={{ color: m.acento }}>
+                <span className="text-sm font-semibold" style={{ color: oscuro(m.acento) }}>
                   {nombreNivel(m, d.nivel)}
                   {d.total > 0 && ` · ${porcentaje(d.aciertos, d.total)} % bien`}
                 </span>
               </span>
               <span aria-hidden className="text-2xl text-zinc-300">›</span>
-            </a>
+            </Pulsable>
           )
         })}
-      </section>
+      </motion.section>
 
       {hayDatos && (
-        <section className="flex flex-col gap-4">
+        <motion.section variants={itemLista} className="flex flex-col gap-4">
           <h2 className="text-2xl font-bold tracking-tight">Estadísticas</h2>
           {MODOS_OIDO.map((m) => (
             <Estadisticas key={m.id} modo={m} datos={datosModo(m.id, estado)} />
           ))}
-          <button
-            type="button"
+          <Pulsable
             onClick={() => {
               if (window.confirm('¿Borrar todas las estadísticas y la racha del entrenamiento de oído?')) reiniciarOido()
             }}
-            className="min-h-12 self-center rounded-2xl px-6 text-base font-medium text-zinc-400"
+            className="min-h-12 self-center rounded-2xl px-6 text-base font-medium text-zinc-500 active:bg-zinc-200"
           >
             Borrar estadísticas
-          </button>
-        </section>
+          </Pulsable>
+        </motion.section>
       )}
-    </main>
+    </motion.main>
   )
 }
 
@@ -187,17 +201,15 @@ function Estadisticas({ modo, datos }) {
           return (
             <li key={id} className="flex items-center gap-3 text-sm">
               <span className="w-24 shrink-0 font-medium text-zinc-700">{modo.nombreItem(id)}</span>
-              <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-zinc-100">
-                <span className="block h-full rounded-full" style={{ width: `${p}%`, backgroundColor: modo.acento }} />
-              </span>
+              <BarraProgreso valor={p / 100} color={modo.acento} fondo="bg-zinc-100" className="flex-1" />
               <span className="w-20 shrink-0 whitespace-nowrap text-right tabular-nums text-zinc-500">
-                {p} % <span className="text-zinc-400">({t})</span>
+                {p} % <span className="text-zinc-500">({t})</span>
               </span>
             </li>
           )
         })}
       </ul>
-      {items.length > 1 && <p className="text-xs text-zinc-400">Ordenado de lo que más te cuesta a lo que mejor te sale.</p>}
+      {items.length > 1 && <p className="text-sm text-zinc-500">Ordenado de lo que más te cuesta a lo que mejor te sale.</p>}
     </div>
   )
 }
@@ -290,7 +302,7 @@ function Entrenador({ modo }) {
       onClick: nueva,
       feedback: bien
         ? { tipo: 'bien', titulo: '¡Correcto!', texto }
-        : { tipo: 'mal', titulo: `Era: ${modo.nombreItem(pregunta.item)}.`, texto },
+        : { tipo: 'mal', titulo: `Era ${modo.nombreItem(pregunta.item)}.`, texto },
     }
   }
 
@@ -300,21 +312,21 @@ function Entrenador({ modo }) {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 bg-[#fafafa]/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <a
+          <Pulsable
             href={rutas.oido()}
             aria-label="Volver al entrenamiento de oído"
             className="grid size-11 shrink-0 place-items-center rounded-full text-2xl text-zinc-500 active:bg-zinc-200"
           >
             ✕
-          </a>
-          <div className="flex flex-1 flex-col gap-1">
-            <div className="h-3 overflow-hidden rounded-full bg-zinc-200" aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}>
-              <div
-                className="h-full rounded-full transition-[width] duration-500"
-                style={{ width: `${avanceHoy * 100}%`, backgroundColor: avanceHoy >= 1 ? '#10b981' : modo.acento }}
-              />
-            </div>
-          </div>
+          </Pulsable>
+          <BarraProgreso
+            valor={avanceHoy}
+            color={avanceHoy >= 1 ? '#10b981' : modo.acento}
+            alto="h-3"
+            alAparecer={false}
+            className="flex-1"
+            aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}
+          />
           <span className="w-16 shrink-0 text-right text-sm tabular-nums text-zinc-500">{minutos(dia.segundos)}/5 min</span>
         </div>
       </header>
@@ -323,9 +335,15 @@ function Entrenador({ modo }) {
         {!jugando ? (
           <Portada modo={modo} datos={datos} />
         ) : (
-          <div key={pregunta.n} className="animate-entrada flex flex-col gap-5">
+          <motion.div
+            key={pregunta.n}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
+            className="flex flex-col gap-5"
+          >
             <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
-              <span className="font-semibold" style={{ color: modo.acento }}>
+              <span className="font-semibold" style={{ color: oscuro(modo.acento) }}>
                 {modo.titulo} · {nombreNivel(modo, pregunta.nivel)}
               </span>
               <span className="tabular-nums">
@@ -340,20 +358,26 @@ function Entrenador({ modo }) {
 
             <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {pregunta.opciones.map((op) => (
-                <button
+                <Pulsable
                   key={op.id}
-                  type="button"
                   onClick={() => responder(op.id)}
                   disabled={limpiando}
-                  className={`min-h-16 disabled:opacity-50 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition active:scale-[0.98] ${claseOpcion(op.id, pregunta.item, respuesta)}`}
+                  // La correcta da un pequeño "salto" al revelarse.
+                  animate={respuesta && op.id === pregunta.item ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+                  className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition-colors duration-200 disabled:opacity-50 ${claseOpcion(op.id, pregunta.item, respuesta)}`}
                 >
                   {op.label}
-                </button>
+                </Pulsable>
               ))}
             </div>
 
             {respuesta && (
-              <div className="animate-entrada flex flex-col gap-2">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={RESORTE.suave}
+                className="flex flex-col gap-2"
+              >
                 <p className="text-sm text-zinc-500">En el teclado (puedes tocarlo):</p>
                 <Piano
                   key={pregunta.n}
@@ -362,9 +386,9 @@ function Entrenador({ modo }) {
                   octaves={2}
                   marcadas={pregunta.notas}
                 />
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         )}
       </main>
 
@@ -395,14 +419,16 @@ function Ventana({ datos, niveles, acento }) {
     <div className="flex flex-col gap-1.5">
       <div className="flex gap-1.5" aria-hidden>
         {puntos.map((v, i) => (
-          <span
+          <motion.span
             key={i}
             className="h-2 flex-1 rounded-full"
-            style={{ backgroundColor: v === true ? acento : v === false ? '#fcd34d' : '#e4e4e7' }}
+            initial={false}
+            animate={{ backgroundColor: v === true ? acento : v === false ? '#fcd34d' : '#e4e4e7' }}
+            transition={{ duration: 0.25 }}
           />
         ))}
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-sm text-zinc-500">
         {aciertos} de los últimos {TAMANO_VENTANA} · con {ACIERTOS_PARA_SUBIR} subes de nivel
       </p>
     </div>
@@ -413,41 +439,40 @@ function Ventana({ datos, niveles, acento }) {
 function Portada({ modo, datos }) {
   const opciones = modo.opciones(datos.nivel)
   return (
-    <div className="animate-entrada flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
+    <motion.div variants={lista} initial="oculta" animate="visible" className="flex flex-col gap-6">
+      <motion.header variants={itemLista} className="flex flex-col gap-2">
         <span className="text-4xl" aria-hidden>
           {modo.emoji}
         </span>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{modo.titulo}</h1>
         <p className="text-lg leading-relaxed text-zinc-600">{modo.descripcion}</p>
-      </header>
+      </motion.header>
 
       {modo.id === 'absoluto' && (
-        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-base leading-relaxed text-amber-900">
+        <motion.p variants={itemLista} className="rounded-2xl bg-amber-50 px-4 py-3 text-base leading-relaxed text-amber-900">
           <Rich>
             Es un **juego**: suena una nota sin ninguna referencia y adivinas cuál es. Empiezas con 2 notas y se suma una
             cada vez que aciertas 8 de 10. En adultos el oído absoluto es muy difícil de adquirir, así que tómalo como un
             reto divertido, no como una promesa. Entre nota y nota suenan unas notas al azar y un ruido corto: así la
             nota anterior no te sirve de pista.
           </Rich>
-        </p>
+        </motion.p>
       )}
 
-      <section className="flex flex-col gap-3">
+      <motion.section variants={itemLista} className="flex flex-col gap-3">
         <h2 className="text-lg font-bold">Nivel</h2>
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: datos.nivelMax }, (_, i) => i + 1).map((n) => (
-            <button
+            <Pulsable
               key={n}
-              type="button"
               onClick={() => elegirNivel(modo.id, n)}
               aria-pressed={datos.nivel === n}
-              className={`min-h-12 rounded-full border-2 px-4 text-base font-semibold ${
+              className={`min-h-12 rounded-full border-2 px-4 text-base font-semibold transition-colors duration-200 ${
                 datos.nivel === n ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-700'
               }`}
             >
               {nombreNivel(modo, n)}
-            </button>
+            </Pulsable>
           ))}
         </div>
         <p className="text-sm text-zinc-500">
@@ -465,37 +490,36 @@ function Portada({ modo, datos }) {
         ) : (
           <p className="text-base text-zinc-700">{modo.nuevosEnNivel(datos.nivel)[0]}.</p>
         )}
-      </section>
+      </motion.section>
 
       {modo.id === 'intervalos' && (
-        <section className="flex flex-col gap-3">
+        <motion.section variants={itemLista} className="flex flex-col gap-3">
           <h2 className="text-lg font-bold">Cómo suenan las dos notas</h2>
           <div className="grid grid-cols-3 gap-2">
             {DIRECCIONES.map((d) => {
               const activa = (datos.ajustes.direccion ?? 'sube') === d.id
               return (
-                <button
+                <Pulsable
                   key={d.id}
-                  type="button"
                   onClick={() => guardarAjustes(modo.id, { direccion: d.id })}
                   aria-pressed={activa}
-                  className={`min-h-12 rounded-2xl border-2 px-2 text-base font-semibold ${
+                  className={`min-h-12 rounded-2xl border-2 px-2 text-base font-semibold transition-colors duration-200 ${
                     activa ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-700'
                   }`}
                 >
                   {d.label}
-                </button>
+                </Pulsable>
               )
             })}
           </div>
-        </section>
+        </motion.section>
       )}
 
       {datos.total > 0 && (
-        <p className="text-base text-zinc-500">
+        <motion.p variants={itemLista} className="text-base text-zinc-500">
           Llevas {datos.total} respuestas en total, {porcentaje(datos.aciertos, datos.total)} % bien. Mejor serie: {datos.mejorRacha} seguidas.
-        </p>
+        </motion.p>
       )}
-    </div>
+    </motion.div>
   )
 }

@@ -37,20 +37,23 @@ todo responde al instante, se hunde al tocarlo y se mueve con resortes, nunca co
 
 **Contraste**: el acento puro sirve para barras, puntos y bordes. Si lleva **texto blanco encima**
 (tarjeta destacada, número del módulo) usa el acento oscurecido:
-`color-mix(in oklab, ACENTO 72%, black)` (helper `oscuro()` en `pages/Inicio.jsx`). Objetivo ≥ 4.5:1.
+`color-mix(in oklab, ACENTO 72%, black)` → helper **`oscuro()`** de `src/ui/color.js`. Objetivo ≥ 4.5:1.
+También para **texto de color** sobre blanco (p. ej. «Nivel 1», «Módulo 1»): `oscuro(acento)`, nunca el acento puro.
+Fondo suave de iconos: **`claro(acento)`** (acento al 14 % sobre blanco).
+Grises: `text-zinc-500` es el más claro permitido para texto que hay que leer; `text-zinc-400` solo decorativo (p. ej. `›`).
 
 ### Tipografía
 - Fuente: Inter / system-ui (`--font-sans` en `src/index.css`).
 - Título de página: `text-4xl font-bold tracking-tight` (Inicio) o `text-3xl` (otras).
 - Título de paso: `text-2xl font-bold leading-tight tracking-tight sm:text-4xl`.
 - Sección: `text-2xl font-bold tracking-tight`.
-- Cuerpo: `text-lg leading-relaxed text-zinc-600`. Mínimo `text-base` en lo que hay que leer; `text-sm` solo para datos secundarios.
+- Cuerpo: `text-lg leading-relaxed text-zinc-600`. Mínimo `text-base` en lo que hay que leer; `text-sm` solo para datos secundarios. **Nunca `text-xs`.**
 - Etiquetas pequeñas en mayúsculas: `text-sm font-semibold uppercase tracking-wider`.
 
 ### Espacio y forma
 - Contenedor: `mx-auto max-w-2xl px-5`. Separación entre secciones `gap-10`; dentro de una sección `gap-4`; dentro de una tarjeta `gap-3`/`gap-4`.
 - Esquinas: tarjetas `rounded-3xl`, botones `rounded-2xl`, chips `rounded-full`, iconos de tarjeta `rounded-2xl size-12`.
-- Barras de progreso: `h-2.5`–`h-3 rounded-full bg-zinc-200` (o `bg-zinc-100` dentro de tarjetas blancas).
+- Barras de progreso: componente **`BarraProgreso`** (`h-2.5`–`h-3`, carril `bg-zinc-200` o `bg-zinc-100` dentro de tarjetas blancas; `h-1.5` para mini barras dentro de una tarjeta).
 - Deja espacio abajo (`pb-64`) en pantallas con `BarraAccion` fija.
 
 ### Tamaño táctil
@@ -76,9 +79,14 @@ Reglas:
    la nueva entra desde la derecha; al volver, desde la izquierda. La profundidad de cada ruta está en `profundidad()`.
 3. **Pasos de lección**: cada paso entra desde la derecha (`x: 40 → 0`) con `RESORTE.pantalla`.
 4. **Feedback** (acierto/error): sube 16 px y crece de 0.98 a 1 con `RESORTE.suave`. El título va en su propia línea.
-5. **Barras de progreso**: animan `width` con `RESORTE.suave` (con `initial={false}` si no deben animar al montar).
+5. **Barras de progreso**: usa `BarraProgreso` (`src/ui/BarraProgreso.jsx`). Por defecto se llena desde 0 al aparecer
+   (resorte suave, 200 ms de retraso); con `alAparecer={false}` solo anima los cambios (cabeceras de lección/entrenador).
 6. **Listas**: entrada escalonada con las variantes `lista` / `itemLista` (40 ms entre elementos). Solo al entrar a la pantalla.
-7. **Celebraciones** (lección completada): un resorte con rebote (damping ~16) en el icono. Con moderación.
+7. **Celebraciones**: lección completada → resorte con rebote (damping ~16) en el icono. Respuesta correcta en el
+   entrenador → la opción correcta da un «salto» (`scale: [1, 1.05, 1]`). Días de la racha → aparecen uno tras otro con
+   `RESORTE.pulsar`. Con moderación: nada que se repita en bucle.
+7b. **Preguntas del entrenador**: cada pregunta nueva entra desde la derecha como un paso de lección; el teclado de
+   repaso sube 16 px con `RESORTE.suave`. Colores de estado (opciones, puntos de la ventana) cambian con un fundido de 200–250 ms.
 8. Anima **solo `transform` y `opacity`** (y `width` en barras finas). Nada de animar `height` de bloques grandes ni sombras.
 9. Duración percibida: respuestas al dedo < 150 ms, transiciones < 400 ms. Nada debe hacer esperar al usuario.
 10. **Reducir movimiento**: `App.jsx` envuelve todo en `<MotionConfig reducedMotion="user">`, así que si el teléfono
@@ -89,10 +97,15 @@ Reglas:
 ## 4. Componentes
 
 - **`BarraAccion`** (`pages/Leccion.jsx`, también en Oído): barra fija abajo con feedback + ayuda + botón grande. Respeta `env(safe-area-inset-bottom)`.
-- **Cabecera de lección/entrenador**: pegajosa, botón ✕ (`size-11`), barra de progreso con el acento, contador `tabular-nums`.
+- **Cabecera de lección/entrenador**: pegajosa, botón ✕ (`Pulsable`, `size-11`), `BarraProgreso alAparecer={false}` con el acento, contador `tabular-nums`.
+- **`Volver`** (`src/ui/Volver.jsx`): enlace «‹ Inicio» de arriba en pantallas de nivel 1 (Módulo, panel de Oído). Área de 44 px y se hunde.
+- **Pantalla tipo lista** (Inicio, Módulo, panel de Oído, portada del entrenador): `motion.main` con `variants={lista}` y cada bloque con `variants={itemLista}`.
+- **Chips seleccionables** (niveles, dirección): `Pulsable` `min-h-12 border-2`; activo `bg-zinc-900 text-white`, inactivo `bg-white border-zinc-200`.
 - **Tarjeta de navegación**: `Pulsable tipo="tarjeta"`, `rounded-3xl border bg-white`, icono `size-12 rounded-2xl` a la izquierda, título `text-lg font-semibold`, subtítulo `text-sm text-zinc-500`, `›` gris a la derecha.
 - **Tarjeta destacada** (siguiente lección): fondo = acento oscurecido, texto blanco, botón blanco dentro.
-- **Contenido futuro** ("Próximamente"): lista compacta dentro de un recuadro con borde punteado; no tarjetas grandes vacías.
+- **Contenido futuro** ("Próximamente"): muchos elementos → lista compacta dentro de un recuadro con borde punteado (Inicio);
+  pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
+- **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
 - **Piano** (`components/Piano.jsx`): Pointer Events, `touch-action: none`, `compacto` en lecciones, 1 octava con ◀ ▶ en < 560 px.
 - **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4).
 
@@ -111,12 +124,11 @@ Reglas:
 
 ## 7. Pendiente (de la revisión de diseño)
 
-- Entrenamiento de oído: aplicar `Pulsable`, entrada escalonada y el botón "‹ Inicio" con área táctil de 44 px.
-- Módulo: tarjetas de lección con `Pulsable` y progreso animado.
-- Oído absoluto: el feedback repite la nota ("Era: Sol. … Era Sol4."); simplificar el texto.
-- Textos `text-xs text-zinc-400` del entrenador (contraste bajo) → `text-sm text-zinc-500`.
-- Emojis como iconos (👂 🎯 🎹): valorar iconos propios sencillos más adelante.
+- Emojis como iconos (👂 🎯 🎹 ↕️): valorar iconos propios sencillos más adelante.
+- Ejercicios de lección (`components/exercises/*`, `pasos/*`): aún usan `<button>` y `animate-entrada` de CSS; pasarlos a `Pulsable` y `motion`.
+- Pantalla final de lección: añadir entrada escalonada al resumen.
 
 ## Registro de decisiones
 
+- 2026-11-10: Módulo y Entrenamiento de oído con la skill: `Volver`, `BarraProgreso`, helpers `oscuro`/`claro` en `src/ui/color.js`, entrada escalonada, opciones con `Pulsable` y salto de la correcta, días de racha que aparecen uno a uno, mini barra en lecciones a medias. Prohibido `text-xs`; texto de color con `oscuro()`. Feedback de oído absoluto: «Era Sol. Elegiste Do. Sonó Sol4 (392 Hz).».
 - 2026-11-10: Se crea la skill. Movimiento con `motion` y resortes, `Pulsable`, transiciones entre pantallas y pasos, contraste del acento oscurecido, "Próximamente" compacto en Inicio.
