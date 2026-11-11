@@ -204,21 +204,30 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const L = layouts
     const cont = ref.current
     if (!L || !cont) return abrirYa(i)
-    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i].y - BOLA / 2) * zoom // borde de arriba de la bola
-    const alto = (altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO) * zoom // bola + globo
-    const sobra = arriba + alto - (window.innerHeight - BARRA_ALTO)
-    const falta = arriba - ARO - 8
-    const dy = sobra > 0 ? Math.min(sobra, falta) : falta < 0 ? falta : 0
+    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i].y - BOLA / 2 - ARO) * zoom // arriba del aro de la bola
+    const alto = ((altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO) + ARO) * zoom // aro + bola + globo
+    const dy = desfaseCentro(arriba, alto)
     if (Math.abs(dy) <= 4) return abrirYa(i)
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    if (relleno.current && window.scrollY + dy > max) relleno.current.style.height = `${Math.ceil(window.scrollY + dy - max) + 2}px`
     esperando.current = i
-    window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
+    desplazar(dy)
     alTerminarScroll(() => {
       if (esperando.current !== i) return
       esperando.current = null
       abrirYa(i)
     })
+  }
+  // Siempre que se abre una isla, la isla y su tarjetita quedan CENTRADAS en la pantalla (pedido del usuario):
+  // en la zona libre entre la cabecera fija y la barra de puntitos; si no caben, arriba de esa zona.
+  const desfaseCentro = (arriba, alto) => {
+    const techo = (document.querySelector('[data-pildora-cabecera]')?.getBoundingClientRect().bottom ?? 60) + 12
+    const piso = (document.querySelector('[data-puntitos] [role=group]')?.getBoundingClientRect().top ?? window.innerHeight - BARRA_ALTO) - 12
+    return arriba - (techo + Math.max(0, (piso - techo - alto) / 2))
+  }
+  /** Desplaza la página `dy` px (suave); si al final no hay sitio, añade relleno debajo del camino. */
+  const desplazar = (dy) => {
+    const max = document.documentElement.scrollHeight - (relleno.current?.offsetHeight ?? 0) - window.innerHeight
+    if (relleno.current) relleno.current.style.height = window.scrollY + dy > max ? `${Math.ceil(window.scrollY + dy - max) + 2}px` : '0px'
+    window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
   }
   const abrirYa = (i) => {
     abiertaRef.current = i
@@ -488,6 +497,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   // Al abrir una isla o pasar a otra, que la isla y su globo queden a la vista (por encima de la barra
   // de puntitos). Si el dedo sigue apoyado (aún deslizando), espera a que se suelte.
   const dedo = useRef(false)
+  const desplazarRef = useRef(desplazar)
+  desplazarRef.current = desplazar
   useEffect(() => {
     const abajo = () => (dedo.current = true)
     const arriba = () => (dedo.current = false)
@@ -509,14 +520,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       if (Math.abs(base.get() + islas.progreso.get() - abiertaRef.current) > 0.01 || apertura.get() < 0.99) return (t = setTimeout(revisar, 100))
       const r = els.grande[abiertaRef.current]?.getBoundingClientRect()
       if (!r) return
-      const arriba = r.top - ARO - 8
-      const abajo = r.bottom - (window.innerHeight - BARRA_ALTO)
-      const dy = arriba < 0 ? arriba : abajo > 0 ? Math.min(abajo, arriba) : 0
-      if (Math.abs(dy) > 4) window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
+      // Centrada (isla con su aro + tarjetita), como al abrirla. El ancla del cambio de isla (celular) ya
+      // cumplió: se suelta, si no, la cola del resorte devolvería la página a donde estaba.
+      ancla.current = null
+      const dy = desfaseCentro(r.top - ARO * zoom, r.height + ARO * zoom)
+      if (Math.abs(dy) > 4) desplazarRef.current(dy)
     }
     t = setTimeout(revisar, 300)
     return () => clearTimeout(t)
-  }, [abierta, els, reducir])
+  }, [abierta, els, reducir, zoom])
 
   const entrada = (indice) => ({
     initial: { scale: 0.6, opacity: 0 },
