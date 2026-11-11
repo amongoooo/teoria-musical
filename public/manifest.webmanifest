@@ -1,0 +1,20 @@
+{
+  "name": "Teoría Musical",
+  "short_name": "Teoría Musical",
+  "description": "Aprende teoría musical y producción en FL Studio con lecciones cortas e interactivas.",
+  "lang": "es",
+  "id": "/teoria-musical/",
+  "start_url": "/teoria-musical/",
+  "scope": "/teoria-musical/",
+  "display": "standalone",
+  "background_color": "#f4f4f5",
+  "theme_color": "#f4f4f5",
+  "categories": ["education", "music"],
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-enmascarable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "iconos/icono-enmascarable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "iconos/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

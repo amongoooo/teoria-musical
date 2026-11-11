@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-11: **Ícono de la app** (PWA): teclado Do-Re-Mi-Fa con las teclas en los colores de los módulos 1–4 sobre el neutro oscuro; sustituye al favicon con emoji 🎹.
 - 2026-11-11: Lección 3.1 (abre el módulo 3, turquesa): ejercicios de teclado **Medir un paso** (P5) y **Seguir la fórmula** (P6) con la fila de la fórmula (T gris, S oro) y la prop `ir` del Piano. Teoría con **Tonal.js** en `src/theory/intervalos.js`.
 
 - 2026-11-11: (pedido del usuario) **Regla del vidrio**: todo botón de solo ícono que sea función de la app (✕, casita, Opciones, cerrar, ‹ ›) es un círculo de vidrio; la **cabecera de las lecciones** y del entrenador de oído pasa a vidrio (✕ + píldora con la barra y el contador). La Hoja va en un portal por encima de todo.
