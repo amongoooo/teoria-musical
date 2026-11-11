@@ -30,7 +30,8 @@ import { Cuadrito } from './NavegadorModulos.jsx'
  * página; los indicadores (portal) se pintan fuera, porque el <main> se transforma.
  */
 export default function useCambioModulo(modulo, { isla = null } = {}) {
-  const acepta = (dir) => !isla || (dir < 0 ? isla.inicio : isla.fin)
+  // isla.libre = modo foco (barra transparente): el camino está cerrado, todo gesto es de la página.
+  const acepta = (dir) => !isla || isla.libre || (dir < 0 ? isla.inicio : isla.fin)
   const ancho = useAncho()
   const X = ancho < 560 ? Math.max(160, ancho * DESLIZAR.pagina.umbralCelular) : DESLIZAR.pagina.umbralAncho
   const XV = DESLIZAR.pagina.umbralVertical
