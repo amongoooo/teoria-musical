@@ -111,6 +111,12 @@ sin quitar otro. Todo lo demás se dice con **texto** o con **color** (sin emoji
 - Feedback de la barra inferior: título con `Check` (bien) o `Bombilla` (fíjate).
 - Flechas de navegación (‹ ›) y «…» son texto, no íconos.
 
+### Ícono de la app (`public/iconos/`)
+Un trozo de teclado (Do Re Mi Fa) con cada tecla blanca en el color de un módulo (M1 azul, M2 naranja, M3 turquesa, M4 morado),
+las dos negras recortadas en el neutro `#10121c` y ese mismo neutro de fondo. Teclas rectas arriba y redondeadas abajo.
+Fuente de verdad: `icono.svg` (esquinas `rx` 112) e `icono-enmascarable.svg` (fondo a sangre, dibujo al 80 % para la zona segura
+de Android). Los PNG (192, 512, enmascarables, `apple-touch-icon` 180, favicon 64) se generan desde esos SVG.
+
 ### Espacio y forma
 - Contenedor: `mx-auto max-w-2xl px-5`. Separación entre secciones `gap-10`; dentro de una sección `gap-4`; dentro de una tarjeta `gap-3`/`gap-4`.
 - Esquinas: tarjetas `rounded-3xl`, botones `rounded-2xl`, chips `rounded-full`, iconos de tarjeta `rounded-2xl size-12`.

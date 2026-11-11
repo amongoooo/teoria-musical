@@ -59,8 +59,10 @@ src/
   audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle), bateria.js (golpes sintetizados), sonido.js (reproducir() del contenido)
   theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
   progress/             # progreso.js (lecciones y retos), opciones.js (tema), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
+  pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
   ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js (gestos), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
                         #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js, useSobreBarra.js
+public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
 docs/HISTORIAL.md       # Historial detallado de todas las tareas
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
@@ -71,6 +73,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - `vite.config.js` usa `base: '/teoria-musical/'` (GitHub Pages). Las rutas a archivos de `public/` usan `import.meta.env.BASE_URL`.
 - El audio solo empieza tras un gesto del usuario (`startAudio()` en `src/audio/engine.js`; iOS lo exige).
 - **Despliegue automático**: cada push a `main` ejecuta `.github/workflows/deploy.yml` (Node 20, `npm ci`, `npm run build`, publica `dist`; en Settings → Pages → Source debe estar **GitHub Actions**).
+- **App instalable (PWA) y sin internet**: `public/manifest.webmanifest` + íconos en `public/iconos/`; en `npm run build` el plugin `swApp` de `vite.config.js` genera `dist/sw.js` desde `src/pwa/sw-plantilla.js` con la lista de archivos del build y una versión (hash). Guarda toda la app y los samples del piano (`src/audio/salamander.js`); páginas: primero la red (4 s) y sin red la copia; archivos: primero la copia. Cada despliegue con cambios crea una versión nueva y borra la vieja. Solo se registra en producción (no en `npm run dev`). Si cambias los íconos, regenera los PNG desde los SVG.
 - Comandos: `npm run dev`, `npm run build`, `npm run preview` (abre `/teoria-musical/`).
 - **Lecciones**: un archivo de datos por lección en `src/content/modulo-XX/`, registrado en `src/content/index.js`. El visor muestra un paso por pantalla y un botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente). El error nunca castiga: muestra la respuesta y la explica.
 - **Desbloqueo** (`estadoLeccion` en `content/index.js` → `proximamente | hecha | empezada | nueva | bloqueada`): progresivo dentro de cada módulo; entre módulos no se bloquea; las URLs directas no se bloquean.
@@ -85,7 +88,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~62 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~63 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
@@ -94,6 +97,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
 - ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, regla del vidrio, camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
+- ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
 **Siguiente tarea:** lección 3.2 «Los intervalos y su carácter» (nombrar intervalos por semitonos con Tonal.js, emparejar sonido ↔ nombre), o la prueba rápida al inicio de cada módulo.
