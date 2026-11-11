@@ -27,6 +27,7 @@ import { claro, tinta } from '../ui/color.js'
 import { Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 import { BarraAccion } from './Leccion.jsx'
 
@@ -315,24 +316,26 @@ function Entrenador({ modo }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 bg-fondo/95 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+      <header className="pointer-events-none sticky top-0 z-10">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 pb-2">
           <Pulsable
             href={rutas.oido()}
             aria-label="Volver al entrenamiento de oído"
-            className="grid size-11 shrink-0 place-items-center rounded-full text-zinc-600 active:bg-zinc-200"
+            className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
           >
             <Cerrar className="size-6" />
           </Pulsable>
-          <BarraProgreso
-            valor={avanceHoy}
-            color={avanceHoy >= 1 ? 'var(--color-bien)' : modo.acento}
-            alto="h-3"
-            alAparecer={false}
-            className="flex-1"
-            aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}
-          />
-          <span className="w-20 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-500">{minutos(dia.segundos)}/5 min</span>
+          <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
+            <BarraProgreso
+              valor={avanceHoy}
+              color={avanceHoy >= 1 ? 'var(--color-bien)' : modo.acento}
+              alto="h-3"
+              alAparecer={false}
+              className="flex-1"
+              aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}
+            />
+            <span className="w-20 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">{minutos(dia.segundos)}/5 min</span>
+          </div>
         </div>
       </header>
 
