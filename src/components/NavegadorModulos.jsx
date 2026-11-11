@@ -10,6 +10,7 @@ import Hoja from '../ui/Hoja.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
+import { VIDRIO } from '../ui/vidrio.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -109,13 +110,13 @@ function Carrusel({ actual, onCerrar }) {
           ))}
       </div>
       <div className="flex items-center justify-between gap-3">
-        <Pulsable onClick={() => irA(indice - 1)} disabled={indice === 0} aria-label="Módulo anterior" className="grid size-11 place-items-center rounded-full bg-zinc-100 text-2xl text-zinc-700 disabled:opacity-30">
+        <Pulsable onClick={() => irA(indice - 1)} disabled={indice === 0} aria-label="Módulo anterior" className={`grid size-11 place-items-center rounded-full text-2xl text-zinc-700 disabled:opacity-30 ${VIDRIO}`}>
           ‹
         </Pulsable>
         <span className="text-base font-semibold tabular-nums text-zinc-600" aria-live="polite">
           Módulo {m.numero} de {n}
         </span>
-        <Pulsable onClick={() => irA(indice + 1)} disabled={indice === n - 1} aria-label="Módulo siguiente" className="grid size-11 place-items-center rounded-full bg-zinc-100 text-2xl text-zinc-700 disabled:opacity-30">
+        <Pulsable onClick={() => irA(indice + 1)} disabled={indice === n - 1} aria-label="Módulo siguiente" className={`grid size-11 place-items-center rounded-full text-2xl text-zinc-700 disabled:opacity-30 ${VIDRIO}`}>
           ›
         </Pulsable>
       </div>

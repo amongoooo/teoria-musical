@@ -17,6 +17,7 @@ import { navegar, rutas } from '../router.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
+import { VIDRIO } from '../ui/vidrio.js'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
 const PASOS = {
@@ -112,34 +113,38 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 bg-fondo/95 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+      {/* Cabecera de vidrio (como la de Módulo): ✕ en un círculo y la barra de pasos con el contador en una
+          píldora; el paso pasa por detrás, desenfocado. */}
+      <header className="pointer-events-none sticky top-0 z-10">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 pb-2">
           <Pulsable
             onClick={salir}
             aria-label="Salir de la lección"
-            className="grid size-11 shrink-0 place-items-center rounded-full text-zinc-600 active:bg-zinc-200"
+            className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
           >
             <Cerrar className="size-6" />
           </Pulsable>
-          <div
-            className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={total}
-            aria-valuenow={indice}
-            aria-label={`Paso ${indice + 1} de ${total}`}
-          >
-            <motion.div
-              className="h-full rounded-full"
-              initial={false}
-              animate={{ width: `${(indice / total) * 100}%` }}
-              transition={RESORTE.suave}
-              style={{ backgroundColor: modulo?.acento ?? 'var(--color-zinc-900)' }}
-            />
+          <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
+            <div
+              className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={indice}
+              aria-label={`Paso ${indice + 1} de ${total}`}
+            >
+              <motion.div
+                className="h-full rounded-full"
+                initial={false}
+                animate={{ width: `${(indice / total) * 100}%` }}
+                transition={RESORTE.suave}
+                style={{ backgroundColor: modulo?.acento ?? 'var(--color-zinc-900)' }}
+              />
+            </div>
+            <span className="w-12 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">
+              {indice + 1}/{total}
+            </span>
           </div>
-          <span className="w-12 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-500">
-            {indice + 1}/{total}
-          </span>
         </div>
       </header>
 
