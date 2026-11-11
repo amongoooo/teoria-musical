@@ -19,6 +19,9 @@ export default {
 
 En los textos se puede usar `**negrita**` y `*cursiva*`.
 
+**Antes de escribir una lección**, ver `INTERACCIONES.md`: catálogo de interacciones (L1–L6, O1–O5,
+P1–P4, F1, R1–R3, T1–T3, X1) y la plantilla de orden de los pasos.
+
 ## Campos comunes de cada paso
 
 - `tipo` (obligatorio): uno de los de abajo.
