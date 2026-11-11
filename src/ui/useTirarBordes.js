@@ -8,7 +8,8 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * (skill de diseño, sección 3b):
  *  - Abajo del todo y el dedo sigue subiendo → dir +1 (p. ej. módulo siguiente).
  *  - Arriba del todo y el dedo baja → dir −1 (módulo anterior), PERO solo si el gesto empezó por
- *    debajo de `desdeAbajo` (fracción de la altura de la pantalla, 0,75). Si empieza más arriba, no
+ *    debajo de `limiteRecarga()` (px desde arriba de la pantalla; p. ej. el borde de abajo del título del
+ *    módulo; si no se da, `DESLIZAR.pagina.recarga` × alto de la pantalla). Si empieza más arriba, no
  *    se toca: el navegador hace su «tirar para recargar» de siempre.
  * Fases: zona muerta (DESLIZAR.zonaMuerta px) → resistencia fuerte hasta el 30 % de X (como mucho
  * DESLIZAR.resistencia × X) → alcanza al dedo con RESORTE.pulsar y lo sigue 1:1 (por debajo del 26 %
@@ -25,11 +26,11 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * Devuelve { progreso, listo }: `progreso` en fracciones de X con signo (+ abajo, − arriba; ±0,5 = punto
  * de pasar) y `listo` (±1 si al soltar ahora pasaría, 0 si no).
  */
-export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAbajo = DESLIZAR.pagina.desdeAbajo }) {
+export default function useTirarBordes({ activo, umbral, puede, onPasar, limiteRecarga }) {
   const progreso = useMotionValue(0)
   const listo = useMotionValue(0)
   const op = useRef(null)
-  op.current = { activo, umbral, puede, onPasar, desdeAbajo }
+  op.current = { activo, umbral, puede, onPasar, limiteRecarga }
   const rebote = useRef(null)
   // Al activarse o desactivarse (abrir/cerrar una isla), el rebote del navegador cambia al momento.
   useEffect(() => rebote.current?.(), [activo])
@@ -74,7 +75,7 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, desdeAb
         sigue: false,
         pasado: false,
         // Tirar desde arriba solo si el dedo se apoyó en la parte baja de la pantalla.
-        arribaPermitido: t.clientY >= window.innerHeight * op.current.desdeAbajo,
+        arribaPermitido: t.clientY > (op.current.limiteRecarga?.() ?? window.innerHeight * DESLIZAR.pagina.recarga),
       }
     }
 

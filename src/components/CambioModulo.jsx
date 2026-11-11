@@ -13,8 +13,8 @@ import { Cuadrito } from './NavegadorModulos.jsx'
  * Cambio de módulo con un gesto de página (skill de diseño, sección 3b «Swipe de página»):
  *  - Deslizar de lado (con el camino cerrado): a la izquierda → módulo siguiente; a la derecha → anterior.
  *  - Tirar «más abajo» del final de la página (celular): módulo siguiente.
- *  - Tirar hacia abajo estando arriba del todo: módulo anterior, solo si el dedo se apoyó en el 25 %
- *    inferior de la pantalla (DESLIZAR.pagina.desdeAbajo); más arriba, el navegador recarga la página.
+ *  - Tirar hacia abajo estando arriba del todo: módulo anterior, solo si el dedo se apoyó por debajo del
+ *    título del módulo; sobre el título o más arriba, el navegador recarga la página (zona de recarga).
  * Reglas de los swipes (zona muerta, resistencia fuerte hasta el 30 %, sigue al dedo) con una X más larga
  * (DESLIZAR.pagina), sin gesto rápido ni avance continuo y **soltar para pasar**: pasado el 50 % el
  * indicador dice «Suelta para ir» y la página solo cambia al soltar el dedo ahí; si el dedo vuelve atrás
@@ -54,7 +54,17 @@ export default function useCambioModulo(modulo, { activo }) {
     veloz: [Infinity, Infinity],
     soltarParaPasar: true,
   })
-  const bordes = useTirarBordes({ activo, umbral: XV, puede: (dir) => !saliendo.current && puede(dir), onPasar: pasar })
+  const bordes = useTirarBordes({
+    activo,
+    umbral: XV,
+    puede: (dir) => !saliendo.current && puede(dir),
+    onPasar: pasar,
+    // Zona de recarga: del borde de arriba de la pantalla hasta el final del título del módulo.
+    limiteRecarga: () => {
+      const r = document.querySelector('[data-titulo-modulo]')?.getBoundingClientRect()
+      return r ? r.bottom : window.innerHeight * DESLIZAR.pagina.recarga
+    },
+  })
 
   const px = useCongelado(lado.progreso, saliendo)
   const py = useCongelado(bordes.progreso, saliendo)
