@@ -1,13 +1,14 @@
-// Opciones de la app (de momento, el tema claro / oscuro), en localStorage.
+// Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema' }
-// index.html aplica el tema guardado ANTES de pintar (sin destello blanco); este módulo lo
-// mantiene al día cuando se cambia en Opciones o cuando el teléfono cambia de modo (Automático).
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco' }
+// index.html aplica el tema y el vidrio guardados ANTES de pintar (sin destello); este módulo los
+// mantiene al día cuando se cambian en Opciones o cuando el teléfono cambia de modo (Automático).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro' }
+const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque' }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
+export const VIDRIOS = ['desenfoque', 'opaco']
 const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
 
 let cache = null
@@ -19,6 +20,7 @@ function leer() {
     const data = JSON.parse(localStorage.getItem(CLAVE) ?? 'null')
     cache = { ...PREDETERMINADAS, ...(data && typeof data === 'object' ? data : {}) }
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
+    if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
   } catch {
     cache = { ...PREDETERMINADAS }
   }
@@ -58,6 +60,17 @@ export function setTema(tema) {
   if (!TEMAS.includes(tema)) return
   escribir({ ...leer(), tema })
   aplicarTema(tema, { fundido: true })
+}
+
+/** Pone o quita la clase `opaco` en <html>: el vidrio pasa a superficie sólida (reglas en src/index.css). */
+export function aplicarVidrio(vidrio = leer().vidrio) {
+  document.documentElement.classList.toggle('opaco', vidrio === 'opaco')
+}
+
+export function setVidrio(vidrio) {
+  if (!VIDRIOS.includes(vidrio)) return
+  escribir({ ...leer(), vidrio })
+  aplicarVidrio(vidrio)
 }
 
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.

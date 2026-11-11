@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useDragControls } from 'motion/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { RESORTE } from './movimiento.js'
 import { Cerrar } from './Iconos.jsx'
@@ -18,6 +18,11 @@ import { VIDRIO } from './vidrio.js'
 export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
   const ref = useRef(null)
   const arrastre = useDragControls()
+  // Cuando el contenido se desplaza por debajo del asa, la cabecera (asa + ✕) se vuelve de vidrio.
+  const [desplazada, setDesplazada] = useState(false)
+  useEffect(() => {
+    if (!abierta) setDesplazada(false)
+  }, [abierta])
 
   useEffect(() => {
     if (!abierta) return
@@ -53,7 +58,7 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
             role="dialog"
             aria-modal="true"
             aria-label={etiqueta}
-            className="fixed inset-x-0 bottom-0 z-[70] mx-auto flex max-h-[calc(100dvh-1.5rem)] max-w-lg flex-col gap-5 rounded-t-3xl bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-6 sm:rounded-3xl"
+            className="fixed inset-x-0 bottom-0 z-[70] mx-auto flex max-h-[calc(100dvh-1.5rem)] max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white sm:bottom-6 sm:rounded-3xl"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '110%' }}
@@ -74,17 +79,25 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
               if (info.offset.y > 90 || info.velocity.y > 600) onCerrar()
             }}
           >
-            <div className="relative flex justify-center">
+            <div
+              className={`absolute inset-x-0 top-0 z-10 flex h-14 justify-center px-5 pt-3 transition-[background-color,box-shadow] duration-200 ${
+                desplazada ? 'vidrio bg-white/70 shadow-[0_1px_0_var(--color-zinc-200)] backdrop-blur-xl backdrop-saturate-150' : ''
+              }`}
+            >
               <span aria-hidden className="mt-1 h-1.5 w-10 rounded-full bg-zinc-300" />
               <Pulsable
                 onClick={onCerrar}
                 aria-label="Cerrar"
-                className={`absolute -top-1 right-0 grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
+                className={`absolute top-2 right-5 grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
               >
                 <Cerrar className="size-5" />
               </Pulsable>
             </div>
-            <div data-desplazable className="-mx-5 -mb-2 flex min-h-0 flex-col gap-5 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-2">
+            <div
+              data-desplazable
+              onScroll={(e) => setDesplazada(e.currentTarget.scrollTop > 4)}
+              className="flex min-h-0 flex-col gap-5 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pt-[2.625rem] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            >
               {children}
             </div>
           </motion.div>

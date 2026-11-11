@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { motion, useAnimationControls } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
 import Emparejar from '../components/exercises/Emparejar.jsx'
@@ -15,10 +15,10 @@ import { etiquetaPaso } from '../content/actividad.js'
 import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
-import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
+import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
-import { VIDRIO } from '../ui/vidrio.js'
+import { VIDRIO, VIDRIO_PANEL } from '../ui/vidrio.js'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
 const PASOS = {
@@ -199,13 +199,27 @@ function Etiqueta({ paso, indice }) {
   )
 }
 
-/** Barra fija de abajo con el botón grande (también la usa el entrenamiento de oído). */
+/**
+ * Barra de abajo con el botón grande (también la usa el entrenamiento de oído). Es un panel de VIDRIO que flota
+ * (la lección pasa por detrás, desenfocada): avanzar es una función de la app. Dentro, el significado va sólido:
+ * el mensaje de bien / fíjate y el botón cuando está listo.
+ * El botón «se llena»: desactivado = vidrio vacío con el texto en gris; listo = negro (verde al acertar), con un
+ * fundido de color y un SALTO al pasar de vacío a lleno.
+ */
 export function BarraAccion({ accion }) {
   const { feedback } = accion
   const bien = feedback?.tipo === 'bien'
+  const listo = !accion.disabled
+  const salto = useAnimationControls()
+  const antes = useRef(listo)
+  useEffect(() => {
+    if (listo && !antes.current) salto.start({ ...SALTO, transition: { duration: 0.35 } })
+    antes.current = listo
+  }, [listo, salto])
+
   return (
-    <div data-barra-accion className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-2xl flex-col gap-2 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className={`pointer-events-auto mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] p-2.5 ${VIDRIO_PANEL}`}>
         {feedback && (
           <motion.div
             key={feedback.titulo + feedback.texto}
@@ -226,16 +240,22 @@ export function BarraAccion({ accion }) {
             )}
           </motion.div>
         )}
-        {accion.ayuda && <p className="text-center text-sm text-zinc-500">{accion.ayuda}</p>}
-        <Pulsable
-          onClick={accion.onClick}
-          disabled={accion.disabled}
-          className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold transition-colors duration-200 disabled:bg-zinc-300 disabled:text-zinc-500 ${
-            bien ? 'bg-bien-relleno text-blanco' : 'bg-zinc-900 text-white'
-          }`}
-        >
-          {accion.label}
-        </Pulsable>
+        {accion.ayuda && <p className="px-2 pt-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
+        <motion.div animate={salto}>
+          <Pulsable
+            onClick={accion.onClick}
+            disabled={accion.disabled}
+            className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold transition-colors duration-200 ${
+              !listo
+                ? 'bg-zinc-900/[0.06] text-zinc-500 ring-1 ring-inset ring-zinc-900/10'
+                : bien
+                  ? 'bg-bien-relleno text-blanco'
+                  : 'bg-zinc-900 text-white'
+            }`}
+          >
+            {accion.label}
+          </Pulsable>
+        </motion.div>
       </div>
     </div>
   )

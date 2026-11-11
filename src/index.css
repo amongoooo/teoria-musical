@@ -233,3 +233,20 @@ html.cambiando-tema * {
     transition: none !important;
   }
 }
+
+/*
+ * Vidrio opaco (Opciones → Vidrio → «Opaco»: clase `opaco` en <html>, la ponen src/progress/opciones.js y el
+ * script de index.html). Lo que lleva la clase `vidrio` (VIDRIO y VIDRIO_PANEL de src/ui/vidrio.js) pasa a
+ * superficie sólida con borde, sin desenfoque: más contraste y menos trabajo para el teléfono.
+ */
+.opaco .vidrio {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: var(--color-white) !important;
+  border-color: var(--color-zinc-200) !important;
+}
+/* Sobre una tarjeta de color (✕ del globo de una isla): un velo blanco en lugar de la superficie. */
+.opaco .vidrio.vidrio-color {
+  background-color: rgb(255 255 255 / 0.2) !important;
+  border-color: rgb(255 255 255 / 0.5) !important;
+}
