@@ -83,7 +83,9 @@ export default function useCambioModulo(modulo, { activo }) {
   }
 
   const indicadores = createPortal(
-    <motion.div animate={{ opacity: seVa ? 0 : 1 }} transition={{ duration: 0.15 }}>
+    // Capa del tamaño de la pantalla que RECORTA a los indicadores: escondidos fuera del borde derecho,
+    // en el celular ensanchaban la pantalla (y la cabecera fija empujaba la rueda de Opciones).
+    <motion.div className="pointer-events-none fixed inset-0 z-20 overflow-hidden" animate={{ opacity: seVa ? 0 : 1 }} transition={{ duration: 0.15 }}>
       <Asoma lado="derecha" progreso={px} listo={lado.listo} modulo={vecino(1)} disponible={puede(1)} />
       <Asoma lado="izquierda" progreso={px} listo={lado.listo} modulo={vecino(-1)} disponible={puede(-1)} />
       <Asoma lado="abajo" progreso={py} listo={bordes.listo} modulo={vecino(1)} disponible={puede(1)} />
@@ -153,7 +155,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
       <motion.div
         aria-hidden
         // El de arriba sale por DEBAJO de la cabecera fija (que va encima, con su desvanecido).
-        className={`pointer-events-none fixed inset-x-0 z-20 flex justify-center bg-fondo/90 ${
+        className={`pointer-events-none absolute inset-x-0 flex justify-center bg-fondo/90 ${
           signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'pt-2 pb-3'
         }`}
         style={{ opacity: vis, y: yVertical, ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : {}) }}
@@ -173,7 +175,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
   return (
     <motion.div
       aria-hidden
-      className={`pointer-events-none fixed top-1/2 z-20 flex w-32 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl bg-fondo/90 py-3 ${signo > 0 ? 'right-1' : 'left-1'}`}
+      className={`pointer-events-none absolute top-1/2 flex w-32 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl bg-fondo/90 py-3 ${signo > 0 ? 'right-1' : 'left-1'}`}
       style={{ opacity: vis, x: xLado }}
     >
       {cuadrito}

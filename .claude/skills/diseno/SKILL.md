@@ -200,7 +200,7 @@ Con una isla abierta, `html` y `body` llevan `overscroll-behavior-y: none`: en A
 
 ## Registro de decisiones
 
-- 2026-11-11: Arreglo: al cambiar de módulo la rueda de Opciones se desplazaba y el segmento nuevo salía detrás de ella. Causa: la página que entra desde la derecha ensanchaba la pantalla en el celular. **`#root { overflow-x: clip }`** (lo que se sale por los lados nunca ensancha la pantalla) y la zona de la barra con ancho fijo.
+- 2026-11-11: Arreglo: al cambiar de módulo la rueda de Opciones se desplazaba y el segmento nuevo salía detrás de ella. Causa: la página que entra desde la derecha ensanchaba la pantalla en el celular. **`#root { position: relative; overflow-x: clip }`** (lo que se sale por los lados —también la página que sale, en posición absoluta— nunca ensancha la pantalla), la zona de la barra con ancho fijo y los indicadores del swipe de página dentro de una capa fija `inset-0 overflow-hidden` (escondidos fuera del borde derecho también ensanchaban la pantalla). **Regla**: nada debe salirse por los lados de la pantalla; si algo se esconde fuera del borde, que sea dentro de un contenedor que recorte.
 
 - 2026-11-11: (pedido del usuario) Cabecera de Módulo **fija con desvanecido**, **título en pequeño** al bajar, **Opciones** en lugar de «x/y» y **barra por lecciones** (un segmento por lección con su avance). El indicador de tirar desde arriba sale por debajo de la cabecera.
 

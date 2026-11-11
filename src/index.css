@@ -87,8 +87,11 @@ body {
 /* Al cambiar de tema, los colores pasan con un fundido corto (solo durante el cambio). */
 /* Lo que se sale por los lados (p. ej. la página que entra desde la derecha en una transición) no debe
    ensanchar la pantalla: en el celular eso estiraba un instante lo fijo (la cabecera de Módulo empujaba la
-   rueda de Opciones). `clip` recorta sin crear un contenedor de scroll (lo fijo y sticky siguen igual). */
+   rueda de Opciones). `clip` recorta sin crear un contenedor de scroll (lo fijo y sticky siguen igual).
+   `position: relative` hace que también recorte a la página que SALE en una transición (va en posición
+   absoluta; sin esto su caja de referencia era la de <html> y se escapaba del recorte). */
 #root {
+  position: relative;
   overflow-x: clip;
 }
 
