@@ -35,6 +35,7 @@ src/
   App.jsx               # Elige la página según la ruta (hash)
   router.js             # Rutas por hash: #/  #/modulo/1  #/leccion/1.1
   content/              # Contenido (datos), ver content/FORMATO.md
+    INTERACCIONES.md    # Catálogo de interacciones (L1…X1) y plantilla de lección
     modulos.js          # Los 10 módulos y sus lecciones (título, acento, reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
     modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js, leccion-2-3.js
@@ -73,7 +74,7 @@ public/samples/         # Samples de audio propios
 - El piano usa Pointer Events, `touch-action: none`, sin selección de texto ni menú contextual; `elementFromPoint` en `pointermove` para deslizar entre teclas. En pantallas angostas (< 560 px) muestra 1 octava con botones ◀ ▶.
 - **Despliegue automático**: cada push a `main` ejecuta `.github/workflows/deploy.yml` (Node 20, `npm ci`, `npm run build`, publica `dist`). En Settings → Pages → Source debe estar seleccionado **GitHub Actions**.
 - Comandos: `npm run dev`, `npm run build`, `npm run preview` (abre `/teoria-musical/`).
-- **Lecciones**: cada lección es un archivo de datos en `src/content/modulo-XX/` registrado en `src/content/index.js`. Formato completo y tipos de paso en `src/content/FORMATO.md`. El visor (`pages/Leccion.jsx`) muestra un paso por pantalla, barra de progreso arriba y un único botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente/Continuar). El error nunca castiga: muestra la respuesta y la explica.
+- **Lecciones**: cada lección es un archivo de datos en `src/content/modulo-XX/` registrado en `src/content/index.js`. Formato completo y tipos de paso en `src/content/FORMATO.md`; **qué interacciones usar y en qué orden, en `src/content/INTERACCIONES.md`**. El visor (`pages/Leccion.jsx`) muestra un paso por pantalla, barra de progreso arriba y un único botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente/Continuar). El error nunca castiga: muestra la respuesta y la explica.
 - **Desbloqueo**: `estadoLeccion(id, progreso)` en `content/index.js` → `proximamente | hecha | empezada | nueva | bloqueada`. Progresivo **dentro de cada módulo** (la 1.ª lección de cada módulo siempre abierta; cada una se abre al completar la anterior). Entre módulos no se bloquea. Las URLs directas a una lección no se bloquean.
 - **Progreso**: `localStorage` clave `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` (`M1` = reto del módulo 1). Se guarda el paso actual para continuar donde se dejó.
 - En las lecciones el piano usa `compacto` (teclas más bajas) para que quepa sobre la barra inferior en el celular.
