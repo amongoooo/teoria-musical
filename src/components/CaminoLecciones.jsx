@@ -27,11 +27,11 @@ const TILT = { x: 12, grados: 3, vuelve: 250 }
 //    vertical siempre; en horizontal solo si el dedo sale más allá del primer o del último puntito.
 //    Se acerca a `max` px sin llegar nunca; al soltar vuelve a su sitio con RESORTE.suave.
 //  - MATRACA: cada vez que el dedo pasa a otro puntito, la barra da un golpe de inclinación hacia el lado
-//    del movimiento, más fuerte cuanto más lejos está el dedo del eje de la barra (por arriba gira en un
-//    sentido, por abajo en el otro; sobre el eje casi nada). `distancia`: px desde el eje para la fuerza
-//    máxima. La inclinación vuelve a 0 a los `vuelve` ms. Contra un extremo también suena (con `minimo`).
+//    del movimiento: `min` grados con el dedo sobre el eje de la barra y hasta `max` con el dedo a
+//    `distancia` px o más del eje (por arriba gira en un sentido, por abajo en el otro). La inclinación
+//    vuelve a 0 a los `vuelve` ms. Contra un extremo (más allá del primer/último puntito) también suena.
 const FLOTA = { factor: 0.5, max: 14 }
-const MATRACA = { grados: 5, distancia: 56, vuelve: 250, minimo: 0.35 }
+const MATRACA = { min: 1.5, max: 3, distancia: 45, vuelve: 250 }
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
@@ -133,27 +133,58 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   // donde estaba la anterior (las islas pasan por el mismo sitio de la pantalla).
   const ancla = useRef(null)
   const ultimaP = useRef(null)
-  const posicion = () => base.get() + islas.progreso.get() + puntos.progreso.get()
+  const posicion = () => base.get() + islas.progreso.get()
   const fijarAncla = () => {
     if (!vertical || !layouts || abiertaRef.current === null || !ref.current) return (ancla.current = null)
     ancla.current = ref.current.getBoundingClientRect().top + focoY(layouts, posicion(), n)
+  }
+
+  // Abrir una isla (con el camino cerrado): si la isla y su globo no van a caber entre la parte de
+  // arriba de la pantalla y la barra de puntitos, la página sube (o baja) PRIMERO y la isla se abre
+  // cuando ya está en su sitio; así el globo nunca se mete bajo la barra. Si al final de la página no
+  // hay sitio para subir, se añade el relleno justo debajo del camino.
+  const relleno = useRef(null)
+  const esperando = useRef(null) // isla que se abrirá al terminar de desplazar la página
+  const abrir = (i) => {
+    const L = layouts
+    const cont = ref.current
+    if (!L || !cont) return abrirYa(i)
+    const arriba = cont.getBoundingClientRect().top + L.abiertas[i].nodos[i + 1].y - BOLA / 2 // borde de arriba de la bola
+    const alto = altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO // bola + globo
+    const sobra = arriba + alto - (window.innerHeight - BARRA_ALTO)
+    const falta = arriba - ARO - 8
+    const dy = sobra > 0 ? Math.min(sobra, falta) : falta < 0 ? falta : 0
+    if (Math.abs(dy) <= 4) return abrirYa(i)
+    const max = document.documentElement.scrollHeight - window.innerHeight
+    if (relleno.current && window.scrollY + dy > max) relleno.current.style.height = `${Math.ceil(window.scrollY + dy - max) + 2}px`
+    esperando.current = i
+    window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
+    alTerminarScroll(() => {
+      if (esperando.current !== i) return
+      esperando.current = null
+      abrirYa(i)
+    })
+  }
+  const abrirYa = (i) => {
+    abiertaRef.current = i
+    setAbierta(i)
+    base.jump(i)
+    animate(apertura, 1, resorte)
   }
 
   const irA = (i) => {
     if (i < 0 || i >= n) return
     const antes = abiertaRef.current
     if (i === antes) return
+    if (antes === null) return abrir(i)
     abiertaRef.current = i
     setAbierta(i)
-    if (antes === null) {
-      base.jump(i)
-      animate(apertura, 1, resorte)
-    } else {
-      fijarAncla()
-      animate(base, i, resorte)
-    }
+    fijarAncla()
+    animate(base, i, resorte)
   }
   const cerrar = () => {
+    esperando.current = null
+    if (relleno.current) relleno.current.style.height = '0px'
     abiertaRef.current = null
     setAbierta(null)
     animate(apertura, 0, resorte)
@@ -190,41 +221,18 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const flotaY = useMotionValue(0)
   const giro = useMotionValue(0)
   const tiltBarra = useRef(null)
-  const fuerzaBarra = useRef(0) // −1…1: dónde está el dedo respecto al eje de la barra (+ arriba)
+  /** Golpe de matraca hacia `dir`; `fuerza` −1…1 = dónde está el dedo respecto al eje (+ arriba). */
   const matraca = (dir, fuerza) => {
     if (reducir || !dir) return
     clearTimeout(tiltBarra.current)
-    animate(giro, dir * fuerza * MATRACA.grados, RESORTE.pulsar)
+    const grados = (fuerza >= 0 ? 1 : -1) * (MATRACA.min + (MATRACA.max - MATRACA.min) * Math.abs(fuerza))
+    animate(giro, dir * grados, RESORTE.pulsar)
     tiltBarra.current = setTimeout(() => animate(giro, 0, RESORTE.suave), MATRACA.vuelve)
   }
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
   const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla, alTope: inclinar })
-  const puntos = useDeslizar({
-    activo: abierta !== null,
-    umbral: DESLIZAR.puntitos.separacion,
-    zonaMuerta: DESLIZAR.puntitos.zonaMuerta,
-    veloz: DESLIZAR.puntitos.veloz,
-    sentido: 1, // por la barra, arrastrar a la derecha va a la siguiente
-    cadena: true, // una isla por cada puntito que se cruza, sin avance continuo
-    rapido: false,
-    eje: false,
-    onPaso: paso,
-    puede,
-    // Contra un extremo: un golpe de matraca hacia el dedo (con un mínimo, para que se note también sobre el eje).
-    alTope: (lado) => {
-      const f = fuerzaBarra.current
-      matraca(lado, f >= 0 ? Math.max(f, MATRACA.minimo) : Math.min(f, -MATRACA.minimo))
-    },
-    // Se mide desde el centro del puntito tocado: la isla es siempre la del puntito más cercano al dedo.
-    origen: (e) => centroPunto(els.punto, puntoMasCercano(els.punto, e.clientX)),
-    alEmpezar: (e) => {
-      // Tocar un puntito va directo a esa isla; el arrastre empieza desde ahí.
-      const j = puntoMasCercano(els.punto, e.clientX)
-      if (j !== null) irA(j)
-      fijarAncla()
-    },
-  })
+
 
   /** Coloca cada isla, camino, título y puntito según la posición continua. */
   const actualizar = () => {
@@ -339,9 +347,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
   useEffect(() => {
-    const quitar = [base, apertura, despliegue, islas.progreso, puntos.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
+    const quitar = [base, apertura, despliegue, islas.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
     return () => quitar.forEach((q) => q())
-  }, [base, apertura, despliegue, islas.progreso, puntos.progreso])
+  }, [base, apertura, despliegue, islas.progreso])
 
   // Al entrar al módulo, las islas se despliegan desde la insignia (sin movimiento si se pide reducirlo).
   const desplegado = useRef(false)
@@ -522,6 +530,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
         )}
       </div>
 
+      {/* Relleno para poder subir la página al abrir una isla del final (ver abrir()). */}
+      <div ref={relleno} aria-hidden style={{ height: 0 }} />
+
       {createPortal(
         <AnimatePresence>
           {abierta !== null && (
@@ -532,12 +543,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
               abierta={abierta}
               acento={modulo.acento}
               guardar={guardar}
-              handlers={puntos.handlers}
               onIr={irA}
               flotaX={flotaX}
               flotaY={flotaY}
               giro={giro}
-              fuerza={fuerzaBarra}
               reducir={reducir}
               onMatraca={matraca}
             />
@@ -556,19 +565,22 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * resorte y respeta la zona segura. Tocar un puntito va a esa isla; arrastrar por encima pasa
  * de isla en isla con las mismas reglas del swipe (una isla cada vez que se cruza un puntito).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers, onIr, flotaX, flotaY, giro, fuerza, reducir, onMatraca }) {
+/**
+ * Barra de puntitos. Tocar un puntito abre su isla; arrastrar por la barra va **directo a la isla del
+ * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
+ * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
+ */
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, reducir, onMatraca }) {
   const sep = DESLIZAR.puntitos.separacion
   const pildora = useRef(null)
   const g = useRef(null) // gesto sobre la barra
-  const { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, ...resto } = handlers
-  const soltar = (e, f) => {
-    if (g.current?.id === e.pointerId) {
-      g.current = null
-      animate(flotaX, 0, RESORTE.suave)
-      animate(flotaY, 0, RESORTE.suave)
-    }
-    f?.(e)
+  const soltar = (e) => {
+    if (g.current?.id !== e.pointerId) return
+    g.current = null
+    animate(flotaX, 0, RESORTE.suave)
+    animate(flotaY, 0, RESORTE.suave)
   }
+  const fuerzaDe = (s, y) => limitar((s.eje - y) / MATRACA.distancia, -1, 1)
   return (
     <motion.div
       data-nodo
@@ -593,8 +605,9 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
           ref={pildora}
           className="pointer-events-auto flex select-none items-center rounded-full border border-zinc-200 bg-white/95 px-3 shadow-sm backdrop-blur"
           style={{ touchAction: 'none', rotate: giro }}
-          {...resto}
           onPointerDown={(e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return
+            e.currentTarget.setPointerCapture?.(e.pointerId)
             const r = pildora.current.getBoundingClientRect()
             const centros = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
               const c = b.getBoundingClientRect()
@@ -609,14 +622,12 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
               eje: r.top + r.height / 2 - flotaY.get(),
               centros,
               punto: masCercano(centros, e.clientX),
+              tope: 0, // −1 / +1 mientras el dedo está más allá del primer / último puntito
             }
-            fuerza.current = limitar((g.current.eje - e.clientY) / MATRACA.distancia, -1, 1)
-            onPointerDown?.(e)
+            onIr(g.current.punto) // tocar un puntito va directo a su isla
           }}
           onPointerMove={(e) => {
             const s = g.current
-            if (s && s.id === e.pointerId) fuerza.current = limitar((s.eje - e.clientY) / MATRACA.distancia, -1, 1)
-            onPointerMove?.(e)
             if (!s || s.id !== e.pointerId) return
             if (!reducir) {
               // Flota: sigue al dedo en vertical (con resistencia) y en horizontal solo fuera de los puntitos.
@@ -624,15 +635,21 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, handlers,
               const fuera = e.clientX - limitar(e.clientX, s.centros[0], s.centros[s.centros.length - 1])
               flotaX.set(flotar(fuera))
             }
-            // Matraca: al pasar a otro puntito, golpe de inclinación hacia donde va el dedo.
+            // Al pasar a otro puntito: su isla se abre (gana siempre una) y la barra da un golpe de matraca.
             const p = masCercano(s.centros, e.clientX)
             if (p !== s.punto) {
-              onMatraca(Math.sign(p - s.punto), fuerza.current)
+              onMatraca(Math.sign(p - s.punto), fuerzaDe(s, e.clientY))
               s.punto = p
+              onIr(p)
             }
+            // Contra un extremo (medio puntito más allá del primero o del último): un golpe al chocar.
+            const mitad = DESLIZAR.puntitos.separacion / 2
+            const tope = e.clientX < s.centros[0] - mitad ? -1 : e.clientX > s.centros[s.centros.length - 1] + mitad ? 1 : 0
+            if (tope && tope !== s.tope) onMatraca(tope, fuerzaDe(s, e.clientY))
+            s.tope = tope
           }}
-          onPointerUp={(e) => soltar(e, onPointerUp)}
-          onPointerCancel={(e) => soltar(e, onPointerCancel)}
+          onPointerUp={soltar}
+          onPointerCancel={soltar}
         >
           {lecciones.map((l, i) => {
             const hecha = estados[i] === 'hecha'
@@ -690,26 +707,26 @@ function masCercano(centros, x) {
   return mejor
 }
 
-/** Índice del puntito más cercano a la x del dedo (o null si no hay barra). */
-function puntoMasCercano(puntos, x) {
-  let mejor = null
-  let dist = Infinity
-  puntos.forEach((el, i) => {
-    if (!el) return
-    const r = el.parentElement.getBoundingClientRect()
-    const d = Math.abs(r.left + r.width / 2 - x)
-    if (d < dist) {
-      dist = d
-      mejor = i
-    }
-  })
-  return mejor
-}
-
-/** x del centro de la celda del puntito i (o null). */
-function centroPunto(puntos, i) {
-  const r = i == null ? null : puntos[i]?.parentElement.getBoundingClientRect()
-  return r ? r.left + r.width / 2 : null
+/** Llama a `fn` cuando la página deja de desplazarse (evento scrollend o, si no existe, sondeo). */
+function alTerminarScroll(fn) {
+  let ultimo = window.scrollY
+  let quietos = 0
+  let hecho = false
+  const fin = () => {
+    if (hecho) return
+    hecho = true
+    clearInterval(id)
+    clearTimeout(tope)
+    window.removeEventListener('scrollend', fin)
+    fn()
+  }
+  const id = setInterval(() => {
+    quietos = window.scrollY === ultimo ? quietos + 1 : 0
+    ultimo = window.scrollY
+    if (quietos >= 3) fin()
+  }, 40)
+  const tope = setTimeout(fin, 900)
+  window.addEventListener('scrollend', fin)
 }
 
 /** Curva del camino entre dos puntos (vertical: en S de arriba abajo; horizontal: de lado). */
