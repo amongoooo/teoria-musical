@@ -85,6 +85,13 @@ body {
 }
 
 /* Al cambiar de tema, los colores pasan con un fundido corto (solo durante el cambio). */
+/* Lo que se sale por los lados (p. ej. la página que entra desde la derecha en una transición) no debe
+   ensanchar la pantalla: en el celular eso estiraba un instante lo fijo (la cabecera de Módulo empujaba la
+   rueda de Opciones). `clip` recorta sin crear un contenedor de scroll (lo fijo y sticky siguen igual). */
+#root {
+  overflow-x: clip;
+}
+
 html.cambiando-tema,
 html.cambiando-tema * {
   transition:

@@ -46,10 +46,12 @@ export default function CabeceraModulo({ numero }) {
       }}
     >
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-4 sm:pt-6">
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto shrink-0">
           <BotonInicio />
         </div>
-        <div className="relative mx-auto flex h-11 w-full max-w-xl min-w-0 flex-col justify-center">
+        {/* flex-1 + basis-0 + min-w-0: la zona de la barra tiene un ancho fijo; los segmentos nuevos crecen
+            DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
+        <div className="relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center">
           <motion.div animate={{ y: chico ? -9 : 0 }} transition={RESORTE.suave}>
             <BarraLecciones valores={valores} color={modulo.acento} aria-label={`Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
           </motion.div>
@@ -68,7 +70,7 @@ export default function CabeceraModulo({ numero }) {
             )}
           </AnimatePresence>
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto shrink-0">
           <BotonOpciones />
         </div>
       </div>
@@ -82,7 +84,7 @@ export default function CabeceraModulo({ numero }) {
  */
 function BarraLecciones({ valores, color, ...props }) {
   return (
-    <div className="flex h-2.5 w-full gap-1.5" role="img" {...props}>
+    <div className="flex h-2.5 w-full gap-1.5 overflow-hidden" role="img" {...props}>
       <AnimatePresence initial={false}>
         {valores.map((v, i) => (
           <motion.div
