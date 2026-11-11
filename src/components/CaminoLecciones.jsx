@@ -62,6 +62,15 @@ const DESENFOQUE = { pasos: [0, 1, 2.2, 3.4, 4.5] }
 // grande (`RESALTA`), las demás se desenfocan por distancia como con una abierta. Tocar la isla la abre;
 // tocar fuera (o Escape) sale del modo y la barra se esconde.
 const RESALTA = 0.12
+// Barra transparente = «vidrio» (pedido del usuario, para que no se pierda): casi transparente, desenfoca un
+// poco lo de detrás, contorno blanco delgado, brillo arriba (inset) y una sombra muy suave. En oscuro, el
+// contorno blanco más tenue. `blanco` es blanco fijo (no cambia con el tema).
+const VIDRIO = [
+  'border-blanco/80 bg-blanco/25 backdrop-blur-md backdrop-saturate-150',
+  'shadow-[0_0_0_0.5px_rgb(16_18_28/0.12),0_6px_20px_rgb(16_18_28/0.10),inset_0_1px_0_rgb(255_255_255/0.7)]',
+  'dark:border-blanco/30 dark:bg-blanco/[0.06]',
+  'dark:shadow-[0_0_0_0.5px_rgb(0_0_0/0.4),0_6px_20px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.18)]',
+].join(' ')
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -800,7 +809,7 @@ function BarraPuntitos({ lecciones, estados, abierta, transparente = false, acen
           ref={pildora}
           data-transparente={transparente || undefined}
           className={`pointer-events-auto relative flex select-none items-center rounded-full border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
-            transparente ? 'border-transparent bg-transparent shadow-none' : 'border-zinc-200 bg-white/95 shadow-sm backdrop-blur'
+            transparente ? VIDRIO : 'border-zinc-200 bg-white/95 shadow-sm backdrop-blur'
           }`}
           style={{ touchAction: 'none', rotate: giro }}
           onPointerDown={(e) => {
