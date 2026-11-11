@@ -2,6 +2,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useRef } from 'react'
 import CabeceraModulo from './components/CabeceraModulo.jsx'
 import { useRuta } from './router.js'
+import Importar from './pages/Importar.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Leccion from './pages/Leccion.jsx'
 import Modulo from './pages/Modulo.jsx'
@@ -12,6 +13,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'modulo') return <Modulo numero={ruta.id} />
   if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} soloReto={ruta.reto} />
   if (ruta.pagina === 'oido') return <Oido modo={ruta.id} />
+  if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }
 

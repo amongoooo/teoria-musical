@@ -201,6 +201,17 @@ export function registrarRespuesta(id, { item, bien, niveles }) {
   return { subio, nuevoNivel: nivel, metaCumplida }
 }
 
+export function getOido() {
+  return leer()
+}
+
+/** Reemplaza todo el estado de oído (lo usa la importación, ya combinado). */
+export function importarOido(datos) {
+  const next = { ...VACIO, ...datos, version: 1 }
+  next.mejorRacha = Math.max(next.mejorRacha ?? 0, rachaActual(next))
+  escribir(next)
+}
+
 /** Borra todas las estadísticas de oído. */
 export function reiniciarOido() {
   escribir(VACIO)

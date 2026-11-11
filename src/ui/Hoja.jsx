@@ -7,6 +7,7 @@ import Pulsable from './Pulsable.jsx'
  * Hoja que sube desde abajo (bottom sheet tipo iOS). En pantallas anchas flota centrada.
  * Se cierra tocando el fondo, con ✕, con Escape o arrastrándola hacia abajo.
  *  - abierta, onCerrar, etiqueta (nombre accesible del diálogo), children
+ * Si el contenido no cabe, se desplaza dentro de la hoja (y entonces solo el asa la arrastra).
  * Lo que lleve `data-sin-arrastre` (p. ej. un carrusel lateral) no arrastra la hoja.
  */
 export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
@@ -47,7 +48,7 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
             role="dialog"
             aria-modal="true"
             aria-label={etiqueta}
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-lg flex-col gap-5 rounded-t-3xl bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-6 sm:rounded-3xl"
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[calc(100dvh-1.5rem)] max-w-lg flex-col gap-5 rounded-t-3xl bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-6 sm:rounded-3xl"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '110%' }}
@@ -55,7 +56,13 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
             drag="y"
             dragListener={false}
             dragControls={arrastre}
-            onPointerDown={(e) => !e.target.closest('[data-sin-arrastre]') && arrastre.start(e)}
+            onPointerDown={(e) => {
+              if (e.target.closest('[data-sin-arrastre], input, textarea')) return
+              // Si el contenido es más alto que la pantalla, se desplaza: solo el asa arrastra la hoja.
+              const zona = e.target.closest('[data-desplazable]')
+              if (zona && zona.scrollHeight > zona.clientHeight + 1) return
+              arrastre.start(e)
+            }}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.7 }}
             onDragEnd={(_, info) => {
@@ -72,7 +79,9 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
                 ✕
               </Pulsable>
             </div>
-            {children}
+            <div data-desplazable className="-mx-5 -mb-2 flex min-h-0 flex-col gap-5 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-2">
+              {children}
+            </div>
           </motion.div>
         </>
       )}

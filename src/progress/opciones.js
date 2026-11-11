@@ -68,6 +68,10 @@ function subscribe(l) {
   return () => listeners.delete(l)
 }
 
+export function getOpciones() {
+  return leer()
+}
+
 export function useOpciones() {
   return useSyncExternalStore(subscribe, leer, leer)
 }
