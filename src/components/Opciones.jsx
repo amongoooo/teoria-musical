@@ -5,6 +5,7 @@ import Hoja from '../ui/Hoja.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import { Opciones as IconoOpciones } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
+import { VIDRIO } from '../ui/vidrio.js'
 import TuProgreso from './TuProgreso.jsx'
 
 const TEMAS = [
@@ -26,7 +27,7 @@ export default function BotonOpciones({ className = '' }) {
         onClick={() => setAbierta(true)}
         aria-label="Opciones"
         aria-haspopup="dialog"
-        className={`grid size-11 shrink-0 place-items-center rounded-full bg-zinc-200/70 text-zinc-700 ${className}`}
+        className={`grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO} ${className}`}
       >
         <IconoOpciones className="size-6" />
       </Pulsable>
