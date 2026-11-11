@@ -7,6 +7,7 @@ import { crearCodigo, leerCodigo, limpiarCodigo, linkDeCodigo } from '../progres
 import { navegar, rutas } from '../router.js'
 import { RESORTE, SALTO, SUBE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import { Bombilla, Check } from '../ui/Iconos.jsx'
 import CodigoQR from './CodigoQR.jsx'
 
 /** Con un link más largo que esto, el QR sale demasiado denso para escanearlo bien. */
@@ -65,15 +66,16 @@ export default function TuProgreso({ onCerrar }) {
 
   const link = codigo ? linkDeCodigo(codigo) : ''
 
-  const avisar = (id, texto) => {
-    setAviso({ id, texto })
+  const avisar = (id, texto, ok = true) => {
+    setAviso({ id, texto, ok })
     clearTimeout(reloj.current)
     reloj.current = setTimeout(() => setAviso(null), 2200)
   }
 
   const copiarCodigo = async () => {
     if (!codigo) return
-    avisar('codigo', (await copiar(codigo)) ? '¡Copiado!' : 'No se pudo')
+    const ok = await copiar(codigo)
+    avisar('codigo', ok ? '¡Copiado!' : 'No se pudo', ok)
   }
 
   const compartir = async () => {
@@ -86,7 +88,8 @@ export default function TuProgreso({ onCerrar }) {
         if (e?.name === 'AbortError') return
       }
     }
-    avisar('link', (await copiar(link)) ? 'Link copiado' : 'No se pudo')
+    const ok = await copiar(link)
+    avisar('link', ok ? 'Link copiado' : 'No se pudo', ok)
   }
 
   const cargar = async () => {
@@ -103,9 +106,9 @@ export default function TuProgreso({ onCerrar }) {
   }
 
   const acciones = [
-    { id: 'codigo', nombre: 'Copiar código', Icono: IconoCopiar, onClick: copiarCodigo },
-    { id: 'link', nombre: 'Compartir link', Icono: IconoCompartir, onClick: compartir },
-    { id: 'qr', nombre: 'Código QR', Icono: IconoQR, onClick: () => setVerQR((v) => !v), activo: verQR },
+    { id: 'codigo', nombre: 'Copiar código', onClick: copiarCodigo },
+    { id: 'link', nombre: 'Compartir link', onClick: compartir },
+    { id: 'qr', nombre: 'Código QR', onClick: () => setVerQR((v) => !v), activo: verQR },
   ]
 
   return (
@@ -118,7 +121,7 @@ export default function TuProgreso({ onCerrar }) {
       </p>
 
       <div className="grid grid-cols-3 gap-2">
-        {acciones.map(({ id, nombre, Icono, onClick, activo }) => {
+        {acciones.map(({ id, nombre, onClick, activo }) => {
           const hecho = aviso?.id === id
           return (
             <Pulsable
@@ -129,11 +132,11 @@ export default function TuProgreso({ onCerrar }) {
               aria-expanded={id === 'qr' ? verQR : undefined}
               animate={hecho ? SALTO : { scale: 1 }}
               data-accion-progreso={id}
-              className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-center text-base leading-tight font-semibold transition-colors duration-200 disabled:opacity-50 ${
-                activo ? 'bg-zinc-900 text-white' : hecho ? 'bg-emerald-50 text-emerald-900' : 'bg-zinc-100 text-zinc-800'
+              className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-center text-base leading-tight font-semibold transition-colors duration-200 disabled:opacity-50 ${
+                activo ? 'bg-zinc-900 text-white' : hecho && aviso.ok ? 'bg-bien-suave text-bien-tinta' : hecho ? 'bg-fijate-suave text-fijate-tinta' : 'bg-zinc-100 text-zinc-800'
               }`}
             >
-              {hecho ? <IconoCheck /> : <Icono />}
+              {hecho && aviso.ok && <Check className="size-6" />}
               <span aria-live="polite">{hecho ? aviso.texto : nombre}</span>
             </Pulsable>
           )
@@ -192,51 +195,13 @@ export default function TuProgreso({ onCerrar }) {
         </div>
         <AnimatePresence initial={false}>
           {error && (
-            <motion.p ref={refError} key="error" {...SUBE} exit={{ opacity: 0 }} transition={RESORTE.suave} className="rounded-2xl bg-amber-50 px-4 py-3 text-base text-amber-900" role="alert">
-              {error}
+            <motion.p ref={refError} key="error" {...SUBE} exit={{ opacity: 0 }} transition={RESORTE.suave} className="flex items-start gap-2 rounded-2xl bg-fijate-suave px-4 py-3 text-base text-fijate-tinta" role="alert">
+              <Bombilla className="mt-0.5 size-5" />
+              <span>{error}</span>
             </motion.p>
           )}
         </AnimatePresence>
       </form>
     </section>
-  )
-}
-
-const trazo = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
-
-function IconoCopiar() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-6" {...trazo} aria-hidden>
-      <rect x="9" y="9" width="12" height="12" rx="2.5" />
-      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" />
-    </svg>
-  )
-}
-
-function IconoCompartir() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-6" {...trazo} aria-hidden>
-      <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
-      <path d="M8 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2" />
-    </svg>
-  )
-}
-
-function IconoQR() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-6" {...trazo} aria-hidden>
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M17 20h4v-3" />
-    </svg>
-  )
-}
-
-function IconoCheck() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-6" {...trazo} strokeWidth={2.5} aria-hidden>
-      <path d="m5 12.5 4.5 4.5L19 7.5" />
-    </svg>
   )
 }

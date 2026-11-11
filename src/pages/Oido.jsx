@@ -24,6 +24,7 @@ import { parseNota } from '../theory/notas.js'
 import { DIRECCIONES, MODOS_OIDO, getModoOido } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
+import { Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { BotonInicio } from '../ui/Volver.jsx'
@@ -73,7 +74,7 @@ function Panel() {
       <BotonInicio />
 
       <motion.header variants={itemLista} className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Entrenamiento de oído</h1>
+        <h1 className="font-titulo text-4xl font-extrabold tracking-tight sm:text-5xl">Entrenamiento de oído</h1>
         <p className="text-lg text-zinc-600">Unos 5 minutos al día. Poco pero seguido es lo que entrena el oído.</p>
       </motion.header>
 
@@ -81,16 +82,16 @@ function Panel() {
         <div className="flex items-end justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Hoy</span>
-            <span className="text-3xl font-bold tabular-nums">
-              {minutos(dia.segundos)} <span className="text-xl font-medium text-zinc-500">/ 5 min</span>
+            <span className="font-dato text-3xl font-medium tabular-nums">
+              {minutos(dia.segundos)} <span className="text-xl text-zinc-500">/ 5 min</span>
             </span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-3xl font-bold tabular-nums">🔥 {racha}</span>
+            <span className="font-juego text-4xl font-semibold tabular-nums">{racha}</span>
             <span className="text-sm text-zinc-500">{racha === 1 ? 'día seguido' : 'días seguidos'}</span>
           </div>
         </div>
-        <BarraProgreso valor={avance} color={avance >= 1 ? '#10b981' : 'var(--color-zinc-900)'} fondo="bg-zinc-100" alto="h-3" />
+        <BarraProgreso valor={avance} color={avance >= 1 ? 'var(--color-bien)' : 'var(--color-zinc-900)'} fondo="bg-zinc-100" alto="h-3" />
         <p className="text-base text-zinc-600">
           {avance >= 1
             ? '¡Meta de hoy cumplida! Si quieres, sigue un rato más.'
@@ -117,22 +118,26 @@ function Panel() {
               >
                 <span
                   className={`grid size-9 place-items-center rounded-full text-sm font-semibold ${
-                    meta ? 'bg-emerald-600 text-blanco' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500'
+                    meta ? 'bg-bien-relleno text-blanco' : d.respuestas ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500'
                   }`}
                   title={`${d.fecha}: ${minutos(d.segundos)} min`}
                 >
-                  {meta ? '✓' : d.respuestas ? '•' : ''}
+                  {meta ? <Check className="size-5" /> : d.respuestas ? '•' : ''}
                 </span>
                 <span className="text-sm text-zinc-500">{letra}</span>
               </motion.li>
             )
           })}
         </motion.ol>
-        {estado.mejorRacha > 0 && <p className="text-sm text-zinc-500">Mejor racha: {estado.mejorRacha} {estado.mejorRacha === 1 ? 'día' : 'días'}</p>}
+        {estado.mejorRacha > 0 && (
+          <p className="text-sm text-zinc-500">
+            Mejor racha: <span className="font-juego text-base text-zinc-700">{estado.mejorRacha} {estado.mejorRacha === 1 ? 'día' : 'días'}</span>
+          </p>
+        )}
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
-        <h2 className="text-2xl font-bold tracking-tight">Ejercicios</h2>
+        <h2 className="font-titulo text-2xl font-bold tracking-tight">Ejercicios</h2>
         {MODOS_OIDO.map((m) => {
           const d = datosModo(m.id, estado)
           return (
@@ -142,14 +147,14 @@ function Panel() {
               tipo="tarjeta"
               className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-4"
             >
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ backgroundColor: claro(m.acento) }} aria-hidden>
-                {m.emoji}
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl" style={{ backgroundColor: claro(m.acento), color: tinta(m.acento) }} aria-hidden>
+                <Oreja className="size-7" />
               </span>
               <span className="flex flex-1 flex-col gap-0.5">
-                <span className="text-lg font-semibold leading-snug">{m.titulo}</span>
+                <span className="font-titulo text-lg font-bold leading-snug">{m.titulo}</span>
                 <span className="text-sm leading-snug text-zinc-500">{m.descripcion}</span>
                 <span className="text-sm font-semibold" style={{ color: tinta(m.acento) }}>
-                  {nombreNivel(m, d.nivel)}
+                  <span className="font-juego text-base">{nombreNivel(m, d.nivel)}</span>
                   {d.total > 0 && ` · ${porcentaje(d.aciertos, d.total)} % bien`}
                 </span>
               </span>
@@ -161,7 +166,7 @@ function Panel() {
 
       {hayDatos && (
         <motion.section variants={itemLista} className="flex flex-col gap-4">
-          <h2 className="text-2xl font-bold tracking-tight">Estadísticas</h2>
+          <h2 className="font-titulo text-2xl font-bold tracking-tight">Estadísticas</h2>
           {MODOS_OIDO.map((m) => (
             <Estadisticas key={m.id} modo={m} datos={datosModo(m.id, estado)} />
           ))}
@@ -185,8 +190,8 @@ function Estadisticas({ modo, datos }) {
   return (
     <div className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-lg font-bold">
-          {modo.emoji} {modo.titulo}
+        <h3 className="flex items-center gap-2 font-titulo text-lg font-bold">
+          <Oreja className="size-5" /> {modo.titulo}
         </h3>
         <span className="text-sm text-zinc-500">
           {datos.aciertos}/{datos.total} · {porcentaje(datos.aciertos, datos.total)} %
@@ -202,7 +207,7 @@ function Estadisticas({ modo, datos }) {
             <li key={id} className="flex items-center gap-3 text-sm">
               <span className="w-24 shrink-0 font-medium text-zinc-700">{modo.nombreItem(id)}</span>
               <BarraProgreso valor={p / 100} color={modo.acento} fondo="bg-zinc-100" className="flex-1" />
-              <span className="w-20 shrink-0 whitespace-nowrap text-right tabular-nums text-zinc-500">
+              <span className="w-20 shrink-0 whitespace-nowrap text-right font-dato tabular-nums text-zinc-500">
                 {p} % <span className="text-zinc-500">({t})</span>
               </span>
             </li>
@@ -287,16 +292,16 @@ function Entrenador({ modo }) {
   } else if (limpiando) {
     accion = { label: 'Borrando la referencia…', disabled: true, onClick: () => {}, ayuda: 'Escucha: ahora viene la nota' }
   } else if (!respuesta) {
-    accion = { label: '▶ Escuchar otra vez', onClick: () => reproducir(pregunta.sonido), ayuda: 'Toca tu respuesta arriba' }
+    accion = { label: 'Escuchar otra vez', onClick: () => reproducir(pregunta.sonido), ayuda: 'Toca tu respuesta arriba' }
   } else {
     const bien = respuesta === pregunta.item
     let texto = bien ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta)}. ${pregunta.explicacion}`
     if (!bien) texto += ' Toca las opciones para compararlas.'
     if (resultado?.subio) {
       const nuevos = modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')
-      texto += ` 🎉 **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
+      texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
     }
-    if (resultado?.metaCumplida) texto += ' ✅ **¡Cumpliste tus 5 minutos de hoy!**'
+    if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
     accion = {
       label: 'Siguiente',
       onClick: nueva,
@@ -315,19 +320,19 @@ function Entrenador({ modo }) {
           <Pulsable
             href={rutas.oido()}
             aria-label="Volver al entrenamiento de oído"
-            className="grid size-11 shrink-0 place-items-center rounded-full text-2xl text-zinc-500 active:bg-zinc-200"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-zinc-600 active:bg-zinc-200"
           >
-            ✕
+            <Cerrar className="size-6" />
           </Pulsable>
           <BarraProgreso
             valor={avanceHoy}
-            color={avanceHoy >= 1 ? '#10b981' : modo.acento}
+            color={avanceHoy >= 1 ? 'var(--color-bien)' : modo.acento}
             alto="h-3"
             alAparecer={false}
             className="flex-1"
             aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}
           />
-          <span className="w-16 shrink-0 text-right text-sm tabular-nums text-zinc-500">{minutos(dia.segundos)}/5 min</span>
+          <span className="w-20 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-500">{minutos(dia.segundos)}/5 min</span>
         </div>
       </header>
 
@@ -343,18 +348,19 @@ function Entrenador({ modo }) {
             className="flex flex-col gap-5"
           >
             <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
-              <span className="font-semibold" style={{ color: tinta(modo.acento) }}>
-                {modo.titulo} · {nombreNivel(modo, pregunta.nivel)}
+              <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: tinta(modo.acento) }}>
+                <Oreja className="size-[18px]" />
+                {modo.titulo} · <span className="font-juego text-base">{nombreNivel(modo, pregunta.nivel)}</span>
               </span>
-              <span className="tabular-nums">
+              <span className="font-dato tabular-nums">
                 {sesion.aciertos}/{sesion.total}
-                {datos.racha > 1 && ` · 🔥 ${datos.racha} seguidas`}
+                {datos.racha > 1 && ` · ${datos.racha} seguidas`}
               </span>
             </div>
 
             <Ventana datos={datos} niveles={modo.niveles} acento={modo.acento} />
 
-            <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{modo.pregunta}</h1>
+            <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{modo.pregunta}</h1>
 
             <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {pregunta.opciones.map((op) => (
@@ -403,8 +409,8 @@ function octavaInicial(notas) {
 
 function claseOpcion(id, correcta, respuesta) {
   if (!respuesta) return 'border-zinc-200 bg-white text-zinc-800'
-  if (id === correcta) return 'border-emerald-500 bg-emerald-50 text-emerald-900'
-  if (id === respuesta) return 'border-amber-400 bg-amber-50 text-amber-900'
+  if (id === correcta) return 'border-bien bg-bien-suave text-bien-tinta'
+  if (id === respuesta) return 'border-fijate bg-fijate-suave text-fijate-tinta'
   return 'border-zinc-200 bg-white text-zinc-500'
 }
 
@@ -423,7 +429,7 @@ function Ventana({ datos, niveles, acento }) {
             key={i}
             className="h-2 flex-1 rounded-full"
             initial={false}
-            animate={{ backgroundColor: v === true ? acento : v === false ? '#fcd34d' : 'var(--color-zinc-200)' }}
+            animate={{ backgroundColor: v === true ? acento : v === false ? 'var(--color-fijate)' : 'var(--color-zinc-200)' }}
             transition={{ duration: 0.25 }}
           />
         ))}
@@ -441,15 +447,15 @@ function Portada({ modo, datos }) {
   return (
     <motion.div variants={lista} initial="oculta" animate="visible" className="flex flex-col gap-6">
       <motion.header variants={itemLista} className="flex flex-col gap-2">
-        <span className="text-4xl" aria-hidden>
-          {modo.emoji}
+        <span className="grid size-14 place-items-center rounded-2xl" style={{ backgroundColor: claro(modo.acento), color: tinta(modo.acento) }} aria-hidden>
+          <Oreja className="size-8" />
         </span>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{modo.titulo}</h1>
+        <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-4xl">{modo.titulo}</h1>
         <p className="text-lg leading-relaxed text-zinc-600">{modo.descripcion}</p>
       </motion.header>
 
       {modo.id === 'absoluto' && (
-        <motion.p variants={itemLista} className="rounded-2xl bg-amber-50 px-4 py-3 text-base leading-relaxed text-amber-900">
+        <motion.p variants={itemLista} className="rounded-2xl bg-fijate-suave px-4 py-3 text-base leading-relaxed text-fijate-tinta">
           <Rich>
             Es un **juego**: suena una nota sin ninguna referencia y adivinas cuál es. Empiezas con 2 notas y se suma una
             cada vez que aciertas 8 de 10. En adultos el oído absoluto es muy difícil de adquirir, así que tómalo como un
@@ -460,14 +466,14 @@ function Portada({ modo, datos }) {
       )}
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">Nivel</h2>
+        <h2 className="font-titulo text-lg font-bold">Nivel</h2>
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: datos.nivelMax }, (_, i) => i + 1).map((n) => (
             <Pulsable
               key={n}
               onClick={() => elegirNivel(modo.id, n)}
               aria-pressed={datos.nivel === n}
-              className={`min-h-12 rounded-full border-2 px-4 text-base font-semibold transition-colors duration-200 ${
+              className={`min-h-12 rounded-full border-2 px-4 font-juego text-base font-medium transition-colors duration-200 ${
                 datos.nivel === n ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-700'
               }`}
             >
@@ -494,7 +500,7 @@ function Portada({ modo, datos }) {
 
       {modo.id === 'intervalos' && (
         <motion.section variants={itemLista} className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold">Cómo suenan las dos notas</h2>
+          <h2 className="font-titulo text-lg font-bold">Cómo suenan las dos notas</h2>
           <div className="grid grid-cols-3 gap-2">
             {DIRECCIONES.map((d) => {
               const activa = (datos.ajustes.direccion ?? 'sube') === d.id

@@ -1,86 +1,208 @@
 @import "tailwindcss";
 
+/* Fuentes (archivos propios con @fontsource, sin depender de Google Fonts). Una fuente = un tipo de información. */
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/bricolage-grotesque/opsz.css";
+@import "@fontsource/dm-mono/400.css";
+@import "@fontsource/dm-mono/500.css";
+@import "@fontsource-variable/pixelify-sans";
+
 /* Modo oscuro: clase `dark` en <html> (la pone src/progress/opciones.js y el script de index.html). */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Fondo de página (cambia con el tema). */
-  --color-fondo: #fafafa;
-  /* Blanco y negro FIJOS: no cambian con el tema (texto sobre el acento, botón blanco en tarjeta de color). */
+/*
+ * SISTEMA DE COLOR (paleta Lospec500, ver la skill de diseño, sección 2).
+ * Cada variable tiene nombre de SIGNIFICADO, no de color. Papeles:
+ *  - Gris = estructura (fondo, superficies, bordes, texto) y lo bloqueado (con candado).
+ *  - Verde = bien / hecho (siempre con ✓).            → bien, bien-relleno, bien-tinta, bien-suave
+ *  - Oro = fíjate / pista / tecla marcada (con bombilla). → fijate, fijate-tinta, fijate-suave, fijate-claro
+ *  - Un color por módulo (con su número, sin ícono).  → modulo-N, modulo-N-relleno, -tinta, -suave
+ * Variantes de cada papel:
+ *  - (base) = barras, puntos, bordes, trazos.
+ *  - relleno = fondo con texto blanco encima (contraste ≥ 4.5:1).
+ *  - tinta   = el color como TEXTO sobre la superficie o su fondo suave (≥ 4.5:1).
+ *  - suave   = fondo suave (avisos, opciones elegidas, iconos).
+ */
+@theme static {
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Títulos de pantalla y de paso, números grandes. */
+  --font-titulo: "Bricolage Grotesque Variable", "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Datos musicales: notas, BPM, Hz, compases, conteos, pasos del Channel rack (lo que se ve igual en FL). */
+  --font-dato: "DM Mono", ui-monospace, Menlo, monospace;
+  /* Juego y logros: solo racha y niveles. */
+  --font-juego: "Pixelify Sans Variable", "Bricolage Grotesque Variable", ui-sans-serif, sans-serif;
+
+  /* Estructura (gris de Lospec500: el neutro #10121c mezclado con blanco). */
+  --color-fondo: #f4f4f5;
+  --color-superficie: var(--color-white);
+  --color-borde: var(--color-zinc-200);
+  --color-suelo: var(--color-zinc-100);
+  --color-texto: var(--color-zinc-900);
+  --color-texto-2: var(--color-zinc-600);
+  --color-texto-3: var(--color-zinc-500);
+  --color-white: #ffffff;
+  --color-zinc-50: #f8f8f9;
+  --color-zinc-100: #ececed;
+  --color-zinc-200: #d1d1d4;
+  --color-zinc-300: #bdbec2;
+  --color-zinc-400: #a0a1a7;
+  --color-zinc-500: #707279;
+  --color-zinc-600: #3c3e47;
+  --color-zinc-700: #2e3039;
+  --color-zinc-800: #1f212a;
+  --color-zinc-900: #10121c;
+  /* Blanco y negro FIJOS: no cambian con el tema (texto sobre un relleno de color, botón blanco en tarjeta de color). */
   --color-blanco: #ffffff;
-  --color-negro: #18181b;
+  --color-negro: #10121c;
+
+  /* Bien / hecho (con ✓). */
+  --color-bien: #5ab552;
+  --color-bien-relleno: #3c7c36;
+  --color-bien-tinta: #377332;
+  --color-bien-suave: #e7f4e5;
+  /* Fíjate / pista / tecla marcada (con bombilla). El relleno lleva texto oscuro (`text-negro`). */
+  --color-fijate: #dab163;
+  --color-fijate-tinta: #816838;
+  --color-fijate-suave: #faf3e8;
+  --color-fijate-claro: #f0dcae;
+
+  /* Lo que suena ahora (tecla pulsada, botón de sonido sonando, cabezal del Piano Roll). */
+  --color-sky-50: #eaf6fd;
+  --color-sky-100: #d5effc;
+  --color-sky-200: #b3e3f9;
+  --color-sky-300: #7fd1f6;
+  --color-sky-500: #3388de;
+  --color-sky-900: #1f4f80;
+
+  /* Un color por módulo (barra = el color de la paleta). */
+  --color-modulo-1: #3388de;
+  --color-modulo-1-relleno: #2972bb;
+  --color-modulo-1-tinta: #266bb0;
+  --color-modulo-1-suave: #e1eefc;
+  --color-modulo-2: #e98537;
+  --color-modulo-2-relleno: #ad6126;
+  --color-modulo-2-tinta: #a15a23;
+  --color-modulo-2-suave: #feede3;
+  --color-modulo-3: #008b8b;
+  --color-modulo-3-relleno: #008383;
+  --color-modulo-3-tinta: #007474;
+  --color-modulo-3-suave: #dfeded;
+  --color-modulo-4: #8c78a5;
+  --color-modulo-4-relleno: #7d6b93;
+  --color-modulo-4-tinta: #6e5e82;
+  --color-modulo-4-suave: #edeaf1;
+  --color-modulo-5: #ec273f;
+  --color-modulo-5-relleno: #e0243b;
+  --color-modulo-5-tinta: #c71f34;
+  --color-modulo-5-suave: #ffe3e1;
+  --color-modulo-6: #c878af;
+  --color-modulo-6-relleno: #9e5e8a;
+  --color-modulo-6-tinta: #945781;
+  --color-modulo-6-suave: #f8eaf3;
+  --color-modulo-7: #3859b3;
+  --color-modulo-7-relleno: #3859b3;
+  --color-modulo-7-tinta: #3859b3;
+  --color-modulo-7-suave: #dfe6f5;
+  --color-modulo-8: #6e4c30;
+  --color-modulo-8-relleno: #6e4c30;
+  --color-modulo-8-tinta: #6e4c30;
+  --color-modulo-8-suave: #e8e2de;
+  --color-modulo-9: #36c5f4;
+  --color-modulo-9-relleno: #1f7e9d;
+  --color-modulo-9-tinta: #1c7491;
+  --color-modulo-9-suave: #e6f7fe;
+  --color-modulo-10: #5e5b8c;
+  --color-modulo-10-relleno: #5e5b8c;
+  --color-modulo-10-tinta: #5e5b8c;
+  --color-modulo-10-suave: #e5e5ee;
 }
 
 /*
- * Tema oscuro: en lugar de añadir `dark:` a cada clase, se redefinen los colores de la paleta.
- * Los grises se invierten (zinc-900 = texto claro, white = superficie oscura) y los colores de
- * estado claros (emerald-50, amber-50…) pasan a tonos oscuros con texto claro. Así cada pareja
- * fondo/texto mantiene su contraste. Ver la skill de diseño, sección «Modo oscuro».
+ * Tema oscuro: en lugar de añadir `dark:` a cada clase, se redefinen las variables.
+ * Los grises se invierten (zinc-900 = texto claro, white = superficie oscura) y los fondos suaves
+ * pasan a tonos oscuros con la tinta clara. Así cada pareja fondo/texto mantiene su contraste.
  */
 .dark {
   color-scheme: dark;
   --mezcla-tinta: white;
-  --color-fondo: #0e0e10;
-  --color-white: #1c1c1f;
-  --color-zinc-50: #1f1f23;
-  --color-zinc-100: #27272b;
-  --color-zinc-200: #34343a;
-  --color-zinc-300: #48484f;
-  --color-zinc-400: #71717a;
-  --color-zinc-500: #a1a1aa;
-  --color-zinc-600: #b9b9c0;
-  --color-zinc-700: #d4d4d8;
-  --color-zinc-800: #e4e4e7;
-  --color-zinc-900: #f4f4f5;
-  --color-emerald-50: #0c2a20;
-  --color-emerald-100: #10382a;
-  --color-emerald-200: #165a42;
-  --color-emerald-300: #1f7a58;
-  --color-emerald-700: #34d399;
-  --color-emerald-800: #6ee7b7;
-  --color-emerald-900: #a7f3d0;
-  --color-amber-50: #2d220c;
-  --color-amber-100: #3d2e0f;
-  --color-amber-200: #5c4512;
-  --color-amber-700: #fbbf24;
-  --color-amber-900: #fde68a;
-  --color-sky-50: #0b2433;
-  --color-sky-100: #0e3045;
-  --color-sky-200: #13405c;
-  --color-sky-300: #1e5f87;
-  --color-sky-900: #bae6fd;
-  --color-orange-100: #3b220f;
-  --color-orange-800: #fdba74;
-  --color-red-600: #f87171;
+  --color-fondo: #07080f;
+  --color-white: #1d1f29;
+  --color-zinc-50: #262833;
+  --color-zinc-100: #2f313b;
+  --color-zinc-200: #44464f;
+  --color-zinc-300: #575961;
+  --color-zinc-400: #707279;
+  --color-zinc-500: #a0a1a7;
+  --color-zinc-600: #b9b9bd;
+  --color-zinc-700: #d4d5d7;
+  --color-zinc-800: #e4e5e6;
+  --color-zinc-900: #ffffff;
+
+  --color-bien-tinta: #62b85a;
+  --color-bien-suave: #2c4036;
+  --color-fijate-tinta: #dab163;
+  --color-fijate-suave: #453f39;
+  --color-fijate-claro: #6b5a37;
+
+  --color-sky-50: #14303f;
+  --color-sky-100: #183a4d;
+  --color-sky-200: #1d4a63;
+  --color-sky-300: #2a6a8c;
+  --color-sky-900: #b3e3f9;
+
+  --color-modulo-1-tinta: #69a5e8;
+  --color-modulo-1-suave: #263650;
+  --color-modulo-2-tinta: #ec8f4c;
+  --color-modulo-2-suave: #493733;
+  --color-modulo-3-tinta: #65abaa;
+  --color-modulo-3-suave: #22373f;
+  --color-modulo-4-tinta: #a697ba;
+  --color-modulo-4-suave: #353344;
+  --color-modulo-5-tinta: #f97575;
+  --color-modulo-5-suave: #4c2a31;
+  --color-modulo-6-tinta: #d28ebc;
+  --color-modulo-6-suave: #423346;
+  --color-modulo-7: #4667ba;
+  --color-modulo-7-tinta: #829bd4;
+  --color-modulo-7-suave: #272f49;
+  --color-modulo-8: #84664f;
+  --color-modulo-8-tinta: #ac9786;
+  --color-modulo-8-suave: #342f33;
+  --color-modulo-9-tinta: #36c5f4;
+  --color-modulo-9-suave: #2a4254;
+  --color-modulo-10: #6a6795;
+  --color-modulo-10-tinta: #9a9aba;
+  --color-modulo-10-suave: #2e2f41;
 }
 
 /* Zonas que se ven siempre claras, también en modo oscuro (teclas del piano, como uno real). */
 .tema-claro {
   color-scheme: light;
   --mezcla-tinta: black;
-  --color-fondo: #fafafa;
+  --color-fondo: #f4f4f5;
   --color-white: #ffffff;
-  --color-zinc-50: #fafafa;
-  --color-zinc-100: #f4f4f5;
-  --color-zinc-200: #e4e4e7;
-  --color-zinc-300: #d4d4d8;
-  --color-zinc-400: #a1a1aa;
-  --color-zinc-500: #71717a;
-  --color-zinc-600: #52525b;
-  --color-zinc-700: #3f3f46;
-  --color-zinc-800: #27272a;
-  --color-zinc-900: #18181b;
-  --color-amber-200: #fde68a;
-  --color-amber-900: #78350f;
-  --color-sky-200: #bae6fd;
-  --color-sky-900: #0c4a6e;
+  --color-zinc-50: #f8f8f9;
+  --color-zinc-100: #ececed;
+  --color-zinc-200: #d1d1d4;
+  --color-zinc-300: #bdbec2;
+  --color-zinc-400: #a0a1a7;
+  --color-zinc-500: #707279;
+  --color-zinc-600: #3c3e47;
+  --color-zinc-700: #2e3039;
+  --color-zinc-800: #1f212a;
+  --color-zinc-900: #10121c;
+  --color-fijate-tinta: #816838;
+  --color-fijate-suave: #faf3e8;
+  --color-fijate-claro: #f0dcae;
+  --color-sky-200: #b3e3f9;
+  --color-sky-900: #1f4f80;
 }
 
 html,
 body {
   background-color: var(--color-fondo);
   color: var(--color-zinc-900);
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 

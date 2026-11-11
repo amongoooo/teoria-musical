@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { reproducir } from '../audio/sonido.js'
+import { Reproducir } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 
 /** Botón grande que reproduce un sonido del contenido y se ilumina mientras suena. */
@@ -34,11 +35,11 @@ export function IconoPlay({ sonando }) {
   return (
     <span
       aria-hidden
-      className={`grid size-9 shrink-0 place-items-center rounded-full text-sm ${
+      className={`grid size-9 shrink-0 place-items-center rounded-full ${
         sonando ? 'animate-pulse bg-sky-500 text-blanco' : 'bg-zinc-900 text-white'
       }`}
     >
-      ▶
+      <Reproducir className="size-[18px]" />
     </span>
   )
 }

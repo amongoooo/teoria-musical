@@ -148,8 +148,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
 }
 
 function claseEstado(estado, seleccionada) {
-  if (estado === 'bien') return 'border-emerald-500 bg-emerald-50 text-emerald-900'
-  if (estado === 'mal') return 'border-amber-400 bg-amber-50 text-amber-900'
+  if (estado === 'bien') return 'border-bien bg-bien-suave text-bien-tinta'
+  if (estado === 'mal') return 'border-fijate bg-fijate-suave text-fijate-tinta'
   if (seleccionada) return 'border-zinc-900 bg-white text-zinc-900'
   return 'border-zinc-200 bg-white text-zinc-700'
 }

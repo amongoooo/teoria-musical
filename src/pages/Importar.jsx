@@ -6,6 +6,7 @@ import { navegar, rutas } from '../router.js'
 import { RESORTE, SALTO, SUBE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { BotonInicio } from '../ui/Volver.jsx'
+import { Bombilla, Check } from '../ui/Iconos.jsx'
 
 const NOMBRE_TEMA = { claro: 'Claro', oscuro: 'Oscuro', sistema: 'Automático' }
 
@@ -49,7 +50,7 @@ export default function Importar({ codigo }) {
       </motion.div>
 
       <motion.header variants={itemLista} className="flex flex-col gap-3">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Cargar progreso</h1>
+        <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-5xl">Cargar progreso</h1>
         <p className="text-lg leading-relaxed text-zinc-600">
           {estado.fase === 'hecho'
             ? 'Tu progreso de los dos dispositivos ya está junto en este.'
@@ -67,8 +68,11 @@ export default function Importar({ codigo }) {
 
           {estado.fase === 'error' && (
             <motion.div key="error" {...SUBE} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-              <div role="alert" className="flex flex-col gap-1 rounded-3xl bg-amber-50 p-5 text-amber-900">
-                <p className="text-lg font-semibold">No se pudo leer este código</p>
+              <div role="alert" className="flex flex-col gap-1 rounded-3xl bg-fijate-suave p-5 text-fijate-tinta">
+                <p className="flex items-center gap-2 text-lg font-semibold">
+                  <Bombilla className="size-5" />
+                  No se pudo leer este código
+                </p>
                 <p className="text-base">
                   {estado.motivo === 'navegador'
                     ? 'Este navegador es demasiado antiguo para abrirlo. Prueba con Chrome o Safari actualizados.'
@@ -127,10 +131,10 @@ export default function Importar({ codigo }) {
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 16 }}
-                className="grid size-16 place-items-center rounded-full bg-emerald-600 text-3xl text-blanco"
+                className="grid size-16 place-items-center rounded-full bg-bien-relleno text-blanco"
                 aria-hidden
               >
-                ✓
+                <Check className="size-8" grosor={3} />
               </motion.div>
               <Resumen titulo="Ahora tienes" r={estado.despues} celebrar />
               <Pulsable href={rutas.inicio()} className="grid min-h-14 place-items-center rounded-2xl bg-zinc-900 text-lg font-semibold text-white">
@@ -159,7 +163,7 @@ function Resumen({ titulo, r, celebrar = false }) {
           <li key={f.nombre} className="flex min-h-14 items-center justify-between gap-4 px-5">
             <span className="text-lg text-zinc-700">{f.nombre}</span>
             <motion.span
-              className="text-2xl font-bold tabular-nums text-zinc-900"
+              className="font-dato text-2xl font-medium tabular-nums text-zinc-900"
               animate={celebrar && f.valor > 0 ? SALTO : { scale: 1 }}
               transition={{ ...RESORTE.pulsar, delay: 0.25 + i * 0.06 }}
             >
@@ -176,7 +180,7 @@ function Interruptor({ activo }) {
   return (
     <span
       aria-hidden
-      className={`relative h-8 w-13 shrink-0 rounded-full transition-colors duration-200 ${activo ? 'bg-emerald-600' : 'bg-zinc-300'}`}
+      className={`relative h-8 w-13 shrink-0 rounded-full transition-colors duration-200 ${activo ? 'bg-bien-relleno' : 'bg-zinc-300'}`}
     >
       <motion.span
         className="absolute top-1 left-1 size-6 rounded-full bg-blanco shadow-sm"
