@@ -9,7 +9,7 @@ import BotonOpciones from './Opciones.jsx'
 
 /** Alto de la cabecera fija (fila de 44 px + márgenes + desvanecido), sin contar la zona segura de arriba. */
 export const ALTO_CABECERA = 80
-const FILA = 60 // borde de abajo de la fila (pt-4 + 44 px): el título grande «pasa por debajo» al cruzarlo
+const FILA = 60 // borde de abajo de la fila (pt-4 + 44 px), por si aún no se puede medir la píldora
 
 /**
  * Cabecera de las pantallas de Módulo: casita (Inicio) + barra de progreso por lecciones + Opciones.
@@ -45,7 +45,7 @@ export default function CabeceraModulo({ numero }) {
         </div>
         {/* flex-1 + basis-0 + min-w-0: la zona de la barra tiene un ancho fijo; los segmentos nuevos crecen
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
-        <div className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
+        <div data-pildora-cabecera className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
           <motion.div animate={{ y: chico ? -8 : 0 }} transition={RESORTE.suave}>
             <BarraLecciones valores={valores} color={modulo.acento} aria-label={`Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
           </motion.div>
@@ -108,9 +108,23 @@ function useTituloEscondido(numero) {
   const [escondido, setEscondido] = useState(false)
   useEffect(() => {
     let frame = 0
+    // En cuanto el título grande toca la píldora, se ESCONDE (fundido corto) y aparece el chico dentro de la
+    // píldora: nunca se ven los dos ni queda el grande a medias detrás del vidrio. «MÓDULO N», igual con
+    // su propia línea. (Sin estados intermedios: si la página se queda quieta ahí, no hay «fantasma».)
     const revisar = () => {
-      const r = document.querySelector('[data-titulo-modulo]')?.getBoundingClientRect()
-      setEscondido(Boolean(r && r.bottom < FILA))
+      const h1 = document.querySelector('[data-titulo-modulo]')
+      const bloque = h1?.parentElement
+      if (!h1 || !bloque) return setEscondido(false)
+      const lim = document.querySelector('[data-pildora-cabecera]')?.getBoundingClientRect().bottom ?? FILA
+      let tapado = false
+      // En los hijos (el bloque lo anima motion al entrar a la página).
+      for (const hijo of bloque.children) {
+        const esconder = hijo.getBoundingClientRect().top < lim - 2
+        hijo.style.transition = 'opacity 180ms ease-out'
+        hijo.style.opacity = esconder ? '0' : ''
+        if (hijo === h1) tapado = esconder
+      }
+      setEscondido(tapado)
     }
     const alDesplazar = () => {
       cancelAnimationFrame(frame)
