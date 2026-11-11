@@ -16,13 +16,15 @@ import Rondas from './Rondas.jsx'
  *      → tocar el botón grande al pulso; cuenta los toques «a tiempo» (±90 ms).
  *        cada: tiempos entre toque y toque (1 = cada tiempo, 0.5 = «1 y 2 y», 4 = solo el 1 en 4/4).
  *        desfase: en qué tiempo cae el primer toque (0 = en el 1; 2 = en el 3).
- *        contar: 'tiempos' | 'y' | 'e' → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o «1 e y a 2 e y a…»).
+ *        contar: 'tiempos' | 'y' | 'e' | 'swing' → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…»,
+ *                «1 e y a 2 e y a…» o «1 · y 2 · y…», el tiempo partido en tres para el swing).
  *        toques: [0, 1.5, 3] → patrón irregular (en tiempos dentro de cada compás), p. ej. síncopas o el tresillo.
  *                Manda sobre `cada`/`desfase`; cada toque se mide contra el golpe del patrón más cercano.
  *  - { tipo: 'tempo', rondas: [{ bpm, groove }] }
  *      → tap tempo: marcar el pulso de un ritmo y adivinar sus BPM.
  *  - { tipo: 'explorar', tempos: [{ bpm, genero }], minimo: 3, mensaje }
- *      → escuchar el mismo groove a distintos tempos.
+ *      → escuchar el mismo groove a distintos tempos. Cada opción puede traer su propio `groove`
+ *        (y `porTiempo`) y un `titulo` que se muestra en lugar de los BPM (p. ej. cuánto swing).
  */
 export default function Pulso(props) {
   const { objetivo } = props.paso
@@ -32,10 +34,12 @@ export default function Pulso(props) {
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
 
-/** Casillas por tiempo del contador: 'tiempos' «1 2 3 4», 'y' «1 y 2 y», 'e' «1 e y a» (semicorcheas). */
-const DIVISION = { tiempos: 1, y: 2, e: 4 }
-const SILABAS = ['', 'y']
-const SILABAS_SEMI = ['', 'e', 'y', 'a']
+/**
+ * Casillas por tiempo del contador: 'tiempos' «1 2 3 4», 'y' «1 y 2 y», 'e' «1 e y a» (semicorcheas)
+ * y 'swing' «1 · y» (el tiempo en tresillo: la «y» con swing cae en la 3.ª parte).
+ */
+const DIVISION = { tiempos: 1, y: 2, e: 4, swing: 3 }
+const SILABAS = { 1: [''], 2: ['', 'y'], 3: ['', '·', 'y'], 4: ['', 'e', 'y', 'a'] }
 
 const TOLERANCIA = 0.09 // segundos de margen para contar un toque «a tiempo»
 const RANGO = 0.25 // el medidor muestra ±250 ms
@@ -286,13 +290,14 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
 }
 
 /**
- * Cuenta del compás: «1 2 3 4», «1 y 2 y…» (division 2) o «1 e y a…» (division 4, en dos filas de 8).
+ * Cuenta del compás: «1 2 3 4», «1 y 2 y…» (division 2), «1 · y…» (division 3, en dos filas de 6)
+ * o «1 e y a…» (division 4, en dos filas de 8).
  * Se ilumina la casilla que suena; las que hay que tocar llevan un aro del acento.
  */
 function Contador({ tiempos, division, actual, cada, desfase, patron, color }) {
   const total = tiempos * division
   const pos = actual >= 0 ? actual % total : -1
-  const silabas = division === 4 ? SILABAS_SEMI : SILABAS
+  const silabas = SILABAS[division] ?? SILABAS[2]
   const objetivo = (i) => {
     if (patron) return patron.some((t) => Math.abs(t - i / division) < 1e-6)
     const x = (i / division - desfase) / cada
@@ -300,7 +305,7 @@ function Contador({ tiempos, division, actual, cada, desfase, patron, color }) {
   }
   const filas = total > 8
   return (
-    <div className={filas ? 'grid grid-cols-8 gap-1.5' : 'flex gap-1.5'} aria-hidden>
+    <div className={filas ? 'grid gap-1.5' : 'flex gap-1.5'} style={filas ? { gridTemplateColumns: `repeat(${Math.ceil(total / 2)}, minmax(0, 1fr))` } : undefined} aria-hidden>
       {Array.from({ length: total }, (_, i) => {
         const tiempo = i % division === 0
         const encendida = i === pos
@@ -472,7 +477,7 @@ function estimar(tiempos) {
 // ---------------------------------------------------------------------------
 
 function Explorar({ paso, leccionId, setAccion, siguiente }) {
-  const { tempos, minimo = 3, groove = 'basico', mensaje } = paso.objetivo
+  const { tempos, minimo = 3, groove = 'basico', porTiempo, mensaje } = paso.objetivo
   const { ritmo, empezar, parar } = useRitmo()
   const latido = useLatido(ritmo)
   const color = useColor(leccionId)
@@ -480,30 +485,30 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
   const [probados, setProbados] = useState(() => new Set())
   const listo = probados.size >= minimo
 
-  const elegir = (t) => {
-    if (ritmo && actual === t.bpm) {
+  const elegir = (t, i) => {
+    if (ritmo && actual === i) {
       parar()
       return setActual(null)
     }
-    empezar(groove, t.bpm)
-    setActual(t.bpm)
-    setProbados((p) => new Set(p).add(t.bpm))
+    empezar(t.groove ?? groove, t.bpm, { porTiempo: t.porTiempo ?? porTiempo })
+    setActual(i)
+    setProbados((p) => new Set(p).add(i))
   }
 
   useEffect(() => {
     setAccion({
       label: 'Continuar',
       disabled: !listo,
-      ayuda: listo ? null : `Prueba ${minimo} tempos distintos (${probados.size}/${minimo})`,
-      feedback: listo ? { tipo: 'bien', titulo: 'Mismo beat, otra energía.', texto: mensaje } : null,
+      ayuda: listo ? null : `${paso.objetivo.prueba ?? `Prueba ${minimo} tempos distintos`} (${probados.size}/${minimo})`,
+      feedback: listo ? { tipo: 'bien', titulo: paso.objetivo.tituloBien ?? 'Mismo beat, otra energía.', texto: mensaje } : null,
       onClick: () => {
         parar()
         siguiente()
       },
     })
-  }, [listo, probados.size, minimo, mensaje, parar, setAccion, siguiente])
+  }, [listo, probados.size, minimo, mensaje, paso.objetivo, parar, setAccion, siguiente])
 
-  const elegido = tempos.find((t) => t.bpm === actual)
+  const elegido = actual === null ? null : tempos[actual]
 
   return (
     <div className="flex flex-col gap-5">
@@ -524,27 +529,37 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
           <span className="relative text-base font-semibold tabular-nums text-zinc-800">{ritmo && latido >= 0 ? (latido % ritmo.tiempos) + 1 : '·'}</span>
         </div>
         <div className="flex flex-col gap-0.5" aria-live="polite">
-          <span className="text-4xl font-bold tabular-nums tracking-tight">
-            {elegido ? elegido.bpm : '—'} <span className="text-xl font-semibold text-zinc-500">BPM</span>
+          {elegido?.titulo ? (
+            <span className="text-3xl font-bold tracking-tight">{elegido.titulo}</span>
+          ) : (
+            <span className="text-4xl font-bold tabular-nums tracking-tight">
+              {elegido ? elegido.bpm : '—'} <span className="text-xl font-semibold text-zinc-500">BPM</span>
+            </span>
+          )}
+          <span className="text-base text-zinc-600">
+            {!elegido
+              ? paso.objetivo.elige ?? 'Elige un tempo'
+              : elegido.titulo
+                ? `${elegido.genero} · ${elegido.bpm} BPM`
+                : `${elegido.genero} · ${(elegido.bpm / 60).toFixed(1).replace('.', ',')} pulsos por segundo`}
           </span>
-          <span className="text-base text-zinc-600">{elegido ? `${elegido.genero} · ${(elegido.bpm / 60).toFixed(1).replace('.', ',')} pulsos por segundo` : 'Elige un tempo'}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {tempos.map((t) => {
-          const activo = ritmo && actual === t.bpm
+        {tempos.map((t, i) => {
+          const activo = ritmo && actual === i
           return (
             <Pulsable
-              key={t.bpm}
+              key={i}
               tipo="tarjeta"
-              onClick={() => elegir(t)}
+              onClick={() => elegir(t, i)}
               aria-pressed={Boolean(activo)}
               className={`flex min-h-20 flex-col items-start justify-center gap-0.5 rounded-2xl border-2 px-4 py-3 text-left transition-colors duration-200 ${
-                activo ? 'border-zinc-900 bg-zinc-900 text-white' : probados.has(t.bpm) ? 'border-zinc-300 bg-white text-zinc-900' : 'border-zinc-200 bg-white text-zinc-900'
+                activo ? 'border-zinc-900 bg-zinc-900 text-white' : probados.has(i) ? 'border-zinc-300 bg-white text-zinc-900' : 'border-zinc-200 bg-white text-zinc-900'
               }`}
             >
-              <span className="text-2xl font-bold tabular-nums">{t.bpm}</span>
+              <span className={`${t.titulo ? 'text-xl' : 'text-2xl tabular-nums'} font-bold`}>{t.titulo ?? t.bpm}</span>
               <span className={`text-sm ${activo ? 'text-zinc-200' : 'text-zinc-500'}`}>{t.genero}</span>
             </Pulsable>
           )

@@ -80,6 +80,74 @@ export const GROOVES = {
   ],
 }
 
+// --- Swing, groove y velocity (lección 2.5) ---
+
+/** Retraso «de tresillo»: con `conSwing(…, SWING)` la casilla impar cae a 2/3 del par de casillas. */
+export const SWING = 1 / 3
+
+/**
+ * Swing: retrasa las casillas impares (las «y» en corcheas; las «e» y las «a» en semicorcheas,
+ * como el Swing del Channel rack de FL Studio). `cantidad` en casillas: 0 = recto, 1/3 = tresillo.
+ */
+export function conSwing(eventos, cantidad = SWING) {
+  return eventos.map((e) => (Math.round(e.inicio) % 2 === 1 ? { ...e, inicio: e.inicio + cantidad } : e))
+}
+
+/** Números pseudoaleatorios con semilla (mulberry32): el «humano» suena siempre igual. */
+function azar(semilla) {
+  let a = semilla >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Humanizar: pequeñas variaciones al azar de tiempo (± `tiempo` casillas) y de fuerza (± `fuerza`).
+ * Con la misma `semilla` sale siempre lo mismo.
+ */
+export function humanizar(eventos, { tiempo = 0.08, fuerza = 0.15, semilla = 7 } = {}) {
+  const r = azar(semilla)
+  return eventos.map((e) => {
+    const dt = (r() * 2 - 1) * tiempo
+    const dv = (r() * 2 - 1) * fuerza
+    return {
+      ...e,
+      inicio: Math.max(0, Math.round((e.inicio + dt) * 1000) / 1000),
+      velocity: Math.min(1, Math.max(0.08, Math.round(((e.velocity ?? 0.8) + dv) * 100) / 100)),
+    }
+  })
+}
+
+const hats16 = (vel) => Array.from({ length: 16 }, (_, inicio) => ({ nota: 'hat', inicio, velocity: vel(inicio) }))
+
+// Boom bap (hip hop) en semicorcheas: bombo en 1, 3 y la «y» del 3; caja en 2 y 4.
+const BOOM_BAP = [
+  ...[0, 8, 10].map((inicio) => ({ nota: 'kick', inicio, velocity: 0.95 })),
+  ...[4, 12].map((inicio) => ({ nota: 'snare', inicio, velocity: 0.9 })),
+]
+
+Object.assign(GROOVES, {
+  // Corcheas rectas (el beat básico) y con swing de tresillo: la «y» se retrasa.
+  shuffle: conSwing(GROOVES.basico),
+  // Boom bap con hi-hats a máquina: todos iguales.
+  boomBapPlano: [...BOOM_BAP, ...hats16(() => 0.6)],
+  // Hi-hats con vida: fuertes en los tiempos, medios en las «y», suaves en las «e» y las «a».
+  boomBap: [...BOOM_BAP, ...hats16((i) => (i % 4 === 0 ? 0.75 : i % 2 === 0 ? 0.5 : 0.22))],
+  // Con ghost notes: golpes de caja muy suaves entre los principales.
+  boomBapGhost: [
+    ...BOOM_BAP,
+    ...[7, 9, 15].map((inicio) => ({ nota: 'snare', inicio, velocity: 0.2 })),
+    ...hats16((i) => (i % 4 === 0 ? 0.75 : i % 2 === 0 ? 0.5 : 0.22)),
+  ],
+})
+// El mismo boom bap con el Swing del Channel rack (retrasa las «e» y las «a»).
+GROOVES.boomBapSwing = conSwing(GROOVES.boomBap)
+GROOVES.boomBapGhostSwing = conSwing(GROOVES.boomBapGhost)
+
 /** Compás y resolución de los grooves que no son 4/4 en corcheas. */
 const FORMA = {
   click3: { tiempos: 3 },
@@ -89,6 +157,11 @@ const FORMA = {
   trapNormal: { porTiempo: 4 },
   dembow: { porTiempo: 4 },
   bounce: { porTiempo: 4 },
+  boomBapPlano: { porTiempo: 4 },
+  boomBap: { porTiempo: 4 },
+  boomBapGhost: { porTiempo: 4 },
+  boomBapSwing: { porTiempo: 4 },
+  boomBapGhostSwing: { porTiempo: 4 },
 }
 
 /**

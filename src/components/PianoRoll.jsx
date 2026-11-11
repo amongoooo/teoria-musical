@@ -120,9 +120,9 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   }
   const cambiarVel = (e) => {
     const { c, v } = velDe(e)
-    if (!notas.some((n) => n.inicio === c)) return null
+    if (!notas.some((n) => columnaDe(n) === c)) return null
     setUltimaVel(Math.round(v * 127))
-    onCambio(notas.map((n) => (n.inicio === c ? { ...n, velocity: v } : n)))
+    onCambio(notas.map((n) => (columnaDe(n) === c ? { ...n, velocity: v } : n)))
     return c
   }
   const onVelDown = (e) => {
@@ -140,7 +140,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
     const a = arrastre.current
     if (!a?.vel || a.pointer !== e.pointerId) return
     arrastre.current = null
-    const enColumna = notas.filter((n) => n.inicio === a.c)
+    const enColumna = notas.filter((n) => columnaDe(n) === a.c)
     if (enColumna.length) playNotes(enColumna.map((n) => n.nota), { modo: 'acorde', duracion: 0.5, velocidad: enColumna[0].velocity })
   }
 
@@ -246,7 +246,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
             ))}
 
             {notas.map((n) => {
-              const suena = cabezal !== null && cabezal >= n.inicio && cabezal < n.inicio + n.duracion
+              const suena = cabezal !== null && cabezal >= columnaDe(n) && cabezal < columnaDe(n) + n.duracion
               return (
                 <Rect key={n.id} n={n} fila={fila(n.nota)} filas={filas.length} columnas={columnas}>
                   <motion.div
@@ -279,7 +279,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
               aria-label="Carril de velocity: desliza arriba o abajo sobre una nota"
             >
               {Array.from({ length: columnas }, (_, c) => {
-                const n = notas.find((x) => x.inicio === c)
+                const n = notas.find((x) => columnaDe(x) === c)
                 return (
                   <div key={c} className={`relative border-l ${c % porTiempo === 0 ? 'border-zinc-300' : 'border-zinc-200'}`}>
                     {n && (
@@ -301,6 +301,9 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
     </div>
   )
 }
+
+/** Columna de una nota (las corridas por el swing o al humanizar caen en la más cercana). */
+const columnaDe = (n) => Math.round(n.inicio)
 
 /** Posiciona una nota (o su fantasma) en la rejilla. */
 function Rect({ n, fila, filas, columnas, children }) {
