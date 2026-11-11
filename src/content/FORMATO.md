@@ -40,8 +40,15 @@ Donde se pida un sonido:
 Grooves (`GROOVES` de `theory/bateria.js`; `formaGroove()` da su compás y resolución):
 `click`, `basico`, `bombo` (4/4) · `click3`, `vals`, `valsPiano` (3/4) · `marchaPiano` (4/4 al piano) ·
 `trap` (medio tiempo, caja en el 3) y `trapNormal` (caja en 2 y 4), ambos en semicorcheas ·
-`dembow` (reguetón: bombo en cada tiempo, caja en 3, 6, 11, 14) y `bounce` (hip hop: bombo en 0, 7, 10; caja en 2 y 4), en semicorcheas.
+`dembow` (reguetón: bombo en cada tiempo, caja en 3, 6, 11, 14) y `bounce` (hip hop: bombo en 0, 7, 10; caja en 2 y 4), en semicorcheas ·
+`shuffle` (el beat básico con swing de tresillo) · en semicorcheas (boom bap: bombo 0, 8, 10; caja en 2 y 4):
+`boomBapPlano` (hi-hats todas iguales), `boomBap` (hi-hats con acentos), `boomBapGhost` (+ ghost notes de caja en 7, 9, 15),
+`boomBapSwing` y `boomBapGhostSwing` (con el Swing del Channel rack: las «e» y las «a» retrasadas).
 Un patrón propio puede indicar `tiempos` (tiempos por vuelta, 4 por defecto) y `porTiempo` (casillas por tiempo, 2).
+Los eventos pueden tener `inicio` con decimales (notas fuera de la rejilla). Ayudas de `theory/bateria.js`:
+`conSwing(eventos, cantidad = SWING)` retrasa las casillas impares (`SWING` = 1/3 de casilla = swing de tresillo) y
+`humanizar(eventos, { tiempo, fuerza, semilla })` varía al azar (pero siempre igual) el tiempo y la velocity.
+En el Piano Roll de solo lectura, esas notas se dibujan corridas de su línea.
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -140,6 +147,7 @@ objetivo: { tipo: 'copiar', notas: [...], fantasma: true, instruccion: '…', pi
 objetivo: { tipo: 'velocity', fuertes: [0, 4], explicacion: '…' }
   // con las notas de roll.notas: subir la velocity de las que empiezan en esas casillas (≥ 0.75)
   // y dejar las demás por debajo de la mitad (≤ 0.55). Solo se edita la velocity.
+  // maxSuave: 0.33 → las suaves tienen que quedar muy suaves (ghost notes).
 ```
 
 Gestos (pensados para el dedo): tocar casilla vacía = crear nota; arrastrar a la derecha =
@@ -156,9 +164,10 @@ objetivo: { tipo: 'seguir', rondas: [{ pregunta, bpm: 90, groove: 'click', meta:
   // Opcionales de cada ronda:
   //   cada: 4        → tiempos entre toque y toque (4 = solo en el 1 de un 4/4; 0.5 = «1 y 2 y»)
   //   desfase: 2     → en qué tiempo cae el primer toque, contando desde 0 (2 = en el 3; 0.5 = en la «y»)
-  //   contar: 'tiempos' | 'y' | 'e'  → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o
-  //                    «1 e y a 2 e y a…» en dos filas de 8); se ilumina lo que suena y las
-  //                    casillas que hay que tocar llevan aro
+  //   contar: 'tiempos' | 'y' | 'e' | 'swing'  → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…»,
+  //                    «1 e y a 2 e y a…» en dos filas de 8 o «1 · y 2 · y…» —el tiempo en tresillo,
+  //                    para el swing— en dos filas de 6); se ilumina lo que suena y las casillas que
+  //                    hay que tocar llevan aro. Con swing: toques: [0, 2/3, 1, 5/3, …]
   //   toques: [0, 1.5, 3] → patrón irregular, en tiempos dentro de cada compás (aquí el tresillo:
   //                    1, «y» del 2 y 4). Manda sobre cada/desfase; cada toque se mide contra el golpe
   //                    del patrón más cercano y el pad late solo en esos golpes. Sin `contar`, resolución de semicorchea.
@@ -168,6 +177,9 @@ objetivo: { tipo: 'tempo', rondas: [{ bpm: 100, groove: 'basico', pregunta }] }
   // tap tempo: marcar el pulso (≥ 6 toques) y comprobar los BPM (±5 %; medio o doble tempo cuenta como bien).
 objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, genero: 'Hip hop' }], mensaje }
   // el mismo groove a distintos tempos, con un círculo que late en cada tiempo.
+  // Cada opción puede traer su `groove` (y el objetivo un `porTiempo` común) y un `titulo` que se
+  // muestra en lugar de los BPM: así sirve también para comparar versiones (p. ej. cuánto swing).
+  // Textos opcionales: elige ('Elige cuánto swing'), prueba ('Prueba 3 cantidades de swing'), tituloBien.
 ```
 
 ## Crear un tipo de paso nuevo

@@ -173,6 +173,9 @@ export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo
   return modo === 'acorde' ? duracion : (list.length - 1) * intervalo + duracion
 }
 
+/** Copia de los eventos ordenada por `inicio` (con swing o humanizados pueden venir desordenados). */
+const ordenar = (eventos) => [...eventos].sort((a, b) => a.inicio - b.inicio)
+
 /**
  * Toca un patrón de Piano Roll: [{ nota, inicio, duracion, velocity }] con
  * `inicio` y `duracion` en casillas. `paso` = segundos por casilla.
@@ -184,7 +187,8 @@ export function playPattern(notas, { paso = 0.3 } = {}) {
   const inst = instrument()
   const t0 = Tone.now() + 0.05
   let fin = 0
-  notas.forEach(({ nota, inicio, duracion = 1, velocity = 0.8 }) => {
+  // En orden de tiempo: los sintes de batería son monofónicos y no admiten golpes programados hacia atrás.
+  ordenar(notas).forEach(({ nota, inicio, duracion = 1, velocity = 0.8 }) => {
     sonar(inst, nota, Math.max(0.1, duracion * paso * 0.95), t0 + inicio * paso, velocity)
     fin = Math.max(fin, inicio + duracion)
   })
@@ -214,6 +218,7 @@ let ritmoActual = null
  * `pulso`: segundos entre tiempos. Solo suena un ritmo a la vez.
  */
 export function iniciarRitmo(eventos, { bpm = 90, casillas = 8, porTiempo = 2 } = {}) {
+  eventos = ordenar(eventos)
   pararRitmo()
   startAudio()
   initPiano()

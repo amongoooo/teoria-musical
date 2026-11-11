@@ -69,7 +69,8 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
     const verSolucion = () => {
       completar({ aciertos: 0, total: 1 })
       if (objetivo.tipo === 'velocity') {
-        setNotas((ns) => ns.map((n) => ({ ...n, velocity: objetivo.fuertes.includes(n.inicio) ? 1 : 0.35 })))
+        const suave = Math.min(0.35, (objetivo.maxSuave ?? 0.55) - 0.1)
+        setNotas((ns) => ns.map((n) => ({ ...n, velocity: objetivo.fuertes.includes(n.inicio) ? 1 : suave })))
       } else {
         setNotas(conIds(objetivo.notas))
       }
@@ -169,6 +170,6 @@ function revisarVelocity(notas, { fuertes, minFuerte = 0.75, maxSuave = 0.55 }) 
   if (!flojas.length && !fuertesDeMas.length) return { ok: true }
   const partes = []
   if (flojas.length) partes.push(`Sube más ${flojas.length === 1 ? 'la nota' : `${flojas.length} notas`} de los tiempos acentuados (casi hasta arriba).`)
-  if (fuertesDeMas.length) partes.push('Las demás deben quedarse por debajo de la mitad.')
+  if (fuertesDeMas.length) partes.push(maxSuave < 0.5 ? 'Las demás deben quedarse muy suaves (por debajo de un tercio).' : 'Las demás deben quedarse por debajo de la mitad.')
   return { ok: false, texto: partes.join(' ') }
 }
