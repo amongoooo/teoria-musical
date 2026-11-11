@@ -22,10 +22,15 @@ import { Cuadrito } from './NavegadorModulos.jsx'
  * antes de soltar, no pasa nada. Cambiar de página tiene que ser a propósito. Si el vecino no existe o aún no tiene
  * lecciones, resistencia tipo goma y el indicador dice «Próximamente».
  *
+ * Con una isla abierta (`isla` = { inicio, fin }), solo hacia fuera desde los extremos del camino: desde la
+ * primera isla (la insignia) al módulo anterior y desde la última (Retos) al siguiente; el resto de gestos
+ * son del camino (que a su vez ignora esos, ver `acepta` en useDeslizar).
+ *
  * Devuelve { handlers, estilo, indicadores }: los handlers y el estilo (x / y) van en el <main> de la
  * página; los indicadores (portal) se pintan fuera, porque el <main> se transforma.
  */
-export default function useCambioModulo(modulo, { activo }) {
+export default function useCambioModulo(modulo, { isla = null } = {}) {
+  const acepta = (dir) => !isla || (dir < 0 ? isla.inicio : isla.fin)
   const ancho = useAncho()
   const X = ancho < 560 ? Math.max(160, ancho * DESLIZAR.pagina.umbralCelular) : DESLIZAR.pagina.umbralAncho
   const XV = DESLIZAR.pagina.umbralVertical
@@ -46,7 +51,8 @@ export default function useCambioModulo(modulo, { activo }) {
   }
 
   const lado = useDeslizar({
-    activo,
+    activo: true,
+    acepta,
     umbral: X,
     onPaso: pasar,
     puede: (dir) => !saliendo.current && puede(dir),
@@ -56,7 +62,9 @@ export default function useCambioModulo(modulo, { activo }) {
     soltarParaPasar: true,
   })
   const bordes = useTirarBordes({
-    activo,
+    activo: true,
+    rebote: !isla, // con una isla abierta, sin rebote del navegador (la barra de puntitos no se mueve)
+    acepta,
     umbral: XV,
     puede: (dir) => !saliendo.current && puede(dir),
     onPasar: pasar,

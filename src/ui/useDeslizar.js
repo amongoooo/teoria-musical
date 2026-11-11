@@ -33,6 +33,10 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * llama a `alTope` con el lado de la pantalla hacia el que va el dedo (−1 izquierda, +1 derecha), una
  * vez cada vez que el gesto choca con el extremo (quien lo usa hace su «tilt»).
  *
+ * `acepta(dir)`: si se da, al decidir el gesto (primeros 6 px) se mira hacia dónde va (+1 siguiente,
+ * −1 anterior); si devuelve false, el gesto no es de este carrusel y se ignora entero (sin capturar el
+ * puntero), así otro gesto (p. ej. el cambio de módulo desde la primera o la última isla) lo toma.
+ *
  * `cadena` (barra de puntitos): el imán se repite entre cada par de puntitos (una isla por cada
  * puntito que se cruza, mismo 50 % en los dos sentidos) y no hay avance continuo.
  *
@@ -277,6 +281,10 @@ export default function useDeslizar(opciones) {
       if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
       if (Math.abs(dy) > Math.abs(dx)) {
         g.current = null // gesto vertical: es scroll
+        return
+      }
+      if (op.current.acepta && !op.current.acepta(Math.sign(posicion(e) - s.d0 - s.dp) || 1)) {
+        g.current = null // va hacia donde este carrusel no se encarga
         return
       }
       s.decidido = true
