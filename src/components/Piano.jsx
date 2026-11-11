@@ -59,6 +59,8 @@ function useVisibleOctaves(ref, max) {
  *  - onNoteOn / onNoteOff: callbacks opcionales (útiles para ejercicios).
  *  - marcadas ([]): notas resaltadas en ámbar (p. ej. la nota de referencia).
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
+ *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
+ *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
  */
 export default function Piano({
   startOctave = 4,
@@ -68,6 +70,7 @@ export default function Piano({
   onNoteOff,
   marcadas = [],
   compacto = false,
+  ir,
 }) {
   const wrapperRef = useRef(null)
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
@@ -84,6 +87,17 @@ export default function Piano({
   const maxOffset = octaves - visibleOctaves
   const firstOctave = startOctave + Math.min(offset, maxOffset)
   const { white, black } = buildKeys(firstOctave, visibleOctaves)
+
+  // Llevar la vista a la octava de `ir` si queda fuera (solo cuando cambia `ir`).
+  const octavaIr = ir ? Math.floor(midi(ir) / 12) - 1 : null
+  useEffect(() => {
+    if (octavaIr == null || maxOffset <= 0) return
+    setOffset((o) => {
+      const primera = startOctave + Math.min(o, maxOffset)
+      if (octavaIr >= primera && octavaIr < primera + visibleOctaves) return o
+      return Math.max(0, Math.min(maxOffset, octavaIr - startOctave))
+    })
+  }, [octavaIr, startOctave, maxOffset, visibleOctaves])
 
   useEffect(() => {
     initPiano()

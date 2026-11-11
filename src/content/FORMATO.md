@@ -105,6 +105,12 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
   // objetivo: { tipo: 'octavas', rondas: [{ nota: 'A', pista: '…' }] }
   //   → tocar esa nota en TODAS las octavas del teclado (con 3 octavas: La3, La4, La5).
   //     `pista` (opcional) se muestra al tocar una nota equivocada.
+  // objetivo: { tipo: 'paso', rondas: [{ desde: 'E4', paso: 'S' | 'T', direccion: 'sube' | 'baja', pista }] }
+  //   → tocar la nota a un semitono / un tono de `desde` (calculada con Tonal en theory/intervalos.js;
+  //     vale cualquier nombre de la misma tecla). `pista` se añade al fallar; al 2.º fallo se marca la tecla.
+  // objetivo: { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S','T','T','T','S'], titulo, mensaje }] }
+  //   → tocar en orden las notas de la fórmula (T = tono, S = semitono) desde `desde` (que ya viene marcada).
+  //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.
 }
 ```
 

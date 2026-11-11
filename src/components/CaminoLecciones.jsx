@@ -754,7 +754,7 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
               onIr(p)
             }
             // Contra un extremo (medio puntito más allá del primero o del último): un golpe al chocar.
-            const mitad = DESLIZAR.puntitos.separacion / 2
+            const mitad = (s.centros[1] - s.centros[0] || sep) / 2
             const tope = e.clientX < s.centros[0] - mitad ? -1 : e.clientX > s.centros[s.centros.length - 1] + mitad ? 1 : 0
             if (tope && tope !== s.tope) onMatraca(tope < 0 ? 0 : s.centros.length - 1, s.centros.length)
             s.tope = tope
@@ -775,7 +775,8 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
                 aria-label={l.esInsignia ? `Módulo ${l.numero}: ${l.titulo}` : l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
                 aria-current={i === abierta ? 'true' : undefined}
                 className="grid h-14 place-items-center"
-                style={{ width: sep }}
+                // 44 px por puntito; si no caben (p. ej. 9 a 375 px), se estrechan para que la barra no se salga.
+                style={{ width: `min(${sep}px, calc((100vw - 56px) / ${lecciones.length}))` }}
               >
                 <span
                   ref={guardar('punto', i)}

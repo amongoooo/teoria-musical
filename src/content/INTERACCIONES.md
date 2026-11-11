@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4 y 2.1–2.3) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5 y 3.1) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -42,6 +42,8 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **P2** | Extremos | Toca la tecla más grave y la más aguda | `extremos` |
 | **P3** | Comparar con referencia | Oye una nota y toca una más aguda / más grave | `comparar` (`referencia`, `direccion`) |
 | **P4** | Encontrar en todas las octavas | Toca una nota en todas las octavas visibles | `octavas` (`nota`, `pista`) |
+| **P5** | Medir un paso | Desde una nota marcada, toca la que está a un semitono o un tono (sube / baja); al fallar dice cuánto se movió y tras 2 fallos marca la tecla | `paso` (`desde`, `paso: 'S' \| 'T'`, `direccion`, `pista`) |
+| **P6** | Seguir la fórmula | Desde una nota dada, toca en orden las notas de una fórmula de pasos (T T S T T T S…); la fila de casillas se llena al acertar | `formula` (`desde`, `pasos`, `titulo`, `mensaje`) |
 
 ## D. Sonido continuo
 
@@ -116,7 +118,7 @@ Reglas:
 
 Ideas para cuando lleguen esos temas; aún **no existen**:
 
-- **Tocar un acorde / escala en el piano** (varias teclas a la vez o en orden) — módulos 3–4.
+- **Tocar un acorde en el piano** (varias teclas a la vez) — módulo 4. (Tocar una escala en orden ya existe: `P6`.)
 - **Ordenar** (arrastrar tarjetas: grados de una escala, partes de una canción) — módulos 3, 8.
 - **Emparejar** sonido ↔ nombre (varias parejas a la vez) — intervalos, acordes.
 - **Dictado**: oír una melodía corta y dibujarla en el Piano Roll (R2 sin guía y sin verla).
