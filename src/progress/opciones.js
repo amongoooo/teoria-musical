@@ -8,7 +8,7 @@ import { useSyncExternalStore } from 'react'
 const CLAVE = 'teoria-musical:opciones:v1'
 const PREDETERMINADAS = { tema: 'claro' }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
-const COLOR_BARRA = { claro: '#fafafa', oscuro: '#0e0e10' } // <meta name="theme-color">
+const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
 
 let cache = null
 const listeners = new Set()

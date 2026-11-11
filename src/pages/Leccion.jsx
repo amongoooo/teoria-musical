@@ -10,10 +10,12 @@ import TocaEnPiano from '../components/exercises/TocaEnPiano.jsx'
 import PasoSiente from '../components/pasos/PasoSiente.jsx'
 import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
+import { etiquetaPaso } from '../content/actividad.js'
 import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
+import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
@@ -115,9 +117,9 @@ function Visor({ leccion, soloReto, onRepetir }) {
           <Pulsable
             onClick={salir}
             aria-label="Salir de la lección"
-            className="grid size-11 shrink-0 place-items-center rounded-full text-2xl text-zinc-500 active:bg-zinc-200"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-zinc-600 active:bg-zinc-200"
           >
-            ✕
+            <Cerrar className="size-6" />
           </Pulsable>
           <div
             className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
@@ -132,10 +134,10 @@ function Visor({ leccion, soloReto, onRepetir }) {
               initial={false}
               animate={{ width: `${(indice / total) * 100}%` }}
               transition={RESORTE.suave}
-              style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
+              style={{ backgroundColor: modulo?.acento ?? 'var(--color-zinc-900)' }}
             />
           </div>
-          <span className="w-12 shrink-0 text-right text-sm tabular-nums text-zinc-500">
+          <span className="w-12 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-500">
             {indice + 1}/{total}
           </span>
         </div>
@@ -149,7 +151,8 @@ function Visor({ leccion, soloReto, onRepetir }) {
         transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4"
       >
-        <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{paso.titulo}</h1>
+        <Etiqueta paso={paso} indice={indice} />
+        <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{paso.titulo}</h1>
         {paso.intro && (
           <p className="text-lg leading-relaxed text-zinc-600">
             <Rich>{paso.intro}</Rich>
@@ -164,12 +167,28 @@ function Visor({ leccion, soloReto, onRepetir }) {
             completar={completar}
           />
         ) : (
-          <p className="text-red-600">Tipo de paso desconocido: {paso.tipo}</p>
+          <p className="text-fijate-tinta">Tipo de paso desconocido: {paso.tipo}</p>
         )}
       </motion.main>
 
       <BarraAccion accion={boton} />
     </div>
+  )
+}
+
+/**
+ * Etiqueta del paso: ícono de su actividad + nombre del ejercicio (catálogo de INTERACCIONES.md),
+ * p. ej. «Oído · Escuchar y elegir». Las explicaciones no llevan etiqueta.
+ */
+function Etiqueta({ paso, indice }) {
+  const e = etiquetaPaso(paso, indice)
+  if (!e) return null
+  const Icono = ICONO_ACTIVIDAD[e.actividad]
+  return (
+    <p className="-mb-2 inline-flex items-center gap-1.5 self-start rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700">
+      <Icono className="size-[18px]" />
+      {e.ejercicio ? `${e.texto} · ${e.ejercicio}` : e.texto}
+    </p>
   )
 }
 
@@ -187,9 +206,12 @@ export function BarraAccion({ accion }) {
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={RESORTE.suave}
-            className={`flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}`}
+            className={`flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-bien-suave text-bien-tinta' : 'bg-fijate-suave text-fijate-tinta'}`}
           >
-            <p className="text-base font-bold leading-snug">{feedback.titulo}</p>
+            <p className="flex items-center gap-2 text-base font-bold leading-snug">
+              {bien ? <Check className="size-5" /> : <Bombilla className="size-5" />}
+              {feedback.titulo}
+            </p>
             {feedback.texto && (
               <p className="text-base leading-snug">
                 <Rich>{feedback.texto}</Rich>
@@ -202,7 +224,7 @@ export function BarraAccion({ accion }) {
           onClick={accion.onClick}
           disabled={accion.disabled}
           className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold transition-colors duration-200 disabled:bg-zinc-300 disabled:text-zinc-500 ${
-            bien ? 'bg-emerald-600 text-blanco' : 'bg-zinc-900 text-white'
+            bien ? 'bg-bien-relleno text-blanco' : 'bg-zinc-900 text-white'
           }`}
         >
           {accion.label}
@@ -226,16 +248,15 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
     <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-12">
       <motion.div variants={itemLista} className="flex flex-col items-center gap-3 text-center">
         <motion.div
-          className="grid size-20 place-items-center rounded-full text-4xl text-blanco"
-          style={{ backgroundColor: modulo?.acento ?? '#18181b' }}
+          className="grid size-20 place-items-center rounded-full bg-bien-relleno text-blanco"
           initial={{ scale: 0.4, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.1 }}
           aria-hidden
         >
-          ✓
+          <Check className="size-10" grosor={3} />
         </motion.div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">¡Lección completada!</h1>
+        <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-4xl">¡Lección completada!</h1>
         <p className="text-lg text-zinc-500">
           {leccion.id} · {leccion.titulo}
         </p>
@@ -248,7 +269,7 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
 
       {leccion.resumen && (
         <motion.section variants={itemLista} className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
-          <h2 className="text-xl font-bold">Lo que aprendiste</h2>
+          <h2 className="font-titulo text-xl font-bold">Lo que aprendiste</h2>
           <motion.ul variants={lista} className="flex flex-col gap-2 text-base leading-relaxed text-zinc-600">
             {leccion.resumen.map((r, i) => (
               <motion.li key={i} variants={itemLista} className="flex gap-2">
@@ -302,7 +323,7 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
 function NoEncontrada({ id }) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-5 py-16">
-      <h1 className="text-3xl font-bold">Lección {id}</h1>
+      <h1 className="font-titulo text-3xl font-bold">Lección {id}</h1>
       <p className="text-lg text-zinc-500">Esta lección todavía no está disponible.</p>
       <a href={rutas.inicio()} className="grid min-h-14 place-items-center rounded-2xl bg-zinc-900 text-lg font-semibold text-white">
         Volver al inicio

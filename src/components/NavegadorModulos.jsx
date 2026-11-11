@@ -4,7 +4,8 @@ import { MODULOS, moduloDisponible } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
-import { oscuro, tinta } from '../ui/color.js'
+import { labio, oscuro, tinta } from '../ui/color.js'
+import { MarcaBien } from '../ui/Iconos.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
@@ -21,7 +22,7 @@ const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
 export default function NavegadorModulos({ abierta, onCerrar, actual }) {
   return (
     <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta="Módulos">
-      <h2 className="text-2xl font-bold tracking-tight">Módulos</h2>
+      <h2 className="font-titulo text-2xl font-bold tracking-tight">Módulos</h2>
       <Carrusel actual={actual} onCerrar={onCerrar} />
     </Hoja>
   )
@@ -132,13 +133,13 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
       <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: disponible ? tinta(m.acento) : undefined }}>
         Módulo {m.numero}
       </span>
-      <h3 className="text-xl font-bold leading-tight">{m.titulo}</h3>
+      <h3 className="font-titulo text-xl font-bold leading-tight">{m.titulo}</h3>
       <p className="line-clamp-3 text-base text-zinc-600">{m.descripcion}</p>
       <div className="mt-auto flex w-full flex-col gap-3">
         {disponible && (
           <div className="flex items-center gap-3">
             <BarraProgreso valor={total ? hechas / total : 0} color={m.acento} fondo="bg-zinc-100" alto="h-2" className="flex-1" alAparecer={false} />
-            <span className="text-sm tabular-nums text-zinc-500">
+            <span className="font-dato text-sm tabular-nums text-zinc-500">
               {hechas}/{total}
             </span>
           </div>
@@ -159,21 +160,25 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
   )
 }
 
-/** El cuadrito de un módulo (número sobre el acento con «labio»; punteado si aún no está). */
-export function Cuadrito({ modulo, disponible = true, tam = 72, className = '' }) {
+/**
+ * El cuadrito de un módulo: su número sobre su color, con «labio»; punteado si aún no está.
+ * Los módulos no llevan ícono: se reconocen por su color y su número. `hecho` = ✓ verde en la esquina.
+ */
+export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, className = '' }) {
   return (
     <span
-      className={`grid shrink-0 place-items-center rounded-3xl font-bold ${disponible ? 'text-blanco' : 'border-2 border-dashed border-zinc-300 text-zinc-500'} ${className}`}
+      className={`relative grid shrink-0 place-items-center rounded-3xl font-titulo font-bold ${disponible ? 'text-blanco' : 'border-2 border-dashed border-zinc-300 text-zinc-500'} ${className}`}
       style={{
         width: tam,
         height: tam,
         fontSize: tam * 0.42,
         backgroundColor: disponible ? oscuro(modulo.acento) : 'var(--color-white)',
-        boxShadow: disponible ? `0 6px 0 color-mix(in oklab, ${modulo.acento} 45%, black)` : undefined,
+        boxShadow: disponible ? `0 6px 0 ${labio(modulo.acento)}` : undefined,
       }}
       aria-hidden
     >
       {modulo.numero}
+      {hecho && <MarcaBien className="absolute -right-1.5 -top-1.5 size-7" aro="var(--color-fondo)" />}
     </span>
   )
 }

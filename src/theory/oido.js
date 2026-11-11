@@ -67,8 +67,8 @@ function sonidoIntervalo(raiz, semitonos, direccion) {
 export const modoIntervalos = {
   id: 'intervalos',
   titulo: 'Intervalos',
-  emoji: '↕️',
-  acento: '#0ea5e9',
+  // Color del módulo con el que se relaciona (un color = un lugar): intervalos → M3, acordes → M4, notas → M1.
+  acento: 'var(--color-modulo-3)',
   descripcion: 'Escucha dos notas y elige la distancia entre ellas.',
   pregunta: '¿Qué intervalo suena?',
   niveles: NUEVOS_POR_NIVEL.length,
@@ -120,8 +120,7 @@ function sonidoAcorde(notas, nivel) {
 export const modoAcordes = {
   id: 'acordes',
   titulo: 'Acordes',
-  emoji: '🎹',
-  acento: '#8b5cf6',
+  acento: 'var(--color-modulo-4)',
   descripcion: 'Escucha un acorde y decide si es mayor o menor.',
   pregunta: '¿Mayor o menor?',
   niveles: NIVELES_ACORDES.length,
@@ -165,8 +164,7 @@ function notasDelNivel(nivel) {
 export const modoAbsoluto = {
   id: 'absoluto',
   titulo: 'Oído absoluto',
-  emoji: '🎯',
-  acento: '#f59e0b',
+  acento: 'var(--color-modulo-1)',
   descripcion: 'Un juego: adivina la nota sin ninguna referencia.',
   pregunta: '¿Qué nota es?',
   limpiar: true, // borrador de oído entre preguntas (ver limpiarOido en audio/engine.js)

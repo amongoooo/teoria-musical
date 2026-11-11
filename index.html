@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#fafafa" />
+    <meta name="theme-color" content="#f4f4f5" />
     <meta name="description" content="Aprende teoría musical y producción en FL Studio con lecciones cortas e interactivas." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎹</text></svg>" />
     <title>Teoría Musical</title>
@@ -13,7 +13,7 @@
         var t = (JSON.parse(localStorage.getItem('teoria-musical:opciones:v1') || '{}') || {}).tema
         if (t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark')
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0e0e10')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#07080f')
         }
       } catch (e) {}
     </script>

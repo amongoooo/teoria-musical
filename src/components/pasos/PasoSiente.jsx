@@ -8,7 +8,7 @@ export default function PasoSiente({ paso }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {paso.lados.map((lado) => (
           <section key={lado.etiqueta} className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
-            <h3 className="text-2xl font-bold tracking-tight">{lado.etiqueta}</h3>
+            <h3 className="font-titulo text-2xl font-bold tracking-tight">{lado.etiqueta}</h3>
             <p className="text-lg font-medium text-zinc-800">{lado.emociones}</p>
             <p className="text-base text-zinc-500">{lado.ejemplos}</p>
             {lado.sonido && <BotonSonido sonido={lado.sonido} className="mt-1" />}

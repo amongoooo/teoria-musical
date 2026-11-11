@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, leccionAnterior } from '../content/index.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
-import { claro, oscuro, tinta } from '../ui/color.js'
+import { claro, labio, oscuro, tinta } from '../ui/color.js'
+import { Candado, Cerrar, Check, MarcaBien, Reproducir, Trofeo } from '../ui/Iconos.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
@@ -445,7 +446,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                       animate={{ pathLength: 1 }}
                       transition={{ ...RESORTE.suave, delay: montado ? 0 : DESPLIEGUE.espera + s * DESPLIEGUE.entre + 0.2 }}
                       fill="none"
-                      stroke={modulo.acento}
+                      style={{ stroke: modulo.acento }}
                       strokeWidth="6"
                       strokeLinecap="round"
                     />
@@ -465,7 +466,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                     }}
                     aria-label={`Módulo ${modulo.numero}. Ver los demás módulos`}
                     aria-haspopup="dialog"
-                    className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl text-3xl font-bold text-blanco"
+                    className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl font-titulo text-3xl font-bold text-blanco"
                     style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
                   >
                     {modulo.numero}
@@ -819,14 +820,13 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
 }
 
 export function textoEstado(estado, p, contenido) {
-  if (estado === 'hecha') return '✓ Completada'
+  if (estado === 'hecha') return 'Completada'
   if (estado === 'empezada') return `Paso ${p.paso + 1} de ${contenido.pasos.length}`
   if (estado === 'nueva') return 'Empezar'
   if (estado === 'bloqueada') return 'Bloqueada'
   return 'Próximamente'
 }
 
-const labio = (acento) => `color-mix(in oklab, ${acento} 45%, black)`
 // Isla bloqueada: gris del tema (claro u oscuro) y su labio, un poco más oscuro.
 const GRIS = 'var(--color-zinc-200)'
 const LABIO_GRIS = 'color-mix(in oklab, var(--color-zinc-200) 82%, black)'
@@ -843,11 +843,13 @@ function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick 
         onClick={onClick}
         aria-expanded={false}
         aria-label={`Lección ${leccion.id}: ${leccion.titulo}. ${descripcion}`}
-        className={`grid size-full place-items-center rounded-full text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
+        className={`grid size-full place-items-center rounded-full font-titulo text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
         style={{ backgroundColor: fondo, boxShadow: `0 6px 0 ${sombra}` }}
       >
-        {estado === 'hecha' ? <IconoCheck /> : estado === 'bloqueada' ? <IconoCandado /> : estado === 'proximamente' ? <span className="text-xl">…</span> : leccion.id}
+        {estado === 'bloqueada' ? <Candado className="size-8" grosor={2.2} /> : estado === 'proximamente' ? <span className="text-xl">…</span> : leccion.id}
       </Pulsable>
+      {/* Hecha: el número sigue a la vista y el ✓ verde va en la esquina (verde = hecho en toda la app). */}
+      {estado === 'hecha' && <MarcaBien className="pointer-events-none absolute -right-1 -top-1 size-7" aro="var(--color-fondo)" />}
     </div>
   )
 }
@@ -857,14 +859,14 @@ function Anillo({ tam, acento, avance = 0, grosor = 6 }) {
   const r = 50 - grosor / 2
   return (
     <svg className="pointer-events-none absolute" style={{ width: tam, height: tam }} viewBox="0 0 100 100" aria-hidden>
-      <circle cx="50" cy="50" r={r} fill="none" stroke={claro(acento)} strokeWidth={grosor} />
+      <circle cx="50" cy="50" r={r} fill="none" style={{ stroke: claro(acento) }} strokeWidth={grosor} />
       {avance > 0 && (
         <motion.circle
           cx="50"
           cy="50"
           r={r}
           fill="none"
-          stroke={acento}
+          style={{ stroke: acento }}
           strokeWidth={grosor}
           strokeLinecap="round"
           transform="rotate(-90 50 50)"
@@ -901,7 +903,7 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   if (estado === 'nueva')
     detalle = (
       <>
-        <IconoReloj /> ~{leccion.minutos} min · {pasos} pasos
+        ~{leccion.minutos} min · {pasos} pasos
       </>
     )
   else if (estado === 'empezada')
@@ -913,13 +915,13 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   else if (estado === 'hecha')
     detalle = (
       <>
-        <IconoCheck className="size-4" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}
+        <MarcaBien className="size-5" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}
       </>
     )
   else if (estado === 'bloqueada')
     detalle = (
       <>
-        <IconoCandado className="size-4" /> Termina la {anterior?.id} antes
+        <Candado className="size-5" /> Termina la {anterior?.id} antes
       </>
     )
   else detalle = <>Llega pronto</>
@@ -927,14 +929,15 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   return (
     <div className="flex flex-col items-center" role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
       <Bola acento={acento} estado={estado} avance={lleno ? porcentaje / 100 : null}>
-        {estado === 'hecha' ? <IconoCheck className="size-11" /> : estado === 'bloqueada' ? <IconoCandado className="size-10" /> : estado === 'proximamente' ? '…' : meta.id}
+        {estado === 'bloqueada' ? <Candado className="size-10" /> : estado === 'proximamente' ? '…' : meta.id}
+        {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" />}
       </Bola>
       <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
-        <h3 className="pr-10 text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{meta.titulo}</h3>
+        <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{meta.titulo}</h3>
         <p className={`flex flex-wrap items-center gap-1.5 text-base font-medium ${tema === 'color' ? 'text-blanco/90' : 'text-zinc-600'}`}>{detalle}</p>
         {lleno && (
           <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => ir(estado === 'hecha')}>
-            {estado === 'hecha' ? <IconoOtraVez /> : <IconoPlay />}
+            {estado !== 'hecha' && <Reproducir className="size-5" />}
             {estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir'}
           </BotonGlobo>
         )}
@@ -971,7 +974,7 @@ function Bola({ acento, estado, avance = null, children, retos = false }) {
     <div className="relative grid shrink-0 place-items-center" style={{ width: BOLA, height: BOLA }}>
       {avance !== null && <Anillo tam={BOLA + ARO * 2} acento={acento} avance={avance} grosor={7} />}
       <div
-        className={`grid size-full place-items-center rounded-full text-3xl font-bold tabular-nums ${
+        className={`grid size-full place-items-center rounded-full font-titulo text-3xl font-bold tabular-nums ${
           lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : retos ? '' : 'border-2 border-dashed border-zinc-300 text-zinc-500'
         }`}
         style={estilo}
@@ -1011,7 +1014,7 @@ function Globo({ tema, acento, onCerrar, children }) {
           aria-label="Cerrar"
           className={`absolute right-2 top-2 grid size-11 place-items-center rounded-full ${tema === 'color' ? 'text-blanco/90 active:bg-blanco/15' : 'text-zinc-500 active:bg-zinc-900/5'}`}
         >
-          <IconoCerrar />
+          <Cerrar className="size-5" />
         </Pulsable>
         {children}
       </div>
@@ -1046,7 +1049,7 @@ function IslaRetos({ acento, completo, descripcion, onClick }) {
             : { backgroundColor: 'var(--color-white)', borderColor: acento, color: tinta(acento), boxShadow: `0 6px 0 ${claro(acento)}` }
         }
       >
-        <IconoTrofeo />
+        <Trofeo className="size-8" />
       </Pulsable>
     </div>
   )
@@ -1059,12 +1062,12 @@ function RetosAbierta({ modulo, retos, hechos, onCerrar, onVer }) {
   return (
     <div className="flex flex-col items-center" role="group" aria-label="Retos del módulo">
       <Bola acento={modulo.acento} estado={completo ? 'hecha' : 'retos'} avance={hechos / retos.length} retos>
-        <IconoTrofeo className="size-11" />
+        <Trofeo className="size-11" />
       </Bola>
       <Globo tema={tema} acento={modulo.acento} onCerrar={onCerrar}>
-        <h3 className="pr-10 text-xl font-bold leading-tight tracking-tight">Retos en FL Studio</h3>
+        <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight">Retos en FL Studio</h3>
         <p className={`line-clamp-3 text-base leading-snug ${completo ? 'text-blanco/90' : 'text-zinc-600'}`}>{modulo.reto}</p>
-        <p className="text-base font-semibold tabular-nums" style={completo ? undefined : { color: tinta(modulo.acento) }}>
+        <p className="font-dato text-base font-medium tabular-nums" style={completo ? undefined : { color: tinta(modulo.acento) }}>
           {hechos}/{retos.length} hechos
         </p>
         <BotonGlobo tema={tema} acento={modulo.acento} principal data-foco onClick={onVer}>
@@ -1081,7 +1084,9 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
   return (
     <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta={`Retos del módulo ${modulo.numero}`}>
       <div className="flex max-h-[70dvh] flex-col gap-5 overflow-y-auto">
-        <h2 className="text-2xl font-bold tracking-tight">Retos · Módulo {modulo.numero}</h2>
+        <h2 className="flex items-center gap-2 font-titulo text-2xl font-bold tracking-tight">
+          <Trofeo className="size-7" /> Retos · Módulo {modulo.numero}
+        </h2>
         <section className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-4">
           <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
             Reto del módulo
@@ -1091,9 +1096,10 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
             data-foco
             onClick={() => guardarReto(delModulo.clave, { hecho: !delModulo.hecho })}
             aria-pressed={delModulo.hecho}
-            className={`min-h-12 rounded-2xl text-lg font-semibold ${delModulo.hecho ? 'bg-emerald-600 text-blanco' : 'border-2 border-zinc-900 text-zinc-900'}`}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl text-lg font-semibold ${delModulo.hecho ? 'bg-bien-relleno text-blanco' : 'border-2 border-zinc-900 text-zinc-900'}`}
           >
-            {delModulo.hecho ? '✓ ¡Hecho!' : 'Lo hice'}
+            {delModulo.hecho && <Check className="size-5" />}
+            {delModulo.hecho ? '¡Hecho!' : 'Lo hice'}
           </Pulsable>
         </section>
         {deLecciones.length > 0 && (
@@ -1103,8 +1109,8 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
               const hecha = progreso.lecciones[r.clave]?.completada
               const contenido = (
                 <>
-                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-base font-bold ${r.hecho ? 'bg-emerald-600 text-blanco' : 'bg-zinc-100 text-zinc-600'}`}>
-                    {r.hecho ? '✓' : r.clave}
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-base font-bold ${r.hecho ? 'bg-bien-relleno text-blanco' : 'bg-zinc-100 font-dato text-zinc-600'}`}>
+                    {r.hecho ? <Check className="size-5" /> : r.clave}
                   </span>
                   <span className="flex flex-1 flex-col">
                     <span className="text-base font-semibold leading-snug text-zinc-900">{r.titulo}</span>
@@ -1132,66 +1138,6 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
         )}
       </div>
     </Hoja>
-  )
-}
-
-function IconoTrofeo({ className = 'size-8' }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z" />
-      <path d="M7 6H4.5a2.5 2.5 0 0 0 0 5H7M17 6h2.5a2.5 2.5 0 0 1 0 5H17" />
-    </svg>
-  )
-}
-
-function IconoPlay() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z" />
-    </svg>
-  )
-}
-
-function IconoOtraVez() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
-      <path d="M4 4v4.5h4.5" />
-    </svg>
-  )
-}
-
-function IconoReloj() {
-  return (
-    <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5V12l3 2" />
-    </svg>
-  )
-}
-
-function IconoCerrar() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
-      <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  )
-}
-
-function IconoCheck({ className = 'size-9' }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M5 12.5l4.5 4.5L19 7.5" />
-    </svg>
-  )
-}
-
-export function IconoCandado({ className = 'size-8' }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="5" y="11" width="14" height="10" rx="2.5" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
   )
 }
 

@@ -4,6 +4,7 @@ import { playNotes } from '../../audio/engine.js'
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
 import { ENTRA_DERECHA, RESORTE, SALTO, SUBE } from '../../ui/movimiento.js'
+import { Check } from '../../ui/Iconos.jsx'
 import Piano from '../Piano.jsx'
 import Rondas from './Rondas.jsx'
 
@@ -99,8 +100,8 @@ function Extremos({ paso, setAccion, siguiente }) {
   return (
     <div className="flex flex-col gap-3">
       <ul className="grid grid-cols-2 gap-3">
-        <Check ok={encontradas.grave}>La más grave</Check>
-        <Check ok={encontradas.aguda}>La más aguda</Check>
+        <Casilla ok={encontradas.grave}>La más grave</Casilla>
+        <Casilla ok={encontradas.aguda}>La más aguda</Casilla>
       </ul>
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} />
     </div>
@@ -121,18 +122,18 @@ function UltimaNota({ nota }) {
   )
 }
 
-function Check({ ok, children }) {
+function Casilla({ ok, children }) {
   return (
     <motion.li
       initial={false}
       animate={ok ? SALTO : { scale: 1 }}
       transition={{ duration: 0.35 }}
       className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 py-2 text-base font-medium transition-colors duration-200 ${
-        ok ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-zinc-200 bg-white text-zinc-500'
+        ok ? 'border-bien bg-bien-suave text-bien-tinta' : 'border-zinc-200 bg-white text-zinc-500'
       }`}
     >
       <motion.span aria-hidden key={ok ? 'si' : 'no'} initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={RESORTE.pulsar}>
-        {ok ? '✓' : '○'}
+        {ok ? <Check className="size-5" /> : <span className="grid size-5 place-items-center">○</span>}
       </motion.span>
       {children}
     </motion.li>
@@ -211,8 +212,8 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
 
       <motion.div key={r} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
         <p className="text-xl font-semibold leading-snug sm:text-2xl">
-          Toca una nota <span className="underline decoration-amber-400 decoration-4 underline-offset-4">{palabra}</span>{' '}
-          que <span className="rounded-md bg-amber-200 px-1.5">{nombre(ronda.referencia)}</span>
+          Toca una nota <span className="underline decoration-fijate decoration-4 underline-offset-4">{palabra}</span>{' '}
+          que <span className="rounded-md bg-fijate-claro px-1.5">{nombre(ronda.referencia)}</span>
         </p>
         <BotonSonido
           sonido={{ notas: [ronda.referencia] }}
@@ -312,15 +313,15 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
       <Rondas total={rondas.length} actual={r} hecha={listo} />
 
       <motion.p key={r} {...ENTRA_DERECHA} className="text-lg font-semibold leading-snug sm:text-2xl">
-        Toca <span className="underline decoration-amber-400 decoration-4 underline-offset-4">todas</span> las{' '}
-        <span className="rounded-md bg-amber-200 px-1.5">{nombreSolo}</span> del teclado
+        Toca <span className="underline decoration-fijate decoration-4 underline-offset-4">todas</span> las{' '}
+        <span className="rounded-md bg-fijate-claro px-1.5">{nombreSolo}</span> del teclado
       </motion.p>
 
       <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${objetivos.length}, minmax(0, 1fr))` }}>
         {objetivos.map((o) => (
-          <Check key={o} ok={encontradas.includes(o)}>
+          <Casilla key={o} ok={encontradas.includes(o)}>
             {nombre(o)}
-          </Check>
+          </Casilla>
         ))}
       </ul>
 

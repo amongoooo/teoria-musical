@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { toneSet, toneStart, toneStop } from '../../audio/engine.js'
+import { Check } from '../../ui/Iconos.jsx'
 
 /**
  * Pad de frecuencia: mantener el dedo y deslizar arriba/abajo cambia los Hz
@@ -97,7 +98,7 @@ export default function ExploraFrecuencia({ paso, setAccion, siguiente }) {
       <Zona ok={visitado.grave} texto="Grave" />
 
       <div className="pointer-events-none absolute inset-x-0 top-[14%] flex flex-col items-center gap-1 px-4">
-        <div className="text-4xl font-bold tabular-nums tracking-tight">
+        <div className="font-dato text-4xl font-medium tabular-nums tracking-tight">
           {Math.round(ultimoHz)} <span className="text-xl font-semibold text-zinc-400">Hz</span>
         </div>
         <div className="text-sm text-zinc-500">{sonando ? 'vibraciones por segundo' : 'Mantén el dedo aquí y desliza ↕'}</div>
@@ -121,10 +122,10 @@ function Zona({ arriba = false, ok, texto }) {
     <div
       className={`pointer-events-none absolute inset-x-0 flex h-[12%] items-center justify-between px-4 text-sm font-semibold ${
         arriba ? 'top-0' : 'bottom-0'
-      } ${ok ? 'bg-emerald-100/80 text-emerald-800' : 'bg-zinc-900/5 text-zinc-500'}`}
+      } ${ok ? 'bg-bien-suave text-bien-tinta' : 'bg-zinc-900/5 text-zinc-500'}`}
     >
       <span>{texto}</span>
-      <span aria-hidden>{ok ? '✓' : ''}</span>
+      {ok && <Check className="size-5" />}
     </div>
   )
 }
