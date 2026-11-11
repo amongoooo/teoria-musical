@@ -6,6 +6,7 @@ function parse(hash) {
   const partes = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
   if (partes[0] === 'modulo' && partes[1]) return { pagina: 'modulo', id: partes[1] }
   if (partes[0] === 'leccion' && partes[1]) return { pagina: 'leccion', id: partes[1], reto: partes[2] === 'reto' }
+  if (partes[0] === 'importar') return { pagina: 'importar', id: partes[1] ?? '' }
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
@@ -29,6 +30,7 @@ export const rutas = {
   leccion: (id) => `#/leccion/${id}`,
   /** Abre la lección directamente en su reto de FL Studio (al terminar vuelve al módulo). */
   reto: (id) => `#/leccion/${id}/reto`,
+  importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
 }
 

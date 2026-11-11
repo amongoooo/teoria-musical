@@ -114,6 +114,11 @@ export function guardarReto(id, cambios) {
   escribir({ ...p, retos: { ...p.retos, [id]: next } })
 }
 
+/** Reemplaza el progreso entero (lo usa la importación, ya combinado). */
+export function importarProgreso(datos) {
+  escribir({ ...VACIO, ...datos, version: 1 })
+}
+
 /** Borra todo el progreso (útil para pruebas). */
 export function reiniciarProgreso() {
   escribir(VACIO)

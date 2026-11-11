@@ -62,6 +62,22 @@ export const GROOVES = {
     ...[4, 12].map((inicio) => ({ nota: 'clap', inicio, velocity: 0.8 })),
     ...Array.from({ length: 16 }, (_, inicio) => ({ nota: 'hat', inicio, velocity: inicio % 4 === 0 ? 0.65 : inicio % 2 ? 0.3 : 0.45 })),
   ],
+
+  // --- Síncopa (16 casillas, semicorcheas) ---
+  // Dembow del reguetón: bombo en cada tiempo y caja en la «a» del 1 y la «y» del 2 (y lo mismo en 3–4).
+  dembow: [
+    ...[0, 4, 8, 12].map((inicio) => ({ nota: 'kick', inicio, velocity: 0.95 })),
+    ...[3, 6, 11, 14].map((inicio) => ({ nota: 'snare', inicio, velocity: 0.85 })),
+    ...[0, 2, 4, 6, 8, 10, 12, 14].map((inicio) => ({ nota: 'hat', inicio, velocity: inicio % 4 ? 0.3 : 0.45 })),
+  ],
+  // Bounce del hip hop: caja en 2 y 4, pero el bombo se adelanta (la «a» del 2) y cae a contratiempo (la «y» del 3).
+  bounce: [
+    { nota: 'kick', inicio: 0, velocity: 0.95 },
+    { nota: 'kick', inicio: 7, velocity: 0.8 },
+    { nota: 'kick', inicio: 10, velocity: 0.9 },
+    ...[4, 12].map((inicio) => ({ nota: 'snare', inicio, velocity: 0.9 })),
+    ...[0, 2, 4, 6, 8, 10, 12, 14].map((inicio) => ({ nota: 'hat', inicio, velocity: inicio % 4 ? 0.35 : 0.55 })),
+  ],
 }
 
 /** Compás y resolución de los grooves que no son 4/4 en corcheas. */
@@ -71,6 +87,8 @@ const FORMA = {
   valsPiano: { tiempos: 3 },
   trap: { porTiempo: 4 },
   trapNormal: { porTiempo: 4 },
+  dembow: { porTiempo: 4 },
+  bounce: { porTiempo: 4 },
 }
 
 /**

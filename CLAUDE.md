@@ -37,7 +37,7 @@ src/
   content/              # Contenido (datos), ver content/FORMATO.md
     modulos.js          # Los 10 módulos y sus lecciones (título, acento, reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
-    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js, leccion-2-3.js
+    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js … leccion-2-4.js
   components/
     Piano.jsx           # Piano táctil (multitouch, glissando, octavas, teclas marcadas)
     CaminoLecciones.jsx # Camino de islas de un módulo (vertical en celular, horizontal en ancho; carrusel + barra de puntitos)
@@ -46,7 +46,9 @@ src/
     NavegadorModulos.jsx # Pestaña de módulos (hoja con carrusel lateral) y `Cuadrito` del módulo
     CambioModulo.jsx    # Swipe de página entre módulos (lateral y tirando más allá del borde) + indicadores
     CabeceraModulo.jsx  # Cabecera fija de Módulo: casita + barra por lecciones + Opciones (+ título chico al bajar); vive en App.jsx
-    Opciones.jsx        # Botón de Opciones (engranaje) + hoja con Apariencia: Claro / Oscuro / Automático
+    Opciones.jsx        # Botón de Opciones (engranaje) + hoja con Apariencia (Claro / Oscuro / Automático) y Tu progreso
+    TuProgreso.jsx      # Sección «Tu progreso»: copiar código, compartir link, QR y pegar un código
+    CodigoQR.jsx        # QR en SVG (qrcode-generator), siempre negro sobre blanco
     Rich.jsx            # Texto con **negritas**
     pasos/              # Pasos no interactivos: PasoTexto, PasoSiente, Nota
     exercises/          # EscuchaElige, TocaEnPiano, ExploraFrecuencia, RetoFL, PianoRollEjercicio, Pulso, Rondas
@@ -54,12 +56,13 @@ src/
   audio/bateria.js      # Batería sintetizada: golpe('kick' | 'snare' | 'hat' | 'clap' | 'click')
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
-  theory/bateria.js     # Nombres de percusión, claveNota, GROOVES (4/4, 3/4, trap…) y formaGroove()
+  theory/bateria.js     # Nombres de percusión, claveNota, GROOVES (4/4, 3/4, trap, dembow, bounce…) y formaGroove()
   progress/progreso.js  # localStorage: useProgreso, guardarPaso, completarLeccion, guardarReto
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
+  progress/sincronizar.js # Código de progreso (deflate-raw + base64url), leerlo, revisarlo y COMBINAR con lo local
   progress/opciones.js  # localStorage de opciones (tema); aplicarTema() pone la clase `dark` en <html>
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
-  pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
+  pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador), Importar (#/importar/CÓDIGO)
   ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe con zona muerta, barrera y progreso continuo), useTirarBordes.js (tirar más allá del borde de arriba/abajo de la página), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx (Volver y BotonInicio = casita), color.js (oscuro/claro)
 .claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
@@ -87,7 +90,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~50 %** (módulo 1 completo; módulo 2: 3 de 5 lecciones)
+**Avance: ~54 %** (módulo 1 completo; módulo 2: 4 de 5 lecciones; progreso transferible entre dispositivos)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -124,4 +127,8 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Cabecera de Módulo fija**: casita + **barra de progreso por lecciones** (un segmento por lección, cada uno con el avance de su lección) + botón de **Opciones** (en lugar de «x/y»); fija arriba con un desvanecido detrás y, al bajar la página, el **título del módulo en pequeño** bajo la barra. El indicador de tirar desde arriba sale por debajo de la cabecera. Probado con Playwright (claro y oscuro). Arreglado después: al cambiar de módulo la rueda se desplazaba y el segmento nuevo salía detrás de ella (lo que se salía por los lados —la página que sale en la transición y los indicadores escondidos fuera del borde— ensanchaba la pantalla en el celular → `#root { position: relative; overflow-x: clip }` en `index.css` y los indicadores de `CambioModulo` en una capa fija que recorta; probado en los dos sentidos, 4 ↔ 5 lecciones).
 
-**Siguiente tarea:** lección 2.4 «Síncopa y anticipación» (acentos a contratiempo, notas que se adelantan a la «y» o a la «a», ligaduras sobre el tiempo, el dembow del reguetón y el *bounce* del hip hop), reutilizando `pulso` con `desfase` y `contar: 'y' | 'e'` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
+- ✅ **Tu progreso entre dispositivos, sin servidor** (Opciones → Tu progreso): **Copiar código** (progreso de lecciones y retos, entrenamiento de oído y tema en JSON → `deflate-raw` con `CompressionStream` → base64url; prefijo `1` comprimido / `0` sin comprimir; los días de oído van compactos `[[fecha,s,r,a],[díasDespués,…]]`; ~600 caracteres con 60 días), **Compartir link** (`#/importar/CÓDIGO`, con `navigator.share`) y **QR** (`qrcode-generator`, corrección L; si el link pasa de 1400 caracteres se pide usar el link). También se puede **pegar** un código o link. La pantalla **Cargar progreso** (`pages/Importar.jsx`) enseña lo que trae y **combina** (`combinar()` en `progress/sincronizar.js`): por lección lo más avanzado (completada gana, paso mayor, mejor resultado), retos unidos (hecho si en alguno; notas unidas), días de oído unidos (mismo día → máximo, así importar dos veces no duplica), modos de oído del más avanzado con `nivelMax` y estadísticas máximas; la apariencia solo si se acepta el interruptor. Lo que llega se revisa (solo se aceptan claves y tipos esperados). La `Hoja` ahora se desplaza por dentro si no cabe. Probado con Playwright a 375 px en claro y oscuro (copiar, QR, link en otro «dispositivo», combinar, idempotencia, código inválido, pegar link).
+
+- ✅ **Lección 2.4 «Síncopa y anticipación»** (16 pasos): síncopa (palmas en los tiempos vs. sincopadas), «¿Sobre el tiempo o sincopado?», tocar a contratiempo (1 · «y» del 2; «y» del 1 · 3), **ligaduras** en el Piano Roll (nota que empieza en una «y» y cruza el tiempo) y dibujarla, **anticipación** de un acorde (Do → Fa en la «y» del 4) con «¿Llega a tiempo o se adelanta?», **tresillo** 3 + 3 + 2 (verlo y tocarlo), **dembow** (verlo en 16 casillas, tocar con la caja, programar medio compás), **bounce** del hip hop, «¿Qué ritmo es?» (básico / dembow / bounce), quiz y reto en FL (dembow 1-5-9-13 / 4-7-12-15, bounce 1-8-11 / 5-13 y anticipar un acorde con *Snap* 1/2 beat). Nuevo en `pulso` → `seguir`: **`toques`** (patrón irregular dentro del compás; el contador marca con aro esas casillas y el pad late solo en ellas). Grooves nuevos **`dembow`** y **`bounce`**. Recorrida de principio a fin con Playwright a 375 px en claro y oscuro (los pasos de `pulso` se abrieron y sonaron, pero no se simularon los toques a tiempo; la lógica de `toques` se probó aparte).
+
+**Siguiente tarea:** lección 2.5 «Swing, groove y velocity» (cierra el módulo 2): corcheas rectas vs. con swing (y el *Swing* del Channel rack de FL), *groove* como pequeñas variaciones de tiempo y fuerza, velocity para dar vida a los hi-hats (acentos, *ghost notes*), humanizar; reutilizando `pulso`, el Piano Roll con `velocity` y los grooves. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

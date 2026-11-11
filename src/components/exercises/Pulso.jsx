@@ -17,6 +17,8 @@ import Rondas from './Rondas.jsx'
  *        cada: tiempos entre toque y toque (1 = cada tiempo, 0.5 = «1 y 2 y», 4 = solo el 1 en 4/4).
  *        desfase: en qué tiempo cae el primer toque (0 = en el 1; 2 = en el 3).
  *        contar: 'tiempos' | 'y' | 'e' → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o «1 e y a 2 e y a…»).
+ *        toques: [0, 1.5, 3] → patrón irregular (en tiempos dentro de cada compás), p. ej. síncopas o el tresillo.
+ *                Manda sobre `cada`/`desfase`; cada toque se mide contra el golpe del patrón más cercano.
  *  - { tipo: 'tempo', rondas: [{ bpm, groove }] }
  *      → tap tempo: marcar el pulso de un ritmo y adivinar sus BPM.
  *  - { tipo: 'explorar', tempos: [{ bpm, genero }], minimo: 3, mensaje }
@@ -71,7 +73,7 @@ function useRitmo() {
 function useLatido(ritmo, periodo = 1, desfase = 0) {
   const [latido, setLatido] = useState(-1)
   useEffect(() => {
-    if (!ritmo) return setLatido(-1)
+    if (!ritmo || !periodo) return setLatido(-1)
     let frame = 0
     const tic = () => {
       const b = Math.floor((tiempoAudio() - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso) / (periodo * ritmo.pulso))
@@ -82,6 +84,32 @@ function useLatido(ritmo, periodo = 1, desfase = 0) {
     return () => cancelAnimationFrame(frame)
   }, [ritmo, periodo, desfase])
   return latido
+}
+
+/** Golpe del patrón (en tiempos desde el inicio) más cercano a `b`; null si aún no ha empezado. */
+function golpeCercano(b, ciclo, patron) {
+  const c = Math.floor(b / ciclo)
+  let mejor = null
+  for (const k of [c - 1, c, c + 1]) {
+    for (const t of patron) {
+      const x = k * ciclo + t
+      if (x < 0) continue
+      if (mejor === null || Math.abs(b - x) < Math.abs(b - mejor)) mejor = x
+    }
+  }
+  if (mejor === null || b < -0.5) return null
+  return mejor
+}
+
+/** Para que el pad lata solo en los golpes del patrón: índice de la última subdivisión que era golpe. */
+function ultimoGolpe(sub, division, ciclo, patron) {
+  if (sub < 0) return -1
+  const total = ciclo * division
+  for (let s = sub; s > sub - total && s >= 0; s--) {
+    const t = (s % total) / division
+    if (patron.some((x) => Math.abs(x - t) < 1e-6)) return s
+  }
+  return -1
 }
 
 /** Momento del toque en el reloj de audio, descontando lo que tardó en llegar el evento. */
@@ -157,10 +185,13 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
   const meta = ronda.meta ?? 8
   const cada = ronda.cada ?? 1
   const desfase = ronda.desfase ?? 0
+  const patron = ronda.toques ?? null
+  const ciclo = formaGroove(ronda.groove ?? 'click', ronda).tiempos
   const { ritmo, empezar, parar } = useRitmo()
-  const latido = useLatido(ritmo, cada, desfase)
-  const division = DIVISION[ronda.contar] ?? 1
+  const latidoRegular = useLatido(ritmo, patron ? 0 : cada, desfase)
+  const division = DIVISION[ronda.contar] ?? (patron ? 4 : 1)
   const sub = useLatido(ritmo, 1 / division)
+  const latido = patron ? ultimoGolpe(sub, division, ciclo, patron) : latidoRegular
   const color = useColor(leccionId)
   const [toques, setToques] = useState([]) // errores (s) ya compensados
   const [buenos, setBuenos] = useState(0)
@@ -172,11 +203,19 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
 
   const onToque = (e) => {
     if (!ritmo || hecho) return
-    const periodo = cada * ritmo.pulso
-    const rel = momentoToque(e) - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso
-    const k = Math.round(rel / periodo)
-    if (k < 0) return
-    const bruto = rel - k * periodo
+    let bruto
+    if (patron) {
+      const rel = momentoToque(e) - latenciaAudio() - ritmo.inicio
+      const objetivo = golpeCercano(rel / ritmo.pulso, ciclo, patron)
+      if (objetivo === null) return
+      bruto = rel - objetivo * ritmo.pulso
+    } else {
+      const periodo = cada * ritmo.pulso
+      const rel = momentoToque(e) - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso
+      const k = Math.round(rel / periodo)
+      if (k < 0) return
+      bruto = rel - k * periodo
+    }
     crudos.current.push(bruto)
     // Auriculares bluetooth y algunos móviles suenan con retraso: si todos los toques
     // caen igual de desplazados, lo tomamos como retraso del dispositivo y lo descontamos.
@@ -236,7 +275,7 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
           <span className="shrink-0 text-base font-semibold tabular-nums text-zinc-500">{ronda.bpm} BPM</span>
         </div>
         {!hecho && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'click', ronda.bpm, ronda))} />}
-        {ronda.contar && <Contador tiempos={formaGroove(ronda.groove ?? 'click', ronda).tiempos} division={division} actual={ritmo ? sub : -1} cada={cada} desfase={desfase} color={color} />}
+        {ronda.contar && <Contador tiempos={ciclo} division={division} actual={ritmo ? sub : -1} cada={cada} desfase={desfase} patron={patron} color={color} />}
         <Medidor error={ultimo} />
         <Puntos total={meta} hechos={buenos} />
         <Pad onToque={onToque} latido={latido} mostrarLatido={ronda.visual !== false} color={color} disabled={!ritmo} texto={ritmo ? ronda.boton ?? 'Toca aquí al pulso' : 'Primero, Empezar'} />
@@ -250,11 +289,12 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
  * Cuenta del compás: «1 2 3 4», «1 y 2 y…» (division 2) o «1 e y a…» (division 4, en dos filas de 8).
  * Se ilumina la casilla que suena; las que hay que tocar llevan un aro del acento.
  */
-function Contador({ tiempos, division, actual, cada, desfase, color }) {
+function Contador({ tiempos, division, actual, cada, desfase, patron, color }) {
   const total = tiempos * division
   const pos = actual >= 0 ? actual % total : -1
   const silabas = division === 4 ? SILABAS_SEMI : SILABAS
   const objetivo = (i) => {
+    if (patron) return patron.some((t) => Math.abs(t - i / division) < 1e-6)
     const x = (i / division - desfase) / cada
     return Math.abs(x - Math.round(x)) < 1e-6
   }

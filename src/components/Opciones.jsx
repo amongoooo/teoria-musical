@@ -4,6 +4,7 @@ import { setTema, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import TuProgreso from './TuProgreso.jsx'
 
 const TEMAS = [
   { id: 'claro', nombre: 'Claro', Icono: IconoSol },
@@ -13,7 +14,7 @@ const TEMAS = [
 
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
- * De momento: Apariencia (Claro / Oscuro / Automático, que sigue al teléfono).
+ * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono) y Tu progreso (pasarlo a otro dispositivo).
  */
 export default function BotonOpciones({ className = '' }) {
   const [abierta, setAbierta] = useState(false)
@@ -29,13 +30,13 @@ export default function BotonOpciones({ className = '' }) {
         <IconoEngranaje />
       </Pulsable>
       <Hoja abierta={abierta} onCerrar={cerrar} etiqueta="Opciones">
-        <PanelOpciones />
+        <PanelOpciones onCerrar={cerrar} />
       </Hoja>
     </>
   )
 }
 
-function PanelOpciones() {
+function PanelOpciones({ onCerrar }) {
   const { tema } = useOpciones()
   return (
     <div className="flex flex-col gap-6">
@@ -77,6 +78,8 @@ function PanelOpciones() {
           {tema === 'sistema' ? 'Sigue el modo claro u oscuro de tu teléfono.' : tema === 'oscuro' ? 'Fondo oscuro, más cómodo de noche.' : 'Fondo claro, como siempre.'}
         </p>
       </section>
+
+      <TuProgreso onCerrar={onCerrar} />
     </div>
   )
 }
