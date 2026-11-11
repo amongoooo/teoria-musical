@@ -21,7 +21,7 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 - **Tailwind CSS v4** (plugin `@tailwindcss/vite`, configurado en `src/index.css`).
 - **Tone.js** para el audio (piano con samples Salamander + sintetizador de respaldo).
 - **motion** (Framer Motion) para animaciones con resortes: presets en `src/ui/movimiento.js`, botón/enlace que se hunde `src/ui/Pulsable.jsx`.
-- Previstos: **Tonal.js** (teoría: escalas, acordes, intervalos), **@tonejs/midi** (leer/exportar MIDI).
+- **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas de pasos y escalas (`src/theory/intervalos.js`). Previsto: **@tonejs/midi** (leer/exportar MIDI).
 - **localStorage** para el progreso del usuario.
 
 Estilo visual: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura y bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo) en variables de `src/index.css`; **íconos mínimos** propios (`src/ui/Iconos.jsx`); **fuentes por rol** con @fontsource: Bricolage Grotesque (títulos, `font-titulo`), Figtree (texto), DM Mono (datos musicales, `font-dato`), Pixelify Sans (racha y niveles, `font-juego`).
@@ -39,7 +39,7 @@ src/
     actividad.js        # Código de interacción de cada paso y su etiqueta (ícono de actividad + nombre)
     modulos.js          # Los 10 módulos y sus lecciones (título, acento = var(--color-modulo-N), reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
-    modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js … leccion-2-5.js
+    modulo-01/leccion-1-1.js   # … modulo-02/leccion-2-1.js … leccion-2-5.js y modulo-03/leccion-3-1.js
   components/
     Piano.jsx           # Piano táctil (multitouch, glissando, octavas, teclas marcadas)
     CaminoLecciones.jsx # Camino de islas de un módulo (vertical en celular, horizontal en ancho; carrusel + barra de puntitos)
@@ -58,6 +58,7 @@ src/
   audio/bateria.js      # Batería sintetizada: golpe('kick' | 'snare' | 'hat' | 'clap' | 'click')
   audio/sonido.js       # reproducir({ notas | frecuencia }) para el contenido
   theory/notas.js       # midi, frecuencia, nombre en español, compararAltura
+  theory/intervalos.js  # (Tonal.js) pasoDesde (semitono/tono), formula (T T S…), semitonos, nombreDistancia, entre
   theory/bateria.js     # Nombres de percusión, claveNota, GROOVES (4/4, 3/4, trap, dembow, bounce, boom bap…), formaGroove(), conSwing(), humanizar()
   progress/progreso.js  # localStorage: useProgreso, guardarPaso, completarLeccion, guardarReto
   theory/oido.js        # Modos del entrenamiento de oído: niveles, opciones y generar preguntas
@@ -92,7 +93,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~59 %** (módulos 1 y 2 completos; progreso transferible entre dispositivos; sistema visual de color, íconos y fuentes aplicado)
+**Avance: ~62 %** (módulos 1 y 2 completos y módulo 3 empezado; progreso transferible entre dispositivos; sistema visual de color, íconos y fuentes aplicado)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -151,4 +152,6 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Regla del vidrio en toda la app**: todo botón de solo ícono que sea función de la app (✕ de lección y entrenador, casita, Opciones, ✕ de hojas y tarjetitas, ‹ › de la pestaña de Módulos) es un círculo de vidrio (`VIDRIO`). La **cabecera de las lecciones** y del entrenador de oído es de vidrio y sin fondo: ✕ + píldora con la barra y el contador. Arreglado de paso: con la barra de puntitos siempre visible, la hoja de Opciones abierta desde la cabecera quedaba **debajo** de la barra (la Hoja vivía dentro de la capa fija de la cabecera) → `Hoja` ahora se pinta en un portal en `<body>` con `z-[60]`/`z-[70]`. Probado con Playwright a 375 px en claro y oscuro.
 
-**Siguiente tarea:** prueba rápida al inicio de cada módulo para saltar lo que ya se domina (empezando por los módulos 1 y 2), o seguir con el módulo 3 «Intervalos y escalas» (lección 3.1 «Tono y semitono», con Tonal.js).
+- ✅ **Lección 3.1 «Tono y semitono»** (16 pasos, abre el módulo 3 «Intervalos y escalas»; teoría con **Tonal.js** en `theory/intervalos.js`): repaso del semitono y el tono como **regla para medir**, contar semitonos (saltos, no teclas; tono y medio), **cada fila del Piano Roll = un semitono** (O4 «Cuenta las filas»), escalas **cromática** y de **tonos enteros**, y la fórmula **T T S T T T S** (desde Do solo blancas = adelanto de la escala mayor; desde Sol pide Fa♯ y desde Fa, Si♭). Dos interacciones nuevas de teclado (`tocar`): **P5 «Medir un paso»** (`objetivo: 'paso'`: desde una nota, subir/bajar un semitono o un tono; el fallo dice cuánto se movió y al 2.º marca la tecla) y **P6 «Seguir la fórmula»** (`objetivo: 'formula'`: tocar en orden con una fila de casillas y los pasos T/S encima). El Piano tiene la prop **`ir`** (pasa solo a la octava de la nota que toca si no se ve). Oído: «¿Cuánto se movió?», «¿Cromática o de tonos enteros?», «¿Qué pasos suenan?»; quiz, «¿Qué se siente?» (cromática vs. tonos enteros) y reto en FL. Arreglado de paso: con 9 puntitos (módulo 3) la barra se salía de la pantalla a 375 px → los puntitos se estrechan si no caben. Probada de principio a fin con Playwright a 375 px en claro y oscuro (sin errores; fallos a propósito para ver la pista y la tecla marcada).
+
+**Siguiente tarea:** lección 3.2 «Los intervalos y su carácter» (nombrar intervalos por semitonos con Tonal.js, emparejar sonido ↔ nombre), o la prueba rápida al inicio de cada módulo para saltar lo que ya se domina.
