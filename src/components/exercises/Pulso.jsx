@@ -6,6 +6,7 @@ import { formaGroove } from '../../theory/bateria.js'
 import { oscuro } from '../../ui/color.js'
 import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
+import { Reproducir } from '../../ui/Iconos.jsx'
 import Rondas from './Rondas.jsx'
 
 /**
@@ -97,7 +98,7 @@ const mediana = (xs) => {
 }
 
 function useColor(leccionId) {
-  return getModulo(Number(String(leccionId).split('.')[0]))?.acento ?? '#18181b'
+  return getModulo(Number(String(leccionId).split('.')[0]))?.acento ?? 'var(--color-zinc-900)'
 }
 
 /** Botón grande para tocar al pulso. Late con cada tiempo si `latido` >= 0. */
@@ -140,7 +141,7 @@ function BotonEmpezar({ sonando, onClick }) {
         sonando ? 'border-zinc-200 bg-white text-zinc-800' : 'border-zinc-900 bg-zinc-900 text-white'
       }`}
     >
-      <span aria-hidden>{sonando ? '■' : '▶'}</span>
+      {sonando ? <span aria-hidden className="size-3.5 rounded-[3px] bg-current" /> : <Reproducir className="size-5" />}
       {sonando ? 'Parar' : 'Empezar'}
     </Pulsable>
   )
@@ -233,7 +234,7 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
       <motion.div key={r} {...ENTRA_DERECHA} className="flex flex-col gap-4">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-xl font-semibold leading-snug">{ronda.pregunta ?? 'Toca con el pulso'}</p>
-          <span className="shrink-0 text-base font-semibold tabular-nums text-zinc-500">{ronda.bpm} BPM</span>
+          <span className="shrink-0 font-dato text-base font-medium tabular-nums text-zinc-500">{ronda.bpm} BPM</span>
         </div>
         {!hecho && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'click', ronda.bpm, ronda))} />}
         {ronda.contar && <Contador tiempos={formaGroove(ronda.groove ?? 'click', ronda).tiempos} division={division} actual={ritmo ? sub : -1} cada={cada} desfase={desfase} color={color} />}
@@ -268,7 +269,7 @@ function Contador({ tiempos, division, actual, cada, desfase, color }) {
         return (
           <span
             key={i}
-            className={`grid h-12 min-w-0 flex-1 place-items-center rounded-2xl border-2 tabular-nums transition-colors duration-100 ${
+            className={`grid h-12 min-w-0 flex-1 place-items-center rounded-2xl border-2 font-dato tabular-nums transition-colors duration-100 ${
               tiempo ? 'text-xl font-bold' : 'text-base font-semibold'
             } ${encendida ? 'text-blanco' : tiempo && (i === 0 || division > 1) ? 'bg-white text-zinc-900' : 'bg-white text-zinc-600'}`}
             style={{
@@ -295,11 +296,11 @@ function Medidor({ error }) {
   return (
     <div className="flex flex-col gap-2" aria-live="polite">
       <div className="relative h-10 overflow-hidden rounded-full bg-zinc-100">
-        <div className="absolute inset-y-0 bg-emerald-100" style={{ left: `${50 - zona}%`, width: `${zona * 2}%` }} />
-        <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-emerald-600" />
+        <div className="absolute inset-y-0 bg-bien-suave" style={{ left: `${50 - zona}%`, width: `${zona * 2}%` }} />
+        <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-bien-relleno" />
         {hay && (
           <motion.div
-            className={`absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-colors duration-200 ${bien ? 'bg-emerald-600' : 'bg-amber-500'}`}
+            className={`absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-colors duration-200 ${bien ? 'bg-bien-relleno' : 'bg-fijate'}`}
             initial={false}
             animate={{ left: `${pos}%` }}
             transition={RESORTE.pulsar}
@@ -308,7 +309,7 @@ function Medidor({ error }) {
       </div>
       <div className="flex justify-between text-sm text-zinc-500">
         <span>‹ Antes</span>
-        <span className={`text-base font-semibold ${!hay ? 'text-zinc-500' : bien ? 'text-emerald-700' : 'text-amber-700'}`}>{texto}</span>
+        <span className={`text-base font-semibold ${!hay ? 'text-zinc-500' : bien ? 'text-bien-tinta' : 'text-fijate-tinta'}`}>{texto}</span>
         <span>Tarde ›</span>
       </div>
     </div>
@@ -324,7 +325,7 @@ function Puntos({ total, hechos }) {
           initial={false}
           animate={i < hechos ? { ...SALTO, opacity: 1 } : { scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className={`size-4 rounded-full transition-colors duration-200 ${i < hechos ? 'bg-emerald-600' : 'bg-zinc-200'}`}
+          className={`size-4 rounded-full transition-colors duration-200 ${i < hechos ? 'bg-bien-relleno' : 'bg-zinc-200'}`}
         />
       ))}
     </div>
@@ -412,7 +413,7 @@ function TapTempo({ paso, leccionId, setAccion, siguiente, completar }) {
         <p className="text-xl font-semibold leading-snug">{ronda.pregunta ?? '¿A cuántos BPM va este ritmo?'}</p>
         {!resultado && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'basico', ronda.bpm))} />}
         <div className="flex items-baseline justify-center gap-2 py-1" aria-live="polite">
-          <span className="text-5xl font-bold tabular-nums tracking-tight">{estimado ? Math.round(estimado) : '—'}</span>
+          <span className="font-dato text-5xl font-medium tabular-nums tracking-tight">{estimado ? Math.round(estimado) : '—'}</span>
           <span className="text-xl font-semibold text-zinc-500">BPM</span>
         </div>
         <Pad onToque={onToque} mostrarLatido={false} latido={-1} color={color} disabled={!ritmo} texto={ritmo ? 'Marca el pulso aquí' : resultado ? '¡Hecho!' : 'Primero, Empezar'} />
@@ -481,10 +482,10 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           )}
-          <span className="relative text-base font-semibold tabular-nums text-zinc-800">{ritmo && latido >= 0 ? (latido % ritmo.tiempos) + 1 : '·'}</span>
+          <span className="relative font-dato text-base font-medium tabular-nums text-zinc-800">{ritmo && latido >= 0 ? (latido % ritmo.tiempos) + 1 : '·'}</span>
         </div>
         <div className="flex flex-col gap-0.5" aria-live="polite">
-          <span className="text-4xl font-bold tabular-nums tracking-tight">
+          <span className="font-dato text-4xl font-medium tabular-nums tracking-tight">
             {elegido ? elegido.bpm : '—'} <span className="text-xl font-semibold text-zinc-500">BPM</span>
           </span>
           <span className="text-base text-zinc-600">{elegido ? `${elegido.genero} · ${(elegido.bpm / 60).toFixed(1).replace('.', ',')} pulsos por segundo` : 'Elige un tempo'}</span>
@@ -504,7 +505,7 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
                 activo ? 'border-zinc-900 bg-zinc-900 text-white' : probados.has(t.bpm) ? 'border-zinc-300 bg-white text-zinc-900' : 'border-zinc-200 bg-white text-zinc-900'
               }`}
             >
-              <span className="text-2xl font-bold tabular-nums">{t.bpm}</span>
+              <span className="font-dato text-2xl font-medium tabular-nums">{t.bpm}</span>
               <span className={`text-sm ${activo ? 'text-zinc-200' : 'text-zinc-500'}`}>{t.genero}</span>
             </Pulsable>
           )

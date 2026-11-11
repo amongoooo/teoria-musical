@@ -17,59 +17,99 @@ todo responde al instante, se hunde al tocarlo y se mueve con resortes, nunca co
 1. **Mobile-first**: se diseña a 375 px y luego se amplía (`sm:`). Nada depende de hover ni de teclado.
 2. **Una acción principal por pantalla**: el botón grande negro de abajo (`BarraAccion`).
 3. **Calma**: fondo claro, mucho espacio, tipografía grande. El color se usa para guiar, no para decorar.
-4. **El error no castiga**: los fallos usan ámbar (no rojo) y siempre explican la respuesta.
+4. **El error no castiga**: los fallos usan el oro de «fíjate» con bombilla (nunca rojo) y siempre explican la respuesta.
 5. **Respuesta inmediata**: todo lo tocable reacciona en el mismo frame (se hunde) y el sonido sale enseguida.
 
 ## 2. Tokens
 
-### Color
-| Uso | Valor |
-|---|---|
-| Fondo de página | `#fafafa` (también en cabeceras pegajosas: `bg-[#fafafa]/95 backdrop-blur`) |
-| Superficie (tarjetas) | `bg-white` + `border border-zinc-200` |
-| Texto principal | `#18181b` (`text-zinc-900`) |
-| Texto secundario | `text-zinc-500` / `text-zinc-600` en párrafos |
-| Acción principal | `bg-zinc-900 text-white`; desactivado `bg-zinc-300 text-zinc-500` |
-| Acierto | `bg-emerald-50 text-emerald-900`, botón `bg-emerald-600` |
-| Error / pista | `bg-amber-50 text-amber-900` (nunca rojo) |
-| Nota marcada en el piano | ámbar (`bg-amber-200` blancas, `bg-amber-500` negras); tecla pulsada: azul cielo |
-| Acento de módulo | `acento` en `src/content/modulos.js` (p. ej. M1 `#0ea5e9`) |
+### Color: paleta Lospec500 repartida en papeles (artefacto «Íconos, colores y fuentes», v5)
 
-**Contraste**: el acento puro sirve para barras, puntos y bordes. Si lleva **texto blanco encima**
-(tarjeta destacada, número del módulo) usa el acento oscurecido:
-`color-mix(in oklab, ACENTO 72%, black)` → helper **`oscuro()`** de `src/ui/color.js`. Objetivo ≥ 4.5:1.
-También para **texto de color** sobre blanco (p. ej. «Nivel 1», «Módulo 1»): `oscuro(acento)`, nunca el acento puro.
-Fondo suave de iconos: **`claro(acento)`** (acento al 14 % sobre blanco).
-Grises: `text-zinc-500` es el más claro permitido para texto que hay que leer; `text-zinc-400` solo decorativo (p. ej. `›`).
+**El color solo dice dos cosas: el ESTADO y el MÓDULO.** El texto nombra las cosas, el tono dice cuánto
+y el ícono solo aparece donde se entiende sin explicación. Todas las variables están en **`src/index.css`**
+con **nombre de significado** (cambiar de paleta = tocar una sola lista), en claro y en oscuro:
+
+| Papel | Variables (clases `bg-…`, `text-…`, `border-…`) | Claro | Va siempre con |
+|---|---|---|---|
+| **Gris = estructura** (fondo, superficies, bordes, texto, botón principal) y **bloqueado** | `fondo`, `white` (= superficie), escala `zinc-*` (alias `superficie`, `borde`, `suelo`, `texto`, `texto-2`, `texto-3`) | neutro `#10121c` mezclado con blanco; fondo `#f4f4f5` | candado (si es bloqueado) |
+| **Verde = bien / hecho** | `bien` (barras, bordes) · `bien-relleno` (fondo con `text-blanco`) · `bien-tinta` (texto) · `bien-suave` (fondo suave) | `#5ab552` · `#3c7c36` · `#377332` · `#e7f4e5` | **✓** |
+| **Oro = fíjate** (pistas, errores explicados, teclas marcadas, «Nuevo») | `fijate` (relleno con **texto oscuro**) · `fijate-tinta` · `fijate-suave` · `fijate-claro` (tecla blanca marcada) | `#dab163` · `#816838` · `#faf3e8` · `#f0dcae` | **bombilla** |
+| **Módulo N** (un color cada uno, con su número, **sin ícono**) | `modulo-N` · `modulo-N-relleno` · `modulo-N-tinta` · `modulo-N-suave` | ver tabla de abajo | su número |
+| Lo que suena ahora (tecla pulsada, botón sonando, cabezal) | `sky-*` (redefinidos con azules de Lospec) | `#3388de` | — |
+
+Colores de módulo (barra; los demás se calcularon con contraste ≥ 4.5:1 en cada tema):
+M1 `#3388de` azul · M2 `#e98537` naranja · M3 `#008b8b` turquesa · M4 `#8c78a5` morado · M5 `#ec273f` rojo ·
+M6 `#c878af` rosa · M7 `#3859b3` índigo · M8 `#6e4c30` tierra · M9 `#36c5f4` celeste · **M10 `#5e5b8c`** (ajustado a mano).
+Los modos del entrenamiento de oído usan el color del módulo con el que se relacionan: Intervalos → M3, Acordes → M4, Oído absoluto → M1.
+
+**Reglas**
+1. **Lo importante va doble**: acierto = ✓ + verde, pista = bombilla + oro, bloqueado = candado + gris. Se entiende aunque no se distingan los colores.
+2. **Un color = un significado** en toda la app: el verde nunca decora, el oro nunca es «módulo». Nada de colores sueltos (`emerald`, `amber`, `orange`, hex a mano): usa las variables.
+3. **El tono dice cuánto**: oscuro = fuerte, grave o importante; claro = suave, agudo o de fondo (velocity, batería, avance).
+4. En `src/content/modulos.js` el `acento` de cada módulo es **`var(--color-modulo-N)`**. Los helpers de **`src/ui/color.js`**
+   devuelven la variante calculada: **`oscuro(acento)`** → `-relleno` (fondo con `text-blanco`), **`tinta(acento)`** → `-tinta`
+   (texto de color), **`claro(acento)`** → `-suave` (fondo de iconos y anillos), **`labio(acento)`** → relieve bajo islas y cuadritos.
+   Con cualquier otro color hacen una mezcla `color-mix`. El acento puro solo para barras, puntos, bordes y trazos.
+5. Las variables van en **`@theme static`** (si no, Tailwind elimina las que no usa ninguna clase y los `var()` de JS quedan vacíos).
+6. En SVG, el color de un trazo va en `style={{ stroke }}` (no en el atributo) cuando es una variable.
+7. Grises: `text-zinc-500` es el más claro permitido para texto que hay que leer; `text-zinc-400` solo decorativo (p. ej. `›`).
 
 ### Modo oscuro (Opciones → Apariencia)
 La app tiene tema **Claro** (predeterminado), **Oscuro** y **Automático** (sigue al teléfono). Se guarda en
 `localStorage` (`teoria-musical:opciones:v1`, `src/progress/opciones.js`) y pone la clase **`dark`** en `<html>`;
 `index.html` lo aplica antes de pintar (sin destello) y ajusta `<meta name="theme-color">`.
 
-**Cómo funciona**: `src/index.css` **redefine la paleta** dentro de `.dark` (los `zinc` se invierten,
-`white` pasa a ser la superficie oscura `#1c1c1f`, los fondos de estado claros —`emerald-50`, `amber-50`, `sky-50`…—
-pasan a tonos oscuros y sus textos `-900` a claros). Así **casi nunca hace falta `dark:`**: escribe las clases
+**Cómo funciona**: `src/index.css` **redefine las variables** dentro de `.dark` (los `zinc` se invierten,
+`white` pasa a ser la superficie oscura `#1d1f29`, el fondo `#07080f`; los `-suave` pasan a tonos oscuros y las `-tinta` a claras). Así **casi nunca hace falta `dark:`**: escribe las clases
 de siempre y cada pareja fondo/texto conserva su contraste. Reglas:
 - Fondo de página y cabeceras pegajosas: **`bg-fondo`** (`bg-fondo/95`), nunca `#fafafa` a mano.
-- Texto **sobre el acento, `emerald-600`, `sky-500`…** (fondos que no cambian): **`text-blanco`** (blanco fijo),
+- Texto **sobre un relleno de color** (`oscuro(acento)`, `bg-bien-relleno`, `sky-500`…): **`text-blanco`** (blanco fijo),
   no `text-white` (que en oscuro se vuelve oscuro). Botón blanco dentro de una tarjeta de color: `bg-blanco text-negro`.
 - Botón principal `bg-zinc-900 text-white`: se deja así (en oscuro queda claro con texto oscuro, como iOS).
 - Acento como **color de texto**: **`tinta(acento)`** (`src/ui/color.js`; oscurecido en claro, aclarado en oscuro).
   `oscuro(acento)` es solo para **fondos** con `text-blanco`. `claro(acento)` se mezcla con la superficie del tema.
 - Colores en estilos JS: variables (`var(--color-zinc-200)`, `var(--color-white)`), no hex fijos.
 - Lo que debe verse **siempre claro** (teclas del Piano, columna de teclas del Piano Roll): clase **`tema-claro`**,
-  que restaura la paleta clara en ese bloque.
+  que restaura la paleta clara en ese bloque (grises, `fijate-*` y `sky-*`).
 - Si algo necesita un ajuste solo en oscuro: variante `dark:` (p. ej. opción activa del control segmentado `dark:bg-zinc-300`).
 - Al cambiar de tema, los colores pasan con un fundido de 250 ms (clase temporal `cambiando-tema`).
 
-### Tipografía
-- Fuente: Inter / system-ui (`--font-sans` en `src/index.css`).
-- Título de página: `text-4xl font-bold tracking-tight` (Inicio) o `text-3xl` (otras).
-- Título de paso: `text-2xl font-bold leading-tight tracking-tight sm:text-4xl`.
-- Sección: `text-2xl font-bold tracking-tight`.
+### Tipografía: una fuente = un tipo de información (como mucho 3 a la vez en pantalla)
+Archivos propios con **@fontsource** (importados al principio de `src/index.css`, sin Google Fonts):
+
+| Rol | Fuente | Clase | Para |
+|---|---|---|---|
+| Texto (por defecto) | **Figtree** (variable) | `font-sans` | explicaciones, preguntas, botones |
+| Títulos | **Bricolage Grotesque** (variable, con tamaño óptico) | **`font-titulo`** | títulos de pantalla, de paso, de sección y de tarjeta; número de isla, insignia y cuadrito |
+| Datos musicales | **DM Mono** (400/500) | **`font-dato`** | notas del Piano Roll, BPM, Hz, contadores «1 y 2 y», «x/y», minutos, «Octava 4», pasos del Channel rack: si está en esta letra, es un dato que verás igual en FL |
+| Juego y logros | **Pixelify Sans** (variable) | **`font-juego`** | **solo** racha («12 días») y niveles del entrenamiento de oído |
+
+- Título de página: `font-titulo text-4xl font-extrabold tracking-tight` (Inicio, Módulo, Oído) o `text-3xl font-bold` (otras).
+- Título de paso: `font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl`.
+- Sección: `font-titulo text-2xl font-bold tracking-tight`.
 - Cuerpo: `text-lg leading-relaxed text-zinc-600`. Mínimo `text-base` en lo que hay que leer; `text-sm` solo para datos secundarios. **Nunca `text-xs`.**
+- Datos con `font-dato` en peso `font-medium` (DM Mono no tiene negrita) y `tabular-nums`.
 - Etiquetas pequeñas en mayúsculas: `text-sm font-semibold uppercase tracking-wider`.
+
+### Íconos (`src/ui/Iconos.jsx`): los mínimos
+SVG propios, 24 × 24, **trazo de 2 px con puntas redondeadas** (como Figtree), sin librerías. **Solo 6 que hay que conocer**,
+y se explican solos; **siempre con texto al lado** (o `aria-label` en el botón). Un ícono = un significado; no se añade uno
+sin quitar otro. Todo lo demás se dice con **texto** o con **color** (sin emojis como íconos).
+
+| Grupo | Componentes | Significado |
+|---|---|---|
+| Qué te pide el paso | `Oreja` · `Teclas` · `Trofeo` | oído · practicar (teclado, roll, ritmo, frecuencia) · reto en FL (también isla y hoja de Retos) |
+| Cómo va (con su color) | `Check` (verde) · `Bombilla` (oro) · `Candado` (gris) | bien/hecho · fíjate/pista · bloqueado |
+| Controles de siempre | `Reproducir` · `Cerrar` · `Inicio` · `Opciones` | — |
+
+- **`MarcaBien`**: ✓ blanco en un círculo `bg-bien-relleno` para poner sobre cualquier fondo (esquina de islas y cuadritos
+  hechos, «Completada» en el globo). Con `aro="var(--color-fondo)"` se separa del color de debajo.
+- **Módulos sin ícono**: color + número (islas, insignia, cuadritos, barras).
+- **Etiqueta del paso** (visor de lecciones, encima del título): ícono de su **actividad** + nombre del ejercicio en texto,
+  p. ej. «Oído · Escuchar y elegir», «Practica · Dar acentos», «Reto en FL». Píldora `bg-zinc-100 text-sm font-bold`,
+  ícono de 18 px. Las **explicaciones** (L1–L6) no llevan etiqueta. El código de cada paso sale de
+  **`src/content/actividad.js`** (`codigoPaso`, `etiquetaPaso`), según el catálogo de `src/content/INTERACCIONES.md`.
+- Feedback de la barra inferior: título con `Check` (bien) o `Bombilla` (fíjate).
+- Flechas de navegación (‹ ›) y «…» son texto, no íconos.
 
 ### Espacio y forma
 - Contenedor: `mx-auto max-w-2xl px-5`. Separación entre secciones `gap-10`; dentro de una sección `gap-4`; dentro de una tarjeta `gap-3`/`gap-4`.
@@ -165,7 +205,7 @@ Con una isla abierta, `html` y `body` llevan `overscroll-behavior-y: none`: en A
 - **Contenido futuro** ("Próximamente"): muchos elementos → lista compacta dentro de un recuadro con borde punteado (Inicio);
   pocos (una lección dentro de un módulo) → tarjeta con `border-dashed border-zinc-300` sin `›` y texto `zinc-500`.
 - **Módulos en Inicio**: rejilla de **cuadritos** (`Cuadrito` de `components/NavegadorModulos.jsx`: `rounded-3xl` de 76 px, número sobre `oscuro(acento)` con labio; punteado si aún no existe) con el título debajo y `hechas/total` o «Próximamente». 3 columnas en el celular, 5 en ancho. Tocar uno abre el módulo y sus islas **se despliegan** desde la insignia.
-- **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo que empiezan con una **insignia** (cuadrado `rounded-3xl` de 72 px con el número del módulo). Al entrar, las islas **salen de la insignia** una tras otra (70 ms entre ellas, ~0,5 s con un rebote al llegar) y el camino se estira con ellas. **Tocar la insignia** abre la pestaña de **Módulos** (hoja con un carrusel lateral de tarjetas, una por módulo, con las reglas de swipe; flechas ‹ › y «Módulo N de 10»; «Ir al módulo N» / «Estás aquí» / «Próximamente»). Al final del camino (lado opuesto a la insignia) está la isla de **Retos**: trofeo con borde del acento (rellena cuando todos están hechos); abierta muestra el reto del módulo y «Ver retos», que abre una hoja con el reto del módulo («Lo hice») y el reto de FL de cada lección (abre la lección directo en su reto: `#/leccion/1.1/reto`). En la barra de puntitos, el de Retos es un cuadradito. Celular (< 560 px): vertical en zigzag con el título **debajo**; ancho: horizontal ondulado con el título **encima**. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; relieve plano, no sombra difusa). Estados: hecha (acento oscurecido + ✓), actual (número + anillo `claro(acento)` con arco de avance), bloqueada (`#e4e4e7` + candado), próximamente (blanca, borde punteado, «…»). Camino: curva SVG punteada gris; los tramos hacia islas alcanzables se pintan con el acento. Títulos sobre fondo `#fafafa` para que el camino pase por detrás.
+- **Camino de lecciones** (`components/CaminoLecciones.jsx`, pantalla de Módulo): islas estilo Duolingo que empiezan con una **insignia** (cuadrado `rounded-3xl` de 72 px con el número del módulo). Al entrar, las islas **salen de la insignia** una tras otra (70 ms entre ellas, ~0,5 s con un rebote al llegar) y el camino se estira con ellas. **Tocar la insignia** abre la pestaña de **Módulos** (hoja con un carrusel lateral de tarjetas, una por módulo, con las reglas de swipe; flechas ‹ › y «Módulo N de 10»; «Ir al módulo N» / «Estás aquí» / «Próximamente»). Al final del camino (lado opuesto a la insignia) está la isla de **Retos**: trofeo con borde del acento (rellena cuando todos están hechos); abierta muestra el reto del módulo y «Ver retos», que abre una hoja con el reto del módulo («Lo hice») y el reto de FL de cada lección (abre la lección directo en su reto: `#/leccion/1.1/reto`). En la barra de puntitos, el de Retos es un cuadradito. Celular (< 560 px): vertical en zigzag con el título **debajo**; ancho: horizontal ondulado con el título **encima**. Isla = círculo de 80 px con **labio** inferior sólido (`box-shadow: 0 6px 0` del acento al 45 % con negro; relieve plano, no sombra difusa). Estados: hecha (relleno del módulo + **su número** + `MarcaBien` en la esquina), actual (número + anillo `claro(acento)` con arco de avance), bloqueada (`zinc-200` + candado), próximamente (blanca, borde punteado, «…»). Camino: curva SVG punteada gris; los tramos hacia islas alcanzables se pintan con el acento. Títulos sobre `bg-fondo` para que el camino pase por detrás.
 - **Isla abierta = «isla + bocadillo»** (elegida por el usuario entre 4 propuestas): al tocar una isla, **crece hasta 112 px** (`BOLA`, con su labio y el **aro de avance** alrededor: pista `claro(acento)`, arco del acento) y debajo **sale un globo** (`Globo`) que apunta a ella con un **piquito**. El globo sale de la isla con `--contenido` (fundido + baja 14 px + escala 0,94 → 1). El centro de la bola queda en el punto del camino; la altura real del globo se **mide** (ResizeObserver) y las islas de abajo se apartan lo justo. Globo: `rounded-3xl p-5`, ancho `min(ancho − 24, 340)` en el celular y 320 en ancho; título `text-xl font-bold` (deja sitio a la ✕ de 44 px arriba a la derecha), una línea de estado (`~14 min · 16 pasos` / `Paso 7 de 16 · 38 % · ~14 min` / `✓ Completada · 19/20 a la primera` / candado + «Termina la 2.1 antes» / «Llega pronto») y **botones a lo ancho** (`BotonGlobo`: principal `min-h-13` relleno, secundario `min-h-12` con borde). Colores del globo: disponible → `oscuro(acento)` con `text-blanco` y botón `bg-blanco` con texto del acento; bloqueada → gris (`zinc-200`) con botón negro; próximamente → blanco con borde punteado; **Retos** → trofeo en la bola, globo blanco con borde del acento (relleno del acento cuando están todos hechos), reto del módulo, «x/y hechos» y «Ver retos». **Al abrir** (con el camino cerrado), si la bola y el globo no van a caber entre la parte de arriba de la pantalla y la zona de la barra de puntitos (`BARRA_ALTO`), **la página se desplaza primero** (scroll suave) y **la isla se abre cuando ya está en su sitio**; si al final de la página no hay sitio, se añade un relleno debajo del camino mientras esté abierta. Así un globo grande nunca se mete bajo la barra. Con una abierta, el camino es un **carrusel continuo** (ver «Gestos»): la abierta vuelve a su tamaño mientras la vecina crece; la isla pequeña y la bola se cruzan opacas y el globo aparece después. Flechas ← → del teclado también cambian de isla. Se cierra con ✕, tocando fuera o con Escape.
 - **Hoja inferior** (`src/ui/Hoja.jsx`): bottom sheet tipo iOS disponible para detalles y confirmaciones (de momento sin uso: el módulo usa la isla abierta). Fondo `bg-black/40` con fundido; la hoja sube con `RESORTE.pantalla`, `rounded-t-3xl`, asa gris arriba y ✕ de 44 px; se cierra tocando el fondo, con Escape o **arrastrándola hacia abajo**. En pantallas anchas flota centrada (`max-w-lg`, `rounded-3xl`). Botones apilados a lo ancho: principal negro y secundario con borde. El primer botón lleva `data-foco` (recibe el foco al abrir).
 - **Lección a medias**: mini `BarraProgreso` (`h-1.5 w-24`) bajo «Continuar donde lo dejaste».
@@ -173,7 +213,7 @@ Con una isla abierta, `html` y `body` llevan `overscroll-behavior-y: none`: en A
 - **Opciones de respuesta**: `min-h-16 rounded-2xl border-2`, en rejilla de 2 (o 3 si hay > 4). En lecciones son `Pulsable tipo="tarjeta"` y la correcta da un `SALTO`.
 - **Rondas** (`components/exercises/Rondas.jsx`): puntos de progreso de un ejercicio; la ronda actual crece en vertical con `RESORTE.pulsar`, el color cambia con fundido.
 - **Mini Piano Roll** (`components/PianoRoll.jsx`): tarjeta `rounded-3xl` con teclado a la izquierda (`w-14`, filas negras `bg-zinc-800`), números de tiempo arriba, líneas más marcadas cada tiempo, filas de teclas negras en `bg-zinc-100`. Notas = acento del módulo, más claras cuanta menos velocity (`color-mix`), aparecen con `RESORTE.pulsar`; las notas guía («fantasma») son contornos punteados grises (verdes al resolver). Filas `h-10` si hay ≤ 6, `h-8` si hay más. Las casillas miden ~35 × 32 px: excepción aceptada, como las teclas del piano (es una rejilla para arrastrar, no botones sueltos). Botón «Reproducir» como `BotonSonido`; el cabezal es una columna azul que avanza por casillas (sin animación: funciona igual con «reducir movimiento»). Selector de nombres «Esta app / FL Studio»: control segmentado `bg-zinc-100 p-1`, opción activa `bg-white shadow-sm`.
-- **Pad de pulso** (`exercises/Pulso.jsx`): botón enorme (`h-40 rounded-3xl`, fondo `oscuro(acento)`, texto blanco) que responde en `onPointerDown` (no en `click`, para medir el tiempo). Con ayuda visual, un círculo blanco late en cada tiempo (fundido de 350 ms). Encima, el **medidor antes/tarde**: carril `h-10 rounded-full bg-zinc-100` con la zona buena en `emerald-100`, línea central y una bola que se desplaza con `RESORTE.pulsar` (verde a tiempo, ámbar fuera). Debajo del medidor, puntos de aciertos que dan un `SALTO`. Botón Empezar/Parar: `min-h-14 border-2`, negro al empezar y blanco mientras suena.
+- **Pad de pulso** (`exercises/Pulso.jsx`; BPM y contador con `font-dato`): botón enorme (`h-40 rounded-3xl`, fondo `oscuro(acento)`, texto blanco) que responde en `onPointerDown` (no en `click`, para medir el tiempo). Con ayuda visual, un círculo blanco late en cada tiempo (fundido de 350 ms). Encima, el **medidor antes/tarde**: carril `h-10 rounded-full bg-zinc-100` con la zona buena en `bien-suave`, línea central y una bola que se desplaza con `RESORTE.pulsar` (verde a tiempo, oro fuera). Debajo del medidor, puntos de aciertos que dan un `SALTO`. Botón Empezar/Parar: `min-h-14 border-2`, negro al empezar y blanco mientras suena.
 - **Contador del compás** (`Contador` en `exercises/Pulso.jsx`, ronda con `contar`): fila de casillas `h-12 rounded-2xl border-2` a lo ancho, una por tiempo («1 2 3 4») o por corchea («1 y 2 y…»); los números `text-xl font-bold`, las «y» más pequeñas. La que suena se llena con `oscuro(acento)` y `text-blanco` (fundido de 100 ms); las que hay que tocar llevan **aro** del acento oscurecido. Va entre «Empezar» y el medidor. En semicorcheas (`contar: 'e'`, «1 e y a») son 16 casillas en **dos filas de 8** (rejilla `grid-cols-8`); los números van en `zinc-900` y las sílabas en `zinc-600`.
 - **Piano Roll con nombres propios** (`roll.nombres`): la columna de la izquierda muestra un texto (p. ej. «Redonda», «Semicorchea») en `text-sm font-semibold` y se ensancha a `w-[6.5rem]`. Sirve para la pirámide de figuras (solo lectura; con 16 columnas las casillas quedan estrechas, por eso no se usa para dibujar).
 - **Piano Roll con compás** (`roll.compas`): los números de arriba vuelven a 1 en cada compás (el 1 en negrita) y la línea de inicio de compás es más oscura (`border-zinc-500`).
@@ -183,7 +223,7 @@ Con una isla abierta, `html` y `body` llevan `overscroll-behavior-y: none`: en A
 ## 5. Evitar
 
 - Gradientes por defecto, glassmorphism, sombras grandes, todo centrado, decoración sin función.
-- Rojo para errores, textos grises demasiado claros (`text-zinc-400` solo para elementos decorativos o desactivados).
+- Rojo para errores, emojis como íconos, colores fuera de las variables de significado, textos grises demasiado claros (`text-zinc-400` solo para elementos decorativos o desactivados).
 - Animaciones lineales (`ease-linear`) o largas; animar al hacer scroll.
 - Enlaces o botones con área táctil menor de 44 px (p. ej. "‹ Inicio" solo texto).
 
@@ -195,10 +235,18 @@ Con una isla abierta, `html` y `body` llevan `overscroll-behavior-y: none`: en A
 
 ## 7. Pendiente (de la revisión de diseño)
 
-- Emojis como iconos (👂 🎯 🎹 ↕️): valorar iconos propios sencillos más adelante.
 - Las filas del teclado del Piano Roll son `<button>` con `onPointerDown` (sonido inmediato, como teclas); no se hunden a propósito.
 
 ## Registro de decisiones
+
+- 2026-11-11: (pedido del usuario, artefacto «Íconos, colores y fuentes» v5) **Paleta Lospec500 repartida en papeles**:
+  gris = estructura y bloqueado (con candado), verde = bien (con ✓), oro = fíjate (con bombilla) y un color por módulo
+  (M10 `#5e5b8c`), con variables por significado en `src/index.css` (claro y oscuro) y `acento: 'var(--color-modulo-N)'`
+  en `modulos.js`. **Íconos mínimos** propios en `src/ui/Iconos.jsx` (oreja, teclas, trofeo, ✓, bombilla, candado +
+  reproducir, cerrar, inicio, opciones); fuera los emojis; **etiqueta de cada paso** = ícono de actividad + nombre del
+  ejercicio. **Fuentes por rol** con @fontsource: Bricolage Grotesque (títulos), Figtree (texto), DM Mono (datos),
+  Pixelify Sans (racha y niveles). Islas y cuadritos hechos muestran su número con un ✓ verde en la esquina; la pantalla
+  de lección completada usa el verde. Opciones → Apariencia solo con texto.
 
 - 2026-11-11: (pedido del usuario) La inclinación de la matraca vuelve a los **0,1 s** (antes 0,25 s).
 

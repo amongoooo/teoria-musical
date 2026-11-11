@@ -174,19 +174,19 @@ export default function Piano({
             <Pulsable
               onClick={() => setOffset((o) => Math.max(0, o - 1))}
               disabled={offset === 0}
-              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 disabled:opacity-30"
+              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-2xl leading-none text-zinc-700 disabled:opacity-30"
               aria-label="Octava anterior"
             >
-              ◀
+              ‹
             </Pulsable>
-            <span className="tabular-nums">Octava {firstOctave}</span>
+            <span className="whitespace-nowrap font-dato tabular-nums">Octava {firstOctave}</span>
             <Pulsable
               onClick={() => setOffset((o) => Math.min(maxOffset, o + 1))}
               disabled={offset >= maxOffset}
-              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-700 disabled:opacity-30"
+              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-2xl leading-none text-zinc-700 disabled:opacity-30"
               aria-label="Octava siguiente"
             >
-              ▶
+              ›
             </Pulsable>
           </div>
         )}
@@ -214,7 +214,7 @@ export default function Piano({
                 active.has(note)
                   ? 'bg-sky-200 text-sky-900'
                   : marcadasSet.has(note)
-                    ? 'bg-amber-200 text-amber-900'
+                    ? 'bg-fijate-claro text-fijate-tinta'
                     : 'bg-white text-zinc-400'
               }`}
             >
@@ -233,7 +233,7 @@ export default function Piano({
             key={note}
             data-note={note}
             className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
-              active.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-amber-500' : 'bg-zinc-900'
+              active.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
             }`}
             style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
           />

@@ -24,7 +24,7 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 - Previstos: **Tonal.js** (teoría: escalas, acordes, intervalos), **@tonejs/midi** (leer/exportar MIDI).
 - **localStorage** para el progreso del usuario.
 
-Estilo visual: minimalista, fondo blanco/gris muy claro (`#fafafa`), tipografía grande (Inter / system-ui), mucho espacio.
+Estilo visual: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura y bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo) en variables de `src/index.css`; **íconos mínimos** propios (`src/ui/Iconos.jsx`); **fuentes por rol** con @fontsource: Bricolage Grotesque (títulos, `font-titulo`), Figtree (texto), DM Mono (datos musicales, `font-dato`), Pixelify Sans (racha y niveles, `font-juego`).
 
 **Diseño: antes de tocar cualquier pantalla, usar la skill del proyecto `.claude/skills/diseno/SKILL.md`** (tokens, componentes y movimiento tipo iOS). Actualizarla cuando el usuario apruebe un estilo nuevo.
 
@@ -36,7 +36,8 @@ src/
   router.js             # Rutas por hash: #/  #/modulo/1  #/leccion/1.1
   content/              # Contenido (datos), ver content/FORMATO.md
     INTERACCIONES.md    # Catálogo de interacciones (L1…X1) y plantilla de lección
-    modulos.js          # Los 10 módulos y sus lecciones (título, acento, reto…)
+    actividad.js        # Código de interacción de cada paso y su etiqueta (ícono de actividad + nombre)
+    modulos.js          # Los 10 módulos y sus lecciones (título, acento = var(--color-modulo-N), reto…)
     index.js            # Registro de lecciones disponibles (getLeccion, getModulo…)
     modulo-01/leccion-1-1.js   # … y modulo-02/leccion-2-1.js, leccion-2-2.js, leccion-2-3.js
   components/
@@ -61,7 +62,7 @@ src/
   progress/opciones.js  # localStorage de opciones (tema); aplicarTema() pone la clase `dark` en <html>
   progress/oido.js      # localStorage del entrenamiento de oído: racha, minutos del día, niveles, estadísticas
   pages/                # Inicio, Modulo, Leccion (visor paso a paso), Oido (panel + entrenador)
-  ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe con zona muerta, barrera y progreso continuo), useTirarBordes.js (tirar más allá del borde de arriba/abajo de la página), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx (Volver y BotonInicio = casita), color.js (oscuro/claro)
+  ui/                   # movimiento.js (resortes, ENTRA_DERECHA/SUBE/SALTO, DESLIZAR), useDeslizar.js (swipe con zona muerta, barrera y progreso continuo), useTirarBordes.js (tirar más allá del borde de arriba/abajo de la página), Hoja.jsx (bottom sheet), useSobreBarra.js, Pulsable.jsx (se hunde al tocar), BarraProgreso.jsx, Volver.jsx (Volver y BotonInicio = casita), color.js (oscuro/tinta/claro/labio → variantes del módulo), Iconos.jsx (los íconos mínimos + MarcaBien)
 .claude/skills/diseno/  # Skill de diseño del proyecto
 public/samples/         # Samples de audio propios
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
@@ -88,7 +89,7 @@ public/samples/         # Samples de audio propios
 
 ## Estado del proyecto
 
-**Avance: ~50 %** (módulo 1 completo; módulo 2: 3 de 5 lecciones)
+**Avance: ~52 %** (módulo 1 completo; módulo 2: 3 de 5 lecciones; sistema visual de color, íconos y fuentes aplicado)
 
 - ✅ Fase 0: proyecto base (Vite + React + Tailwind, piano Tone.js apto para celular, despliegue a Pages).
 - ✅ Fase 1 (parte 1): motor de lecciones — formato de contenido, visor paso a paso, navegación Inicio → Módulo → Lección, progreso en localStorage, ejercicios Escucha y elige, Toca en el teclado, pad de frecuencia y Reto en FL Studio.
@@ -124,5 +125,7 @@ public/samples/         # Samples de audio propios
 - ✅ **Cabecera fija y pulido del camino**: la cabecera de Módulo (`CabeceraModulo.jsx`, montada en `App.jsx` fuera de la transición) se queda quieta al pasar de módulo: la barra cambia de color con un fundido y su valor se transforma con un resorte. «‹ Inicio» pasa a ser una **casita** (`BotonInicio`, también en Oído). Barra de puntitos: islas bloqueadas en **gris** y lo que queda debajo **desvanecido**. En los extremos del camino la isla abierta ya no hace goma: **tilt** de 3° + 12 px hacia el dedo y vuelve a los 0,25 s (`alTope` en `useDeslizar`). Arreglado: la isla de Retos quedaba bajo la barra (ahora, tras cada cambio de isla y al soltar, la página la deja a la vista). Probado con Playwright (375 y 1280 px). Después: la **barra de puntitos flota y hace de matraca** (mientras el dedo está apoyado lo sigue con resistencia y vuelve al soltar; al llegar a otro puntito da un golpe de inclinación según la posición de ese puntito —izquierda antihorario, derecha horario, 0° en el centro y 1,5° en las orillas— y solo la inclinación vuelve a los 0,1 s; `FLOTA` y `MATRACA` en `CaminoLecciones.jsx`), arrastrar por la barra va **directo a la isla del puntito más cercano** (siempre gana una; el carrusel continuo queda solo al deslizar la isla), al **abrir** una isla la página **se desplaza primero y la isla se abre después** (los globos grandes ya no quedan bajo la barra; relleno al final de la página si hace falta) y arreglado que la barra **se escondiera abajo en Android** (el «estirón» del navegador al pasar del borde la empujaba: con una isla abierta, `overscroll-behavior-y: none` en `html` y `body`, desde `useTirarBordes`).
 
 - ✅ **Cabecera de Módulo fija**: casita + **barra de progreso por lecciones** (un segmento por lección, cada uno con el avance de su lección) + botón de **Opciones** (en lugar de «x/y»); fija arriba con un desvanecido detrás y, al bajar la página, el **título del módulo en pequeño** bajo la barra. El indicador de tirar desde arriba sale por debajo de la cabecera. Probado con Playwright (claro y oscuro). Arreglado después: al cambiar de módulo la rueda se desplazaba y el segmento nuevo salía detrás de ella (lo que se salía por los lados —la página que sale en la transición y los indicadores escondidos fuera del borde— ensanchaba la pantalla en el celular → `#root { position: relative; overflow-x: clip }` en `index.css` y los indicadores de `CambioModulo` en una capa fija que recorta; probado en los dos sentidos, 4 ↔ 5 lecciones).
+
+- ✅ **Íconos, colores y fuentes con significado** (artefacto v5): paleta **Lospec500** repartida en papeles con variables en `src/index.css` (`@theme static`, claro y oscuro): gris = estructura y bloqueado (+ candado), `bien-*` verde (+ ✓), `fijate-*` oro (+ bombilla) y `modulo-N` (+ `-relleno`, `-tinta`, `-suave`) con un color por módulo (M10 `#5e5b8c`); `modulos.js` usa `acento: 'var(--color-modulo-N)'` y `oscuro/tinta/claro` devuelven la variante calculada. Modos de oído con el color del módulo afín (intervalos M3, acordes M4, absoluto M1). **Íconos mínimos** en `src/ui/Iconos.jsx` (oreja, teclas, trofeo, ✓, bombilla, candado + reproducir, cerrar, inicio, opciones; `MarcaBien`); fuera los emojis. **Etiqueta de cada paso** = ícono de actividad + nombre del ejercicio (`content/actividad.js`, verificado con las 7 lecciones contra el catálogo). Fuentes con @fontsource. `INTERACCIONES.md` traído a esta rama. Revisado con Playwright a 375 px en claro y oscuro.
 
 **Siguiente tarea:** lección 2.4 «Síncopa y anticipación» (acentos a contratiempo, notas que se adelantan a la «y» o a la «a», ligaduras sobre el tiempo, el dembow del reguetón y el *bounce* del hip hop), reutilizando `pulso` con `desfase` y `contar: 'y' | 'e'` y el Piano Roll de batería. Pendiente: prueba rápida al inicio de cada módulo para saltar lo que ya se domina.

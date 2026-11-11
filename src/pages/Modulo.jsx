@@ -48,7 +48,7 @@ function PaginaModulo({ modulo }) {
           <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
             Módulo {modulo.numero}
           </span>
-          <h1 data-titulo-modulo className="text-4xl font-bold leading-tight tracking-tight sm:text-6xl">{modulo.titulo}</h1>
+          <h1 data-titulo-modulo className="font-titulo text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">{modulo.titulo}</h1>
         </motion.header>
 
         <motion.section variants={itemLista} aria-label="Lecciones del módulo" className="py-2 sm:py-6">

@@ -25,7 +25,7 @@ import { IconoPlay } from './BotonSonido.jsx'
  *  - fantasma: notas guía (contorno punteado); `fantasmaBien` las pinta en verde.
  *  - color: color de las notas (acento del módulo).
  */
-export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = false, fantasma = [], fantasmaBien = false, color = '#0ea5e9' }) {
+export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = false, fantasma = [], fantasmaBien = false, color = 'var(--color-modulo-1)' }) {
   const filas = filasDe(roll)
   const columnas = roll.columnas ?? 8
   const porTiempo = roll.porTiempo ?? 2
@@ -170,7 +170,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
             {Array.from({ length: tiempos }, (_, t) => (
               <span
                 key={t}
-                className={`border-l py-1 pl-1.5 text-sm tabular-nums ${inicioCompas(t) ? 'border-zinc-500' : 'border-zinc-300'} ${
+                className={`border-l py-1 pl-1.5 font-dato text-sm tabular-nums ${inicioCompas(t) ? 'border-zinc-500' : 'border-zinc-300'} ${
                   compas && t % compas === 0 ? 'font-bold text-zinc-800' : 'font-semibold text-zinc-500'
                 }`}
               >
@@ -239,7 +239,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
               <Rect key={`f${i}`} n={n} fila={fila(n.nota)} filas={filas.length} columnas={columnas}>
                 <div
                   className={`size-full rounded-lg border-2 border-dashed transition-colors duration-200 ${
-                    fantasmaBien ? 'border-emerald-500 bg-emerald-500/10' : 'border-zinc-400 bg-zinc-400/10'
+                    fantasmaBien ? 'border-bien bg-bien/10' : 'border-zinc-400 bg-zinc-400/10'
                   }`}
                 />
               </Rect>
@@ -266,7 +266,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
           <div className="flex border-t border-zinc-200 bg-zinc-50">
             <div className={`flex ${ancho} shrink-0 flex-col justify-center border-r border-zinc-200 px-1.5 text-center text-sm font-semibold leading-tight text-zinc-600`}>
               Vel.
-              {ultimaVel !== null && <span className="tabular-nums text-zinc-500">{ultimaVel}</span>}
+              {ultimaVel !== null && <span className="font-dato tabular-nums text-zinc-500">{ultimaVel}</span>}
             </div>
             <div
               ref={carrilRef}
@@ -322,15 +322,16 @@ function Rect({ n, fila, filas, columnas, children }) {
 
 function Etiqueta({ nota, modo }) {
   if (esPercusion(nota)) return <span className="text-sm font-semibold">{PERCUSION[nota]}</span>
-  if (modo === 'fl') return <span className="text-base font-semibold">{nombreFL(nota)}</span>
+  // Notas en la fuente de datos (DM Mono): es lo que se ve igual en FL Studio.
+  if (modo === 'fl') return <span className="font-dato text-base font-medium">{nombreFL(nota)}</span>
   if (modo === 'ambas')
     return (
       <>
-        <span className="text-sm font-semibold">{nombreFL(nota)}</span>
-        <span className="mt-0.5 text-sm opacity-75">{nombre(nota)}</span>
+        <span className="font-dato text-sm font-medium">{nombreFL(nota)}</span>
+        <span className="mt-0.5 font-dato text-sm opacity-75">{nombre(nota)}</span>
       </>
     )
-  return <span className="text-base font-semibold">{nombre(nota)}</span>
+  return <span className="font-dato text-base font-medium">{nombre(nota)}</span>
 }
 
 function SelectorEtiquetas({ valor, onCambio }) {

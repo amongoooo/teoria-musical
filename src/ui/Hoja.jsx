@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useDragControls } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { RESORTE } from './movimiento.js'
+import { Cerrar } from './Iconos.jsx'
 import Pulsable from './Pulsable.jsx'
 
 /**
@@ -67,9 +68,9 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
               <Pulsable
                 onClick={onCerrar}
                 aria-label="Cerrar"
-                className="absolute -top-1 right-0 grid size-11 place-items-center rounded-full text-xl text-zinc-500 active:bg-zinc-100"
+                className="absolute -top-1 right-0 grid size-11 place-items-center rounded-full text-zinc-600 active:bg-zinc-100"
               >
-                ✕
+                <Cerrar className="size-5" />
               </Pulsable>
             </div>
             {children}
