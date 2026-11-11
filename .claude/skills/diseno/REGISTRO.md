@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-11: (pedido del usuario) **Barra de octavas** debajo del Piano (control segmentado delgado que también es slider) en lugar de las flechas ‹ ›; **casillas de objetivo** del teclado más grandes, sin ✓ ni círculo: al acertar dan un `POP` y se rellenan de verde.
 - 2026-11-11: (pedido del usuario) **Tres materiales**: vidrio = la app (flota y navega), superficie = la lección, color = el significado. La **barra de abajo pasa a panel de vidrio** y su botón **«se llena»** (vidrio vacío desactivado → negro/verde listo, con fundido y `SALTO`); el indicador de cambio de módulo y la cabecera de las hojas al desplazar, de vidrio. Nueva opción **Opciones → Vidrio: Desenfoque / Opaco** (clase `opaco`).
 - 2026-11-11: Lección 3.2: interacción nueva **Emparejar** (O6: filas sonido + hueco, banco de nombres que viajan con `layoutId`), **fichas que suenan** (tabla de intervalos con su canción y los semitonos en DM Mono) y **Construir un intervalo** (P7, «Medir un paso» con intervalos con nombre).
 - 2026-11-11: **Ícono de la app** (PWA): teclado Do-Re-Mi-Fa con las teclas en los colores de los módulos 1–4 sobre el neutro oscuro; sustituye al favicon con emoji 🎹.

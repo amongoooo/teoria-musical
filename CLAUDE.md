@@ -50,7 +50,7 @@ src/
     exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
                         #   PianoRollEjercicio (pianoroll), Pulso (pulso), RetoFL (reto) + Rondas
     pasos/              # Pasos sin puntuación: PasoTexto (texto, con Fichas que suenan), PasoSiente (siente), Nota
-    Piano.jsx           # Piano táctil (multitouch, octavas, `marcadas`, `ir`, `compacto`, `showLabels`)
+    Piano.jsx           # Piano táctil (multitouch, octavas, `marcadas`, `ir`, `compacto`, `showLabels`) + SelectorOctava.jsx (barra de octavas: tocar o deslizar)
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos

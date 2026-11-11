@@ -57,6 +57,9 @@ export const SUBE = {
 /** «Salto» de celebración (respuesta correcta, casilla conseguida). Uso: animate={ok ? SALTO : { scale: 1 }} */
 export const SALTO = { scale: [1, 1.05, 1] }
 
+/** «Pop» más marcado (casilla que se consigue al tocar la tecla correcta). Uso: animate={ok ? POP : { scale: 1 }} transition={{ duration: 0.4 }} */
+export const POP = { scale: [1, 1.14, 0.97, 1] }
+
 /**
  * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño, sección 3b).
  * Fracciones de X (la distancia de un paso):

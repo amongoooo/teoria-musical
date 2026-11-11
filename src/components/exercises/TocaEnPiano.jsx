@@ -15,8 +15,7 @@ import {
 } from '../../theory/intervalos.js'
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
-import { ENTRA_DERECHA, RESORTE, SALTO, SUBE } from '../../ui/movimiento.js'
-import { Check } from '../../ui/Iconos.jsx'
+import { ENTRA_DERECHA, POP, SALTO, SUBE } from '../../ui/movimiento.js'
 import Piano from '../Piano.jsx'
 import Rondas from './Rondas.jsx'
 
@@ -141,20 +140,24 @@ function UltimaNota({ nota }) {
   )
 }
 
+/**
+ * Casilla de un objetivo del teclado («La3», «La más grave»…). Pedido del usuario: sin ✓ ni círculo, más
+ * grande; al conseguirla da un «pop» y se rellena de verde (el relleno sólido es la segunda señal además del color).
+ */
 function Casilla({ ok, children }) {
   return (
     <motion.li
       initial={false}
-      animate={ok ? SALTO : { scale: 1 }}
-      transition={{ duration: 0.35 }}
-      className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 py-2 text-base font-medium transition-colors duration-200 ${
-        ok ? 'border-bien bg-bien-suave text-bien-tinta' : 'border-zinc-200 bg-white text-zinc-500'
+      animate={ok ? POP : { scale: 1 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
+        ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
       }`}
     >
-      <motion.span aria-hidden key={ok ? 'si' : 'no'} initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={RESORTE.pulsar}>
-        {ok ? <Check className="size-5" /> : <span className="grid size-5 place-items-center">○</span>}
-      </motion.span>
-      {children}
+      <span>
+        {children}
+        {ok && <span className="sr-only"> (conseguida)</span>}
+      </span>
     </motion.li>
   )
 }

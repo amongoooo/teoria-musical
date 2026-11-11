@@ -10,7 +10,7 @@ import {
   startAudio,
 } from '../audio/engine.js'
 import { notaDesdeMidi, midi } from '../theory/notas.js'
-import Pulsable from '../ui/Pulsable.jsx'
+import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -61,6 +61,7 @@ function useVisibleOctaves(ref, max) {
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
  *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
  *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
+ * Si no caben todas las octavas, debajo va la barra de octavas (SelectorOctava): tocar una o deslizar.
  */
 export default function Piano({
   startOctave = 4,
@@ -73,6 +74,7 @@ export default function Piano({
   ir,
 }) {
   const wrapperRef = useRef(null)
+  const raizRef = useRef(null)
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
   const [offset, setOffset] = useState(0) // octava desplazada cuando no caben todas
   const [active, setActive] = useState(() => new Set())
@@ -104,8 +106,8 @@ export default function Piano({
     return onStatusChange(setStatus)
   }, [])
 
-  // En lecciones (compacto), que la barra inferior no tape el teclado.
-  useSobreBarra(wrapperRef, compacto)
+  // En lecciones (compacto), que la barra inferior no tape el teclado ni la barra de octavas.
+  useSobreBarra(raizRef, compacto)
 
   // Recalcular el número de dedos activos -> teclas iluminadas
   const refreshActive = useCallback(() => {
@@ -175,35 +177,14 @@ export default function Piano({
   const blackWidth = whiteWidth * 0.6
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex min-h-7 items-center justify-between gap-3 text-sm text-zinc-500">
+    <div ref={raizRef} className="flex flex-col gap-3">
+      <div className="flex min-h-6 items-center gap-3 text-sm text-zinc-500">
         <span aria-live="polite">
           {status === 'loading' && 'Cargando sonido…'}
           {status !== 'loading' && !audioOn && 'Toca para activar el sonido'}
           {status !== 'loading' && audioOn && (status === 'fallback' ? 'Sonido sintetizado' : 'Listo')}
         </span>
 
-        {maxOffset > 0 && (
-          <div className="flex items-center gap-2">
-            <Pulsable
-              onClick={() => setOffset((o) => Math.max(0, o - 1))}
-              disabled={offset === 0}
-              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-2xl leading-none text-zinc-700 disabled:opacity-30"
-              aria-label="Octava anterior"
-            >
-              ‹
-            </Pulsable>
-            <span className="whitespace-nowrap font-dato tabular-nums">Octava {firstOctave}</span>
-            <Pulsable
-              onClick={() => setOffset((o) => Math.min(maxOffset, o + 1))}
-              disabled={offset >= maxOffset}
-              className="grid size-11 place-items-center rounded-full border border-zinc-200 bg-white text-2xl leading-none text-zinc-700 disabled:opacity-30"
-              aria-label="Octava siguiente"
-            >
-              ›
-            </Pulsable>
-          </div>
-        )}
       </div>
 
       <div
@@ -253,6 +234,15 @@ export default function Piano({
           />
         ))}
       </div>
+
+      {/* Si no caben todas las octavas (celular), una barra de octavas debajo: tocar o deslizar. */}
+      {maxOffset > 0 && (
+        <SelectorOctava
+          octavas={Array.from({ length: maxOffset + 1 }, (_, i) => startOctave + i)}
+          indice={Math.min(offset, maxOffset)}
+          onCambiar={setOffset}
+        />
+      )}
     </div>
   )
 }
