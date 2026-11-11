@@ -39,7 +39,8 @@ Donde se pida un sonido:
 
 Grooves (`GROOVES` de `theory/bateria.js`; `formaGroove()` da su compás y resolución):
 `click`, `basico`, `bombo` (4/4) · `click3`, `vals`, `valsPiano` (3/4) · `marchaPiano` (4/4 al piano) ·
-`trap` (medio tiempo, caja en el 3) y `trapNormal` (caja en 2 y 4), ambos en semicorcheas.
+`trap` (medio tiempo, caja en el 3) y `trapNormal` (caja en 2 y 4), ambos en semicorcheas ·
+`dembow` (reguetón: bombo en cada tiempo, caja en 3, 6, 11, 14) y `bounce` (hip hop: bombo en 0, 7, 10; caja en 2 y 4), en semicorcheas.
 Un patrón propio puede indicar `tiempos` (tiempos por vuelta, 4 por defecto) y `porTiempo` (casillas por tiempo, 2).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
@@ -158,6 +159,9 @@ objetivo: { tipo: 'seguir', rondas: [{ pregunta, bpm: 90, groove: 'click', meta:
   //   contar: 'tiempos' | 'y' | 'e'  → muestra la cuenta del compás («1 2 3 4», «1 y 2 y…» o
   //                    «1 e y a 2 e y a…» en dos filas de 8); se ilumina lo que suena y las
   //                    casillas que hay que tocar llevan aro
+  //   toques: [0, 1.5, 3] → patrón irregular, en tiempos dentro de cada compás (aquí el tresillo:
+  //                    1, «y» del 2 y 4). Manda sobre cada/desfase; cada toque se mide contra el golpe
+  //                    del patrón más cercano y el pad late solo en esos golpes. Sin `contar`, resolución de semicorchea.
   //   groove + porTiempo → un patrón propio con otra resolución (p. ej. hi-hat en semicorcheas, porTiempo: 4)
   //   ayuda, boton   → textos de la barra («Toca en el 1: 2/4 a tiempo») y del botón grande
 objetivo: { tipo: 'tempo', rondas: [{ bpm: 100, groove: 'basico', pregunta }] }
