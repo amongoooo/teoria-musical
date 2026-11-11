@@ -1,7 +1,7 @@
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { estadoLeccion, getLeccion, leccionAnterior } from '../content/index.js'
+import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
@@ -30,10 +30,18 @@ const TILT = { x: 12, grados: 3, vuelve: 250 }
 //  - MATRACA: cada vez que el dedo llega a otro puntito, la barra da un golpe de inclinación que depende
 //    SOLO de la posición de ese puntito en la barra (no del dedo): a la izquierda del centro gira en
 //    sentido antihorario y a la derecha en sentido horario; la magnitud crece con la distancia al centro,
-//    de 0° en el puntito central a `max` en los de las orillas (con 7: 1,5 · 1 · 0,5 · 0 · 0,5 · 1 · 1,5).
+//    de 0° en el puntito central a `max` en los de las orillas (con 7: 3 · 2 · 1 · 0 · 1 · 2 · 3).
 //    La inclinación vuelve a 0 a los `vuelve` ms. Contra un extremo, golpe del puntito de la orilla.
 const FLOTA = { factor: 0.5, max: 14 }
-const MATRACA = { max: 1.5, vuelve: 100 }
+// (Pedido del usuario: el doble de inclinación y la mitad de tiempo.) Los resortes son los de siempre
+// (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
+// «secos», pero duran la mitad.
+const MATRACA = {
+  max: 3,
+  vuelve: 50,
+  golpe: { ...RESORTE.pulsar, stiffness: RESORTE.pulsar.stiffness * 4, damping: RESORTE.pulsar.damping * 2 },
+  vuelta: { ...RESORTE.suave, stiffness: RESORTE.suave.stiffness * 4, damping: RESORTE.suave.damping * 2 },
+}
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
@@ -45,9 +53,10 @@ const Y_ANCHO = 124 // altura del centro de la isla abierta en pantallas anchas
 // sobre la barra de puntitos, hasta `maxAbierta` (así el globo no queda gigante). Al abrir o cerrar,
 // el zoom pasa de uno a otro con el mismo resorte.
 const ZOOM = { maxCerrado: 1.8, maxAbierta: 1.5, anchoAbierta: 760, columna: 130, margenAlto: 96 }
-// Desenfoque de las islas que se hacen pequeñas (las de los lados de la abierta): sin desenfoque a
-// tamaño normal y `max` px en la más pequeña (escala `escalaMin`), como fuera de foco.
-const DESENFOQUE = { max: 3, escalaMin: 0.55 }
+// Desenfoque con una isla abierta (como fuera de foco), según la DISTANCIA a ella en islas: las de al
+// lado apenas (el número se sigue leyendo), las siguientes más, y así. `pasos[d]` = px de desenfoque a
+// distancia d (antes del zoom); más lejos, el último. Cada línea se desenfoca como la media de sus dos islas.
+const DESENFOQUE = { pasos: [0, 1, 2.2, 3.4, 4.5] }
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -70,11 +79,14 @@ const rebote = (t) => {
 // Despliegue al entrar al módulo: cada isla sale de la insignia, una tras otra.
 const DESPLIEGUE = { espera: 0.12, entre: 0.07, dura: 0.5 }
 
-/** Filtro de desenfoque según la escala de una isla (1 = nítida; más pequeña, más borrosa). */
-const desenfoque = (escala) => {
-  const t = limitar((1 - escala) / (1 - DESENFOQUE.escalaMin), 0, 1)
-  return t > 0.01 ? `blur(${(DESENFOQUE.max * t).toFixed(2)}px)` : ''
+/** Px de desenfoque a una distancia (en islas, con decimales) de la isla abierta. */
+const desenfoqueA = (d) => {
+  const ps = DESENFOQUE.pasos
+  const k = Math.floor(d)
+  if (k >= ps.length - 1) return ps[ps.length - 1]
+  return lerp(ps[k], ps[k + 1], d - k)
 }
+const filtro = (px) => (px > 0.05 ? `blur(${px.toFixed(2)}px)` : '')
 
 const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
 
@@ -109,13 +121,19 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const altoVentana = useAltoVentana()
   const lecciones = modulo.lecciones
   // Islas del camino: las lecciones y, al final (lado opuesto a la insignia), la isla de Retos.
+  // El carrusel va por NODOS: el 0 es la insignia del módulo (también se abre con su tarjetita) y la
+  // isla `i` es el nodo i + 1. Así la insignia tiene su puntito y desde ella se pasa al módulo anterior.
   const islasMeta = [...lecciones, { id: 'retos', titulo: 'Retos', esRetos: true }]
-  const n = islasMeta.length
+  const n = islasMeta.length // islas sin la insignia; los nodos van de 0 a n
   const retos = retosDelModulo(modulo, progreso)
   const retosHechos = retos.filter((r) => r.hecho).length
   const moduloCompleto = lecciones.every((l) => progreso.lecciones[l.id]?.completada)
   const estados = [...lecciones.map((l) => estadoLeccion(l.id, progreso)), retosHechos === retos.length ? 'hecha' : 'retos']
   const actual = estados.findIndex((e) => e === 'nueva' || e === 'empezada')
+  const vecinoListo = (dir) => {
+    const m = getModulo(modulo.numero + dir)
+    return Boolean(m && moduloDisponible(m))
+  }
   const [verModulos, setVerModulos] = useState(false)
   const [verRetos, setVerRetos] = useState(false)
   const vertical = anchoReal < 560
@@ -152,14 +170,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       ancho
         ? {
             cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande }),
-            abiertas: Array.from({ length: n }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
+            abiertas: Array.from({ length: n + 1 }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
           }
         : null,
     [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
-  const els = useRef({ nodo: [], escala: [], chica: [], difuso: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], punto: [] }).current
+  const els = useRef({ nodo: [], chica: [], difuso: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], linea: [], filtro: [], punto: [] }).current
+  const uid = useId().replace(/:/g, '')
   const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
 
@@ -183,7 +202,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const L = layouts
     const cont = ref.current
     if (!L || !cont) return abrirYa(i)
-    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i + 1].y - BOLA / 2) * zoom // borde de arriba de la bola
+    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i].y - BOLA / 2) * zoom // borde de arriba de la bola
     const alto = (altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO) * zoom // bola + globo
     const sobra = arriba + alto - (window.innerHeight - BARRA_ALTO)
     const falta = arriba - ARO - 8
@@ -207,7 +226,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   }
 
   const irA = (i) => {
-    if (i < 0 || i >= n) return
+    if (i < 0 || i > n) return
     const antes = abiertaRef.current
     if (i === antes) return
     if (antes === null) return abrir(i)
@@ -234,9 +253,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     base.jump(sig + desfase)
     if (Math.abs(desfase) > 0.001) animate(base, sig, resorte)
   }
-  const puede = (dir) => abiertaRef.current !== null && abiertaRef.current + dir >= 0 && abiertaRef.current + dir < n
+  const puede = (dir) => abiertaRef.current !== null && abiertaRef.current + dir >= 0 && abiertaRef.current + dir <= n
+  // Hacia fuera desde la insignia (anterior) o desde Retos (siguiente), si ese módulo ya existe, el gesto
+  // es de la página: cambia de módulo (useCambioModulo). Si no existe, aquí: «tilt».
+  const acepta = (dir) => {
+    const a = abiertaRef.current
+    return !((a === 0 && dir < 0) || (a === n && dir > 0)) || !vecinoListo(dir)
+  }
 
-  useEffect(() => onAbierta?.(abierta !== null), [abierta, onAbierta])
+  useEffect(() => onAbierta?.(abierta === null ? null : { inicio: abierta === 0 && vecinoListo(-1), fin: abierta === n && vecinoListo(1) }), [abierta, onAbierta, n]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // En los extremos (no hay más islas) la isla abierta no se mueve: hace un pequeño «tilt» y un
   // desplazamiento corto hacia donde va el dedo, y a los 0,25 s vuelve a su sitio con un resorte.
@@ -259,12 +284,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const matraca = (i, total) => {
     if (reducir) return
     clearTimeout(tiltBarra.current)
-    animate(giro, gradosMatraca(i, total), RESORTE.pulsar)
-    tiltBarra.current = setTimeout(() => animate(giro, 0, RESORTE.suave), MATRACA.vuelve)
+    animate(giro, gradosMatraca(i, total), MATRACA.golpe)
+    tiltBarra.current = setTimeout(() => animate(giro, 0, MATRACA.vuelta), MATRACA.vuelve)
   }
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
-  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, alEmpezar: fijarAncla, alTope: inclinar })
+  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, acepta, alEmpezar: fijarAncla, alTope: inclinar })
 
 
   /** Coloca cada isla, camino, título y puntito según la posición continua. */
@@ -274,10 +299,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     if (!L || !cont) return
     const a = apertura.get()
     const p = posicion()
-    const pc = limitar(p, 0, n - 1)
+    const pc = limitar(p, 0, n)
     const fuera = p - pc // goma en los extremos: todo se desplaza un poco
     const i = Math.floor(pc)
-    const j = Math.min(i + 1, n - 1)
+    const j = Math.min(i + 1, n)
     const f = pc - i
     const A = L.abiertas[i]
     const B = L.abiertas[j]
@@ -291,16 +316,16 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       lienzo.current.style.width = `${anchoReal / z}px`
       lienzo.current.style.transform = z !== 1 ? `scale(${z})` : ''
     }
+    const difuso = [] // px de desenfoque de cada nodo (para las líneas)
     for (let m = 0; m <= n; m++) {
       const lo = A.nodos[m]
       const hi = B.nodos[m]
       const c = C.nodos[m]
-      const li = m - 1 // índice de lección (‑1 = insignia)
-      const cerca = m === 0 ? 0 : Math.max(0, 1 - Math.abs(pc - li)) // 1 = es la isla de p
-      const o = a * cerca // cuánto está abierta esta isla
+      const cerca = Math.max(0, 1 - Math.abs(pc - m)) // 1 = es el nodo de p
+      const o = a * cerca // cuánto está abierto este nodo
       let ox = lerp(lo.x, hi.x, f) - (fuera * X) / zoom
       // En vertical, la que se va sale un poco hacia el lado del dedo y la que llega entra por el otro.
-      if (vertical && m > 0) ox -= (pc - li) * cerca * ancho * 0.5
+      if (vertical) ox -= (pc - m) * cerca * ancho * 0.5
       let x = lerp(c.x * zoomCerrado, ox * zoom, a) / z
       let y = lerp(c.y * zoomCerrado, lerp(lo.y, hi.y, f) * zoom, a) / z
       const esc = lerp(c.escala, lerp(lo.escala, hi.escala, f), a)
@@ -317,37 +342,35 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
         nodo.style.transform = `translate3d(${x}px, ${y}px, 0)`
         nodo.style.zIndex = o > 0.001 ? String(10 + Math.round(o * 10)) : ''
       }
-      if (m === 0) {
-        if (els.escala[0]) {
-          els.escala[0].style.transform = `scale(${esc})`
-          els.escala[0].style.filter = desenfoque(esc)
-        }
-        continue
-      }
-      const tam = lerp(esc, BOLA / ISLA, o) // escala de la isla pequeña (crece hasta el tamaño de la bola)
-      if (els.difuso[li]) els.difuso[li].style.filter = desenfoque(tam)
-      const chica = els.chica[li]
+      const base = m === 0 ? INSIGNIA : ISLA // tamaño del nodo cerrado
+      const tam = lerp(esc, BOLA / base, o) // escala del nodo pequeño (crece hasta el tamaño de la bola)
+      // Desenfoque según la distancia a la isla abierta (solo con una abierta).
+      const borroso = a * desenfoqueA(Math.abs(pc - m))
+      difuso.push(borroso)
+      if (els.difuso[m]) els.difuso[m].style.filter = filtro(borroso)
+      const chica = els.chica[m]
       if (chica) {
         chica.style.transform = `scale(${tam * lerp(0.3, 1, Math.max(0, dsp))})`
         chica.style.opacity = String(opacidadChica(o) * limitar(sale * 4, 0, 1))
         chica.inert = o >= 0.5
       }
-      const gr = els.grande[li]
+      const gr = els.grande[m]
       if (gr) {
-        gr.style.transform = `translate(-50%, ${-BOLA / 2}px) scale(${(tam * ISLA) / BOLA})`
+        gr.style.transform = `translate(-50%, ${-BOLA / 2}px) scale(${(tam * base) / BOLA})`
         gr.style.opacity = String(opacidadDisco(o))
         gr.style.setProperty('--contenido', String(opacidadContenido(o)))
         gr.style.visibility = o > 0.002 ? 'visible' : 'hidden'
         gr.inert = o < 0.5
       }
-      const et = els.etiqueta[li]
+      const et = els.etiqueta[m]
       if (et) {
+        et.style.filter = filtro(borroso)
         const conEtiqueta = lerp(c.etiqueta ? 1 : 0, lerp(lo.etiqueta ? 1 : 0, hi.etiqueta ? 1 : 0, f), a) * opacidadTitulo(o) * limitar(sale * 2 - 1, 0, 1)
         et.style.opacity = String(conEtiqueta)
         et.style.visibility = conEtiqueta > 0.01 ? 'visible' : 'hidden'
         et.style.width = `${lerp(c.anchoEtiqueta ?? ETIQUETA, lerp(lo.anchoEtiqueta ?? ETIQUETA, hi.anchoEtiqueta ?? ETIQUETA, f), a)}px`
       }
-      const punto = els.punto[li]
+      const punto = els.punto[m]
       if (punto) punto.style.transform = `scale(${0.5 + 0.5 * cerca})`
     }
     const alto = lerp(C.alto * zoomCerrado, lerp(A.alto, B.alto, f) * zoom, a) // px reales
@@ -358,6 +381,22 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       if (els.gris[s]) els.gris[s].style.opacity = String(limitar(((td - DESPLIEGUE.espera - s * DESPLIEGUE.entre) / DESPLIEGUE.dura) * 3, 0, 1))
       els.gris[s]?.setAttribute('d', d)
       els.color[s]?.setAttribute('d', d)
+      // La línea se desenfoca como la media de sus dos islas (filtro SVG con la zona justa de la línea).
+      const bl = (difuso[s] + difuso[s + 1]) / 2
+      const linea = els.linea[s]
+      const fil = els.filtro[s]
+      if (linea && fil) {
+        if (bl > 0.05) {
+          const mx = Math.min(pos[s].x, pos[s + 1].x) - 40
+          const my = Math.min(pos[s].y, pos[s + 1].y) - 40
+          fil.setAttribute('x', mx)
+          fil.setAttribute('y', my)
+          fil.setAttribute('width', Math.abs(pos[s].x - pos[s + 1].x) + 80)
+          fil.setAttribute('height', Math.abs(pos[s].y - pos[s + 1].y) + 80)
+          fil.firstChild.setAttribute('stdDeviation', bl.toFixed(2))
+          linea.setAttribute('filter', `url(#${fil.id})`)
+        } else linea.removeAttribute('filter')
+      }
     }
     // Celular: la isla abierta se queda en el mismo sitio de la pantalla mientras se cambia.
     if (vertical && ancla.current !== null && a > 0.999 && p !== ultimaP.current) {
@@ -458,6 +497,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     let t
     const revisar = () => {
       if (dedo.current) return (t = setTimeout(revisar, 150))
+      // Aún se está moviendo (cambio de isla o apertura): se mide cuando ya esté en su sitio.
+      if (Math.abs(base.get() + islas.progreso.get() - abiertaRef.current) > 0.01 || apertura.get() < 0.99) return (t = setTimeout(revisar, 100))
       const r = els.grande[abiertaRef.current]?.getBoundingClientRect()
       if (!r) return
       const arriba = r.top - ARO - 8
@@ -486,7 +527,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
           >
             <svg className="pointer-events-none absolute inset-0 overflow-visible" width="100%" height="100%" aria-hidden>
               {islasMeta.map((l, s) => (
-                <g key={l.id}>
+                <g key={l.id} ref={guardar('linea', s)}>
+                  <filter ref={guardar('filtro', s)} id={`difumina-${uid}-${s}`} filterUnits="userSpaceOnUse">
+                    <feGaussianBlur stdDeviation="0" />
+                  </filter>
                   <path ref={guardar('gris', s)} fill="none" stroke="var(--color-zinc-200)" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" style={{ opacity: 0 }} />
                   {(l.esRetos ? moduloCompleto : estados[s] !== 'bloqueada' && estados[s] !== 'proximamente') && (
                     <motion.path
@@ -504,24 +548,39 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
               ))}
             </svg>
 
-            {/* Insignia del módulo */}
+            {/* Insignia del módulo (nodo 0): se abre como las islas, con su tarjetita */}
             <div ref={guardar('nodo', 0)} data-nodo className="absolute left-0 top-0 size-0">
-              <motion.div {...entrada(0)}>
-                <div ref={guardar('escala', 0)} className="absolute left-0 top-0">
-                  <Pulsable
-                    onClick={() => {
-                      cerrar()
-                      setVerModulos(true)
-                    }}
-                    aria-label={`Módulo ${modulo.numero}. Ver los demás módulos`}
-                    aria-haspopup="dialog"
-                    className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl font-titulo text-3xl font-bold text-blanco"
-                    style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
-                  >
-                    {modulo.numero}
-                  </Pulsable>
+              <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
+                <div ref={guardar('difuso', 0)}>
+                  <div ref={guardar('chica', 0)} style={{ opacity: 0 }}>
+                    <motion.div {...entrada(0)}>
+                      <Pulsable
+                        onClick={() => irA(0)}
+                        aria-label={`Módulo ${modulo.numero}: ${modulo.titulo}`}
+                        className="grid place-items-center rounded-3xl font-titulo text-3xl font-bold text-blanco"
+                        style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
+                      >
+                        {modulo.numero}
+                      </Pulsable>
+                    </motion.div>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
+              <div ref={guardar('grande', 0)} className="absolute left-0 top-0" style={{ visibility: 'hidden', opacity: 0, width: grande, transformOrigin: `50% ${BOLA / 2}px` }}>
+                <div ref={guardar('inclina', 0)} style={{ transformOrigin: `50% ${BOLA / 2}px` }}>
+                  <InsigniaAbierta
+                    modulo={modulo}
+                    progreso={progreso}
+                    actual={actual}
+                    retosHechos={retosHechos}
+                    totalRetos={retos.length}
+                    onCerrar={cerrar}
+                    onIr={irA}
+                    onVerModulos={() => setVerModulos(true)}
+                    total={n + 1}
+                  />
+                </div>
+              </div>
             </div>
 
             {islasMeta.map((l, i) => {
@@ -533,10 +592,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                 <div key={l.id} ref={guardar('nodo', i + 1)} data-nodo className="absolute left-0 top-0 size-0">
                   <div>
                     <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
-                      <div ref={guardar('difuso', i)}>
-                        <div ref={guardar('chica', i)} style={{ opacity: 0 }}>
+                      <div ref={guardar('difuso', i + 1)}>
+                        <div ref={guardar('chica', i + 1)} style={{ opacity: 0 }}>
                           {l.esRetos ? (
-                            <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i)} />
+                            <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i + 1)} />
                           ) : (
                             <Isla
                               leccion={l}
@@ -545,13 +604,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                               avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
                               acento={modulo.acento}
                               descripcion={texto}
-                              onClick={() => irA(i)}
+                              onClick={() => irA(i + 1)}
                             />
                           )}
                         </div>
                       </div>
                       <span
-                        ref={guardar('etiqueta', i)}
+                        ref={guardar('etiqueta', i + 1)}
                         className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-fondo px-2 py-0.5"
                         style={{ opacity: 0, ...(vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }) }}
                       >
@@ -565,12 +624,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                         )}
                       </span>
                     </div>
-                    <div ref={guardar('grande', i)} className="absolute left-0 top-0" style={{ visibility: 'hidden', opacity: 0, width: grande, transformOrigin: `50% ${BOLA / 2}px` }}>
-                      <div ref={guardar('inclina', i)} style={{ transformOrigin: `50% ${BOLA / 2}px` }}>
+                    <div ref={guardar('grande', i + 1)} className="absolute left-0 top-0" style={{ visibility: 'hidden', opacity: 0, width: grande, transformOrigin: `50% ${BOLA / 2}px` }}>
+                      <div ref={guardar('inclina', i + 1)} style={{ transformOrigin: `50% ${BOLA / 2}px` }}>
                         {l.esRetos ? (
                           <RetosAbierta modulo={modulo} retos={retos} hechos={retosHechos} onCerrar={cerrar} onVer={() => setVerRetos(true)} />
                         ) : (
-                          <IslaAbierta meta={l} modulo={modulo} progreso={progreso} indice={i} total={n} onCerrar={cerrar} onIr={irA} />
+                          <IslaAbierta meta={l} modulo={modulo} progreso={progreso} indice={i} total={n} onCerrar={cerrar} onIr={(li) => irA(li + 1)} />
                         )}
                       </div>
                     </div>
@@ -590,8 +649,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
           {abierta !== null && (
             <BarraPuntitos
               key="puntitos"
-              lecciones={islasMeta}
-              estados={estados}
+              lecciones={[{ id: 'insignia', titulo: modulo.titulo, esInsignia: true, numero: modulo.numero }, ...islasMeta]}
+              estados={['insignia', ...estados]}
               abierta={abierta}
               acento={modulo.acento}
               guardar={guardar}
@@ -710,19 +769,20 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
                 type="button"
                 data-punto={i}
                 onClick={() => onIr(i)}
-                aria-label={l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
+                aria-label={l.esInsignia ? `Módulo ${l.numero}: ${l.titulo}` : l.esRetos ? 'Retos del módulo' : `Lección ${l.id}: ${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`}
                 aria-current={i === abierta ? 'true' : undefined}
                 className="grid h-14 place-items-center"
                 style={{ width: sep }}
               >
                 <span
                   ref={guardar('punto', i)}
-                  className={`block ${l.esRetos ? 'rounded-[5px]' : 'rounded-full'}`}
+                  className={`block ${l.esRetos || l.esInsignia ? 'rounded-[5px]' : 'rounded-full'}`}
                   style={{
                     width: PUNTO,
                     height: PUNTO,
-                    backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha ? oscuro(acento) : acento,
-                    opacity: cerrada || hecha ? 1 : 0.35,
+                    // La insignia (el módulo): cuadradito del color del módulo, siempre opaco.
+                    backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha || l.esInsignia ? oscuro(acento) : acento,
+                    opacity: cerrada || hecha || l.esInsignia ? 1 : 0.35,
                     transform: `scale(${i === abierta ? 1 : 0.5})`,
                   }}
                 />
@@ -791,39 +851,39 @@ function curva(a, b, vertical) {
 
 /** Altura (dentro del camino) del centro de la isla abierta para la posición continua p. */
 function focoY(L, p, n) {
-  const pc = limitar(p, 0, n - 1)
+  const pc = limitar(p, 0, n)
   const i = Math.floor(pc)
-  const j = Math.min(i + 1, n - 1)
-  return lerp(L.abiertas[i].nodos[i + 1].y, L.abiertas[j].nodos[j + 1].y, pc - i)
+  const j = Math.min(i + 1, n)
+  return lerp(L.abiertas[i].nodos[i].y, L.abiertas[j].nodos[j].y, pc - i)
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
 function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO }) {
+  // Nodos: 0 = insignia, m = isla m − 1 (de 0 a n). `abierta` = nodo abierto (o null).
   const nodos = []
   if (!ancho) return { nodos: Array.from({ length: n + 1 }, () => ({ x: 0, y: 0, escala: 1 })), alto: 0 }
+  const onda = (m) => ((m - 1) % 2 ? ONDA : -ONDA) // ondulación de la isla del nodo m (m ≥ 1)
 
   if (vertical) {
     const amplitud = Math.max(0, Math.min(72, ancho / 2 - ETIQUETA / 2 - 4))
-    nodos.push({ x: ancho / 2, y: INSIGNIA / 2 + 8, escala: 1 })
     const y0 = INSIGNIA + 8 + 56 + ISLA / 2
-    // Centro de la bola abierta y cuánto bajan las islas siguientes para dejar sitio al globo.
-    const yAbierta = abierta === null ? 0 : y0 + abierta * FILA + 10
-    const finAbierta = yAbierta - BOLA / 2 + altoAbierta
-    const extra = abierta === null ? 0 : Math.max(0, finAbierta + 36 - (y0 + (abierta + 1) * FILA - ISLA / 2))
-    for (let i = 0; i < n; i++) {
-      const base = y0 + i * FILA
-      if (i === abierta) nodos.push({ x: ancho / 2, y: yAbierta, escala: 1 })
-      else
-        nodos.push({
-          x: ancho / 2 + amplitud * Math.round(Math.sin(((i + 1) * Math.PI) / 2)),
-          y: base + (abierta !== null && i > abierta ? extra : 0),
-          escala: 1,
-          etiqueta: 'abajo',
-          anchoEtiqueta: ETIQUETA,
-        })
+    const yBase = (m) => (m === 0 ? INSIGNIA / 2 + 8 : y0 + (m - 1) * FILA)
+    const xBase = (m) => (m === 0 ? ancho / 2 : ancho / 2 + amplitud * Math.round(Math.sin((m * Math.PI) / 2)))
+    if (abierta === null) {
+      for (let m = 0; m <= n; m++) nodos.push({ x: xBase(m), y: yBase(m), escala: 1, ...(m > 0 ? { etiqueta: 'abajo', anchoEtiqueta: ETIQUETA } : {}) })
+      return { nodos, alto: nodos[n].y + ISLA / 2 + 80 }
     }
-    const ultimo = nodos[nodos.length - 1]
-    const alto = abierta === n - 1 ? finAbierta + 24 : ultimo.y + ISLA / 2 + 80
+    // Centro de la bola abierta y cuánto bajan los nodos siguientes para dejar sitio al globo.
+    // Con la insignia abierta, todo baja lo justo para que su bola quepa arriba.
+    const yAbierta = abierta === 0 ? BOLA / 2 + 8 : yBase(abierta) + 10
+    const baja = abierta === 0 ? yAbierta - yBase(0) : 0
+    const finAbierta = yAbierta - BOLA / 2 + altoAbierta
+    const extra = abierta === n ? 0 : Math.max(0, finAbierta + 36 - (yBase(abierta + 1) + baja - ISLA / 2))
+    for (let m = 0; m <= n; m++) {
+      if (m === abierta) nodos.push({ x: ancho / 2, y: yAbierta, escala: 1 })
+      else nodos.push({ x: xBase(m), y: yBase(m) + (m > abierta ? baja + extra : 0), escala: 1, ...(m > 0 ? { etiqueta: 'abajo', anchoEtiqueta: ETIQUETA } : {}) })
+    }
+    const alto = abierta === n ? finAbierta + 24 : nodos[n].y + ISLA / 2 + 80
     return { nodos, alto }
   }
 
@@ -832,40 +892,34 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   if (abierta === null) {
     const col = ancho / (n + 1)
     nodos.push({ x: col / 2, y: base, escala: 1 })
-    for (let i = 0; i < n; i++) {
-      nodos.push({ x: col * (i + 1.5), y: base + (i % 2 ? ONDA : -ONDA), escala: 1, etiqueta: 'arriba', anchoEtiqueta: Math.min(ETIQUETA, col - 8) })
+    for (let m = 1; m <= n; m++) {
+      nodos.push({ x: col * (m + 0.5), y: base + onda(m), escala: 1, etiqueta: 'arriba', anchoEtiqueta: Math.min(ETIQUETA, col - 8) })
     }
     return { nodos, alto: base + ONDA + ISLA / 2 + 24 }
   }
 
-  const cy = Y_ANCHO // la bola abierta y las islas de los lados, a la misma altura
+  const cy = Y_ANCHO // la bola abierta y los nodos de los lados, a la misma altura
   const alto = Math.max(base + ONDA + ISLA / 2 + 24, cy - BOLA / 2 + altoAbierta + 28)
   const hueco = 20
-  const izq = abierta + 1 // insignia + lecciones antes de la abierta
-  const der = n - 1 - abierta
+  const izq = abierta // nodos antes del abierto
+  const der = n - abierta // nodos después
   const finIzq = ancho / 2 - grande / 2 - hueco
   const iniDer = ancho / 2 + grande / 2 + hueco
   const lado = (j, cuenta, desde, hasta) => {
     const s = (hasta - desde) / cuenta
     return { x: desde + s * (j + 0.5), s }
   }
-  // Escala de las islas laterales según el espacio que les queda.
-  const sIzq = izq ? finIzq / izq : 1
+  // Escala de los nodos laterales según el espacio que les queda.
   const escalaDe = (s) => Math.max(0.55, Math.min(1, s / 110))
-  {
-    const { x } = lado(0, izq, 0, finIzq)
-    nodos.push({ x, y: cy, escala: escalaDe(sIzq) })
-  }
-  for (let i = 0; i < n; i++) {
-    if (i < abierta) {
-      const { x, s } = lado(i + 1, izq, 0, finIzq)
-      nodos.push({ x, y: cy + (i % 2 ? ONDA : -ONDA) * escalaDe(s), escala: escalaDe(s), etiqueta: s >= 120 ? 'arriba' : null, anchoEtiqueta: Math.min(ETIQUETA, s - 8) })
-    } else if (i === abierta) {
+  for (let m = 0; m <= n; m++) {
+    if (m === abierta) {
       nodos.push({ x: ancho / 2, y: cy, escala: 1 })
-    } else {
-      const { x, s } = lado(i - abierta - 1, der, iniDer, ancho)
-      nodos.push({ x, y: cy + (i % 2 ? ONDA : -ONDA) * escalaDe(s), escala: escalaDe(s), etiqueta: s >= 120 ? 'arriba' : null, anchoEtiqueta: Math.min(ETIQUETA, s - 8) })
+      continue
     }
+    const { x, s } = m < abierta ? lado(m, izq, 0, finIzq) : lado(m - abierta - 1, der, iniDer, ancho)
+    const e = escalaDe(s)
+    if (m === 0) nodos.push({ x, y: cy, escala: e })
+    else nodos.push({ x, y: cy + onda(m) * e, escala: e, etiqueta: s >= 120 ? 'arriba' : null, anchoEtiqueta: Math.min(ETIQUETA, s - 8) })
   }
   return { nodos, alto }
 }
@@ -1010,8 +1064,44 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   )
 }
 
-/** La isla en grande (BOLA px) con su labio y, si se da `avance` (0–1), el aro de avance alrededor. */
-function Bola({ acento, estado, avance = null, children, retos = false }) {
+/**
+ * La insignia abierta: el cuadrito del módulo en grande y, debajo, su tarjetita (como las islas) con el
+ * título, la descripción y cuántas lecciones van; ir a la lección que toca y ver todos los módulos.
+ */
+function InsigniaAbierta({ modulo, progreso, actual, retosHechos, totalRetos, onCerrar, onIr, onVerModulos, total }) {
+  const hechas = modulo.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
+  const siguiente = actual >= 0 ? modulo.lecciones[actual] : null
+  return (
+    <div className="flex flex-col items-center" role="group" aria-label={`Módulo ${modulo.numero}: ${modulo.titulo}`}>
+      <Bola acento={modulo.acento} estado="nueva" cuadrada>
+        {modulo.numero}
+      </Bola>
+      <Globo tema="color" acento={modulo.acento} onCerrar={onCerrar}>
+        <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{modulo.titulo}</h3>
+        <p className="text-base font-medium text-blanco/90">
+          Módulo {modulo.numero} · <span className="font-dato tabular-nums">{hechas}/{modulo.lecciones.length}</span> lecciones
+        </p>
+        {modulo.descripcion && <p className="line-clamp-3 text-base text-blanco/90">{modulo.descripcion}</p>}
+        {siguiente ? (
+          <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(actual + 1)}>
+            Ir a la {siguiente.id}
+          </BotonGlobo>
+        ) : (
+          <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(total - 1)}>
+            Ver retos · <span className="font-dato tabular-nums">{retosHechos}/{totalRetos}</span>
+          </BotonGlobo>
+        )}
+        <BotonGlobo tema="color" acento={modulo.acento} onClick={onVerModulos}>
+          Ver todos los módulos
+        </BotonGlobo>
+      </Globo>
+      <span className="sr-only">Desliza a los lados para ver las lecciones; desde aquí, hacia atrás, pasas al módulo anterior.</span>
+    </div>
+  )
+}
+
+/** La isla en grande (BOLA px) con su labio y, si se da `avance` (0–1), el aro de avance alrededor. `cuadrada` = la insignia. */
+function Bola({ acento, estado, avance = null, children, retos = false, cuadrada = false }) {
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
   let estilo
   if (retos) {
@@ -1025,7 +1115,7 @@ function Bola({ acento, estado, avance = null, children, retos = false }) {
     <div className="relative grid shrink-0 place-items-center" style={{ width: BOLA, height: BOLA }}>
       {avance !== null && <Anillo tam={BOLA + ARO * 2} acento={acento} avance={avance} grosor={7} />}
       <div
-        className={`grid size-full place-items-center rounded-full font-titulo text-3xl font-bold tabular-nums ${
+        className={`grid size-full place-items-center ${cuadrada ? 'rounded-[2.25rem] text-5xl' : 'rounded-full text-3xl'} font-titulo font-bold tabular-nums ${
           lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : retos ? '' : 'border-2 border-dashed border-zinc-300 text-zinc-500'
         }`}
         style={estilo}

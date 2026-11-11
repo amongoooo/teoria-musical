@@ -27,9 +27,10 @@ export default function Modulo({ numero }) {
 
 function PaginaModulo({ modulo }) {
   const progreso = useProgreso()
-  // Con una isla abierta, el swipe lateral es del camino; con el camino cerrado, cambia de módulo.
-  const [islaAbierta, setIslaAbierta] = useState(false)
-  const cambio = useCambioModulo(modulo, { activo: !islaAbierta })
+  // Con el camino cerrado, el swipe cambia de módulo. Con una isla abierta, el swipe lateral es del
+  // camino, salvo hacia fuera desde la primera isla (anterior) o la última (siguiente).
+  const [isla, setIsla] = useState(null) // null o { inicio, fin }
+  const cambio = useCambioModulo(modulo, { isla })
 
   return (
     <>
@@ -58,7 +59,7 @@ function PaginaModulo({ modulo }) {
           className="py-2 sm:py-6"
           style={{ marginInline: 'min(0px, calc(50% - min(50vw - 20px, 700px)))' }}
         >
-          <CaminoLecciones modulo={modulo} progreso={progreso} onAbierta={setIslaAbierta} />
+          <CaminoLecciones modulo={modulo} progreso={progreso} onAbierta={setIsla} />
         </motion.section>
       </motion.main>
       {cambio.indicadores}

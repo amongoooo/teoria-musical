@@ -22,25 +22,27 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * `html` y `body` llevan `overscroll-behavior-y: none` (sin rebote ni «estirón» propio del navegador:
  * en Android, Chrome estira la página al pasar del borde y eso empujaba fuera de la pantalla lo que
  * está fijo abajo, como la barra de puntitos) y arriba del todo `auto` (para que funcione «tirar para
- * recargar»), salvo si el gesto está desactivado (p. ej. con una isla abierta): entonces siempre `none`.
+ * recargar»), salvo si el gesto está desactivado o `rebote` es false (p. ej. con una isla abierta):
+ * entonces siempre `none`. `acepta(dir)`: si devuelve false, ese borde no se arma (p. ej. con una isla
+ * abierta, solo se pasa al módulo anterior desde la primera isla y al siguiente desde la última).
  * Devuelve { progreso, listo }: `progreso` en fracciones de X con signo (+ abajo, − arriba; ±0,5 = punto
  * de pasar) y `listo` (±1 si al soltar ahora pasaría, 0 si no).
  */
-export default function useTirarBordes({ activo, umbral, puede, onPasar, limiteRecarga }) {
+export default function useTirarBordes({ activo, rebote: conRebote = true, umbral, puede, acepta, onPasar, limiteRecarga }) {
   const progreso = useMotionValue(0)
   const listo = useMotionValue(0)
   const op = useRef(null)
-  op.current = { activo, umbral, puede, onPasar, limiteRecarga }
+  op.current = { activo, conRebote, umbral, puede, acepta, onPasar, limiteRecarga }
   const rebote = useRef(null)
   // Al activarse o desactivarse (abrir/cerrar una isla), el rebote del navegador cambia al momento.
-  useEffect(() => rebote.current?.(), [activo])
+  useEffect(() => rebote.current?.(), [activo, conRebote])
 
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
     const antes = [html.style.overscrollBehaviorY, body.style.overscrollBehaviorY]
     const ajustarRebote = () => {
-      const valor = op.current.activo && window.scrollY <= 0 ? 'auto' : 'none'
+      const valor = op.current.activo && op.current.conRebote && window.scrollY <= 0 ? 'auto' : 'none'
       html.style.overscrollBehaviorY = valor
       body.style.overscrollBehaviorY = valor
     }
@@ -75,7 +77,7 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, limiteR
         sigue: false,
         pasado: false,
         // Tirar desde arriba solo si el dedo se apoyó en la parte baja de la pantalla.
-        arribaPermitido: t.clientY > (op.current.limiteRecarga?.() ?? window.innerHeight * DESLIZAR.pagina.recarga),
+        arribaPermitido: op.current.acepta?.(-1) !== false && t.clientY > (op.current.limiteRecarga?.() ?? window.innerHeight * DESLIZAR.pagina.recarga),
       }
     }
 
@@ -96,7 +98,7 @@ export default function useTirarBordes({ activo, umbral, puede, onPasar, limiteR
       }
       // Se «arma» en el borde: abajo del todo subiendo el dedo, o arriba del todo bajándolo.
       if (g.armado === null) {
-        if (enFondo() && t.clientY < g.ultimoY) g.dir = 1
+        if (enFondo() && t.clientY < g.ultimoY && op.current.acepta?.(1) !== false) g.dir = 1
         else if (g.arribaPermitido && arriba() && t.clientY > g.ultimoY) g.dir = -1
         else return (g.ultimoY = t.clientY)
         g.armado = g.ultimoY
