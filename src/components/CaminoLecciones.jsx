@@ -32,7 +32,7 @@ const TILT = { x: 12, grados: 3, vuelve: 250 }
 //    de 0° en el puntito central a `max` en los de las orillas (con 7: 1,5 · 1 · 0,5 · 0 · 0,5 · 1 · 1,5).
 //    La inclinación vuelve a 0 a los `vuelve` ms. Contra un extremo, golpe del puntito de la orilla.
 const FLOTA = { factor: 0.5, max: 14 }
-const MATRACA = { max: 1.5, vuelve: 250 }
+const MATRACA = { max: 1.5, vuelve: 100 }
 const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
