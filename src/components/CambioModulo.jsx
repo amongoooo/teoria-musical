@@ -9,6 +9,7 @@ import useDeslizar from '../ui/useDeslizar.js'
 import useTirarBordes from '../ui/useTirarBordes.js'
 import { ALTO_CABECERA } from './CabeceraModulo.jsx'
 import { Cuadrito } from './NavegadorModulos.jsx'
+import { VIDRIO_PANEL } from '../ui/vidrio.js'
 
 /**
  * Cambio de módulo con un gesto de página (skill de diseño, sección 3b «Swipe de página»):
@@ -163,19 +164,20 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
       <motion.div
         aria-hidden
         // El de arriba sale por DEBAJO de la cabecera fija (que va encima, con su desvanecido).
-        className={`pointer-events-none absolute inset-x-0 flex justify-center bg-fondo/90 ${
+        className={`pointer-events-none absolute inset-x-0 flex justify-center px-3 ${
           signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'pt-2 pb-3'
         }`}
-        style={{ opacity: vis, y: yVertical, ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : {}) }}
+        style={{ y: yVertical, ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : {}) }}
       >
-        <div className="flex items-center gap-4">
+        {/* La opacidad va en el propio panel de vidrio: en un antecesor, el desenfoque dejaría de ver lo de detrás. */}
+        <motion.div className={`flex items-center gap-4 rounded-3xl py-3 pr-6 pl-3 ${VIDRIO_PANEL}`} style={{ opacity: vis }}>
           {cuadrito}
           <span className="flex flex-col">
             {encabezado}
             <span className="text-lg font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
             <span className="text-base text-zinc-600">{disponible ? modulo.titulo : 'Próximamente'}</span>
           </span>
-        </div>
+        </motion.div>
       </motion.div>
     )
   }
@@ -183,7 +185,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
   return (
     <motion.div
       aria-hidden
-      className={`pointer-events-none absolute top-1/2 flex w-32 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl bg-fondo/90 py-3 ${signo > 0 ? 'right-1' : 'left-1'}`}
+      className={`pointer-events-none absolute top-1/2 flex w-32 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl py-3 ${VIDRIO_PANEL} ${signo > 0 ? 'right-1' : 'left-1'}`}
       style={{ opacity: vis, x: xLado }}
     >
       {cuadrito}

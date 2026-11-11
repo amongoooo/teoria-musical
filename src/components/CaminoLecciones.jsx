@@ -1157,7 +1157,7 @@ function Globo({ tema, acento, onCerrar, children }) {
         <Pulsable
           onClick={onCerrar}
           aria-label="Cerrar"
-          className={`absolute right-2 top-2 grid size-11 place-items-center rounded-full ${VIDRIO} ${tema === 'color' ? 'text-blanco' : 'text-zinc-700'}`}
+          className={`absolute right-2 top-2 grid size-11 place-items-center rounded-full ${VIDRIO} ${tema === 'color' ? 'vidrio-color text-blanco' : 'text-zinc-700'}`}
         >
           <Cerrar className="size-5" />
         </Pulsable>

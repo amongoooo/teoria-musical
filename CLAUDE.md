@@ -33,7 +33,7 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 - **motion** (Framer Motion) con resortes: presets en `src/ui/movimiento.js`; todo lo tocable es `src/ui/Pulsable.jsx`.
 - **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas y escalas (`src/theory/intervalos.js`: pasos, fórmulas e intervalos con nombre). Previsto: **@tonejs/midi**.
 - **localStorage** para progreso, opciones y entrenamiento de oído (sin servidor ni cuentas).
-- Estilo: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura/bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo), **íconos mínimos** propios, **fuentes por rol** (Bricolage Grotesque `font-titulo`, Figtree texto, DM Mono `font-dato`, Pixelify Sans `font-juego`) y **vidrio** para lo que flota. Todo en la skill de diseño.
+- Estilo: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura/bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo), **íconos mínimos** propios, **fuentes por rol** (Bricolage Grotesque `font-titulo`, Figtree texto, DM Mono `font-dato`, Pixelify Sans `font-juego`) y **tres materiales**: vidrio = la app (lo que flota: cabeceras, barra de abajo, botones de navegar), superficie = la lección, color = el significado (con opción «Opaco» en Opciones). Todo en la skill de diseño.
 
 ## Dónde está cada cosa
 
@@ -54,14 +54,14 @@ src/
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos
-    Opciones.jsx, TuProgreso.jsx, CodigoQR.jsx                   # Opciones (tema) y progreso entre dispositivos
+    Opciones.jsx, TuProgreso.jsx, CodigoQR.jsx                   # Opciones (tema, vidrio) y progreso entre dispositivos
     BotonSonido.jsx, Rich.jsx                                    # Botón de sonido; texto con **negritas**
   audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle), bateria.js (golpes sintetizados), sonido.js (reproducir() del contenido)
   theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
-  progress/             # progreso.js (lecciones y retos), opciones.js (tema), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
+  progress/             # progreso.js (lecciones y retos), opciones.js (tema y vidrio), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
   pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
   ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js (gestos), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
-                        #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js, useSobreBarra.js
+                        #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js (VIDRIO, VIDRIO_PANEL), useSobreBarra.js
 public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
 docs/HISTORIAL.md       # Historial detallado de todas las tareas
@@ -77,7 +77,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - Comandos: `npm run dev`, `npm run build`, `npm run preview` (abre `/teoria-musical/`).
 - **Lecciones**: un archivo de datos por lección en `src/content/modulo-XX/`, registrado en `src/content/index.js`. El visor muestra un paso por pantalla y un botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente). El error nunca castiga: muestra la respuesta y la explica.
 - **Desbloqueo** (`estadoLeccion` en `content/index.js` → `proximamente | hecha | empezada | nueva | bloqueada`): progresivo dentro de cada módulo; entre módulos no se bloquea; las URLs directas no se bloquean.
-- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (tema) · `teoria-musical:oido:v1` (entrenador).
+- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (`tema`, `vidrio`: desenfoque | opaco) · `teoria-musical:oido:v1` (entrenador).
 - **Probar** con Playwright (ya instalado en el entorno) a **375 px en claro y oscuro**; tema con `localStorage` `teoria-musical:opciones:v1` = `{ "tema": "oscuro" }`. Los samples del piano no cargan en el entorno de pruebas (suena el sintetizador): es normal.
 
 ## Decisiones de contenido
@@ -88,14 +88,14 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~65 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~66 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan). Faltan 3.3–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
-- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, regla del vidrio, camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos.
+- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
