@@ -31,7 +31,7 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 - **Vite + React en JavaScript** (`.jsx`, sin TypeScript) · **Tailwind CSS v4** (`@tailwindcss/vite`, tema en `src/index.css`).
 - **Tone.js** para el audio (piano con samples Salamander + sintetizador de respaldo; batería sintetizada).
 - **motion** (Framer Motion) con resortes: presets en `src/ui/movimiento.js`; todo lo tocable es `src/ui/Pulsable.jsx`.
-- **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas y escalas (`src/theory/intervalos.js`). Previsto: **@tonejs/midi**.
+- **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas y escalas (`src/theory/intervalos.js`: pasos, fórmulas e intervalos con nombre). Previsto: **@tonejs/midi**.
 - **localStorage** para progreso, opciones y entrenamiento de oído (sin servidor ni cuentas).
 - Estilo: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura/bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo), **íconos mínimos** propios, **fuentes por rol** (Bricolage Grotesque `font-titulo`, Figtree texto, DM Mono `font-dato`, Pixelify Sans `font-juego`) y **vidrio** para lo que flota. Todo en la skill de diseño.
 
@@ -44,12 +44,12 @@ src/
     modulos.js          # Los 10 módulos y sus lecciones (título, acento = var(--color-modulo-N), reto…)
     index.js            # Registro de lecciones (getLeccion, getModulo, estadoLeccion…) ← registrar aquí cada lección nueva
     actividad.js        # Código de interacción de cada paso (L1…X1) y su etiqueta (ícono + nombre)
-    modulo-0N/leccion-N-M.js   # Hechas: 1.1–1.4, 2.1–2.5, 3.1
+    modulo-0N/leccion-N-M.js   # Hechas: 1.1–1.4, 2.1–2.5, 3.1–3.2
   pages/                # Inicio, Modulo, Leccion (visor paso a paso + BarraAccion), Oido (panel + entrenador), Importar
   components/
-    exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), TocaEnPiano (tocar), ExploraFrecuencia,
+    exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
                         #   PianoRollEjercicio (pianoroll), Pulso (pulso), RetoFL (reto) + Rondas
-    pasos/              # Pasos sin puntuación: PasoTexto (texto), PasoSiente (siente), Nota
+    pasos/              # Pasos sin puntuación: PasoTexto (texto, con Fichas que suenan), PasoSiente (siente), Nota
     Piano.jsx           # Piano táctil (multitouch, octavas, `marcadas`, `ir`, `compacto`, `showLabels`)
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
@@ -88,18 +88,18 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~63 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~65 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
-- 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; ejercicios P5 «Medir un paso» y P6 «Seguir la fórmula»). Faltan 3.2–3.7.
+- 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan). Faltan 3.3–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
 - ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, regla del vidrio, camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
-**Siguiente tarea:** lección 3.2 «Los intervalos y su carácter» (nombrar intervalos por semitonos con Tonal.js, emparejar sonido ↔ nombre), o la prueba rápida al inicio de cada módulo.
+**Siguiente tarea:** lección 3.3 «La escala mayor» (fórmula T T S T T T S en todas las tonalidades, grados con Tonal.js `Scale`), o la prueba rápida al inicio de cada módulo.
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.

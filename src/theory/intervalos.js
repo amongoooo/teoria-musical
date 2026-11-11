@@ -64,3 +64,52 @@ export function entre(a, b) {
 export function intervalo(a, b) {
   return Interval.distance(a, b)
 }
+
+// ——— Intervalos con nombre (lección 3.2) ———
+// Los `id` son los nombres de Tonal: número + calidad (m = menor, M = mayor, P = justa, A = aumentada).
+// El tritono es la 4.ª aumentada ('4A'): 6 semitonos = 3 tonos.
+
+/** Los intervalos simples, de la 2.ª menor a la octava, con su nombre en español. */
+export const INTERVALOS = [
+  { id: '2m', nombre: '2.ª menor', corto: '2.ª m' },
+  { id: '2M', nombre: '2.ª mayor', corto: '2.ª M' },
+  { id: '3m', nombre: '3.ª menor', corto: '3.ª m' },
+  { id: '3M', nombre: '3.ª mayor', corto: '3.ª M' },
+  { id: '4P', nombre: '4.ª justa', corto: '4.ª J' },
+  { id: '4A', nombre: 'Tritono', corto: 'Tritono' },
+  { id: '5P', nombre: '5.ª justa', corto: '5.ª J' },
+  { id: '6m', nombre: '6.ª menor', corto: '6.ª m' },
+  { id: '6M', nombre: '6.ª mayor', corto: '6.ª M' },
+  { id: '7m', nombre: '7.ª menor', corto: '7.ª m' },
+  { id: '7M', nombre: '7.ª mayor', corto: '7.ª M' },
+  { id: '8P', nombre: 'Octava', corto: 'Octava' },
+].map((i) => ({ ...i, semitonos: Interval.get(i.id).semitones }))
+
+const POR_ID = Object.fromEntries(INTERVALOS.map((i) => [i.id, i]))
+const POR_SEMITONOS = Object.fromEntries(INTERVALOS.map((i) => [i.semitonos, i]))
+
+/** Datos de un intervalo por su id de Tonal ('3M') o por sus semitonos (4). */
+export function datosIntervalo(idOSemitonos) {
+  if (typeof idOSemitonos === 'number') return POR_SEMITONOS[Math.abs(idOSemitonos)] ?? null
+  return POR_ID[idOSemitonos] ?? null
+}
+
+/** Nombre en español: '3M' → '3.ª mayor'; también con semitonos (4 → '3.ª mayor', 0 → 'unísono'). */
+export function nombreIntervalo(idOSemitonos) {
+  if (idOSemitonos === 0) return 'unísono'
+  return datosIntervalo(idOSemitonos)?.nombre ?? `${Math.abs(idOSemitonos)} semitonos`
+}
+
+/** Con artículo, para frases: 'una 3.ª mayor', 'un tritono', 'una octava'. */
+export function conArticulo(idOSemitonos) {
+  const n = nombreIntervalo(idOSemitonos)
+  return `${n === 'Tritono' ? 'un' : 'una'} ${n.charAt(0).toLowerCase()}${n.slice(1)}`
+}
+
+/**
+ * Nota a un intervalo de `nota`, hacia arriba (`dir` = 1) o hacia abajo (-1): notaIntervalo('D4', '3M') → 'F#4'.
+ * Simplifica los nombres raros (Si + tritono = Mi♯ → Fa).
+ */
+export function notaIntervalo(nota, id, dir = 1) {
+  return Note.simplify(Note.transpose(nota, (dir < 0 ? '-' : '') + id))
+}

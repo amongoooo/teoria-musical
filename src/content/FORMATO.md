@@ -64,11 +64,19 @@ sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 
 | `texto` | `components/pasos/PasoTexto.jsx` | Explicación: `parrafos: []`, `sonidos: []`, `nota` |
 | `siente` | `components/pasos/PasoSiente.jsx` | Tarjeta "¿Qué se siente?": `lados: [{ etiqueta, emociones, ejemplos, sonido }]`, `nota` |
 | `elegir` | `components/exercises/EscuchaElige.jsx` | Escucha y elige / quiz, por rondas |
+| `emparejar` | `components/exercises/Emparejar.jsx` | Emparejar varios sonidos con su nombre a la vez, por rondas |
 | `tocar` | `components/exercises/TocaEnPiano.jsx` | Responder tocando el piano |
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
 | `reto` | `components/exercises/RetoFL.jsx` | Reto en FL Studio con "Lo hice" y reflexión |
 | `pianoroll` | `components/exercises/PianoRollEjercicio.jsx` | Mini Piano Roll táctil: dibujar, copiar, velocity |
 | `pulso` | `components/exercises/Pulso.jsx` | Ritmo en bucle: tocar al pulso, tap tempo, explorar tempos |
+
+`texto` acepta además `fichas`: una lista de filas que suenan al tocarlas (nombre, texto y un dato a la derecha
+en DM Mono), p. ej. la tabla de intervalos con su canción de referencia:
+
+```js
+fichas: { nombre: 'Intervalo', dato: 'Semitonos', filas: [{ nombre: '3.ª mayor', texto: '«When the Saints»', dato: 4, sonido: { notas: ['C4', 'E4'] } }] }
+```
 
 `texto` y las rondas de `elegir` aceptan además `roll: { …config, notas }` para mostrar un
 Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregunta.
@@ -93,6 +101,28 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
 }
 ```
 
+### `emparejar`
+
+```js
+{
+  tipo: 'emparejar',
+  rondas: [
+    {
+      pregunta: 'Desde Do, subiendo',          // corta (cabe todo en el celular)
+      parejas: [                               // 3–4 parejas (más no caben a 375 px sin desplazar)
+        { sonido: { notas: ['C4', 'E4'], intervalo: 0.7 }, nombre: '3.ª mayor', detalle: 'Do → Mi · 4 semitonos' },
+      ],
+      explicacion: '…',                        // en la barra al comprobar
+      mezclar: true,                           // (por defecto) sonidos y nombres en orden al azar
+    },
+  ],
+}
+```
+
+Cada sonido es una fila (A, B…) con su botón de escuchar y un hueco; abajo, los nombres. Tocar un nombre lo lleva al
+hueco activo (el que se acaba de escuchar o el primero vacío); tocar un hueco lleno lo devuelve. Al comprobar, cada
+fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Puntúa una pareja por acierto.
+
 ### `tocar`
 
 ```js
@@ -108,6 +138,9 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
   // objetivo: { tipo: 'paso', rondas: [{ desde: 'E4', paso: 'S' | 'T', direccion: 'sube' | 'baja', pista }] }
   //   → tocar la nota a un semitono / un tono de `desde` (calculada con Tonal en theory/intervalos.js;
   //     vale cualquier nombre de la misma tecla). `pista` se añade al fallar; al 2.º fallo se marca la tecla.
+  //   Con `intervalo` (nombre de Tonal: '2m','2M','3m','3M','4P','4A' = tritono,'5P','6m','6M','7m','7M','8P') en lugar
+  //   de `paso` → construir ese intervalo (P7): { desde: 'D4', intervalo: '3M', direccion: 'sube', pista, mensaje }.
+  //   Nombres y semitonos: INTERVALOS / nombreIntervalo / notaIntervalo de theory/intervalos.js.
   // objetivo: { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S','T','T','T','S'], titulo, mensaje }] }
   //   → tocar en orden las notas de la fórmula (T = tono, S = semitono) desde `desde` (que ya viene marcada).
   //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.

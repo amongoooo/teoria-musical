@@ -22,12 +22,14 @@ export const INTERACCIONES = {
   O3: ['oido', 'Quiz'],
   O4: ['oido', 'Leer el roll y elegir'],
   O5: ['oido', 'Gancho de oído'],
+  O6: ['oido', 'Emparejar'],
   P1: ['practicar', 'Explorar'],
   P2: ['practicar', 'Extremos'],
   P3: ['practicar', 'Comparar'],
   P4: ['practicar', 'Todas las octavas'],
   P5: ['practicar', 'Medir un paso'],
   P6: ['practicar', 'Seguir la fórmula'],
+  P7: ['practicar', 'Construir un intervalo'],
   F1: ['practicar', 'Pad de frecuencia'],
   R1: ['practicar', 'Dibujar libre'],
   R2: ['practicar', 'Copiar un patrón'],
@@ -47,7 +49,7 @@ const T_PULSO = { seguir: 'T1', tempo: 'T2', explorar: 'T3' }
 export function codigoPaso(paso, indice = -1) {
   switch (paso.tipo) {
     case 'texto':
-      return paso.roll ? 'L3' : paso.sonidos?.length ? 'L2' : 'L1'
+      return paso.roll ? 'L3' : paso.sonidos?.length || paso.fichas?.filas?.length ? 'L2' : 'L1'
     case 'siente':
       return 'L5'
     case 'elegir': {
@@ -58,7 +60,11 @@ export function codigoPaso(paso, indice = -1) {
       if (rondas.every((r) => !r.opciones)) return 'O1'
       return rondas.some((r) => r.sonidos?.length) ? 'O2' : 'O3'
     }
+    case 'emparejar':
+      return 'O6'
     case 'tocar':
+      // `paso` con intervalos con nombre (3.ª mayor, 5.ª justa…) es construir un intervalo, no medir un paso.
+      if (paso.objetivo?.tipo === 'paso' && paso.objetivo.rondas?.some((r) => r.intervalo)) return 'P7'
       return P_TOCAR[paso.objetivo?.tipo] ?? 'P1'
     case 'frecuencia':
       return 'F1'
