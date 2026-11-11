@@ -139,4 +139,6 @@ public/samples/         # Samples de audio propios
 
 - ✅ **Rediseño unido a main** (rama del rediseño + lecciones 2.4 y 2.5 + Tu progreso): Tu progreso y Cargar progreso con la paleta nueva (`bien-*`, `fijate-*`), `Check`/`Bombilla` de `Iconos.jsx` (mosaicos solo con texto), `font-titulo` y `font-dato`; etiquetas de paso de 2.4 y 2.5 revisadas (nuevo código `T4` «Comparar versiones» para la perilla del swing). Revisado con Playwright a 375 px en claro y oscuro (Inicio, Módulo 2, pasos de pulso, Opciones → Tu progreso, Cargar progreso).
 
+- ✅ **Camino más grande en computadora**: en pantallas anchas el camino ocupa hasta 1400 px y se amplía con una capa escalada (`ZOOM` en `CaminoLecciones.jsx`: hasta 1,8× cerrado y 1,5× con una isla abierta, según ancho y alto de la ventana; pasa de uno a otro con el resorte al abrir/cerrar). Las islas pequeñas de los lados se **desenfocan** según su tamaño (`DESENFOQUE`). Celular sin cambios. Probado con Playwright (1879 × 968, 1280 × 720 y 375 px; claro y oscuro; arrastre con ratón).
+
 **Siguiente tarea:** prueba rápida al inicio de cada módulo para saltar lo que ya se domina (empezando por los módulos 1 y 2), o seguir con el módulo 3 «Intervalos y escalas» (lección 3.1 «Tono y semitono», con Tonal.js).
