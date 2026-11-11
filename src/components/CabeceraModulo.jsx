@@ -4,6 +4,7 @@ import { getLeccion, getModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
 import { BotonInicio } from '../ui/Volver.jsx'
+import { VIDRIO } from '../ui/vidrio.js'
 import BotonOpciones from './Opciones.jsx'
 
 /** Alto de la cabecera fija (fila de 44 px + márgenes + desvanecido), sin contar la zona segura de arriba. */
@@ -15,9 +16,9 @@ const FILA = 60 // borde de abajo de la fila (pt-4 + 44 px): el título grande �
  *  - Vive FUERA de la transición de páginas (App.jsx): al pasar de un módulo a otro se queda quieta;
  *    la barra cambia de color (fundido) y cada segmento se transforma con un resorte (si cambia el
  *    número de lecciones, los segmentos crecen o se encogen).
- *  - Es FIJA arriba: al bajar la página siguen a la vista la casita, la barra y las Opciones, con un
- *    desvanecido detrás (como la barra de puntitos). Cuando el título grande del módulo pasa por debajo,
- *    aparece en pequeño bajo la barra (y la barra sube un poco para dejarle sitio).
+ *  - Es FIJA arriba y de VIDRIO (pedido del usuario): la casita, la barra (dentro de una píldora) y las
+ *    Opciones flotan sobre la página, que pasa por detrás desenfocada. Cuando el título grande del módulo
+ *    pasa por debajo, aparece en pequeño dentro de la píldora, bajo la barra (que sube para dejarle sitio).
  *  - La barra tiene un segmento por lección; cada uno se llena con el avance de esa lección
  *    (completada = lleno; a medias = paso / pasos).
  * La página de Módulo le deja su hueco arriba (`h-11`).
@@ -37,29 +38,22 @@ export default function CabeceraModulo({ numero }) {
   const hechas = valores.filter((v) => v === 1).length
 
   return (
-    <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-30 pb-5"
-      style={{
-        paddingTop: 'env(safe-area-inset-top)',
-        // Desvanecido detrás de la cabecera: lo que pasa por debajo se funde con el fondo.
-        background: 'linear-gradient(to bottom, var(--color-fondo) calc(100% - 20px), color-mix(in oklab, var(--color-fondo) 60%, transparent) calc(100% - 8px), transparent)',
-      }}
-    >
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-30 pb-5" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-4 sm:pt-6">
         <div className="pointer-events-auto shrink-0">
           <BotonInicio />
         </div>
         {/* flex-1 + basis-0 + min-w-0: la zona de la barra tiene un ancho fijo; los segmentos nuevos crecen
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
-        <div className="relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center">
-          <motion.div animate={{ y: chico ? -9 : 0 }} transition={RESORTE.suave}>
+        <div className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
+          <motion.div animate={{ y: chico ? -8 : 0 }} transition={RESORTE.suave}>
             <BarraLecciones valores={valores} color={modulo.acento} aria-label={`Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
           </motion.div>
           <AnimatePresence>
             {chico && (
               <motion.p
                 key="titulo"
-                className="absolute inset-x-0 bottom-0 truncate text-center text-sm font-semibold text-zinc-800"
+                className="absolute inset-x-4 bottom-0.5 truncate text-center text-sm font-semibold text-zinc-800"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
