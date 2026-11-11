@@ -57,6 +57,11 @@ const ZOOM = { maxCerrado: 1.8, maxAbierta: 1.5, anchoAbierta: 760, columna: 130
 // lado apenas (el número se sigue leyendo), las siguientes más, y así. `pasos[d]` = px de desenfoque a
 // distancia d (antes del zoom); más lejos, el último. Cada línea se desenfoca como la media de sus dos islas.
 const DESENFOQUE = { pasos: [0, 1, 2.2, 3.4, 4.5] }
+// Modo «foco» (pedido del usuario): al cerrar la tarjetita, la barra de puntitos se queda en versión
+// TRANSPARENTE y sirve para recorrer el camino sin abrir nada: la isla elegida se ve nítida y un poco más
+// grande (`RESALTA`), las demás se desenfocan por distancia como con una abierta. Tocar la isla la abre;
+// tocar fuera (o Escape) sale del modo y la barra se esconde.
+const RESALTA = 0.12
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -160,6 +165,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
 
   const [abierta, setAbierta] = useState(null)
   const abiertaRef = useRef(null) // isla abierta (destino) o null
+  const [foco, setFoco] = useState(null) // modo foco: nodo elegido con la barra transparente (o null)
+  const focoRef = useRef(null)
+  const focoPos = useMotionValue(0) // posición continua del foco
+  const enfoque = useMotionValue(0) // 0 = sin foco, 1 = modo foco
   const base = useMotionValue(0) // índice continuo de la isla abierta, sin contar el arrastre
   const apertura = useMotionValue(0) // 0 = camino cerrado, 1 = una isla abierta
   const despliegue = useMotionValue(0) // segundos desde que empezó el despliegue inicial
@@ -219,6 +228,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     })
   }
   const abrirYa = (i) => {
+    if (focoRef.current !== null) {
+      focoRef.current = null
+      setFoco(null)
+      animate(enfoque, 0, resorte)
+    }
     abiertaRef.current = i
     setAbierta(i)
     base.jump(i)
@@ -236,11 +250,53 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     animate(base, i, resorte)
   }
   const cerrar = () => {
+    const i = abiertaRef.current
     esperando.current = null
     if (relleno.current) relleno.current.style.height = '0px'
     abiertaRef.current = null
     setAbierta(null)
     animate(apertura, 0, resorte)
+    // Se queda en modo foco en la misma isla (barra transparente), para seguir navegando sin tarjetas.
+    if (i !== null) {
+      focoRef.current = i
+      setFoco(i)
+      focoPos.jump(i)
+      animate(enfoque, 1, resorte)
+      aLaVista(i)
+    }
+  }
+
+  /** Modo foco: elige el nodo `i` sin abrirlo (la barra transparente sigue a la vista). */
+  const enfocar = (i) => {
+    if (i < 0 || i > n || i === focoRef.current) return
+    focoRef.current = i
+    setFoco(i)
+    animate(focoPos, i, resorte)
+    aLaVista(i)
+  }
+  const salirFoco = () => {
+    if (focoRef.current === null) return
+    if (relleno.current) relleno.current.style.height = '0px'
+    focoRef.current = null
+    setFoco(null)
+    animate(enfoque, 0, resorte)
+  }
+  /** Desplaza la página (si hace falta) para que el nodo `i` del camino cerrado quede entre la cabecera y la barra. */
+  const aLaVista = (i) => {
+    const L = layouts
+    const cont = ref.current
+    if (!L || !cont) return
+    const y = cont.getBoundingClientRect().top + L.cerrado.nodos[i].y * zoomCerrado
+    const r = ((i === 0 ? INSIGNIA : ISLA) / 2) * zoomCerrado
+    // Con su título: debajo en el celular, encima en pantallas anchas.
+    const arriba = y - r - (vertical || i === 0 ? 16 : 70 * zoomCerrado) - 88 // 88 ≈ cabecera fija
+    const abajo = y + r + (vertical && i > 0 ? 64 : 16) - (window.innerHeight - BARRA_ALTO)
+    const dy = arriba < 0 ? arriba : abajo > 0 ? Math.min(abajo, Math.max(0, arriba)) : 0
+    if (Math.abs(dy) <= 4) return
+    // Al final de la página no hay sitio para subir la última isla por encima de la barra: relleno.
+    const max = document.documentElement.scrollHeight - (relleno.current?.offsetHeight ?? 0) - window.innerHeight
+    if (relleno.current) relleno.current.style.height = window.scrollY + dy > max ? `${Math.ceil(window.scrollY + dy - max) + 2}px` : '0px'
+    window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
   }
 
   // Al pasar con un gesto: el índice cambia de golpe y useDeslizar compensa su progreso.
@@ -261,7 +317,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     return !((a === 0 && dir < 0) || (a === n && dir > 0)) || !vecinoListo(dir)
   }
 
-  useEffect(() => onAbierta?.(abierta === null ? null : { inicio: abierta === 0 && vecinoListo(-1), fin: abierta === n && vecinoListo(1) }), [abierta, onAbierta, n]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Para el swipe de página: con una isla abierta, solo desde los extremos; en modo foco, libre (pero sin
+  // el rebote del navegador, que empujaría la barra).
+  useEffect(
+    () => onAbierta?.(abierta !== null ? { inicio: abierta === 0 && vecinoListo(-1), fin: abierta === n && vecinoListo(1) } : foco !== null ? { libre: true } : null),
+    [abierta, foco !== null, onAbierta, n], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   // En los extremos (no hay más islas) la isla abierta no se mueve: hace un pequeño «tilt» y un
   // desplazamiento corto hacia donde va el dedo, y a los 0,25 s vuelve a su sitio con un resorte.
@@ -309,6 +370,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const C = L.cerrado
     const pos = []
     const td = despliegue.get()
+    const enf = enfoque.get()
+    const pf = limitar(focoPos.get(), 0, n)
     // Zoom de este fotograma: del cerrado al de isla abierta según la apertura. Las posiciones se
     // mezclan en píxeles reales y se pasan a la capa ampliada (dividiendo por z).
     const z = lerp(zoomCerrado, zoom, a)
@@ -322,6 +385,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       const hi = B.nodos[m]
       const c = C.nodos[m]
       const cerca = Math.max(0, 1 - Math.abs(pc - m)) // 1 = es el nodo de p
+      const cercaF = Math.max(0, 1 - Math.abs(pf - m)) // 1 = es el nodo en foco
       const o = a * cerca // cuánto está abierto este nodo
       let ox = lerp(lo.x, hi.x, f) - (fuera * X) / zoom
       // En vertical, la que se va sale un poco hacia el lado del dedo y la que llega entra por el otro.
@@ -345,12 +409,12 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       const base = m === 0 ? INSIGNIA : ISLA // tamaño del nodo cerrado
       const tam = lerp(esc, BOLA / base, o) // escala del nodo pequeño (crece hasta el tamaño de la bola)
       // Desenfoque según la distancia a la isla abierta (solo con una abierta).
-      const borroso = a * desenfoqueA(Math.abs(pc - m))
+      const borroso = Math.max(a * desenfoqueA(Math.abs(pc - m)), enf * (1 - a) * desenfoqueA(Math.abs(pf - m)))
       difuso.push(borroso)
       if (els.difuso[m]) els.difuso[m].style.filter = filtro(borroso)
       const chica = els.chica[m]
       if (chica) {
-        chica.style.transform = `scale(${tam * lerp(0.3, 1, Math.max(0, dsp))})`
+        chica.style.transform = `scale(${tam * (1 + RESALTA * enf * cercaF * (1 - o)) * lerp(0.3, 1, Math.max(0, dsp))})`
         chica.style.opacity = String(opacidadChica(o) * limitar(sale * 4, 0, 1))
         chica.inert = o >= 0.5
       }
@@ -364,14 +428,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       }
       const et = els.etiqueta[m]
       if (et) {
-        et.style.filter = filtro(borroso)
+        // Solo el texto (el fondo de la etiqueta, que tapa el camino, no se desenfoca).
+        for (const hijo of et.children) hijo.style.filter = filtro(borroso)
         const conEtiqueta = lerp(c.etiqueta ? 1 : 0, lerp(lo.etiqueta ? 1 : 0, hi.etiqueta ? 1 : 0, f), a) * opacidadTitulo(o) * limitar(sale * 2 - 1, 0, 1)
         et.style.opacity = String(conEtiqueta)
         et.style.visibility = conEtiqueta > 0.01 ? 'visible' : 'hidden'
         et.style.width = `${lerp(c.anchoEtiqueta ?? ETIQUETA, lerp(lo.anchoEtiqueta ?? ETIQUETA, hi.anchoEtiqueta ?? ETIQUETA, f), a)}px`
       }
       const punto = els.punto[m]
-      if (punto) punto.style.transform = `scale(${0.5 + 0.5 * cerca})`
+      if (punto) punto.style.transform = `scale(${0.5 + 0.5 * Math.max(a * cerca, enf * cercaF)})`
     }
     const alto = lerp(C.alto * zoomCerrado, lerp(A.alto, B.alto, f) * zoom, a) // px reales
     cont.style.height = `${alto}px`
@@ -432,9 +497,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
   useEffect(() => {
-    const quitar = [base, apertura, despliegue, islas.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
+    const quitar = [base, apertura, despliegue, islas.progreso, enfoque, focoPos].map((mv) => mv.on('change', () => actualizarRef.current()))
     return () => quitar.forEach((q) => q())
-  }, [base, apertura, despliegue, islas.progreso])
+  }, [base, apertura, despliegue, islas.progreso, enfoque, focoPos])
 
   // Al entrar al módulo, las islas se despliegan desde la insignia (sin movimiento si se pide reducirlo).
   const desplegado = useRef(false)
@@ -447,27 +512,40 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
 
   // Escape o tocar fuera de las islas y de la barra cierra la isla abierta; flechas: anterior / siguiente.
   // (Tras un arrastre, useDeslizar anula ese «click», así que deslizar no cierra.)
-  const abiertaSiNo = abierta !== null
+  // En modo foco: Escape o tocar fuera salen del modo (la barra se esconde); flechas mueven el foco y
+  // Enter abre la isla en foco.
+  const activoSiNo = abierta !== null || foco !== null
   const irARef = useRef(irA)
   irARef.current = irA
   const cerrarRef = useRef(cerrar)
   cerrarRef.current = cerrar
+  const focoFns = useRef(null)
+  focoFns.current = { enfocar, salirFoco }
   useEffect(() => {
-    if (!abiertaSiNo) return
+    if (!activoSiNo) return
     const tecla = (e) => {
       if (document.querySelector('[role=dialog]')) return // la hoja abierta se encarga
-      if (e.key === 'Escape') cerrarRef.current()
-      else if (e.key === 'ArrowRight') irARef.current(abiertaRef.current + 1)
-      else if (e.key === 'ArrowLeft') irARef.current(abiertaRef.current - 1)
+      const enFoco = abiertaRef.current === null
+      const actual = enFoco ? focoRef.current : abiertaRef.current
+      if (actual === null) return
+      const mover = enFoco ? focoFns.current.enfocar : irARef.current
+      if (e.key === 'Escape') (enFoco ? focoFns.current.salirFoco : cerrarRef.current)()
+      else if (e.key === 'ArrowRight') mover(actual + 1)
+      else if (e.key === 'ArrowLeft') mover(actual - 1)
+      else if (e.key === 'Enter' && enFoco && e.target === document.body) irARef.current(actual)
     }
-    const fuera = (e) => !e.target.closest?.('[data-nodo], [role=dialog]') && cerrarRef.current()
+    const fuera = (e) => {
+      if (e.target.closest?.('[data-nodo], [role=dialog]')) return
+      if (abiertaRef.current !== null) cerrarRef.current()
+      else focoFns.current.salirFoco()
+    }
     document.addEventListener('keydown', tecla)
     document.addEventListener('click', fuera)
     return () => {
       document.removeEventListener('keydown', tecla)
       document.removeEventListener('click', fuera)
     }
-  }, [abiertaSiNo])
+  }, [activoSiNo])
 
   // Primera aparición: entrada escalonada; después, solo se mueven.
   const [montado, setMontado] = useState(false)
@@ -646,15 +724,16 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
 
       {createPortal(
         <AnimatePresence>
-          {abierta !== null && (
+          {(abierta !== null || foco !== null) && (
             <BarraPuntitos
               key="puntitos"
               lecciones={[{ id: 'insignia', titulo: modulo.titulo, esInsignia: true, numero: modulo.numero }, ...islasMeta]}
               estados={['insignia', ...estados]}
-              abierta={abierta}
+              abierta={abierta ?? foco}
+              transparente={abierta === null}
               acento={modulo.acento}
               guardar={guardar}
-              onIr={irA}
+              onIr={(i) => (abiertaRef.current !== null ? irA(i) : enfocar(i))}
               flotaX={flotaX}
               flotaY={flotaY}
               giro={giro}
@@ -681,7 +760,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
  * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, reducir, onMatraca }) {
+function BarraPuntitos({ lecciones, estados, abierta, transparente = false, acento, guardar, onIr, flotaX, flotaY, giro, reducir, onMatraca }) {
   const sep = DESLIZAR.puntitos.separacion
   const pildora = useRef(null)
   const g = useRef(null) // gesto sobre la barra
@@ -696,16 +775,22 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
       data-nodo
       data-puntitos
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pt-12"
-      // Lo que queda debajo de la barra se desvanece hacia el fondo (así se lee que es otra capa).
-      style={{
-        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
-        background: 'linear-gradient(to top, var(--color-fondo) 40%, color-mix(in oklab, var(--color-fondo) 70%, transparent) 70%, transparent)',
-      }}
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       initial={{ y: '120%' }}
       animate={{ y: 0 }}
       exit={{ y: '120%' }}
       transition={RESORTE.pantalla}
     >
+      {/* Lo que queda debajo de la barra se desvanece hacia el fondo (así se lee que es otra capa). En la
+          versión transparente (modo foco), no: el camino se ve entero. */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(to top, var(--color-fondo) 40%, color-mix(in oklab, var(--color-fondo) 70%, transparent) 70%, transparent)' }}
+        initial={false}
+        animate={{ opacity: transparente ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+      />
       {/* Capa que flota con el dedo */}
       <motion.div style={{ x: flotaX, y: flotaY }}>
         {/* Capa de la matraca (giro) */}
@@ -713,7 +798,10 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
           role="group"
           aria-label="Lecciones del módulo"
           ref={pildora}
-          className="pointer-events-auto flex select-none items-center rounded-full border border-zinc-200 bg-white/95 px-3 shadow-sm backdrop-blur"
+          data-transparente={transparente || undefined}
+          className={`pointer-events-auto relative flex select-none items-center rounded-full border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
+            transparente ? 'border-transparent bg-transparent shadow-none' : 'border-zinc-200 bg-white/95 shadow-sm backdrop-blur'
+          }`}
           style={{ touchAction: 'none', rotate: giro }}
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return
