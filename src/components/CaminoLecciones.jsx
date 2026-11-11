@@ -39,6 +39,15 @@ const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
 const ALTO_ESTIMADO = BOLA + SEPARA + 210 // alto de bola + globo hasta medirlo
 const Y_ANCHO = 124 // altura del centro de la isla abierta en pantallas anchas
+// Pantallas anchas: todo el camino se AMPLÍA (islas, bola, globo y camino a la vez) para llenar el
+// espacio. Con el camino cerrado, según el ancho (columna por isla) hasta `maxCerrado`; con una isla
+// abierta, además, que quepan el globo y sus vecinas (`anchoAbierta`) y que la bola y el globo quepan
+// sobre la barra de puntitos, hasta `maxAbierta` (así el globo no queda gigante). Al abrir o cerrar,
+// el zoom pasa de uno a otro con el mismo resorte.
+const ZOOM = { maxCerrado: 1.8, maxAbierta: 1.5, anchoAbierta: 760, columna: 130, margenAlto: 96 }
+// Desenfoque de las islas que se hacen pequeñas (las de los lados de la abierta): sin desenfoque a
+// tamaño normal y `max` px en la más pequeña (escala `escalaMin`), como fuera de foco.
+const DESENFOQUE = { max: 3, escalaMin: 0.55 }
 
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -60,6 +69,12 @@ const rebote = (t) => {
 }
 // Despliegue al entrar al módulo: cada isla sale de la insignia, una tras otra.
 const DESPLIEGUE = { espera: 0.12, entre: 0.07, dura: 0.5 }
+
+/** Filtro de desenfoque según la escala de una isla (1 = nítida; más pequeña, más borrosa). */
+const desenfoque = (escala) => {
+  const t = limitar((1 - escala) / (1 - DESENFOQUE.escalaMin), 0, 1)
+  return t > 0.01 ? `blur(${(DESENFOQUE.max * t).toFixed(2)}px)` : ''
+}
 
 const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
 
@@ -89,7 +104,9 @@ export function retosDelModulo(modulo, progreso) {
  */
 export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const ref = useRef(null)
-  const ancho = useAncho(ref)
+  const lienzo = useRef(null) // capa ampliada (zoom) dentro del contenedor
+  const anchoReal = useAncho(ref)
+  const altoVentana = useAltoVentana()
   const lecciones = modulo.lecciones
   // Islas del camino: las lecciones y, al final (lado opuesto a la insignia), la isla de Retos.
   const islasMeta = [...lecciones, { id: 'retos', titulo: 'Retos', esRetos: true }]
@@ -101,9 +118,24 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const actual = estados.findIndex((e) => e === 'nueva' || e === 'empezada')
   const [verModulos, setVerModulos] = useState(false)
   const [verRetos, setVerRetos] = useState(false)
-  const vertical = ancho < 560
-  const grande = vertical ? Math.min(ancho - 24, 340) : 320 // ancho del globo
+  const vertical = anchoReal < 560
   const [altos, setAltos] = useState({}) // alto real (bola + globo) de cada isla abierta, medido
+  // Zoom en pantallas anchas (ver ZOOM). Cada disposición se calcula en su ancho «sin ampliar» y la capa
+  // `lienzo` se escala; en el celular, zoom = 1.
+  const zoomCerrado = vertical || !anchoReal ? 1 : limitar(anchoReal / (ZOOM.columna * (n + 1)), 1, ZOOM.maxCerrado)
+  const zoom = vertical || !anchoReal
+    ? 1
+    : limitar(
+        Math.min(
+          anchoReal / ZOOM.anchoAbierta,
+          anchoReal / (ZOOM.columna * (n + 1)),
+          (altoVentana - BARRA_ALTO - ZOOM.margenAlto) / (Math.max(ALTO_ESTIMADO, ...Object.values(altos)) + ARO * 2),
+        ),
+        1,
+        ZOOM.maxAbierta,
+      )
+  const ancho = anchoReal / zoom // ancho sin ampliar con una isla abierta
+  const grande = vertical ? Math.min(ancho - 24, 340) : 320 // ancho del globo
   const X = vertical ? Math.max(100, ancho * DESLIZAR.umbralCelular) : DESLIZAR.umbralAncho
   const reducir = useReducedMotion()
   const resorte = reducir ? { duration: 0 } : RESORTE.pantalla
@@ -119,15 +151,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     () =>
       ancho
         ? {
-            cerrado: calcular({ ancho, vertical, n, abierta: null, grande }),
+            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande }),
             abiertas: Array.from({ length: n }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
           }
         : null,
-    [ancho, vertical, n, grande, altos],
+    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
-  const els = useRef({ nodo: [], escala: [], chica: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], punto: [] }).current
+  const els = useRef({ nodo: [], escala: [], chica: [], difuso: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], punto: [] }).current
   const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
 
@@ -151,8 +183,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const L = layouts
     const cont = ref.current
     if (!L || !cont) return abrirYa(i)
-    const arriba = cont.getBoundingClientRect().top + L.abiertas[i].nodos[i + 1].y - BOLA / 2 // borde de arriba de la bola
-    const alto = altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO // bola + globo
+    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i + 1].y - BOLA / 2) * zoom // borde de arriba de la bola
+    const alto = (altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO) * zoom // bola + globo
     const sobra = arriba + alto - (window.innerHeight - BARRA_ALTO)
     const falta = arriba - ARO - 8
     const dy = sobra > 0 ? Math.min(sobra, falta) : falta < 0 ? falta : 0
@@ -252,6 +284,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const C = L.cerrado
     const pos = []
     const td = despliegue.get()
+    // Zoom de este fotograma: del cerrado al de isla abierta según la apertura. Las posiciones se
+    // mezclan en píxeles reales y se pasan a la capa ampliada (dividiendo por z).
+    const z = lerp(zoomCerrado, zoom, a)
+    if (lienzo.current) {
+      lienzo.current.style.width = `${anchoReal / z}px`
+      lienzo.current.style.transform = z !== 1 ? `scale(${z})` : ''
+    }
     for (let m = 0; m <= n; m++) {
       const lo = A.nodos[m]
       const hi = B.nodos[m]
@@ -259,11 +298,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       const li = m - 1 // índice de lección (‑1 = insignia)
       const cerca = m === 0 ? 0 : Math.max(0, 1 - Math.abs(pc - li)) // 1 = es la isla de p
       const o = a * cerca // cuánto está abierta esta isla
-      let ox = lerp(lo.x, hi.x, f) - fuera * X
+      let ox = lerp(lo.x, hi.x, f) - (fuera * X) / zoom
       // En vertical, la que se va sale un poco hacia el lado del dedo y la que llega entra por el otro.
       if (vertical && m > 0) ox -= (pc - li) * cerca * ancho * 0.5
-      let x = lerp(c.x, ox, a)
-      let y = lerp(c.y, lerp(lo.y, hi.y, f), a)
+      let x = lerp(c.x * zoomCerrado, ox * zoom, a) / z
+      let y = lerp(c.y * zoomCerrado, lerp(lo.y, hi.y, f) * zoom, a) / z
       const esc = lerp(c.escala, lerp(lo.escala, hi.escala, f), a)
       // Despliegue inicial: la isla sale de la insignia (nodo 0) y llega a su sitio con un rebote.
       const sale = m === 0 ? 1 : limitar((td - DESPLIEGUE.espera - (m - 1) * DESPLIEGUE.entre) / DESPLIEGUE.dura, 0, 1)
@@ -279,10 +318,14 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
         nodo.style.zIndex = o > 0.001 ? String(10 + Math.round(o * 10)) : ''
       }
       if (m === 0) {
-        if (els.escala[0]) els.escala[0].style.transform = `scale(${esc})`
+        if (els.escala[0]) {
+          els.escala[0].style.transform = `scale(${esc})`
+          els.escala[0].style.filter = desenfoque(esc)
+        }
         continue
       }
       const tam = lerp(esc, BOLA / ISLA, o) // escala de la isla pequeña (crece hasta el tamaño de la bola)
+      if (els.difuso[li]) els.difuso[li].style.filter = desenfoque(tam)
       const chica = els.chica[li]
       if (chica) {
         chica.style.transform = `scale(${tam * lerp(0.3, 1, Math.max(0, dsp))})`
@@ -307,7 +350,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       const punto = els.punto[li]
       if (punto) punto.style.transform = `scale(${0.5 + 0.5 * cerca})`
     }
-    cont.style.height = `${lerp(C.alto, lerp(A.alto, B.alto, f), a)}px`
+    const alto = lerp(C.alto * zoomCerrado, lerp(A.alto, B.alto, f) * zoom, a) // px reales
+    cont.style.height = `${alto}px`
+    if (lienzo.current) lienzo.current.style.height = `${alto / z}px`
     for (let s = 0; s < n; s++) {
       const d = curva(pos[s], pos[s + 1], vertical)
       if (els.gris[s]) els.gris[s].style.opacity = String(limitar(((td - DESPLIEGUE.espera - s * DESPLIEGUE.entre) / DESPLIEGUE.dura) * 3, 0, 1))
@@ -434,7 +479,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     <>
       <div ref={ref} className="relative w-full select-none" style={{ height: ancho ? undefined : FILA * n, touchAction: 'pan-y' }} {...islas.handlers}>
         {ancho > 0 && (
-          <>
+          <div
+            ref={lienzo}
+            className="absolute left-0 top-0"
+            style={{ transformOrigin: '0 0' }}
+          >
             <svg className="pointer-events-none absolute inset-0 overflow-visible" width="100%" height="100%" aria-hidden>
               {islasMeta.map((l, s) => (
                 <g key={l.id}>
@@ -484,20 +533,22 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                 <div key={l.id} ref={guardar('nodo', i + 1)} data-nodo className="absolute left-0 top-0 size-0">
                   <div>
                     <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
-                      <div ref={guardar('chica', i)} style={{ opacity: 0 }}>
-                        {l.esRetos ? (
-                          <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i)} />
-                        ) : (
-                          <Isla
-                            leccion={l}
-                            estado={estado}
-                            esActual={i === actual}
-                            avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
-                            acento={modulo.acento}
-                            descripcion={texto}
-                            onClick={() => irA(i)}
-                          />
-                        )}
+                      <div ref={guardar('difuso', i)}>
+                        <div ref={guardar('chica', i)} style={{ opacity: 0 }}>
+                          {l.esRetos ? (
+                            <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} descripcion={texto} onClick={() => irA(i)} />
+                          ) : (
+                            <Isla
+                              leccion={l}
+                              estado={estado}
+                              esActual={i === actual}
+                              avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
+                              acento={modulo.acento}
+                              descripcion={texto}
+                              onClick={() => irA(i)}
+                            />
+                          )}
+                        </div>
                       </div>
                       <span
                         ref={guardar('etiqueta', i)}
@@ -527,7 +578,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
                 </div>
               )
             })}
-          </>
+          </div>
         )}
       </div>
 
@@ -1139,6 +1190,17 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
       </div>
     </Hoja>
   )
+}
+
+/** Alto de la ventana (para saber cuánto se puede ampliar el camino en pantallas anchas). */
+function useAltoVentana() {
+  const [alto, setAlto] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight))
+  useEffect(() => {
+    const medir = () => setAlto(window.innerHeight)
+    window.addEventListener('resize', medir)
+    return () => window.removeEventListener('resize', medir)
+  }, [])
+  return alto
 }
 
 /** Ancho del contenedor (se actualiza al girar el teléfono o cambiar la ventana). */

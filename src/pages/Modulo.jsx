@@ -51,7 +51,13 @@ function PaginaModulo({ modulo }) {
           <h1 data-titulo-modulo className="font-titulo text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">{modulo.titulo}</h1>
         </motion.header>
 
-        <motion.section variants={itemLista} aria-label="Lecciones del módulo" className="py-2 sm:py-6">
+        {/* En pantallas anchas el camino se sale del ancho del texto (hasta 1400 px, dejando 20 px a cada lado) para ocupar el espacio. */}
+        <motion.section
+          variants={itemLista}
+          aria-label="Lecciones del módulo"
+          className="py-2 sm:py-6"
+          style={{ marginInline: 'min(0px, calc(50% - min(50vw - 20px, 700px)))' }}
+        >
           <CaminoLecciones modulo={modulo} progreso={progreso} onAbierta={setIslaAbierta} />
         </motion.section>
       </motion.main>
