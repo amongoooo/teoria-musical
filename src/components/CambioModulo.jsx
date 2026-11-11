@@ -7,6 +7,7 @@ import { tinta } from '../ui/color.js'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import useDeslizar from '../ui/useDeslizar.js'
 import useTirarBordes from '../ui/useTirarBordes.js'
+import { ALTO_CABECERA } from './CabeceraModulo.jsx'
 import { Cuadrito } from './NavegadorModulos.jsx'
 
 /**
@@ -151,10 +152,11 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
     return (
       <motion.div
         aria-hidden
+        // El de arriba sale por DEBAJO de la cabecera fija (que va encima, con su desvanecido).
         className={`pointer-events-none fixed inset-x-0 z-20 flex justify-center bg-fondo/90 ${
-          signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'top-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-3'
+          signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'pt-2 pb-3'
         }`}
-        style={{ opacity: vis, y: yVertical }}
+        style={{ opacity: vis, y: yVertical, ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : {}) }}
       >
         <div className="flex items-center gap-4">
           {cuadrito}
