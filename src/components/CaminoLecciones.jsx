@@ -184,15 +184,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
 
-  // En el celular, al cambiar de isla, la página se desplaza para que la isla abierta quede
-  // donde estaba la anterior (las islas pasan por el mismo sitio de la pantalla).
-  const ancla = useRef(null)
   const ultimaP = useRef(null)
   const posicion = () => base.get() + islas.progreso.get()
-  const fijarAncla = () => {
-    if (!vertical || !layouts || abiertaRef.current === null || !ref.current) return (ancla.current = null)
-    ancla.current = ref.current.getBoundingClientRect().top + focoY(layouts, posicion(), n)
-  }
 
   // Abrir una isla (con el camino cerrado): si la isla y su globo no van a caber entre la parte de
   // arriba de la pantalla y la barra de puntitos, la página sube (o baja) PRIMERO y la isla se abre
@@ -204,9 +197,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     const L = layouts
     const cont = ref.current
     if (!L || !cont) return abrirYa(i)
-    const arriba = cont.getBoundingClientRect().top + (L.abiertas[i].nodos[i].y - BOLA / 2 - ARO) * zoom // arriba del aro de la bola
-    const alto = ((altos[i] ?? els.grande[i]?.offsetHeight ?? ALTO_ESTIMADO) + ARO) * zoom // aro + bola + globo
-    const dy = desfaseCentro(arriba, alto)
+    const dy = scrollPara(i) - window.scrollY
     if (Math.abs(dy) <= 4) return abrirYa(i)
     esperando.current = i
     desplazar(dy)
@@ -216,17 +207,34 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       abrirYa(i)
     })
   }
-  // Siempre que se abre una isla, la isla y su tarjetita quedan CENTRADAS en la pantalla (pedido del usuario):
-  // en la zona libre entre la cabecera fija y la barra de puntitos; si no caben, arriba de esa zona.
-  const desfaseCentro = (arriba, alto) => {
+  // Dónde debe estar la página con el nodo `k` abierto (pedido del usuario): si la isla (con su aro) y su
+  // tarjetita caben enteras con la página ARRIBA DEL TODO, arriba del todo (así el título del módulo se ve
+  // grande); si no, CENTRADAS en la zona libre entre la píldora de la cabecera y la barra de puntitos (si
+  // tampoco caben, pegadas arriba de esa zona). Se calcula con la disposición, no con lo que se ve, así sirve
+  // también a mitad de un cambio de isla.
+  const scrollPara = (k) => {
+    const L = layouts
+    const cont = ref.current
+    if (!L || !cont) return window.scrollY
+    const top = cont.getBoundingClientRect().top + window.scrollY + (L.abiertas[k].nodos[k].y - BOLA / 2 - ARO) * zoom // en la página
+    const alto = ((altos[k] ?? els.grande[k]?.offsetHeight ?? ALTO_ESTIMADO) + ARO) * zoom // aro + bola + globo
     const techo = (document.querySelector('[data-pildora-cabecera]')?.getBoundingClientRect().bottom ?? 60) + 12
-    const piso = (document.querySelector('[data-puntitos] [role=group]')?.getBoundingClientRect().top ?? window.innerHeight - BARRA_ALTO) - 12
-    return arriba - (techo + Math.max(0, (piso - techo - alto) / 2))
+    const barra = document.querySelector('[data-puntitos] [role=group]')?.getBoundingClientRect().top
+    const piso = (barra != null ? barra - flotaY.get() : window.innerHeight - BARRA_ALTO) - 12
+    if (top >= techo && top + alto <= piso) return 0
+    return Math.max(0, top - (techo + Math.max(0, (piso - techo - alto) / 2)))
   }
-  /** Desplaza la página `dy` px (suave); si al final no hay sitio, añade relleno debajo del camino. */
+  /** Relleno debajo del camino si la página no llega a `objetivo` (al final no hay sitio para subir). */
+  const rellenar = (objetivo) => {
+    if (!relleno.current) return
+    const actual = relleno.current.offsetHeight
+    const max = document.documentElement.scrollHeight - actual - window.innerHeight
+    const falta = objetivo > max ? Math.ceil(objetivo - max) + 2 : 0
+    if (Math.abs(falta - actual) > 1) relleno.current.style.height = `${falta}px`
+  }
+  /** Desplaza la página `dy` px (suave), con relleno si hace falta. */
   const desplazar = (dy) => {
-    const max = document.documentElement.scrollHeight - (relleno.current?.offsetHeight ?? 0) - window.innerHeight
-    if (relleno.current) relleno.current.style.height = window.scrollY + dy > max ? `${Math.ceil(window.scrollY + dy - max) + 2}px` : '0px'
+    rellenar(window.scrollY + dy)
     window.scrollBy({ top: dy, behavior: reducir ? 'auto' : 'smooth' })
   }
   const abrirYa = (i) => {
@@ -243,7 +251,6 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     if (antes === null) return abrir(i)
     abiertaRef.current = i
     setAbierta(i)
-    fijarAncla()
     animate(base, i, resorte)
   }
   // Cerrar = vuelta a la vista completa del camino (sin desenfoque); la barra de puntitos sigue a la vista.
@@ -305,7 +312,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   }
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
-  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, acepta, alEmpezar: fijarAncla, alTope: inclinar })
+  const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, acepta, alTope: inclinar })
 
 
   /** Coloca cada isla, camino, título y puntito según la posición continua. */
@@ -415,10 +422,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
         } else linea.removeAttribute('filter')
       }
     }
-    // Celular: la isla abierta se queda en el mismo sitio de la pantalla mientras se cambia.
-    if (vertical && ancla.current !== null && a > 0.999 && p !== ultimaP.current) {
-      const dy = cont.getBoundingClientRect().top - (ancla.current - focoY(L, p, n))
-      if (Math.abs(dy) > 0.5) window.scrollBy(0, dy)
+    // Mientras se pasa de una isla a otra (también con el dedo aún apoyado, en la isla o en la barra), la
+    // página va a la vez a donde debe quedar la isla que llega (ver scrollPara): al terminar ya está en su
+    // sitio, sin esperar a soltar.
+    if (a > 0.999 && p !== ultimaP.current && ultimaP.current !== null && esperando.current === null) {
+      const objetivo = lerp(scrollPara(i), scrollPara(j), f)
+      if (Math.abs(objetivo - window.scrollY) > 0.5) {
+        rellenar(objetivo)
+        window.scrollTo(0, objetivo)
+      }
     }
     ultimaP.current = p
     cont.dataset.posicion = p.toFixed(3) // posición continua del carrusel (útil para pruebas)
@@ -494,41 +506,20 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
     return () => clearTimeout(t)
   }, [ancho])
 
-  // Al abrir una isla o pasar a otra, que la isla y su globo queden a la vista (por encima de la barra
-  // de puntitos). Si el dedo sigue apoyado (aún deslizando), espera a que se suelte.
-  const dedo = useRef(false)
-  const desplazarRef = useRef(desplazar)
-  desplazarRef.current = desplazar
-  useEffect(() => {
-    const abajo = () => (dedo.current = true)
-    const arriba = () => (dedo.current = false)
-    window.addEventListener('pointerdown', abajo, true)
-    window.addEventListener('pointerup', arriba, true)
-    window.addEventListener('pointercancel', arriba, true)
-    return () => {
-      window.removeEventListener('pointerdown', abajo, true)
-      window.removeEventListener('pointerup', arriba, true)
-      window.removeEventListener('pointercancel', arriba, true)
-    }
-  }, [])
+  // Ajuste final cuando la isla ya está en su sitio (p. ej. si su tarjetita resultó de otro alto).
+  const ajusteRef = useRef(null)
+  ajusteRef.current = { scrollPara, desplazar }
   useEffect(() => {
     if (abierta === null) return
     let t
     const revisar = () => {
-      if (dedo.current) return (t = setTimeout(revisar, 150))
-      // Aún se está moviendo (cambio de isla o apertura): se mide cuando ya esté en su sitio.
       if (Math.abs(base.get() + islas.progreso.get() - abiertaRef.current) > 0.01 || apertura.get() < 0.99) return (t = setTimeout(revisar, 100))
-      const r = els.grande[abiertaRef.current]?.getBoundingClientRect()
-      if (!r) return
-      // Centrada (isla con su aro + tarjetita), como al abrirla. El ancla del cambio de isla (celular) ya
-      // cumplió: se suelta, si no, la cola del resorte devolvería la página a donde estaba.
-      ancla.current = null
-      const dy = desfaseCentro(r.top - ARO * zoom, r.height + ARO * zoom)
-      if (Math.abs(dy) > 4) desplazarRef.current(dy)
+      const dy = ajusteRef.current.scrollPara(abiertaRef.current) - window.scrollY
+      if (Math.abs(dy) > 4) ajusteRef.current.desplazar(dy)
     }
     t = setTimeout(revisar, 300)
     return () => clearTimeout(t)
-  }, [abierta, els, reducir, zoom])
+  }, [abierta, els, reducir, zoom]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const entrada = (indice) => ({
     initial: { scale: 0.6, opacity: 0 },
@@ -859,14 +850,6 @@ function alTerminarScroll(fn) {
 /** Curva del camino entre dos puntos (vertical: en S de arriba abajo; horizontal: de lado). */
 function curva(a, b, vertical) {
   return vertical ? `M ${a.x} ${a.y} C ${a.x} ${(a.y + b.y) / 2}, ${b.x} ${(a.y + b.y) / 2}, ${b.x} ${b.y}` : `M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`
-}
-
-/** Altura (dentro del camino) del centro de la isla abierta para la posición continua p. */
-function focoY(L, p, n) {
-  const pc = limitar(p, 0, n)
-  const i = Math.floor(pc)
-  const j = Math.min(i + 1, n)
-  return lerp(L.abiertas[i].nodos[i].y, L.abiertas[j].nodos[j].y, pc - i)
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
