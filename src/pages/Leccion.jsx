@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
+import Emparejar from '../components/exercises/Emparejar.jsx'
 import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
 import ExploraFrecuencia from '../components/exercises/ExploraFrecuencia.jsx'
 import PianoRollEjercicio from '../components/exercises/PianoRollEjercicio.jsx'
@@ -24,6 +25,7 @@ const PASOS = {
   texto: PasoTexto,
   siente: PasoSiente,
   elegir: EscuchaElige,
+  emparejar: Emparejar,
   tocar: TocaEnPiano,
   frecuencia: ExploraFrecuencia,
   reto: RetoFL,

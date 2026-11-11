@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5 y 3.1) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5, 3.1 y 3.2) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -31,6 +31,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **O3** | Quiz de texto | Lee la pregunta y elige (sin audio) | solo `opciones` | «Comprueba la idea» |
 | **O4** | Leer el roll y elegir | Mira (y reproduce) un Piano Roll y elige | `roll` en la ronda + `opciones` | «Lee el roll», «¿Dónde está el silencio?» |
 | **O5** | Gancho de oído | 1 ronda de O1 al empezar, antes de explicar nada | `elegir` con 1 ronda | «Empecemos con el oído» (1.1, 1.2, 1.3) |
+| **O6** | Emparejar | Escucha 3–4 sonidos (A, B…) y pone a cada uno su nombre tocando los nombres de abajo; al comprobar, cada fila dice si está bien o cuál era | `emparejar` con `parejas` (`sonido`, `nombre`, `detalle`) | «Empareja sonido y nombre» (intervalos, 3.2) |
 
 ## C. Teclado (puntúan al cumplir el objetivo)
 
@@ -44,6 +45,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **P4** | Encontrar en todas las octavas | Toca una nota en todas las octavas visibles | `octavas` (`nota`, `pista`) |
 | **P5** | Medir un paso | Desde una nota marcada, toca la que está a un semitono o un tono (sube / baja); al fallar dice cuánto se movió y tras 2 fallos marca la tecla | `paso` (`desde`, `paso: 'S' \| 'T'`, `direccion`, `pista`) |
 | **P6** | Seguir la fórmula | Desde una nota dada, toca en orden las notas de una fórmula de pasos (T T S T T T S…); la fila de casillas se llena al acertar | `formula` (`desde`, `pasos`, `titulo`, `mensaje`) |
+| **P7** | Construir un intervalo | Desde una nota marcada, toca la que forma un intervalo con nombre (3.ª mayor, 5.ª justa, tritono…); el fallo dice qué intervalo tocó y tras 2 fallos marca la tecla | `paso` con `intervalo` (`desde`, `intervalo: '3M'`, `direccion`, `pista`, `mensaje`) |
 
 ## D. Sonido continuo
 
@@ -116,11 +118,10 @@ Reglas:
 
 ## Interacciones que faltarán (módulos 3–10)
 
-Ideas para cuando lleguen esos temas; aún **no existen**:
+Ideas para cuando lleguen esos temas; aún **no existen** (Emparejar ya existe: `O6`):
 
 - **Tocar un acorde en el piano** (varias teclas a la vez) — módulo 4. (Tocar una escala en orden ya existe: `P6`.)
 - **Ordenar** (arrastrar tarjetas: grados de una escala, partes de una canción) — módulos 3, 8.
-- **Emparejar** sonido ↔ nombre (varias parejas a la vez) — intervalos, acordes.
 - **Dictado**: oír una melodía corta y dibujarla en el Piano Roll (R2 sin guía y sin verla).
 - **Mezclador / perillas** (volumen, filtro, paneo con antes/después) — módulos de producción.
 - **Prueba rápida de módulo** (5–8 preguntas O1–O4 para saltar lo que ya se domina) — pendiente del plan.

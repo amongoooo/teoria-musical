@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-11: Lección 3.2: interacción nueva **Emparejar** (O6: filas sonido + hueco, banco de nombres que viajan con `layoutId`), **fichas que suenan** (tabla de intervalos con su canción y los semitonos en DM Mono) y **Construir un intervalo** (P7, «Medir un paso» con intervalos con nombre).
 - 2026-11-11: **Ícono de la app** (PWA): teclado Do-Re-Mi-Fa con las teclas en los colores de los módulos 1–4 sobre el neutro oscuro; sustituye al favicon con emoji 🎹.
 - 2026-11-11: Lección 3.1 (abre el módulo 3, turquesa): ejercicios de teclado **Medir un paso** (P5) y **Seguir la fórmula** (P6) con la fila de la fórmula (T gris, S oro) y la prop `ir` del Piano. Teoría con **Tonal.js** en `src/theory/intervalos.js`.
 

@@ -2,7 +2,17 @@ import { motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { Note } from 'tonal'
-import { entre, formula, mismaTecla, nombreDistancia, pasoDesde, semitonos } from '../../theory/intervalos.js'
+import {
+  conArticulo,
+  datosIntervalo,
+  entre,
+  formula,
+  mismaTecla,
+  nombreDistancia,
+  notaIntervalo,
+  pasoDesde,
+  semitonos,
+} from '../../theory/intervalos.js'
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
 import { ENTRA_DERECHA, RESORTE, SALTO, SUBE } from '../../ui/movimiento.js'
@@ -20,6 +30,7 @@ import Rondas from './Rondas.jsx'
  *  - { tipo: 'comparar', rondas: [{ referencia: 'G4', direccion: 'agudo' | 'grave' }] }
  *  - { tipo: 'octavas', rondas: [{ nota: 'A' }] }   → tocar esa nota en TODAS las octavas del teclado
  *  - { tipo: 'paso', rondas: [{ desde: 'E4', paso: 'S' | 'T', direccion: 'sube' | 'baja' }] }
+ *    (o `intervalo: '3M'` en lugar de `paso`: construir un intervalo con nombre de Tonal)
  *        → tocar la nota a un semitono / un tono de `desde`
  *  - { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S',…], nombre }] }
  *        → tocar en orden las notas que salen de aplicar la fórmula de pasos desde `desde`
@@ -348,11 +359,15 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
   )
 }
 
-// ——— Medir un paso: semitono o tono desde una nota ———
+// ——— Medir un paso (semitono o tono) o construir un intervalo (3.ª mayor, 5.ª justa…) desde una nota ———
 
 /** Nombre corto para el Piano y para nombre(): sin dobles alteraciones ni Mi♯ (Tonal). */
 const simple = (n) => Note.simplify(n)
 const PALABRA_PASO = { S: 'un semitono', T: 'un tono' }
+const plural = (n) => `${n} semitono${n === 1 ? '' : 's'}`
+
+/** Lo que pide la ronda, en palabras: «un tono», «una 3.ª mayor». */
+const palabraRonda = (ronda) => (ronda.intervalo ? conArticulo(ronda.intervalo) : PALABRA_PASO[ronda.paso])
 
 /** «la tecla de al lado» / «saltando Re♯»: cómo se llega de `a` a `b` en el teclado. */
 function comoSeLlega(a, b) {
@@ -372,7 +387,8 @@ function Paso({ paso, setAccion, siguiente, completar }) {
   const [aciertos, setAciertos] = useState(0)
   const ronda = rondas[r]
   const dir = ronda.direccion === 'baja' ? -1 : 1
-  const meta = pasoDesde(ronda.desde, ronda.paso, dir)
+  const meta = ronda.intervalo ? notaIntervalo(ronda.desde, ronda.intervalo, dir) : pasoDesde(ronda.desde, ronda.paso, dir)
+  const palabra = palabraRonda(ronda)
   const resuelta = intento?.ok === true
   const ultima = r === rondas.length - 1
   const verbo = dir > 0 ? 'Sube' : 'Baja'
@@ -400,7 +416,9 @@ function Paso({ paso, setAccion, siguiente, completar }) {
       feedback = {
         tipo: 'bien',
         titulo: '¡Eso es!',
-        texto: `**${desde} → ${nombre(meta)}**: ${PALABRA_PASO[ronda.paso]}, ${comoSeLlega(ronda.desde, meta)}.`,
+        texto: ronda.intervalo
+          ? `**${desde} → ${nombre(meta)}**: ${palabra}, ${plural(datosIntervalo(ronda.intervalo).semitonos)}.${ronda.mensaje ? ` ${ronda.mensaje}` : ''}`
+          : `**${desde} → ${nombre(meta)}**: ${palabra}, ${comoSeLlega(ronda.desde, meta)}.`,
       }
     } else if (intento) {
       const d = semitonos(ronda.desde, intento.nota)
@@ -414,7 +432,9 @@ function Paso({ paso, setAccion, siguiente, completar }) {
             ? `Tienes que ${dir > 0 ? 'subir' : 'bajar'} desde ${desde}.`
             : otraDir
               ? `Está ${d > 0 ? 'por encima' : 'por debajo'} de ${desde}: ve hacia la ${dir > 0 ? 'derecha' : 'izquierda'}.`
-              : `De ${desde} a ${tocada} hay **${nombreDistancia(d)}**. Buscamos **${PALABRA_PASO[ronda.paso]}**.`) +
+              : ronda.intervalo
+                ? `De ${desde} a ${tocada} hay **${plural(Math.abs(d))}**${Math.abs(d) <= 12 ? ` (${conArticulo(d)})` : ''}. Buscamos **${palabra}**: ${plural(datosIntervalo(ronda.intervalo).semitonos)}.`
+                : `De ${desde} a ${tocada} hay **${nombreDistancia(d)}**. Buscamos **${palabra}**.`) +
           (ronda.pista ? ` ${ronda.pista}` : '') +
           (fallos >= 2 ? ' Te la marco en el teclado.' : ''),
       }
@@ -422,7 +442,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
     setAccion({
       label: ultima ? 'Continuar' : 'Siguiente',
       disabled: !resuelta,
-      ayuda: resuelta || intento ? null : `${verbo} ${PALABRA_PASO[ronda.paso]} desde ${desde}`,
+      ayuda: resuelta || intento ? null : `${verbo} ${palabra} desde ${desde}`,
       feedback,
       onClick: () => {
         if (ultima) return siguiente()
@@ -433,7 +453,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
         playNotes(next.desde)
       },
     })
-  }, [intento, resuelta, ultima, ronda, rondas, r, meta, dir, verbo, fallos, setAccion, siguiente])
+  }, [intento, resuelta, ultima, ronda, rondas, r, meta, palabra, dir, verbo, fallos, setAccion, siguiente])
 
   // Tras 2 fallos, la meta se marca en el teclado (el error nunca castiga).
   const marcadas = [simple(ronda.desde), ...(fallos >= 2 || resuelta ? [meta] : [])]
@@ -444,7 +464,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
 
       <motion.div key={r} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
         <p className="text-xl font-semibold leading-snug sm:text-2xl">
-          {verbo} <span className="underline decoration-fijate decoration-4 underline-offset-4">{PALABRA_PASO[ronda.paso]}</span>{' '}
+          {verbo} <span className="underline decoration-fijate decoration-4 underline-offset-4">{palabra}</span>{' '}
           desde <span className="rounded-md bg-fijate-claro px-1.5">{nombre(simple(ronda.desde))}</span>
         </p>
         <BotonSonido

@@ -26,17 +26,17 @@ function elegirDistinto(lista, anterior) {
 // ---------------------------------------------------------------------------
 
 export const INTERVALOS = {
-  '2m': { semitonos: 1, nombre: '2ª menor', siente: 'un roce tenso, muy pegado' },
-  '2M': { semitonos: 2, nombre: '2ª mayor', siente: 'un paso de escala' },
-  '3m': { semitonos: 3, nombre: '3ª menor', siente: 'melancólica, la base del acorde menor' },
-  '3M': { semitonos: 4, nombre: '3ª mayor', siente: 'luminosa, la base del acorde mayor' },
-  '4J': { semitonos: 5, nombre: '4ª justa', siente: 'abierta, como un llamado' },
+  '2m': { semitonos: 1, nombre: '2.ª menor', siente: 'un roce tenso, muy pegado' },
+  '2M': { semitonos: 2, nombre: '2.ª mayor', siente: 'un paso de escala' },
+  '3m': { semitonos: 3, nombre: '3.ª menor', siente: 'melancólica, la base del acorde menor' },
+  '3M': { semitonos: 4, nombre: '3.ª mayor', siente: 'luminosa, la base del acorde mayor' },
+  '4J': { semitonos: 5, nombre: '4.ª justa', siente: 'abierta, como un llamado' },
   TT: { semitonos: 6, nombre: 'Tritono', siente: 'inestable e inquietante, pide resolver' },
-  '5J': { semitonos: 7, nombre: '5ª justa', siente: 'hueca y estable, el «power chord»' },
-  '6m': { semitonos: 8, nombre: '6ª menor', siente: 'dulce y algo triste' },
-  '6M': { semitonos: 9, nombre: '6ª mayor', siente: 'cálida y amplia' },
-  '7m': { semitonos: 10, nombre: '7ª menor', siente: 'pide moverse, suena a blues' },
-  '7M': { semitonos: 11, nombre: '7ª mayor', siente: 'muy tensa, casi llega a la octava' },
+  '5J': { semitonos: 7, nombre: '5.ª justa', siente: 'hueca y estable, el «power chord»' },
+  '6m': { semitonos: 8, nombre: '6.ª menor', siente: 'dulce y algo triste' },
+  '6M': { semitonos: 9, nombre: '6.ª mayor', siente: 'cálida y amplia' },
+  '7m': { semitonos: 10, nombre: '7.ª menor', siente: 'pide moverse, suena a blues' },
+  '7M': { semitonos: 11, nombre: '7.ª mayor', siente: 'muy tensa, casi llega a la octava' },
   '8J': { semitonos: 12, nombre: 'Octava', siente: 'la misma nota, más aguda' },
 }
 
