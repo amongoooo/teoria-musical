@@ -204,10 +204,15 @@ export default function ProgramarTema() {
   const marcas = []
   for (let m = Math.ceil(a / paso) * paso; m <= b + 0.01; m += paso) marcas.push(m)
   const larga = (m) => m % (paso === HORA ? 6 * HORA : HORA) === 0
+  // Las etiquetas siguen el formato elegido en los bloques (24 h o am/pm).
   const etiquetas =
     ancho > 300
-      ? [0, 6, 12, 18, 24].map((h) => ({ m: h * HORA, texto: String(h) }))
-      : marcas.filter((m) => m % HORA === 0).map((m) => ({ m, texto: m === DIA ? '24:00' : hora(m) }))
+      ? reloj === '12'
+        ? [0, 12, 24].map((h) => ({ m: h * HORA, texto: etiqueta12(h * HORA, false) })) // en am/pm, 5 no caben holgadas
+        : [0, 6, 12, 18, 24].map((h) => ({ m: h * HORA, texto: String(h) }))
+      : marcas
+          .filter((m) => m % HORA === 0)
+          .map((m) => ({ m, texto: reloj === '12' ? etiqueta12(m, true) : m === DIA ? '24:00' : hora(m) }))
   const pct = (m) => `${((m - a) / ancho) * 100}%`
   const colorElegido = eligiendo ? PUNTOS[eligiendo].color : null
 
@@ -269,11 +274,16 @@ export default function ProgramarTema() {
           )}
         </div>
         <div className="relative h-5 font-dato text-sm tabular-nums text-zinc-500" aria-hidden>
-          {etiquetas.map(({ m, texto }) => (
-            <span key={`${paso}-${m}`} className="absolute -translate-x-1/2" style={{ left: pct(m) }}>
-              {texto}
-            </span>
-          ))}
+          {etiquetas.map(({ m, texto }) => {
+            // Las de las orillas se alinean hacia dentro (no se salen de la barra); las demás, centradas en su marca.
+            const f = (m - a) / ancho
+            const x = f < 0.08 ? '0%' : f > 0.92 ? '-100%' : '-50%'
+            return (
+              <span key={`${paso}-${m}`} className="absolute whitespace-nowrap" style={{ left: pct(m), translate: `${x} 0` }}>
+                {texto}
+              </span>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -299,6 +309,13 @@ function Punto({ k, mv, desde, hasta, activo }) {
 
 /** Mantener pulsado un bloque: `reconocer` ms hasta que cuenta como «mantener» y `borrar` ms de reloj hasta borrar. */
 const MANTENER = { reconocer: 450, borrar: 1500, mover: 10 }
+
+/** Etiqueta de la barra en am/pm: «6 am», «12 pm» (o, con minutos, «2:00 pm»). Las 24 h son «12 am». */
+function etiqueta12(m, minutos) {
+  const h = Math.floor(m / 60) % 24
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${minutos ? `${h12}:${String(m % 60).padStart(2, '0')}` : h12} ${h < 12 ? 'am' : 'pm'}`
+}
 
 /** «20:30» o, en am/pm, { hora: '8:30', sufijo: 'pm' }. */
 function partesHora(m, reloj) {
@@ -412,7 +429,7 @@ function Bloque({ k, lado, ambosCerrados, minuto, activo, reloj, onElegir, onBor
         data-puesto={puesto || undefined}
         data-borrando={borrando ? true : undefined}
         className={`relative flex size-full select-none items-center rounded-2xl border-2 transition-colors duration-200 [-webkit-touch-callout:none] ${
-          puesto ? 'gap-2.5 px-3' : 'justify-center'
+          puesto ? 'gap-2 px-2.5' : 'justify-center'
         }`}
         style={{
           touchAction: 'manipulation',
@@ -424,17 +441,18 @@ function Bloque({ k, lado, ambosCerrados, minuto, activo, reloj, onElegir, onBor
       >
         {puesto ? (
           <>
-            <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
+            <span className="grid size-8 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
               <Icono className="size-5" />
             </span>
             <span
               ref={refHora}
               data-hora={k}
               data-no-cabe={noCabe || undefined}
-              className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden whitespace-nowrap py-2 font-dato font-medium tabular-nums text-zinc-900"
+              className="flex min-w-0 flex-1 items-baseline gap-0.5 overflow-hidden whitespace-nowrap py-2 font-dato font-medium tabular-nums text-zinc-900"
               style={noCabe ? { maskImage: MASCARA, WebkitMaskImage: MASCARA } : undefined}
             >
-              <span className="text-2xl">{texto}</span>
+              {/* En am/pm, un poco más chica para que quepa «am»/«pm» en media fila. */}
+              <span className={sufijo ? 'text-xl' : 'text-2xl'}>{texto}</span>
               {sufijo && <span className="text-sm text-zinc-500">{sufijo}</span>}
             </span>
           </>

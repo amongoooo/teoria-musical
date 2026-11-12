@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) «Programar»: en am/pm la hora va más chica para que quepa; las etiquetas de la barra siguen el formato (12 am · 12 pm · 12 am; con zoom «2:00 pm») y las de las orillas no se salen.
 - 2026-11-12: (pedido del usuario) «Programar»: temblor que crece al mantener para borrar (`useTemblorCreciente`); hora que se desvanece si no cabe; cada bloque en su mitad (cerrados en 1/3 y 2/3).
 - 2026-11-12: (pedido del usuario) Bloques de «Programar»: sin hora = cuadrito relleno del color con su ícono; tocar la hora = 24 h ↔ am/pm; tocar borde o ícono = elegir; mantener = contorno que da la vuelta como reloj (1,5 s) y borra el punto.
 - 2026-11-12: (pedido del usuario) **Explicar lo mínimo**: sin textos de cómo se usa la app; que el diseño lo diga. Se quitó la frase de «Programar» en Apariencia.
