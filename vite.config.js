@@ -49,7 +49,21 @@ function swApp() {
   }
 }
 
+/**
+ * Versión de la app (pedido del usuario; se ve arriba en Opciones): v.1.AA.MM.DD.HHMM con la fecha y hora en que se
+ * compila, en la hora del usuario (Ciudad de México, UTC−6). Cada despliegue lleva la suya, sin tocar nada a mano.
+ */
+function versionApp(fecha = new Date()) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Mexico_City', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(fecha)
+      .map(({ type, value }) => [type, value]),
+  )
+  return `v.1.${p.year}.${p.month}.${p.day}.${p.hour}${p.minute}`
+}
+
 export default defineConfig({
   base: BASE,
   plugins: [react(), tailwindcss(), swApp()],
+  define: { __VERSION_APP__: JSON.stringify(versionApp()) },
 })

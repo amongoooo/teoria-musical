@@ -81,7 +81,13 @@ function PanelOpciones({ onCerrar }) {
   const { tema, vidrio, octavas, gesto } = useOpciones()
   return (
     <div className="flex flex-col gap-7">
-      <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
+      <div className="flex flex-col gap-1">
+        {/* Versión de la app (pedido del usuario): v.1.AA.MM.DD.HHMM de cuando se publicó (vite.config.js). */}
+        <p className="font-dato text-sm font-medium tabular-nums text-zinc-500" data-version-app>
+          {__VERSION_APP__}
+        </p>
+        <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
+      </div>
 
       <Grupo titulo="Pantalla" id="opciones-pantalla">
         <Fila titulo="Apariencia" id="opciones-apariencia" nota={NOTA_TEMA[tema]}>
