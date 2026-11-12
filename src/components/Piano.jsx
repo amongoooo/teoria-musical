@@ -38,6 +38,22 @@ function buildKeys(startOctave, octaves) {
   return { white, black }
 }
 
+/**
+ * Teclado del computador como en FL Studio (pedido del usuario), por POSICIÓN física de la tecla (`e.code`, así
+ * sirve igual en un teclado en español: la tecla de la «Ñ» es `Semicolon`). Semitonos desde el Do de la octava base
+ * (la primera que se ve): fila de abajo Z S X D C V G B H N J M = Do…Si y sigue , L . Ñ - (Do…Mi de la siguiente);
+ * fila de arriba (solo en el piano libre, `tecladoArriba`) Q 2 W 3 E R 5 T 6 Y 7 U = una octava más arriba y sigue
+ * I 9 O 0 P [ = ] .
+ */
+const TECLAS_ABAJO = {
+  KeyZ: 0, KeyS: 1, KeyX: 2, KeyD: 3, KeyC: 4, KeyV: 5, KeyG: 6, KeyB: 7, KeyH: 8, KeyN: 9, KeyJ: 10, KeyM: 11,
+  Comma: 12, KeyL: 13, Period: 14, Semicolon: 15, Slash: 16,
+}
+const TECLAS_ARRIBA = {
+  KeyQ: 12, Digit2: 13, KeyW: 14, Digit3: 15, KeyE: 16, KeyR: 17, Digit5: 18, KeyT: 19, Digit6: 20, KeyY: 21, Digit7: 22, KeyU: 23,
+  KeyI: 24, Digit9: 25, KeyO: 26, Digit0: 27, KeyP: 28, BracketLeft: 29, Equal: 30, BracketRight: 31,
+}
+
 /** Número de octavas visibles según el ancho del contenedor. */
 function useVisibleOctaves(ref, max) {
   const [visible, setVisible] = useState(max)
@@ -64,6 +80,8 @@ function useVisibleOctaves(ref, max) {
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
  *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
  *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
+ *  - tecladoArriba (false): en el piano libre, además de la fila de abajo del teclado del computador (Z…M), la de
+ *    arriba (Q…U, una octava más arriba), como en FL Studio. Ver TECLAS_ABAJO / TECLAS_ARRIBA.
  *  - senalar ({ notas: ['A4'], n }): cada vez que cambia `n`, el teclado va a la octava de la primera nota (si no
  *    se ve) y sus teclas se iluminan un momento, como si se tocaran (no llama a onNoteOn ni suena: el sonido lo
  *    pone quien señala; p. ej. «Escuchar las 3 La» o una casilla verde).
@@ -81,6 +99,7 @@ export default function Piano({
   compacto = false,
   ir,
   senalar,
+  tecladoArriba = false,
 }) {
   const wrapperRef = useRef(null)
   const raizRef = useRef(null)
@@ -222,6 +241,39 @@ export default function Piano({
     }
   }, [visibleOctaves])
 
+  // Teclado del computador (FL Studio): keydown = apretar, keyup = soltar; cada tecla es un «dedo» más
+  // (`k-KeyZ`…), así se pueden tocar acordes y mezclar con el ratón. La octava base es la primera que se ve.
+  const baseRef = useRef(0)
+  baseRef.current = startOctave + indice
+  useEffect(() => {
+    const ocupado = (e) =>
+      e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable=true]') || document.querySelector('[role=dialog]')
+    const semitonos = (code) => TECLAS_ABAJO[code] ?? (tecladoArriba ? TECLAS_ARRIBA[code] : undefined)
+    const abajo = (e) => {
+      const st = semitonos(e.code)
+      if (st == null || ocupado(e)) return
+      e.preventDefault()
+      if (e.repeat) return
+      const m = (baseRef.current + 1) * 12 + st
+      if (m < (startOctave + 1) * 12 || m >= (startOctave + octaves + 1) * 12) return // fuera del teclado
+      if (!isAudioRunning()) startAudio().then(() => setAudioOn(isAudioRunning()))
+      press(`k-${e.code}`, notaDesdeMidi(m))
+    }
+    const arriba = (e) => {
+      if (pointers.current.has(`k-${e.code}`)) release(`k-${e.code}`)
+    }
+    // Al perder el foco la ventana no llegan los keyup: soltar las teclas del computador.
+    const suelta = () => [...pointers.current.keys()].filter((k) => String(k).startsWith('k-')).forEach(release)
+    window.addEventListener('keydown', abajo)
+    window.addEventListener('keyup', arriba)
+    window.addEventListener('blur', suelta)
+    return () => {
+      window.removeEventListener('keydown', abajo)
+      window.removeEventListener('keyup', arriba)
+      window.removeEventListener('blur', suelta)
+    }
+  }, [press, release, startOctave, octaves, tecladoArriba])
+
   const noteAt = (x, y) => {
     const el = document.elementFromPoint(x, y)
     const key = el?.closest?.('[data-note]')
@@ -245,6 +297,12 @@ export default function Piano({
     if (pointers.current.has(e.pointerId)) release(e.pointerId)
   }
 
+  // Tecla encendida (dedo, ratón, teclado del computador o `senalar`): se enciende al instante (75 ms) y al
+  // soltarla se DESVANECE en 300 ms (pedido del usuario). La duración de una transición CSS es la del estado al
+  // que se llega, así que la clase cambia según esté encendida o no.
+  const encendida = (note) => active.has(note) || brillo.has(note)
+  const fundido = (note) => (encendida(note) ? 'duration-75' : 'duration-300 ease-out')
+
   const whiteWidth = 100 / white.length
   const blackWidth = whiteWidth * 0.6
 
@@ -255,6 +313,10 @@ export default function Piano({
           {status === 'loading' && 'Cargando sonido…'}
           {status !== 'loading' && !audioOn && 'Toca para activar el sonido'}
           {status !== 'loading' && audioOn && (status === 'fallback' ? 'Sonido sintetizado' : 'Listo')}
+        </span>
+        {/* Solo con ratón (computadora): pista del teclado del computador. */}
+        <span className="ml-auto hidden font-dato text-xs text-zinc-400 pointer-fine:inline" aria-hidden>
+          Teclado: Z–M{tecladoArriba ? ' · Q–U' : ''}
         </span>
 
       </div>
@@ -282,8 +344,8 @@ export default function Piano({
               <div
                 key={note}
                 data-note={note}
-                className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
-                  active.has(note) || brillo.has(note)
+                className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors ${fundido(note)} ${
+                  encendida(note)
                     ? 'bg-sky-200 text-sky-900'
                     : marcadasSet.has(note)
                       ? 'bg-fijate-claro text-fijate-tinta'
@@ -304,8 +366,8 @@ export default function Piano({
             <div
               key={note}
               data-note={note}
-              className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
-                active.has(note) || brillo.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
+              className={`absolute top-0 h-[60%] rounded-b-md transition-colors ${fundido(note)} ${
+                encendida(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
               }`}
               style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
             />

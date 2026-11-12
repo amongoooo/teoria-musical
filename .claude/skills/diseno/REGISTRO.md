@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) El Piano se toca con el **teclado del computador como en FL Studio** (Z…M y, en el piano libre, Q…U); las teclas **se desvanecen** (300 ms) al soltarlas.
 - 2026-11-12: (pedido del usuario) La **matraca** de la barra de puntitos se siente **como si el dedo la jalara**: la inclinación depende también de si el dedo está por encima (derecha → antihorario) o por debajo (derecha → horario) del eje; sobre el eje, o sin dedo (flechas, deslizar las islas), solo un **golpe lateral**.
 - 2026-11-12: (pedido del usuario) **Opciones ordenadas por grupos** (Pantalla · Piano · Tu progreso, tarjetas tipo Ajustes de iOS con frases cortas); la **hoja se arrastra con eventos táctiles propios** (con el contenido arriba del todo, tirar hacia abajo la arrastra; ya no «se suelta» en Android); el aviso **«Siguiente · Módulo N» sale por encima de la barra de puntitos**.
 - 2026-11-12: (pedido del usuario) **Escuchar y ver**: al pulsar un «Escuchar…», cada nota se ilumina en el teclado (que va a su octava) y su casilla lleva aro celeste mientras suena.
