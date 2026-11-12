@@ -1,17 +1,20 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', admin: boolean }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'normal' | 'invertido', admin: boolean }
 // (admin: modo administrador, se activa con PIN en Opciones: todas las lecciones abiertas y saltar entre pasos; ver admin.js)
 // (octavas: sentido de la barra de octavas del Piano; 'teclas' = invertida, como arrastrar el teclado)
+// (gesto: sentido del gesto del botón de las lecciones; 'normal' = de izquierda a derecha es el paso siguiente,
+//  'invertido' = el lado donde empieza es de donde viene la página: de derecha a izquierda es el siguiente)
 // index.html aplica el tema y el vidrio guardados ANTES de pintar (sin destello); este módulo los
 // mantiene al día cuando se cambian en Opciones o cuando el teléfono cambia de modo (Automático).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', admin: false }
+const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', gesto: 'normal', admin: false }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
 export const VIDRIOS = ['desenfoque', 'opaco']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
+export const GESTOS = ['normal', 'invertido']
 const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
 
 let cache = null
@@ -25,6 +28,7 @@ function leer() {
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
     if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
+    if (!GESTOS.includes(cache.gesto)) cache.gesto = PREDETERMINADAS.gesto
     cache.admin = cache.admin === true
   } catch {
     cache = { ...PREDETERMINADAS }
@@ -82,6 +86,12 @@ export function setVidrio(vidrio) {
 export function setOctavas(octavas) {
   if (!SENTIDOS_OCTAVAS.includes(octavas)) return
   escribir({ ...leer(), octavas })
+}
+
+/** Sentido del gesto del botón de las lecciones: 'normal' (izquierda → derecha = siguiente) o 'invertido'. */
+export function setGesto(gesto) {
+  if (!GESTOS.includes(gesto)) return
+  escribir({ ...leer(), gesto })
 }
 
 /** Modo administrador (lo activa `desbloquearAdmin` de admin.js tras comprobar el PIN). */

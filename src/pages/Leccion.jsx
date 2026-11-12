@@ -1,4 +1,4 @@
-import { motion, useAnimationControls } from 'motion/react'
+import { motion, useAnimationControls, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
 import Emparejar from '../components/exercises/Emparejar.jsx'
@@ -20,7 +20,8 @@ import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
-import { VIDRIO, VIDRIO_PANEL } from '../ui/vidrio.js'
+import useGestoBoton from '../ui/useGestoBoton.js'
+import { VIDRIO, VIDRIO_BOTON } from '../ui/vidrio.js'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
 const PASOS = {
@@ -39,8 +40,10 @@ const PASOS = {
  * Visor de lecciones paso a paso.
  *
  * Cada paso recibe { paso, leccionId, setAccion, siguiente, completar }:
- *  - setAccion({ label, onClick, disabled, ayuda, feedback }) controla el botón
- *    grande de abajo. Si el paso no la usa, se muestra "Continuar".
+ *  - setAccion({ label, onClick, disabled, ayuda, feedback, avanza }) controla el botón
+ *    grande de abajo. Solo dos palabras: «Comprobar» y «Siguiente». Si el paso no la usa, «Siguiente».
+ *  - avanza: true cuando ese botón pasa al paso siguiente (el paso está resuelto): así el gesto del botón
+ *    deja avanzar (tarjeta amarilla) sin modo administrador.
  *  - feedback: { tipo: 'bien' | 'mal', titulo, texto } aparece sobre el botón.
  *  - completar({ aciertos, total }) guarda la puntuación del paso.
  *  - siguiente() avanza al siguiente paso.
@@ -69,8 +72,15 @@ function Visor({ leccion, soloReto, onRepetir }) {
   const [terminado, setTerminado] = useState(false)
   const [accion, setAccion] = useState(null)
   const puntos = useRef({}) // índice de paso -> { aciertos, total }
-  const { admin } = useOpciones() // modo administrador: la barra de pasos abre «Ir al paso»
+  const { admin, gesto } = useOpciones() // admin: la barra de pasos abre «Ir al paso» y el gesto pasa sin responder
   const [verPasos, setVerPasos] = useState(false)
+  // Hasta qué paso se ha llegado avanzando de verdad (los anteriores están resueltos): volver atrás no lo
+  // borra y deja avanzar otra vez con el gesto. Empieza en el paso guardado.
+  const [alcanzado, setAlcanzado] = useState(() => {
+    const p = getProgresoLeccion(leccion.id)
+    return p && !p.completada && p.paso > 0 && p.paso < total ? p.paso : 0
+  })
+  const [haciaAtras, setHaciaAtras] = useState(false) // el paso nuevo entra por la izquierda
 
   useEffect(() => {
     initPiano()
@@ -82,17 +92,19 @@ function Visor({ leccion, soloReto, onRepetir }) {
   }, [])
 
   // siguiente/completar estables para que los pasos los usen en efectos.
-  const estado = useRef({ indice, total })
-  estado.current = { indice, total }
+  const estado = useRef({ indice, total, alcanzado })
+  estado.current = { indice, total, alcanzado }
 
   const siguiente = useCallback(() => {
-    const { indice: i, total: t } = estado.current
+    const { indice: i, total: t, alcanzado: a } = estado.current
     if (soloReto) return navegar(rutas.modulo(leccion.modulo))
     setAccion(null)
+    setHaciaAtras(false)
     window.scrollTo(0, 0)
     if (i < t - 1) {
       setIndice(i + 1)
-      guardarPaso(leccion.id, i + 1)
+      setAlcanzado(Math.max(a, i + 1))
+      guardarPaso(leccion.id, Math.max(a, i + 1)) // tras volver atrás, no se pierde hasta dónde se llegó
     } else {
       const suma = Object.values(puntos.current).reduce(
         (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
@@ -109,13 +121,14 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const salir = () => navegar(rutas.modulo(leccion.modulo))
 
-  /** Modo administrador: saltar a cualquier paso (no cuenta como avance ni guarda el paso). */
+  /** Saltar a otro paso (modo administrador o volver atrás con el gesto): no guarda el paso ni su puntuación. */
   const irA = useCallback((n) => {
     setVerPasos(false)
     setAccion(null)
     releaseAll()
     pararRitmo()
     window.scrollTo(0, 0)
+    setHaciaAtras(n < estado.current.indice)
     setIndice(n)
   }, [])
 
@@ -125,7 +138,23 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const paso = leccion.pasos[indice]
   const Componente = PASOS[paso.tipo]
-  const boton = accion ?? { label: 'Continuar', onClick: siguiente }
+  const boton = accion ?? { label: 'Siguiente', onClick: siguiente, avanza: true }
+
+  // El botón también pasa de paso con un gesto (deslizar o mantener un borde). Volver: siempre (salvo en el
+  // primero). Avanzar: si el paso está resuelto (como «Siguiente»); en modo administrador, siempre. En los
+  // extremos, gris. Saltar no guarda la puntuación del paso saltado; volver no borra el progreso.
+  const resuelto = indice < alcanzado || (boton.avanza && !boton.disabled)
+  const navegacion = soloReto
+    ? null
+    : {
+        invertido: gesto === 'invertido',
+        puede: (dir) => (dir < 0 ? indice > 0 : indice < total - 1 && (admin || resuelto)),
+        ir: (dir) => {
+          if (dir < 0) return irA(indice - 1)
+          if (resuelto) return siguiente()
+          irA(indice + 1) // modo administrador: sin responder
+        },
+      }
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -171,10 +200,10 @@ function Visor({ leccion, soloReto, onRepetir }) {
         </Hoja>
       )}
 
-      {/* Cada paso entra desde la derecha con un resorte (como avanzar en iOS). */}
+      {/* Cada paso entra desde la derecha con un resorte (como avanzar en iOS); al volver, desde la izquierda. */}
       <motion.main
         key={indice}
-        initial={{ opacity: 0, x: 40 }}
+        initial={{ opacity: 0, x: haciaAtras ? -40 : 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4"
@@ -199,7 +228,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
         )}
       </motion.main>
 
-      <BarraAccion accion={boton} />
+      <BarraAccion accion={boton} navegacion={navegacion} />
     </div>
   )
 }
@@ -291,16 +320,22 @@ function Etiqueta({ paso, indice }) {
 }
 
 /**
- * Barra de abajo con el botón grande (también la usa el entrenamiento de oído). Es un panel de VIDRIO que flota
- * (la lección pasa por detrás, desenfocada): avanzar es una función de la app. Dentro, el significado va sólido:
- * el mensaje de bien / fíjate y el botón cuando está listo.
- * El botón «se llena»: desactivado = vidrio vacío con el texto en gris; listo = negro (verde al acertar), con un
- * fundido de color y un SALTO al pasar de vacío a lleno.
+ * Barra de abajo con el botón grande (también la usa el entrenamiento de oído). Materiales (pedido del usuario):
+ * el PANEL es sólido (superficie) y el BOTÓN es de vidrio. Debajo del vidrio hay una tarjeta de color que aparece y
+ * crece desde el centro con cada cambio, así parece que el vidrio cambia de color: gris claro = desactivado,
+ * oscuro = listo, verde = acierto (con un SALTO al pasar de desactivado a listo). El mensaje de bien / fíjate va
+ * sólido encima.
+ *
+ * `navegacion` (solo en las lecciones): el botón es también un control para pasar de paso (useGestoBoton):
+ * deslizar sobre él saca una tarjeta amarilla (se puede) o gris (no se puede) desde el lado donde empieza el dedo,
+ * con su flechita; mantener 1 s un borde lateral muestra la flechita de ese lado. Al soltar, pasa si era amarilla.
+ * { puede(dir) → bool, ir(dir), invertido }.
  */
-export function BarraAccion({ accion }) {
+export function BarraAccion({ accion, navegacion = null }) {
   const { feedback } = accion
   const bien = feedback?.tipo === 'bien'
   const listo = !accion.disabled
+  const color = !listo ? 'apagado' : bien ? 'bien' : 'listo'
   const salto = useAnimationControls()
   const antes = useRef(listo)
   useEffect(() => {
@@ -308,9 +343,17 @@ export function BarraAccion({ accion }) {
     antes.current = listo
   }, [listo, salto])
 
+  const { gesto, x, opacidad, cubre, handlers } = useGestoBoton({
+    puede: (dir) => Boolean(navegacion?.puede(dir)),
+    ir: (dir) => navegacion?.ir(dir),
+    invertido: navegacion?.invertido,
+    activo: Boolean(navegacion),
+  })
+  const textoOpacidad = useTransform(cubre, [0, 1], [1, 0.35])
+
   return (
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className={`pointer-events-auto mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] p-2.5 ${VIDRIO_PANEL}`}>
+      <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] border border-zinc-200 bg-white p-2.5 shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]">
         {feedback && (
           <motion.div
             key={feedback.titulo + feedback.texto}
@@ -333,22 +376,101 @@ export function BarraAccion({ accion }) {
         )}
         {accion.ayuda && <p className="px-2 pt-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
         <motion.div animate={salto}>
-          <Pulsable
-            onClick={accion.onClick}
-            disabled={accion.disabled}
-            className={`min-h-14 w-full rounded-2xl px-6 text-lg font-semibold transition-colors duration-200 ${
-              !listo
-                ? 'bg-zinc-900/[0.06] text-zinc-500 ring-1 ring-inset ring-zinc-900/10'
-                : bien
-                  ? 'bg-bien-relleno text-blanco'
-                  : 'bg-zinc-900 text-white'
-            }`}
+          {/* Zona del gesto: recibe los toques aunque el botón esté desactivado (volver atrás siempre se puede). */}
+          <div
+            {...(navegacion ? handlers : {})}
+            data-boton-accion
+            data-color={color}
+            data-gesto={gesto.modo ?? undefined}
+            data-gesto-lado={gesto.modo ? (gesto.lado < 0 ? 'izquierda' : 'derecha') : undefined}
+            data-gesto-puede={gesto.modo ? String(gesto.puede) : undefined}
+            data-gesto-listo={gesto.modo ? String(gesto.listo) : undefined}
+            className="relative select-none [-webkit-touch-callout:none]"
+            style={{ touchAction: 'pan-y' }}
           >
-            {accion.label}
-          </Pulsable>
+            <Pulsable
+              onClick={accion.onClick}
+              disabled={accion.disabled}
+              className={`relative isolate grid min-h-14 w-full place-items-center overflow-hidden rounded-2xl px-6 text-lg font-semibold ${accion.disabled ? 'pointer-events-none' : ''}`}
+            >
+              <TarjetaColor color={color} />
+              {/* Tarjeta del gesto: debajo del vidrio, se desplaza con el dedo desde el lado donde empezó (borde desenfocado). */}
+              <motion.span
+                aria-hidden
+                className={`absolute inset-x-0 -inset-y-3 blur-[5px] ${gesto.puede ? 'bg-fijate' : 'bg-zinc-400'}`}
+                style={{ x, opacity: opacidad }}
+              />
+              <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
+              <motion.span
+                className={`relative transition-colors duration-200 ${color === 'apagado' ? 'text-zinc-500' : color === 'bien' ? 'text-blanco' : 'text-white'}`}
+                style={{ opacity: textoOpacidad }}
+              >
+                {accion.label}
+              </motion.span>
+            </Pulsable>
+            <Flechita gesto={gesto} />
+          </div>
         </motion.div>
       </div>
     </div>
+  )
+}
+
+const COLOR_BOTON = { apagado: 'bg-zinc-200', listo: 'bg-zinc-900', bien: 'bg-bien-relleno' }
+
+/**
+ * La tarjeta de color bajo el vidrio del botón. Cada cambio de estado pone una tarjeta nueva encima que aparece y
+ * crece desde el centro (RESORTE.suave); 0,7 s después, las de debajo se quitan. Con reducir movimiento, fundido.
+ * Sobresale 12 px por cada lado (el botón la recorta): así el desenfoque del vidrio no aclara los bordes.
+ */
+function TarjetaColor({ color }) {
+  const [capas, setCapas] = useState(() => [{ id: 0, color, nueva: false }])
+  const ultimo = capas[capas.length - 1]
+  if (ultimo.color !== color) setCapas((c) => [...c.slice(-2), { id: ultimo.id + 1, color, nueva: true }])
+  // Cuando la de arriba ya cubre todo, las de debajo sobran.
+  useEffect(() => {
+    if (capas.length < 2) return
+    const t = setTimeout(() => setCapas((cs) => cs.slice(-1)), 700)
+    return () => clearTimeout(t)
+  }, [capas])
+  return capas.map((c) => (
+    <motion.span
+      key={c.id}
+      aria-hidden
+      data-tarjeta-color={c.color}
+      className={`absolute -inset-3 ${COLOR_BOTON[c.color]}`}
+      initial={c.nueva ? { opacity: 0, scaleX: 0.2, scaleY: 0.45 } : false}
+      animate={{ opacity: 1, scaleX: 1, scaleY: 1 }}
+      transition={{ ...RESORTE.suave, opacity: { duration: 0.15 } }}
+    />
+  ))
+}
+
+/**
+ * Flechita del gesto (texto ‹ ›, como el resto de flechas de navegación) en el lado de donde sale la tarjeta.
+ * Apunta hacia donde va el paso: › siguiente, ‹ anterior. Amarilla si se puede pasar, gris si no; crece un poco
+ * cuando soltar ya pasaría («suelta para ir»).
+ */
+function Flechita({ gesto: actual }) {
+  const visible = actual.modo === 'desliza' || actual.modo === 'mantiene'
+  // Al terminar, se desvanece donde estaba (sin saltar de lado ni de color).
+  const ultimo = useRef(actual)
+  if (actual.modo) ultimo.current = actual
+  const gesto = ultimo.current
+  const lado = gesto.lado < 0 ? 'left-2' : 'right-2'
+  return (
+    <motion.span
+      aria-hidden
+      data-flechita={visible ? (gesto.puede ? 'amarilla' : 'gris') : undefined}
+      className={`pointer-events-none absolute top-1/2 z-10 -mt-[1.125rem] grid size-9 place-items-center rounded-full pb-1 text-3xl leading-none font-bold ${lado} ${
+        gesto.puede ? 'bg-fijate text-negro ring-2 ring-blanco/80' : 'bg-zinc-300 text-zinc-600 ring-2 ring-white/70'
+      }`}
+      initial={false}
+      animate={{ opacity: visible ? 1 : 0, scale: !visible ? 0.6 : gesto.listo && gesto.modo === 'desliza' ? 1.15 : 1 }}
+      transition={RESORTE.pulsar}
+    >
+      {gesto.dir > 0 ? '›' : '‹'}
+    </motion.span>
   )
 }
 

@@ -38,7 +38,8 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       const cantidad = objetivo.cantidad ?? 3
       const listo = notas.length >= cantidad
       setAccion({
-        label: 'Continuar',
+        label: 'Siguiente',
+        avanza: true,
         disabled: !listo,
         ayuda: listo ? null : `Dibuja ${cantidad} notas (${notas.length}/${cantidad})`,
         feedback: listo ? { tipo: 'bien', titulo: '¡Así se escribe música!', texto: objetivo.mensaje } : null,
@@ -49,7 +50,8 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
 
     if (resultado?.ok || solucion) {
       setAccion({
-        label: 'Continuar',
+        label: 'Siguiente',
+        avanza: true,
         feedback: resultado?.ok
           ? { tipo: 'bien', titulo: '¡Perfecto!', texto: objetivo.explicacion ?? 'Pulsa Reproducir para escucharlo.' }
           : { tipo: 'mal', titulo: 'Así queda.', texto: objetivo.explicacion ?? 'Compara tus notas con las de la solución y pulsa Reproducir.' },
@@ -62,8 +64,11 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       const r = objetivo.tipo === 'velocity' ? revisarVelocity(notas, objetivo) : revisarCopia(notas, objetivo.notas, { nom, porTiempo, compas })
       const total = intentos + 1
       setIntentos(total)
-      setResultado(r)
-      if (r.ok) completar({ aciertos: intentos === 0 ? 1 : 0, total: 1 })
+      if (r.ok) {
+        setResultado(r)
+        completar({ aciertos: intentos === 0 ? 1 : 0, total: 1 })
+      } else if (total >= 3) verSolucion() // tercer fallo: la solución (el botón solo dice «Comprobar» o «Siguiente»)
+      else setResultado(r)
     }
 
     const verSolucion = () => {
@@ -79,11 +84,11 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
 
     const fallo = resultado && !resultado.ok
     setAccion({
-      label: fallo && intentos >= 2 ? 'Ver la solución' : 'Comprobar',
+      label: 'Comprobar',
       disabled: notas.length === 0,
-      ayuda: notas.length === 0 ? 'Toca la rejilla para dibujar una nota' : null,
+      ayuda: notas.length === 0 ? 'Toca la rejilla para dibujar una nota' : fallo && intentos >= 2 ? 'Si vuelve a fallar, verás la solución' : null,
       feedback: fallo ? { tipo: 'mal', titulo: 'Casi.', texto: [resultado.texto, objetivo.pista].filter(Boolean).join(' ') } : null,
-      onClick: fallo && intentos >= 2 ? verSolucion : comprobar,
+      onClick: comprobar,
     })
   }, [notas, resultado, intentos, solucion, objetivo, setAccion, siguiente, completar])
 

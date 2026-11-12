@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { desbloquearAdmin, salirAdmin } from '../progress/admin.js'
-import { setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
+import { setGesto, setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
 import { RESORTE, SUBE } from '../ui/movimiento.js'
 import { Bombilla, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
@@ -25,10 +25,16 @@ const OCTAVAS = [
   { id: 'teclas', nombre: 'Mover las teclas' },
 ]
 
+const GESTOS = [
+  { id: 'normal', nombre: 'Normal' },
+  { id: 'invertido', nombre: 'Invertir el gesto' },
+]
+
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
  * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono), Vidrio (Desenfoque / Opaco), Barra de octavas
- * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano), Tu progreso
+ * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano), Gesto del botón de las lecciones
+ * (Normal / Invertir el gesto), Tu progreso
  * (pasarlo a otro dispositivo) y Administrador (con PIN: todas las lecciones abiertas y saltar entre pasos).
  */
 export default function BotonOpciones({ className = '' }) {
@@ -66,9 +72,13 @@ const NOTA_OCTAVAS = {
   vista: 'Octavas 3 · 4 · 5: deslizar a la derecha lleva la vista a las agudas.',
   teclas: 'Octavas 5 · 4 · 3: deslizar a la derecha arrastra el teclado y trae las graves.',
 }
+const NOTA_GESTO = {
+  normal: 'Desliza el botón de abajo hacia la derecha para ir al paso siguiente y hacia la izquierda para volver.',
+  invertido: 'Como pasar una página: hacia la izquierda, el paso siguiente; hacia la derecha, el anterior.',
+}
 
 function PanelOpciones({ onCerrar }) {
-  const { tema, vidrio, octavas } = useOpciones()
+  const { tema, vidrio, octavas, gesto } = useOpciones()
   return (
     <div className="flex flex-col gap-7">
       <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
@@ -85,6 +95,12 @@ function PanelOpciones({ onCerrar }) {
       <Grupo titulo="Piano" id="opciones-piano">
         <Fila titulo="Barra de octavas" id="opciones-octavas" nota={NOTA_OCTAVAS[octavas]}>
           <Segmentado opciones={OCTAVAS} valor={octavas} onCambiar={setOctavas} etiqueta="opciones-octavas" capa="octavas-activo" />
+        </Fila>
+      </Grupo>
+
+      <Grupo titulo="Lecciones" id="opciones-lecciones">
+        <Fila titulo="Gesto del botón" id="opciones-gesto" nota={NOTA_GESTO[gesto]}>
+          <Segmentado opciones={GESTOS} valor={gesto} onCambiar={setGesto} etiqueta="opciones-gesto" capa="gesto-activo" />
         </Fila>
       </Grupo>
 
