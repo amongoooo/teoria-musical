@@ -61,6 +61,24 @@ export const SALTO = { scale: [1, 1.05, 1] }
 export const POP = { scale: [1, 1.14, 0.97, 1] }
 
 /**
+ * «Temblor» (useTemblor.js): algo que ya está hecho y se vuelve a pedir (casilla ya conseguida…).
+ * Se mueve en x, en y y gira sobre su eje durante `duracion` s en total. Amplitud en cada eje = `px` / tamaño
+ * en ese eje (un rectángulo acostado se mueve más en y que en x); giro = `grados` / √(ancho × alto) (lo chico
+ * gira más). Cada movimiento (x, y, giro) empieza en un sentido al azar y con un desfase al azar de hasta
+ * `desfase` s: dos objetos iguales tiemblan igual de fuerte pero a destiempo. `ida` es la forma de la oscilación
+ * (fracciones de la amplitud, alternando sentido). Límites en `min`/`max`.
+ */
+export const TEMBLOR = {
+  duracion: 0.25,
+  desfase: 0.06,
+  px: 300, // px²: 100 px de ancho → 3 px en x
+  grados: 240, // °·px: un cuadrado de 80 px → 3°
+  ida: [1, -0.6, 0.3, 0],
+  min: { mover: 0.8, girar: 0.5 },
+  max: { mover: 8, girar: 6 },
+}
+
+/**
  * Reglas de los gestos de deslizar (ver useDeslizar.js y la skill de diseño, sección 3b).
  * Fracciones de X (la distancia de un paso):
  *  - zonaMuerta: px desde donde se apoyó el dedo en los que NO se mueve nada.
