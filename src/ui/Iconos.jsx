@@ -4,7 +4,7 @@
 // no se añade uno nuevo sin quitar otro. Siempre con texto al lado (o `aria-label` en el botón).
 //  - Qué te pide el paso:  Oreja (oído) · Teclas (practicar) · Trofeo (reto en FL)
 //  - Cómo va (con su color): Check (bien, verde) · Bombilla (fíjate, oro) · Candado (bloqueado, gris)
-//  - Controles de siempre:  Reproducir · Cerrar · Inicio · Opciones
+//  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar · Inicio · Opciones
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
 
 function Icono({ className = 'size-6', grosor = 2, children, titulo }) {
@@ -90,6 +90,16 @@ export function Reproducir(props) {
   return (
     <Icono {...props}>
       <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" />
+    </Icono>
+  )
+}
+
+/** Bocina: «escuchar otra vez» (botón sin texto, con `aria-label`; pedido del usuario en el entrenador de oído). */
+export function Bocina(props) {
+  return (
+    <Icono {...props}>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />
+      <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6.5a7.8 7.8 0 0 1 0 11" />
     </Icono>
   )
 }

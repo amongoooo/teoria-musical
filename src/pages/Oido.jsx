@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { motion, useMotionValue } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir, seguirNotas } from '../audio/sonido.js'
@@ -19,13 +19,15 @@ import {
   ultimosDias,
   useOido,
 } from '../progress/oido.js'
+import { Segmentado } from '../components/Opciones.jsx'
+import { useOpciones } from '../progress/opciones.js'
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
-import { DIRECCIONES, MODOS_OIDO, getModoOido } from '../theory/oido.js'
+import { DIRECCIONES, MODOS_OIDO, PARTES_NIVEL, claseDe, getJuego, getModoOido } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
-import { Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
-import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
+import { Bocina, Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
+import { POP, RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
@@ -224,19 +226,31 @@ function Estadisticas({ modo, datos }) {
 // Entrenador: práctica sin fin de un modo
 // ---------------------------------------------------------------------------
 
+/** Respuesta cuando se acaba el tiempo (Contrarreloj). */
+const SIN_TIEMPO = '__tiempo'
+
 function Entrenador({ modo }) {
   const estado = useOido()
   const datos = datosModo(modo.id, estado)
   const dia = datosDeHoy(estado)
+  // Oído absoluto: modo de juego (Normal, Rápido, Contrarreloj) y respuesta con el piano.
+  const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
+  // Se elige en la portada (junto al nivel): responder con el piano o con botones.
+  const conPiano = Boolean(modo.piano) && datos.ajustes.respuesta !== 'botones'
+  const { gesto: sentidoGesto } = useOpciones()
 
   const [jugando, setJugando] = useState(false)
   const [pregunta, setPregunta] = useState(null)
-  const [respuesta, setRespuesta] = useState(null) // id elegido
+  const [respuesta, setRespuesta] = useState(null) // id elegido (SIN_TIEMPO si se acabó el tiempo)
   const [resultado, setResultado] = useState(null) // lo que devuelve registrarRespuesta
   const [sesion, setSesion] = useState({ aciertos: 0, total: 0 })
   const contador = useRef(0)
   const [limpiando, setLimpiando] = useState(false)
   const temporizador = useRef(null)
+  // Bocina de arriba: en celeste mientras suena la nota.
+  const [sonando, setSonando] = useState(false)
+  // Contrarreloj: cuándo empieza a correr el tiempo y cuándo se acaba (ms, performance.now()).
+  const [reloj, setReloj] = useState(null)
   // Ya respondida, tocar una opción la hace sonar y sus notas se iluminan en el teclado de repaso al sonar.
   const [senal, setSenal] = useState(null) // { notas, n } para la prop `senalar` del Piano
   const cancelarSenal = useRef(null)
@@ -250,6 +264,21 @@ function Entrenador({ modo }) {
     }
   }, [])
 
+  // Toca la nota y pone la bocina en celeste mientras suena.
+  const pararSonar = useRef(null)
+  const escuchar = (sonido, retraso = 0) => {
+    pararSonar.current?.()
+    setSonando(false)
+    const dura = reproducir(sonido, { retraso }) ?? 1.5
+    const a = setTimeout(() => setSonando(true), retraso * 1000)
+    const b = setTimeout(() => setSonando(false), (retraso + dura) * 1000)
+    pararSonar.current = () => {
+      clearTimeout(a)
+      clearTimeout(b)
+    }
+  }
+  useEffect(() => () => pararSonar.current?.(), [])
+
   const nueva = () => {
     const d = datosModo(modo.id)
     const p = modo.generar(d.nivel, d.ajustes, pregunta)
@@ -261,15 +290,19 @@ function Entrenador({ modo }) {
     clearTimeout(temporizador.current)
     // Modos sin referencia (oído absoluto): entre pregunta y pregunta suena un
     // "borrador" (notas al azar + ruido) para que la nota anterior no ayude.
+    let retraso = 0
     if (modo.limpiar && pregunta) {
-      const retraso = limpiarOido()
+      retraso = limpiarOido()
       setLimpiando(true)
       temporizador.current = setTimeout(() => setLimpiando(false), retraso * 1000)
-      reproducir(p.sonido, { retraso })
     } else {
       setLimpiando(false)
-      reproducir(p.sonido)
     }
+    escuchar(p.sonido, retraso)
+    if (juego?.segundos) {
+      const desde = performance.now() + retraso * 1000
+      setReloj({ desde, hasta: desde + juego.segundos * 1000 })
+    } else setReloj(null)
   }
 
   const empezar = () => {
@@ -281,7 +314,9 @@ function Entrenador({ modo }) {
   const responder = (id) => {
     if (limpiando) return
     if (respuesta) {
-      // Ya respondida: tocar una opción la hace sonar para comparar (y se ve en el teclado).
+      // Con el piano, la tecla ya suena sola. Con botones: tocar una opción la hace sonar para comparar
+      // (y se ve en el teclado de repaso).
+      if (conPiano) return
       const sonido = pregunta.sonidoDe(id)
       reproducir(sonido)
       cancelarSenal.current?.()
@@ -290,36 +325,65 @@ function Entrenador({ modo }) {
     }
     const bien = id === pregunta.item
     setRespuesta(id)
-    setResultado(registrarRespuesta(modo.id, { item: pregunta.item, bien, niveles: modo.niveles }))
+    setResultado(
+      registrarRespuesta(modo.id, {
+        item: pregunta.item,
+        bien,
+        niveles: modo.niveles,
+        carga: juego ? { acierto: juego.acierto, fallo: juego.fallo, partes: PARTES_NIVEL } : undefined,
+      }),
+    )
     setSesion((s) => ({ aciertos: s.aciertos + (bien ? 1 : 0), total: s.total + 1 }))
   }
+
+  // Contrarreloj: si se acaba el tiempo sin responder, cuenta como fallo.
+  const responderRef = useRef(responder)
+  responderRef.current = responder
+  useEffect(() => {
+    if (!reloj || respuesta) return
+    const t = setTimeout(() => responderRef.current(SIN_TIEMPO), Math.max(0, reloj.hasta - performance.now()))
+    return () => clearTimeout(t)
+  }, [reloj, respuesta])
 
   let accion
   if (!jugando) {
     accion = { label: 'Empezar', onClick: empezar }
   } else if (limpiando) {
-    accion = { label: 'Borrando la referencia…', disabled: true, onClick: () => {}, ayuda: 'Escucha: ahora viene la nota' }
+    accion = { label: 'Continuar', disabled: true, onClick: () => {}, ayuda: 'Borrando la referencia… escucha: ahora viene la nota' }
   } else if (!respuesta) {
-    accion = { label: 'Escuchar otra vez', onClick: () => reproducir(pregunta.sonido), ayuda: 'Toca tu respuesta arriba' }
+    accion = { label: 'Continuar', disabled: true, onClick: () => {}, ayuda: conPiano ? 'Toca la nota en el piano' : 'Toca tu respuesta arriba' }
   } else {
     const bien = respuesta === pregunta.item
-    let texto = bien ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta)}. ${pregunta.explicacion}`
-    if (!bien) texto += ' Toca las opciones para compararlas.'
+    const sinTiempo = respuesta === SIN_TIEMPO
+    let texto = bien || sinTiempo ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta)}. ${pregunta.explicacion}`
+    if (!bien) texto += conPiano ? ' Toca las teclas para compararlas.' : ' Toca las opciones para compararlas.'
     if (resultado?.subio) {
       const nuevos = modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')
       texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
     }
     if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
     accion = {
-      label: 'Siguiente',
+      label: 'Continuar',
       onClick: nueva,
       feedback: bien
         ? { tipo: 'bien', titulo: '¡Correcto!', texto }
-        : { tipo: 'mal', titulo: `Era ${modo.nombreItem(pregunta.item)}.`, texto },
+        : { tipo: 'mal', titulo: `${sinTiempo ? 'Se acabó el tiempo. ' : ''}Era ${modo.nombreItem(pregunta.item)}.`, texto },
     }
   }
 
   const avanceHoy = Math.min(1, dia.segundos / META_SEGUNDOS)
+
+  // Gesto del botón (pedido del usuario): en el entrenador solo pasa a la SIGUIENTE pregunta (nunca atrás) y solo
+  // cuando el botón ya dice «Continuar» (respondida); mientras se borra la referencia o falta responder, no pasa.
+  const navegacion = jugando
+    ? {
+        invertido: sentidoGesto === 'invertido',
+        puede: (dir) => dir > 0 && Boolean(respuesta) && !limpiando,
+        ir: (dir) => {
+          if (dir > 0) nueva()
+        },
+      }
+    : null
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -343,6 +407,20 @@ function Entrenador({ modo }) {
             />
             <span className="w-20 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">{minutos(dia.segundos)}/5 min</span>
           </div>
+          {/* Escuchar otra vez: solo la bocina (pedido del usuario). */}
+          {jugando && (
+            <Pulsable
+              onClick={() => escuchar(pregunta.sonido)}
+              disabled={limpiando}
+              aria-label="Escuchar otra vez"
+              data-escuchar
+              className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${VIDRIO} ${
+                sonando ? 'text-sky-500' : 'text-zinc-700'
+              }`}
+            >
+              <Bocina className="size-6" />
+            </Pulsable>
+          )}
         </div>
       </header>
 
@@ -357,37 +435,61 @@ function Entrenador({ modo }) {
             transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
             className="flex flex-col gap-5"
           >
-            <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
-              <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: tinta(modo.acento) }}>
-                <Oreja className="size-[18px]" />
-                {modo.titulo} · <span className="font-juego text-base">{nombreNivel(modo, pregunta.nivel)}</span>
-              </span>
-              <span className="font-dato tabular-nums">
-                {sesion.aciertos}/{sesion.total}
-                {datos.racha > 1 && ` · ${datos.racha} seguidas`}
-              </span>
-            </div>
-
-            <Ventana datos={datos} niveles={modo.niveles} acento={modo.acento} />
+            {juego ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
+                  <Oreja className="size-[18px]" />
+                  {modo.titulo} · {juego.nombre}
+                </span>
+                <CirculoNivel
+                  numero={modo.nombreNivel ? pregunta.nivel + 1 : pregunta.nivel}
+                  llenas={resultado ? (resultado.subio ? PARTES_NIVEL : resultado.carga) : datos.carga}
+                  maximo={datos.nivel >= modo.niveles}
+                  subio={Boolean(resultado?.subio)}
+                  nuevo={resultado?.subio ? resultado.nuevoNivel + 1 : null}
+                  acento={modo.acento}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
+                  <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: tinta(modo.acento) }}>
+                    <Oreja className="size-[18px]" />
+                    {modo.titulo} · <span className="font-juego text-base">{nombreNivel(modo, pregunta.nivel)}</span>
+                  </span>
+                  <span className="font-dato tabular-nums">
+                    {sesion.aciertos}/{sesion.total}
+                    {datos.racha > 1 && ` · ${datos.racha} seguidas`}
+                  </span>
+                </div>
+                <Ventana datos={datos} niveles={modo.niveles} acento={modo.acento} />
+              </>
+            )}
 
             <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{modo.pregunta}</h1>
 
-            <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-              {pregunta.opciones.map((op) => (
-                <Pulsable
-                  key={op.id}
-                  onClick={() => responder(op.id)}
-                  disabled={limpiando}
-                  // La correcta da un pequeño "salto" al revelarse.
-                  animate={respuesta && op.id === pregunta.item ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                  className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition-colors duration-200 disabled:opacity-50 ${claseOpcion(op.id, pregunta.item, respuesta)}`}
-                >
-                  {op.label}
-                </Pulsable>
-              ))}
-            </div>
+            {reloj && <Reloj desde={reloj.desde} hasta={reloj.hasta} parado={Boolean(respuesta)} acento={modo.acento} />}
 
-            {respuesta && (
+            {conPiano ? (
+              <PianoRespuesta pregunta={pregunta} respuesta={respuesta} inactivo={limpiando} onResponder={responder} />
+            ) : (
+              <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {pregunta.opciones.map((op) => (
+                  <Pulsable
+                    key={op.id}
+                    onClick={() => responder(op.id)}
+                    disabled={limpiando}
+                    // La correcta da un pequeño "salto" al revelarse.
+                    animate={respuesta && op.id === pregunta.item ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+                    className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition-colors duration-200 disabled:opacity-50 ${claseOpcion(op.id, pregunta.item, respuesta)}`}
+                  >
+                    {op.label}
+                  </Pulsable>
+                ))}
+              </div>
+            )}
+
+            {!conPiano && respuesta && (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -403,6 +505,7 @@ function Entrenador({ modo }) {
                   octaves={2}
                   marcadas={pregunta.notas}
                   senalar={senal}
+                  sinEstado
                 />
               </motion.div>
             )}
@@ -410,7 +513,120 @@ function Entrenador({ modo }) {
         )}
       </main>
 
-      <BarraAccion accion={accion} />
+      <BarraAccion accion={accion} navegacion={navegacion} />
+    </div>
+  )
+}
+
+/**
+ * Oído absoluto: se responde tocando una tecla (pedido del usuario). Una octava, la de la nota que sonó; las notas
+ * que aún no se desbloquean van con candado. Al responder: la correcta en verde con ✓ y la elegida (si no era) en
+ * oro con bombilla; después las teclas suenan para comparar.
+ */
+function PianoRespuesta({ pregunta, respuesta, inactivo, onResponder }) {
+  const nota = pregunta.notas[0]
+  const octava = parseNota(nota).octava
+  const libres = new Set(pregunta.opciones.map((o) => o.id))
+  const estados = {}
+  if (respuesta) {
+    if (respuesta !== pregunta.item && respuesta !== SIN_TIEMPO) estados[`${respuesta}${octava}`] = 'fijate'
+    estados[`${pregunta.item}${octava}`] = 'bien'
+  }
+  return (
+    <Piano
+      startOctave={octava}
+      octaves={1}
+      bloqueada={(n) => !libres.has(claseDe(n))}
+      inactivo={inactivo}
+      estados={estados}
+      sinEstado
+      onNoteOn={(n) => onResponder(claseDe(n))}
+    />
+  )
+}
+
+/**
+ * Indicador de nivel (pedido del usuario): un círculo en 8 partes que se llenan con los aciertos; en el centro, el
+ * número de notas. Al llenarse sube de nivel (da un «pop» y cambia el número).
+ */
+function CirculoNivel({ numero, llenas, maximo, subio, nuevo, acento }) {
+  const R = 23
+  const C = 28
+  const HUECO = 20 // grados entre partes (con las puntas redondeadas)
+  const arco = (i) => {
+    const a0 = ((-90 + i * (360 / PARTES_NIVEL) + HUECO / 2) * Math.PI) / 180
+    const a1 = ((-90 + (i + 1) * (360 / PARTES_NIVEL) - HUECO / 2) * Math.PI) / 180
+    const p = (a) => `${(C + R * Math.cos(a)).toFixed(2)} ${(C + R * Math.sin(a)).toFixed(2)}`
+    return `M ${p(a0)} A ${R} ${R} 0 0 1 ${p(a1)}`
+  }
+  const total = maximo ? PARTES_NIVEL : llenas
+  const n = nuevo ?? numero
+  return (
+    <motion.div
+      data-circulo-nivel
+      data-llenas={total}
+      role="img"
+      aria-label={maximo ? `${n} notas: nivel máximo` : nuevo ? `¡Subiste a ${n} notas!` : `${n} notas · ${total} de ${PARTES_NIVEL} para la siguiente`}
+      className="relative grid size-14 shrink-0 place-items-center"
+      animate={subio ? POP : { scale: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <svg viewBox="0 0 56 56" className="absolute inset-0 size-full" aria-hidden>
+        {Array.from({ length: PARTES_NIVEL }, (_, i) => (
+          <motion.path
+            key={i}
+            d={arco(i)}
+            fill="none"
+            strokeWidth={6}
+            strokeLinecap="round"
+            initial={false}
+            animate={{ stroke: i < total ? acento : 'var(--color-zinc-200)' }}
+            transition={{ duration: 0.25, delay: subio ? i * 0.03 : 0 }}
+          />
+        ))}
+      </svg>
+      <motion.span
+        key={n}
+        initial={nuevo ? { scale: 0.6, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={RESORTE.pulsar}
+        className="font-juego text-xl font-semibold tabular-nums"
+        style={{ color: tinta(acento) }}
+      >
+        {n}
+      </motion.span>
+    </motion.div>
+  )
+}
+
+/** Contrarreloj: barra con el tiempo que queda para responder (se vacía; en oro el último segundo y medio). */
+function Reloj({ desde, hasta, parado, acento }) {
+  const queda = useMotionValue(1)
+  const [poco, setPoco] = useState(false)
+  const [segundos, setSegundos] = useState(Math.ceil((hasta - desde) / 1000))
+  useEffect(() => {
+    if (parado) return
+    let id
+    const paso = () => {
+      const ahora = performance.now()
+      const f = Math.max(0, Math.min(1, (hasta - ahora) / (hasta - desde)))
+      queda.set(f)
+      setPoco(hasta - ahora < 1500)
+      setSegundos(Math.max(0, Math.ceil((hasta - Math.max(ahora, desde)) / 1000)))
+      if (f > 0) id = requestAnimationFrame(paso)
+    }
+    paso()
+    return () => cancelAnimationFrame(id)
+  }, [desde, hasta, parado, queda])
+  return (
+    <div className="flex items-center gap-3" data-reloj>
+      <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200">
+        <motion.div
+          className="h-full origin-left rounded-full transition-colors duration-200"
+          style={{ scaleX: queda, backgroundColor: poco ? 'var(--color-fijate)' : acento }}
+        />
+      </div>
+      <span className={`w-10 text-right font-dato text-base font-medium tabular-nums ${poco ? 'text-fijate-tinta' : 'text-zinc-600'}`}>{segundos} s</span>
     </div>
   )
 }
@@ -469,12 +685,38 @@ function Portada({ modo, datos }) {
       {modo.id === 'absoluto' && (
         <motion.p variants={itemLista} className="rounded-2xl bg-fijate-suave px-4 py-3 text-base leading-relaxed text-fijate-tinta">
           <Rich>
-            Es un **juego**: suena una nota sin ninguna referencia y adivinas cuál es. Empiezas con 2 notas y se suma una
-            cada vez que aciertas 8 de 10. En adultos el oído absoluto es muy difícil de adquirir, así que tómalo como un
-            reto divertido, no como una promesa. Entre nota y nota suenan unas notas al azar y un ruido corto: así la
-            nota anterior no te sirve de pista.
+            Es un **juego**: suena una nota sin ninguna referencia y la tocas en el piano. Empiezas con 2 notas (las demás
+            tienen candado) y se desbloquea una más cada vez que llenas el círculo de 8 partes. En adultos el oído absoluto
+            es muy difícil de adquirir, así que tómalo como un reto divertido, no como una promesa. Entre nota y nota suenan
+            unas notas al azar y un ruido corto: así la nota anterior no te sirve de pista.
           </Rich>
         </motion.p>
+      )}
+
+      {modo.juegos && (
+        <motion.section variants={itemLista} className="flex flex-col gap-3">
+          <h2 className="font-titulo text-lg font-bold">Modo de juego</h2>
+          <div className="flex flex-col gap-2">
+            {modo.juegos.map((j) => {
+              const activo = getJuego(datos.ajustes.juego).id === j.id
+              return (
+                <Pulsable
+                  key={j.id}
+                  tipo="tarjeta"
+                  onClick={() => guardarAjustes(modo.id, { juego: j.id })}
+                  aria-pressed={activo}
+                  data-juego={j.id}
+                  className={`flex min-h-16 flex-col items-start gap-0.5 rounded-2xl border-2 px-4 py-3 text-left transition-colors duration-200 ${
+                    activo ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-800'
+                  }`}
+                >
+                  <span className="text-base font-semibold">{j.nombre}</span>
+                  <span className={`text-sm leading-snug ${activo ? 'text-zinc-300' : 'text-zinc-500'}`}>{j.descripcion}</span>
+                </Pulsable>
+              )
+            })}
+          </div>
+        </motion.section>
       )}
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
@@ -494,7 +736,7 @@ function Portada({ modo, datos }) {
           ))}
         </div>
         <p className="text-sm text-zinc-500">
-          Sube solo al acertar {ACIERTOS_PARA_SUBIR} de {TAMANO_VENTANA}.
+          {modo.juegos ? `Sube al llenar el círculo de ${PARTES_NIVEL} partes.` : `Sube solo al acertar ${ACIERTOS_PARA_SUBIR} de ${TAMANO_VENTANA}.`}
           {datos.nivelMax < modo.niveles && ' Los niveles que desbloquees aparecerán aquí.'}
         </p>
         {modo.id !== 'acordes' ? (
@@ -509,6 +751,29 @@ function Portada({ modo, datos }) {
           <p className="text-base text-zinc-700">{modo.nuevosEnNivel(datos.nivel)[0]}.</p>
         )}
       </motion.section>
+
+      {modo.piano && (
+        <motion.section variants={itemLista} className="flex flex-col gap-3">
+          <h2 id="responder-con" className="font-titulo text-lg font-bold">
+            Responder con
+          </h2>
+          <Segmentado
+            etiqueta="responder-con"
+            capa="responder-con"
+            opciones={[
+              { id: 'piano', nombre: 'Piano' },
+              { id: 'botones', nombre: 'Botones' },
+            ]}
+            valor={datos.ajustes.respuesta === 'botones' ? 'botones' : 'piano'}
+            onCambiar={(id) => guardarAjustes(modo.id, { respuesta: id })}
+          />
+          <p className="text-sm text-zinc-500">
+            {datos.ajustes.respuesta === 'botones'
+              ? 'Un botón por nota; solo las que ya desbloqueaste.'
+              : 'Tocas la nota en el piano; las que aún no desbloqueas tienen candado.'}
+          </p>
+        </motion.section>
+      )}
 
       {modo.id === 'intervalos' && (
         <motion.section variants={itemLista} className="flex flex-col gap-3">

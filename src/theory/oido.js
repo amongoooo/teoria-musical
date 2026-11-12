@@ -156,7 +156,29 @@ export function nombreClase(clase) {
   return nombre(`${clase}4`, { octava: false })
 }
 
-function notasDelNivel(nivel) {
+/** Clase de nota de una nota con octava: 'C#4' -> 'C#'. */
+export function claseDe(nota) {
+  return nota.replace(/-?\d+$/, '')
+}
+
+/** Partes del círculo de nivel: al llenarlas se desbloquea una nota más. */
+export const PARTES_NIVEL = 8
+
+/**
+ * Modos de juego del oído absoluto (pedido del usuario; se elige en la portada, `ajustes.juego`).
+ * acierto / fallo = partes del círculo que llena o vacía cada respuesta; segundos = tiempo por nota.
+ */
+export const JUEGOS_ABSOLUTO = [
+  { id: 'normal', nombre: 'Normal', descripcion: 'Cada acierto llena una parte del círculo y cada fallo vacía una.', acierto: 1, fallo: 1 },
+  { id: 'rapido', nombre: 'Rápido', descripcion: 'Cada acierto llena dos partes: las notas se desbloquean el doble de rápido.', acierto: 2, fallo: 1 },
+  { id: 'contrarreloj', nombre: 'Contrarreloj', descripcion: 'Tienes 5 segundos por nota. Si se acaba el tiempo, cuenta como fallo.', acierto: 1, fallo: 1, segundos: 5 },
+]
+
+export function getJuego(id) {
+  return JUEGOS_ABSOLUTO.find((j) => j.id === id) ?? JUEGOS_ABSOLUTO[0]
+}
+
+export function notasDelNivel(nivel) {
   const set = ORDEN_ABSOLUTO.slice(0, nivel + 1) // nivel 1 = 2 notas
   return CROMATICA.filter((c) => set.includes(c))
 }
@@ -173,6 +195,8 @@ export const modoAbsoluto = {
   nuevosEnNivel: (nivel) =>
     nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map(nombreClase) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
   nombreItem: nombreClase,
+  piano: true, // se responde tocando el piano (las notas aún no desbloqueadas van con candado)
+  juegos: JUEGOS_ABSOLUTO,
   opciones: (nivel) => notasDelNivel(nivel).map((id) => ({ id, label: nombreClase(id) })),
   generar(nivel) {
     const item = azar(notasDelNivel(nivel))

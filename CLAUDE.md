@@ -90,13 +90,13 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~73 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~74 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan) · ✅ 3.3 «La escala mayor» (Do, Sol, Re, Fa; grados con Tonal `Scale`; «¿mayor u otra cosa?», «¿termina en casa?», escribirla en el roll; casillas de la fórmula que tiemblan y con grados) · ✅ 3.4 «La escala menor natural y la relativa» (La, Mi, Re y Sol menor; relativa = 6.º grado con `relativaMenor`; «¿mayor o menor?», «¿la mayor o su relativa?», «Encuentra la relativa» con P7; la misma melodía en mayor, paralela y relativa con `melodia()`). Faltan 3.5–3.7.
-- ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
+- ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles. El oído absoluto es un juego: se responde con el piano (notas bloqueadas con candado) o con botones, círculo de nivel de 8 partes y modos Normal / Rápido / Contrarreloj; bocina arriba para escuchar otra vez.
 - ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas (sentido de la barra elegible en Opciones), «Escuchar…» que señala cada nota en el teclado y las casillas, isla que se cierra al dejar la mitad de la pantalla, Opciones ordenadas por grupos (hoja que se arrastra bien con el dedo), matraca de la barra de puntitos que se jala con el dedo, piano con el teclado del computador (Z…M / Q…U como FL Studio) y teclas que se desvanecen al soltarlas, modo administrador con PIN (todas las islas abiertas, «Ir al paso» en las lecciones), **barra de acción** con panel sólido y botón de vidrio que cambia de color (tarjeta que crece desde el centro), solo «Comprobar»/«Continuar» (y «Atrás» con el gesto), y **gesto del botón** para pasar de paso (deslizar o mantener un borde 0,5 s; por defecto derecha → izquierda = siguiente; opción «Invertir el gesto»).
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
