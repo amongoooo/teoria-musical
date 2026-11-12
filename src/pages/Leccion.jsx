@@ -1,4 +1,4 @@
-import { animate, motion, useAnimationControls, useReducedMotion, useTransform } from 'motion/react'
+import { animate, motion, useAnimationControls, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
 import Emparejar from '../components/exercises/Emparejar.jsx'
@@ -344,7 +344,7 @@ export function BarraAccion({ accion, navegacion = null }) {
 
   // Lado desde el que se pasó de paso con el gesto: el color del paso nuevo se extiende desde ahí (un momento).
   const origen = useRef(null)
-  const { gesto: actual, cubre, handlers } = useGestoBoton({
+  const { gesto: actual, cubre, dedoX, dedoY, handlers } = useGestoBoton({
     puede: (dir) => Boolean(navegacion?.puede(dir)),
     ir: (dir, lado) => {
       origen.current = { lado, hasta: performance.now() + 600 }
@@ -357,7 +357,14 @@ export function BarraAccion({ accion, navegacion = null }) {
   const ultimo = useRef(actual)
   if (actual.modo) ultimo.current = actual
   const gesto = ultimo.current
-  const textoColor = color === 'apagado' ? 'text-zinc-500' : color === 'bien' ? 'text-blanco' : 'text-white'
+  const visible = actual.modo === 'carga' || actual.modo === 'desliza' || actual.modo === 'mantiene'
+  // Con el gesto (si se puede pasar), el color del botón se vuelve transparente y queda el vidrio gris claro de
+  // «desactivado» (como «Comprobar» sin elegir), para que destaque el brillo; el texto pasa a oscuro para leerse.
+  const g = useRef(gesto)
+  g.current = gesto
+  const transparencia = useTransform(cubre, (c) => (g.current.puede ? Math.min(1, c * 1.6) : 0))
+  const opTarjeta = useTransform(transparencia, (t) => 1 - t)
+  const mezcla = useTransform(transparencia, (t) => t * 100)
 
   return (
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -401,11 +408,17 @@ export function BarraAccion({ accion, navegacion = null }) {
               disabled={accion.disabled}
               className={`relative isolate grid min-h-14 w-full place-items-center overflow-hidden rounded-2xl px-6 text-lg font-semibold ${accion.disabled ? 'pointer-events-none' : ''}`}
             >
-              <TarjetaColor color={color} origen={origen} />
+              {/* Todo va DENTRO del botón: al presionarlo se encoge junto con él y nada se sale. */}
+              {/* Debajo, el vidrio claro de «desactivado»: con el gesto, el color se desvanece y queda este. */}
+              <span aria-hidden className="absolute -inset-3 bg-zinc-200" />
+              <motion.span aria-hidden data-tarjeta className="absolute inset-0" style={{ opacity: opTarjeta }}>
+                <TarjetaColor color={color} origen={origen} />
+              </motion.span>
+              <Brillo gesto={gesto} visible={visible} cubre={cubre} dedoX={dedoX} dedoY={dedoY} />
               <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
-              <Rotulo label={accion.label} gesto={gesto} cubre={cubre} className={textoColor} />
+              <Rotulo label={accion.label} gesto={gesto} mezcla={mezcla} base={TEXTO_BOTON[color]} />
+              <Flechita gesto={gesto} visible={visible} cubre={cubre} invertido={Boolean(navegacion?.invertido)} />
             </Pulsable>
-            <Flechita gesto={gesto} visible={actual.modo === 'carga' || actual.modo === 'desliza' || actual.modo === 'mantiene'} cubre={cubre} invertido={Boolean(navegacion?.invertido)} />
           </div>
         </motion.div>
       </div>
@@ -413,6 +426,7 @@ export function BarraAccion({ accion, navegacion = null }) {
   )
 }
 
+const TEXTO_BOTON = { apagado: 'var(--color-zinc-500)', listo: 'var(--color-white)', bien: 'var(--color-blanco)' }
 const COLOR_BOTON = { apagado: 'var(--color-zinc-200)', listo: 'var(--color-zinc-900)', bien: 'var(--color-bien-relleno)' }
 // El tinte nuevo es un óvalo con borde degradado (sólido hasta el 55 % del radio). Desde el centro, a escala CUBRE la
 // parte sólida ya tapa las esquinas (√2 / 0,55 ≈ 2,6); desde un lado (óvalo el doble de ancho centrado en ese borde),
@@ -421,6 +435,8 @@ const SOLIDO = 55
 const CUBRE = 2.7
 const CUBRE_LADO = 2.6
 const PALABRA = { 1: 'Continuar', '-1': 'Atrás' } // palabra del gesto según la dirección del paso
+const SIGUE_DEDO = { x: 0.12, max: 28, y: 0.4, maxY: 12 } // cuánto sigue el brillo al dedo
+const ANCHO_BRILLO = 240 // px del brillo de la flechita (centrado en el borde: se ve la mitad, ~120 px)
 const CARRUSEL = 150 // px que se desplazan las palabras del carrusel (más que una palabra: nunca se enciman)
 
 /**
@@ -493,45 +509,105 @@ function CapaTinte({ color, desde, onCubre }) {
 
 /**
  * Palabra del botón con carrusel (pedido del usuario): mientras se desliza (o se mantiene un borde) y se puede pasar,
- * la palabra de siempre se va hacia donde va el dedo y entra «Atrás» o «Continuar» desde el lado de la flechita; al
- * llegar a «suelta para ir» ya se lee entera. Si no se puede pasar, o si ya dice esa palabra, no cambia. Al pasar, sigue girando: la palabra del
- * paso nuevo entra por el lado del gesto.
+ * al llegar a «suelta para ir» la palabra de siempre se va hacia donde va el dedo y entra «Atrás» o «Continuar» desde
+ * el lado de la flechita; si el dedo vuelve, regresa la de siempre. Nunca se queda entre dos: siempre gana una. Al
+ * pasar, sigue girando: la palabra del paso nuevo entra por el lado del gesto. Su color va del de siempre al oscuro
+ * (`zinc-900`) según el botón se vuelve transparente (`mezcla`, 0…100).
  */
-function Rotulo({ label, gesto, cubre, className }) {
+function Rotulo({ label, gesto, mezcla, base }) {
   const g = useRef(gesto)
   g.current = gesto
-  const actual = useRef(label)
-  actual.current = label
-  // Si la palabra ya es la misma (el botón dice «Continuar» y se va al siguiente), no gira: solo entra la flechita.
-  const cambio = (c) => (g.current.puede && PALABRA[g.current.dir] !== actual.current ? c : 0)
+  const reducir = useReducedMotion()
+  // Siempre gana una palabra (pedido del usuario: nunca a medias entre dos): la del gesto gana en cuanto soltar ya
+  // pasaría («suelta para ir»); antes, la de siempre. El cambio va con RESORTE.pulsar. Si no se puede pasar, o si ya
+  // dice esa palabra, no cambia.
+  const gana = gesto.puede && gesto.listo && PALABRA[gesto.dir] !== label ? 1 : 0
+  const pos = useMotionValue(gana)
+  useEffect(() => {
+    if (reducir) return pos.set(gana)
+    const a = animate(pos, gana, RESORTE.pulsar)
+    return () => a.stop()
+  }, [gana, pos, reducir])
   // Al pasar ('pasa'), el carrusel no rebobina: la palabra sigue saliendo hacia donde iba el dedo y la del paso nuevo
   // entra por el lado del gesto.
   const sentido = () => (g.current.lado || 1) * (g.current.modo === 'pasa' ? -1 : 1)
-  const xLabel = useTransform(cubre, (c) => -sentido() * cambio(c) * CARRUSEL)
-  const opLabel = useTransform(cubre, (c) => 1 - cambio(c))
-  const xPalabra = useTransform(cubre, (c) => sentido() * (1 - cambio(c)) * CARRUSEL)
-  const opPalabra = useTransform(cubre, (c) => cambio(c))
+  const xLabel = useTransform(pos, (p) => -sentido() * p * CARRUSEL)
+  const opLabel = useTransform(pos, (p) => 1 - p)
+  const xPalabra = useTransform(pos, (p) => sentido() * (1 - p) * CARRUSEL)
   const palabra = PALABRA[gesto.dir] ?? null
   return (
-    <span className={`relative grid place-items-center transition-colors duration-200 ${className}`}>
-      <motion.span className="col-start-1 row-start-1" style={{ x: xLabel, opacity: opLabel }}>
+    <motion.span
+      className="relative grid place-items-center transition-colors duration-200"
+      style={{ '--mezcla': mezcla, color: `color-mix(in srgb, var(--color-zinc-900) calc(var(--mezcla, 0) * 1%), ${base})` }}
+    >
+      <motion.span data-rotulo className="col-start-1 row-start-1" style={{ x: xLabel, opacity: opLabel }}>
         {label}
       </motion.span>
       {palabra && (
-        <motion.span aria-hidden data-palabra={palabra} className="col-start-1 row-start-1" style={{ x: xPalabra, opacity: opPalabra }}>
+        <motion.span aria-hidden data-palabra={palabra} data-gana={gana || undefined} className="col-start-1 row-start-1" style={{ x: xPalabra, opacity: pos }}>
           {palabra}
         </motion.span>
       )}
-    </span>
+    </motion.span>
+  )
+}
+
+/** Tono del gesto: verde = siguiente, oscuro (negro; en tema oscuro se invierte, como el botón listo) = atrás, gris = no se puede. */
+const tonoGesto = (gesto) => (!gesto.puede ? 'var(--color-zinc-400)' : gesto.dir > 0 ? 'var(--color-bien-relleno)' : 'var(--color-zinc-900)')
+
+/**
+ * Brillo de la flechita (pedido del usuario): un degradado ancho que sale del borde del que se jala (sólido en el
+ * borde y que se desvanece hacia el centro), verde (siguiente), negro (atrás) o gris (no se puede). Va DEBAJO del
+ * vidrio, entra con el avance del gesto y SIGUE UN POCO AL DEDO (SIGUE_DEDO): su centro se acerca hacia la x del dedo
+ * un 12 % de la distancia (como mucho 28 px, así no se despega de la flecha) y sube o baja un 40 % de su y (máx. 12 px).
+ */
+function Brillo({ gesto, visible, cubre, dedoX, dedoY }) {
+  const g = useRef(gesto)
+  g.current = gesto
+  const entra = (c) => Math.min(1, g.current.puede ? c * 1.4 : c * 5)
+  const ref = useRef(null)
+  const x = useTransform([cubre, dedoX], ([c, dx]) => {
+    const lado = g.current.lado || 1
+    const ancho = ref.current?.parentElement?.offsetWidth ?? 320 // el del botón
+    const desdeBorde = Math.max(0, lado < 0 ? dx : ancho - dx) // del borde de donde sale al dedo
+    const sigue = -lado * Math.min(SIGUE_DEDO.max, desdeBorde * SIGUE_DEDO.x) // un poco hacia el dedo, sin despegarse de la flecha
+    const fuera = lado * (ANCHO_BRILLO / 3) * (1 - entra(c)) // sale de detrás del borde
+    return sigue + fuera
+  })
+  const y = useTransform(dedoY, (dy) => Math.max(-SIGUE_DEDO.maxY, Math.min(SIGUE_DEDO.maxY, dy * SIGUE_DEDO.y)))
+  const opacidad = useTransform(cubre, (c) => 0.25 + 0.75 * entra(c))
+  const tono = tonoGesto(gesto)
+  const izquierda = gesto.lado < 0
+  return (
+    <motion.span
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+      initial={false}
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={{ duration: visible ? 0.15 : 0.25 }}
+    >
+      <motion.span
+        ref={ref}
+        data-brillo={visible ? (!gesto.puede ? 'gris' : gesto.dir > 0 ? 'verde' : 'negro') : undefined}
+        className="absolute top-1/2 -mt-14 h-28"
+        style={{
+          width: ANCHO_BRILLO,
+          [izquierda ? 'left' : 'right']: -ANCHO_BRILLO / 2,
+          x,
+          y,
+          opacity: opacidad,
+          backgroundImage: `radial-gradient(closest-side, ${tono}, color-mix(in srgb, ${tono} 70%, transparent) 35%, color-mix(in srgb, ${tono} 25%, transparent) 68%, transparent)`,
+        }}
+      />
+    </motion.span>
   )
 }
 
 /**
- * Flechita del gesto (pedido del usuario): solo el signo ‹ › en texto, sin círculo, BLANCA, con un brillo radial
- * ligero detrás: NEGRO si va al paso anterior, VERDE si va al siguiente; gris (flecha y brillo) si no se puede pasar.
- * ENTRA DESDE EL BORDE del que se jala siguiendo el avance del gesto y, al llegar a «suelta para ir», da un REBOTE
- * (RESORTE.rebote) para que quede claro que ya se puede soltar. Por defecto apunta hacia el borde donde empieza
- * (izquierda ‹, derecha ›); con «Invertir el gesto», al revés. Va recortada al botón.
+ * Flechita del gesto (pedido del usuario): solo el signo ‹ › en texto, sin círculo, clara sobre su brillo (blanca;
+ * sobre el brillo «atrás» en tema oscuro, oscura). ENTRA DESDE EL BORDE del que se jala siguiendo el avance y, al
+ * llegar a «suelta para ir», da un REBOTE (RESORTE.rebote) para que quede claro que ya se puede soltar. Por defecto
+ * apunta hacia el borde donde empieza (izquierda ‹, derecha ›); con «Invertir el gesto», al revés.
  */
 function Flechita({ gesto, visible, cubre, invertido }) {
   const g = useRef(gesto)
@@ -542,25 +618,21 @@ function Flechita({ gesto, visible, cubre, invertido }) {
     return (g.current.lado || 1) * 56 * (1 - e) * (1 - e)
   })
   const izquierda = gesto.lado < 0
-  const tono = !gesto.puede ? 'var(--color-zinc-400)' : gesto.dir > 0 ? 'var(--color-bien-relleno)' : 'var(--color-negro)'
   const signo = izquierda !== invertido ? '‹' : '›'
+  const color = !gesto.puede ? 'text-zinc-500' : gesto.dir > 0 ? 'text-blanco' : 'text-white'
   return (
-    <span aria-hidden className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-2xl">
-      <motion.span
-        data-flechita={visible ? (!gesto.puede ? 'gris' : gesto.dir > 0 ? 'siguiente' : 'atras') : undefined}
-        data-signo={visible ? signo : undefined}
-        className={`absolute inset-y-0 grid w-16 place-items-center pb-1 text-3xl leading-none font-bold ${izquierda ? 'left-0' : 'right-0'} ${gesto.puede ? 'text-blanco' : 'text-zinc-500'}`}
-        style={{
-          x,
-          backgroundImage: `radial-gradient(closest-side, color-mix(in srgb, ${tono} 85%, transparent), color-mix(in srgb, ${tono} 35%, transparent) 55%, transparent)`,
-        }}
-        initial={false}
-        animate={{ opacity: visible ? 1 : 0, scale: visible && gesto.listo ? 1.25 : 1 }}
-        transition={{ ...(visible && gesto.listo ? RESORTE.rebote : RESORTE.pulsar), opacity: { duration: 0.15 } }}
-      >
-        {signo}
-      </motion.span>
-    </span>
+    <motion.span
+      aria-hidden
+      data-flechita={visible ? (!gesto.puede ? 'gris' : gesto.dir > 0 ? 'siguiente' : 'atras') : undefined}
+      data-signo={visible ? signo : undefined}
+      className={`pointer-events-none absolute inset-y-0 grid w-16 place-items-center pb-1 text-3xl leading-none font-bold ${izquierda ? 'left-0' : 'right-0'} ${color}`}
+      style={{ x }}
+      initial={false}
+      animate={{ opacity: visible ? 1 : 0, scale: visible && gesto.listo ? 1.25 : 1 }}
+      transition={{ ...(visible && gesto.listo ? RESORTE.rebote : RESORTE.pulsar), opacity: { duration: 0.15 } }}
+    >
+      {signo}
+    </motion.span>
   )
 }
 

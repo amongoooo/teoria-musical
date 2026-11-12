@@ -23,8 +23,9 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * `invertido`, al revés (izquierda → derecha = siguiente).
  *
  * Opciones: { puede(dir) → bool, ir(dir, lado), invertido, activo }.
- * Devuelve { handlers, gesto: { modo: null | 'carga' | 'desliza' | 'mantiene' | 'vuelve' | 'pasa', lado, dir, puede, listo }, avance, cubre }:
+ * Devuelve { handlers, gesto: { modo: null | 'carga' | 'desliza' | 'mantiene' | 'vuelve' | 'pasa', lado, dir, puede, listo }, avance, dedoX, dedoY, cubre }:
  *  - avance: MotionValue, px que ha avanzado el gesto (con resistencia y goma).
+ *  - dedoX / dedoY: MotionValues, posición del dedo respecto al botón (x desde el borde izquierdo, y desde el medio).
  *  - cubre: 0…1, el avance respecto a X/2 (1 = «suelta para ir»): mueve la flechita y el carrusel de palabras.
  */
 export default function useGestoBoton({ puede, ir, invertido = false, activo = true }) {
@@ -38,6 +39,10 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
 
   // Lo que se ve = base (lo que pide el dedo) + desfase (lo que falta por asentar, con resorte).
   const base = useMotionValue(0)
+  // Dónde está el dedo respecto al botón: x desde su borde izquierdo, y desde su línea del medio (px). El brillo de la
+  // flechita lo sigue un poco.
+  const dedoX = useMotionValue(0)
+  const dedoY = useMotionValue(0)
   const desfase = useMotionValue(0)
   const anim = useRef(null)
   const avance = useTransform([base, desfase], ([b, d]) => Math.max(0, b + d))
@@ -93,7 +98,9 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
     const rel = e.clientX - caja.left
     const borde = Math.max(DESLIZAR.boton.bordeMin, caja.width * DESLIZAR.boton.borde)
     const ladoBorde = rel <= borde ? -1 : rel >= caja.width - borde ? 1 : 0
-    const s = { id: e.pointerId, x0: e.clientX, y0: e.clientY, decidido: false, fase: 'quieto', sigue: false, estado: NADA, timer: null, carga: null }
+    dedoX.set(e.clientX - caja.left)
+    dedoY.set(e.clientY - (caja.top + caja.height / 2))
+    const s = { id: e.pointerId, caja, x0: e.clientX, y0: e.clientY, decidido: false, fase: 'quieto', sigue: false, estado: NADA, timer: null, carga: null }
     if (ladoBorde) {
       // Pulsación larga: empieza con el brillo radial de la flechita (`brillo` ms, así un toque normal no lo enciende)
       // y la tarjeta va saliendo de ese borde hasta quedar, al segundo, IGUAL que el deslizamiento en «suelta para
@@ -129,6 +136,8 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
     const s = g.current
     if (!s || s.id !== e.pointerId) return
     const dx = e.clientX - s.x0
+    dedoX.set(e.clientX - s.caja.left)
+    dedoY.set(e.clientY - (s.caja.top + s.caja.height / 2))
     const dy = e.clientY - s.y0
     if (s.estado.modo === 'mantiene') return // ya se mantiene: el dedo puede temblar sin cambiar nada
     if (!s.decidido) {
@@ -229,6 +238,8 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
   return {
     gesto,
     avance,
+    dedoX,
+    dedoY,
     cubre,
     handlers: {
       onPointerDown,
