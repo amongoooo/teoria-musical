@@ -21,6 +21,16 @@ import { VIDRIO } from './vidrio.js'
 /** Arrastre de la hoja: se cierra al soltar más allá de `cierra` px o hacia abajo a más de `velocidad` px/ms. */
 const ARRASTRE = { cierra: 90, velocidad: 0.6, goma: 0.15 }
 
+/** Óvalo del asa: al tomarla crece con un pop pequeño y se queda un poco más grande; al soltar, el pop inverso. */
+const ASA = {
+  toma: { scale: [1, 1.32, 1.18] },
+  suelta: { scale: [1.18, 0.9, 1] },
+  transicion: { duration: 0.24, ease: [0.3, 0, 0.3, 1] },
+}
+
+/** ¿El toque empezó en el asa (y no en su ✕)? */
+const enAsa = (el) => Boolean(el.closest?.('[data-asa]')) && !el.closest('button')
+
 export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
   const ref = useRef(null)
   const arrastre = useDragControls()
@@ -29,8 +39,14 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
   cerrarRef.current = onCerrar
   // Cuando el contenido se desplaza por debajo del asa, la cabecera (asa + ✕) se vuelve de vidrio.
   const [desplazada, setDesplazada] = useState(false)
+  // La hoja está «tomada» (dedo o ratón en el asa, o arrastrándola): el óvalo del asa se resalta con un pop pequeño
+  // y al soltar hace el pop inverso (pedido del usuario).
+  const [tomada, setTomada] = useState(false)
   useEffect(() => {
-    if (!abierta) setDesplazada(false)
+    if (!abierta) {
+      setDesplazada(false)
+      setTomada(false)
+    }
   }, [abierta])
 
   useEffect(() => {
@@ -60,6 +76,7 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
       if (e.touches.length !== 1 || e.target.closest('[data-sin-arrastre], input, textarea')) return
       const t = e.touches[0]
       g = { y0: t.clientY, x0: t.clientX, nuestro: null, muestras: [{ y: t.clientY, t: e.timeStamp }] }
+      if (enAsa(e.target)) setTomada(true)
     }
     const mueve = (e) => {
       if (!g) return
@@ -68,11 +85,18 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
       if (g.nuestro === null) {
         const dy = t.clientY - g.y0
         const dx = t.clientX - g.x0
-        if (Math.abs(dx) > Math.abs(dy)) return (g = null)
+        if (Math.abs(dx) > Math.abs(dy)) {
+          setTomada(false)
+          return (g = null)
+        }
         const zona = hoja.querySelector('[data-desplazable]')
         const desplazable = zona && zona.scrollHeight > zona.clientHeight + 1
         g.nuestro = Boolean(e.target.closest('[data-asa]')) || !desplazable || (dy > 0 && zona.scrollTop <= 0)
-        if (!g.nuestro) return (g = null)
+        if (!g.nuestro) {
+          setTomada(false)
+          return (g = null)
+        }
+        setTomada(true)
         vuelta?.stop()
         // Sigue al dedo 1:1 desde donde se apoyó (y desde donde esté la hoja, si aún volvía a su sitio). Tras la
         // animación de entrada el valor puede quedar como texto ('0%'): a número (px).
@@ -85,6 +109,7 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
       if (g.muestras.length > 5) g.muestras.shift()
     }
     const suelta = () => {
+      setTomada(false)
       if (!g?.nuestro) return (g = null)
       const [a, b] = [g.muestras[0], g.muestras[g.muestras.length - 1]]
       const v = b.t > a.t ? (b.y - a.y) / (b.t - a.t) : 0
@@ -141,6 +166,10 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
               const zona = e.target.closest('[data-desplazable]')
               if (zona && zona.scrollHeight > zona.clientHeight + 1) return
               arrastre.start(e)
+              if (enAsa(e.target)) {
+                setTomada(true)
+                window.addEventListener('pointerup', () => setTomada(false), { once: true })
+              }
             }}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.7 }}
@@ -154,7 +183,14 @@ export default function Hoja({ abierta, onCerrar, etiqueta, children }) {
                 desplazada ? 'vidrio bg-white/70 shadow-[0_1px_0_var(--color-zinc-200)] backdrop-blur-xl backdrop-saturate-150' : ''
               }`}
             >
-              <span aria-hidden className="mt-1 h-1.5 w-10 rounded-full bg-zinc-300" />
+              <motion.span
+                aria-hidden
+                data-asa-ovalo={tomada ? 'tomada' : undefined}
+                className={`mt-1 h-1.5 w-10 rounded-full transition-colors duration-150 ${tomada ? 'bg-zinc-500' : 'bg-zinc-300'}`}
+                initial={false}
+                animate={tomada ? ASA.toma : ASA.suelta}
+                transition={ASA.transicion}
+              />
               <Pulsable
                 onClick={onCerrar}
                 aria-label="Cerrar"

@@ -10,7 +10,8 @@
 //       nivel: 3, nivelMax: 3, ventana: [true, false, …],   // últimas respuestas en el nivel actual
 //       aciertos: 80, total: 100, racha: 4, mejorRacha: 12,  // racha = aciertos seguidos
 //       items: { '3M': { a: 20, t: 24 } },
-//       ajustes: { direccion: 'sube' }
+//       ajustes: { direccion: 'sube', juego: 'normal' },
+//       carga: 3,          // oído absoluto: partes llenas del círculo de nivel (PARTES_NIVEL = 8)
 //     }
 //   }
 // }
@@ -119,7 +120,7 @@ export function ultimosDias(n = 7, estado = leer()) {
   return lista
 }
 
-const MODO_VACIO = { nivel: 1, nivelMax: 1, ventana: [], aciertos: 0, total: 0, racha: 0, mejorRacha: 0, items: {}, ajustes: {} }
+const MODO_VACIO = { nivel: 1, nivelMax: 1, ventana: [], carga: 0, aciertos: 0, total: 0, racha: 0, mejorRacha: 0, items: {}, ajustes: {} }
 
 export function datosModo(id, estado = leer()) {
   return { ...MODO_VACIO, ...(estado.modos[id] ?? {}) }
@@ -133,7 +134,7 @@ function guardarModo(id, cambios) {
 /** Elegir nivel a mano (solo hasta el máximo alcanzado). Reinicia la ventana. */
 export function elegirNivel(id, nivel) {
   const m = datosModo(id)
-  guardarModo(id, { nivel: Math.max(1, Math.min(nivel, m.nivelMax)), ventana: [] })
+  guardarModo(id, { nivel: Math.max(1, Math.min(nivel, m.nivelMax)), ventana: [], carga: 0 })
 }
 
 export function guardarAjustes(id, ajustes) {
@@ -149,11 +150,13 @@ export function empezarSesion() {
 }
 
 /**
- * Registra una respuesta. Devuelve { subio, nuevoNivel, metaCumplida }:
+ * Registra una respuesta. Devuelve { subio, nuevoNivel, metaCumplida, carga }:
+ *  - Con `carga` ({ acierto, fallo, partes }; oído absoluto) se sube al llenar el círculo: cada acierto suma
+ *    `acierto` partes y cada fallo resta `fallo`. Sin `carga`, se sube con ACIERTOS_PARA_SUBIR de TAMANO_VENTANA.
  *  - subio: true si con esta respuesta se pasa al siguiente nivel
  *  - metaCumplida: true si con esta respuesta se llega a los 5 minutos de hoy
  */
-export function registrarRespuesta(id, { item, bien, niveles }) {
+export function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga }) {
   const e = leer()
   const m = datosModo(id, e)
   const ahora = Date.now()
@@ -179,7 +182,15 @@ export function registrarRespuesta(id, { item, bien, niveles }) {
   const it = m.items[item] ?? { a: 0, t: 0 }
   let nivel = m.nivel
   let subio = false
-  if (nivel < niveles && ventana.filter(Boolean).length >= ACIERTOS_PARA_SUBIR) {
+  let carga = m.carga ?? 0
+  if (reglaCarga) {
+    carga = Math.max(0, carga + (bien ? reglaCarga.acierto : -reglaCarga.fallo))
+    if (nivel < niveles && carga >= reglaCarga.partes) {
+      nivel += 1
+      subio = true
+    }
+    carga = nivel >= niveles ? Math.min(carga, reglaCarga.partes) : subio ? 0 : carga
+  } else if (nivel < niveles && ventana.filter(Boolean).length >= ACIERTOS_PARA_SUBIR) {
     nivel += 1
     subio = true
   }
@@ -188,6 +199,7 @@ export function registrarRespuesta(id, { item, bien, niveles }) {
     nivel,
     nivelMax: Math.max(m.nivelMax, nivel),
     ventana: subio ? [] : ventana,
+    carga,
     aciertos: m.aciertos + (bien ? 1 : 0),
     total: m.total + 1,
     racha,
@@ -198,7 +210,7 @@ export function registrarRespuesta(id, { item, bien, niveles }) {
   const next = { ...e, dias, modos: { ...e.modos, [id]: modo } }
   next.mejorRacha = Math.max(e.mejorRacha ?? 0, rachaActual(next))
   escribir(next)
-  return { subio, nuevoNivel: nivel, metaCumplida }
+  return { subio, nuevoNivel: nivel, metaCumplida, carga }
 }
 
 export function getOido() {

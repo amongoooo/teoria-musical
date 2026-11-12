@@ -15,6 +15,7 @@ import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
 import { useOpciones } from '../progress/opciones.js'
 import { BRILLO_MS, RESORTE } from '../ui/movimiento.js'
+import { Bombilla, Candado, Check } from '../ui/Iconos.jsx'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -85,6 +86,11 @@ function useVisibleOctaves(ref, max) {
  *  - senalar ({ notas: ['A4'], n }): cada vez que cambia `n`, el teclado va a la octava de la primera nota (si no
  *    se ve) y sus teclas se iluminan un momento, como si se tocaran (no llama a onNoteOn ni suena: el sonido lo
  *    pone quien señala; p. ej. «Escuchar las 3 La» o una casilla verde).
+ *  - bloqueada ((nota) => bool): teclas con candado, en gris: no suenan ni responden (p. ej. las notas del oído
+ *    absoluto que aún no se desbloquean).
+ *  - inactivo (false): ninguna tecla responde (p. ej. mientras suena el «borrador» del oído absoluto).
+ *  - estados ({ 'C4': 'bien' | 'fijate' }): tecla en verde con ✓ (la respuesta) u oro con bombilla (lo que elegiste).
+ *  - sinEstado (false): sin la línea de arriba («Sonido sintetizado», «Teclado: Z–M»), p. ej. en el juego de oído absoluto.
  * Si no caben todas las octavas, el teclado completo va en una TIRA que se recorre con un resorte hasta la octava
  * elegida (pedido del usuario) y debajo va la barra de octavas (SelectorOctava): tocar una o deslizar; mientras
  * se desliza, la tira acompaña al dedo y al soltar se ajusta a la octava más cercana.
@@ -100,6 +106,10 @@ export default function Piano({
   ir,
   senalar,
   tecladoArriba = false,
+  bloqueada,
+  inactivo = false,
+  estados = {},
+  sinEstado = false,
 }) {
   const wrapperRef = useRef(null)
   const raizRef = useRef(null)
@@ -204,8 +214,13 @@ export default function Piano({
     setActive(new Set(pointers.current.values()))
   }, [])
 
+  // Teclas con candado o teclado inactivo: no suenan ni responden (como si el dedo no estuviera en una tecla).
+  const libreRef = useRef(null)
+  libreRef.current = (note) => !inactivo && !bloqueada?.(note)
+
   const press = useCallback(
-    (pointerId, note) => {
+    (pointerId, nota) => {
+      const note = nota && libreRef.current(nota) ? nota : null
       const prev = pointers.current.get(pointerId)
       if (prev === note) return
       if (prev) {
@@ -308,7 +323,7 @@ export default function Piano({
 
   return (
     <div ref={raizRef} className="flex flex-col gap-3">
-      <div className="flex min-h-6 items-center gap-3 text-sm text-zinc-500">
+      <div className={`flex min-h-6 items-center gap-3 text-sm text-zinc-500 ${sinEstado ? 'hidden' : ''}`}>
         <span aria-live="polite">
           {status === 'loading' && 'Cargando sonido…'}
           {status !== 'loading' && !audioOn && 'Toca para activar el sonido'}
@@ -340,38 +355,69 @@ export default function Piano({
           style={{ width: `${(octaves / visibleOctaves) * 100}%`, x: xTira }}
         >
           <div className="flex h-full gap-px">
-            {white.map(({ note, label, octave }) => (
+            {white.map(({ note, label, octave }) => {
+              const cerrada = bloqueada?.(note)
+              const estado = estados[note]
+              return (
+                <div
+                  key={note}
+                  data-note={note}
+                  data-bloqueada={cerrada || undefined}
+                  data-estado={estado}
+                  className={`flex flex-1 flex-col items-center justify-end gap-1.5 rounded-b-lg pb-3 text-sm font-medium transition-colors ${fundido(note)} ${
+                    encendida(note)
+                      ? 'bg-sky-200 text-sky-900'
+                      : estado === 'bien'
+                        ? 'bg-bien-relleno text-blanco'
+                        : estado === 'fijate'
+                          ? 'bg-fijate text-zinc-900'
+                          : cerrada
+                            ? 'bg-zinc-100 text-zinc-400'
+                            : marcadasSet.has(note)
+                              ? 'bg-fijate-claro text-fijate-tinta'
+                              : 'bg-white text-zinc-400'
+                  }`}
+                >
+                  <IconoTecla cerrada={cerrada} estado={estado} />
+                  {showLabels && (
+                    <span className="pointer-events-none">
+                      {label}
+                      {label === 'Do' && <sub className="text-[0.7em]">{octave}</sub>}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {black.map(({ note, afterWhite }) => {
+            const cerrada = bloqueada?.(note)
+            const estado = estados[note]
+            return (
               <div
                 key={note}
                 data-note={note}
-                className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors ${fundido(note)} ${
+                data-bloqueada={cerrada || undefined}
+                data-estado={estado}
+                className={`absolute top-0 flex h-[60%] items-end justify-center rounded-b-md pb-2 transition-colors ${fundido(note)} ${
                   encendida(note)
-                    ? 'bg-sky-200 text-sky-900'
-                    : marcadasSet.has(note)
-                      ? 'bg-fijate-claro text-fijate-tinta'
-                      : 'bg-white text-zinc-400'
+                    ? 'bg-sky-500'
+                    : estado === 'bien'
+                      ? 'bg-bien-relleno text-blanco'
+                      : estado === 'fijate'
+                        ? 'bg-fijate text-zinc-900'
+                        : cerrada
+                          ? 'bg-zinc-400 text-zinc-100'
+                          : marcadasSet.has(note)
+                            ? 'bg-fijate'
+                            : 'bg-zinc-900'
                 }`}
+                style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
               >
-                {showLabels && (
-                  <span className="pointer-events-none">
-                    {label}
-                    {label === 'Do' && <sub className="text-[0.7em]">{octave}</sub>}
-                  </span>
-                )}
+                <IconoTecla cerrada={cerrada} estado={estado} />
               </div>
-            ))}
-          </div>
-
-          {black.map(({ note, afterWhite }) => (
-            <div
-              key={note}
-              data-note={note}
-              className={`absolute top-0 h-[60%] rounded-b-md transition-colors ${fundido(note)} ${
-                encendida(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
-              }`}
-              style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
-            />
-          ))}
+            )
+          })}
         </motion.div>
       </div>
 
@@ -387,4 +433,10 @@ export default function Piano({
       )}
     </div>
   )
+}
+
+/** Ícono dentro de una tecla: ✓ (respuesta), bombilla (lo que elegiste) o candado (bloqueada). */
+function IconoTecla({ cerrada, estado }) {
+  const Icono = estado === 'bien' ? Check : estado === 'fijate' ? Bombilla : cerrada ? Candado : null
+  return Icono ? <Icono className="pointer-events-none size-[18px] max-w-[70%]" /> : null
 }

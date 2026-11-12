@@ -230,7 +230,7 @@ function Fila({ titulo, id, nota, children }) {
 }
 
 /** Control segmentado (tipo iOS): la opción activa con fondo blanco que se desliza con un resorte. */
-function Segmentado({ opciones, valor, onCambiar, etiqueta, capa, foco = false }) {
+export function Segmentado({ opciones, valor, onCambiar, etiqueta, capa, foco = false }) {
   return (
     <div
       role="radiogroup"

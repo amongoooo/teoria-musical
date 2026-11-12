@@ -173,6 +173,7 @@ function revisar(d) {
     nivel: Math.max(1, Math.floor(num(m.nivel, 1))),
     nivelMax: Math.max(1, Math.floor(num(m.nivelMax, 1))),
     ventana: Array.isArray(m.ventana) ? m.ventana.filter((x) => typeof x === 'boolean').slice(-10) : [],
+    carga: Math.max(0, Math.min(8, Math.floor(num(m.carga)))),
     aciertos: num(m.aciertos),
     total: num(m.total),
     racha: num(m.racha),
