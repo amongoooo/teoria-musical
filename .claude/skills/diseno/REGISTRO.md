@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) **Escuchar y ver**: al pulsar un «Escuchar…», cada nota se ilumina en el teclado (que va a su octava) y su casilla lleva aro celeste mientras suena.
 - 2026-11-12: (pedido del usuario) Opción **Barra de octavas del piano: Mover la vista / Mover las teclas** en Opciones: con «Mover las teclas» la barra va 5 · 4 · 3 y deslizar a la derecha arrastra el teclado hacia las graves.
 - 2026-11-12: (pedido del usuario) Una isla abierta ya no se cierra al «subir la página» sino **cuando ella y su tarjetita dejan la mitad de la pantalla** (por arriba o por abajo); con el dedo aún apoyado, volver a la mitad **la reabre**; al soltar cerrada, queda cerrada.
 - 2026-11-12: (pedido del usuario) Nueva animación general **«temblar»** (`useTemblor` + `TEMBLOR`): x, y y giro en ~0,25 s, amplitud inversa al tamaño en cada eje, giro inverso al tamaño, sentido e inicio al azar por movimiento; con reducir movimiento, parpadeo. Reemplaza el temblor solo en x de `Casilla`. En «Encuentra la nota» las **casillas también son botones** (gris = solo suena; verde = el piano va a su tecla y la ilumina). El **Piano va en una tira** que se recorre con resorte entre octavas y acompaña al dedo en la barra de octavas (sustituye al fundido de teclas al cambiar de octava).

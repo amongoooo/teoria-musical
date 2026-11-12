@@ -28,3 +28,25 @@ function tocarGroove({ groove, bpm = 90, compases = 2, tiempos, porTiempo }) {
   const todos = Array.from({ length: compases }, (_, c) => forma.eventos.map((e) => ({ ...e, inicio: e.inicio + c * forma.casillas }))).flat()
   return playPattern(todos, { paso: 60 / bpm / forma.porTiempo })
 }
+
+/**
+ * Cuándo suena cada nota de un sonido de notas: [{ notas: ['C4'], t }] (t en segundos desde que se pide,
+ * con el mismo reparto que playNotes: 0,05 s de margen + retraso; en 'secuencia', una cada `intervalo`
+ * (0,45 por defecto) y un elemento array suena a la vez; en 'acorde', todas juntas). Grooves y frecuencias: [].
+ */
+export function notasEnElTiempo(sonido, { retraso = 0 } = {}) {
+  if (!sonido?.notas) return []
+  const t0 = 0.05 + retraso
+  const lista = sonido.notas.map((n) => (Array.isArray(n) ? n : [n]))
+  if (sonido.modo === 'acorde') return [{ notas: lista.flat(), t: t0 }]
+  return lista.map((notas, i) => ({ notas, t: t0 + i * (sonido.intervalo ?? 0.45) }))
+}
+
+/**
+ * Llama a `onNotas(notas, i)` justo cuando suena cada nota (o grupo) del sonido, para señalarla en el
+ * teclado o en las casillas mientras suena. Devuelve una función que cancela lo que quede.
+ */
+export function seguirNotas(sonido, onNotas, opciones) {
+  const timers = notasEnElTiempo(sonido, opciones).map(({ notas, t }, i) => setTimeout(() => onNotas(notas, i), t * 1000))
+  return () => timers.forEach(clearTimeout)
+}
