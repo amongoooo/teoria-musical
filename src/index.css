@@ -118,6 +118,29 @@
   --color-modulo-10-relleno: #5e5b8c;
   --color-modulo-10-tinta: #5e5b8c;
   --color-modulo-10-suave: #e5e5ee;
+
+  /* Dificultad del entrenador de oído (pedido del usuario): azul → verde → amarillo → naranja → rojo (la más difícil).
+     Reusan colores de la paleta; las variantes cambian solas en oscuro porque apuntan a variables que ya cambian. */
+  --color-dificultad-1: var(--color-modulo-1);
+  --color-dificultad-1-relleno: var(--color-modulo-1-relleno);
+  --color-dificultad-1-tinta: var(--color-modulo-1-tinta);
+  --color-dificultad-1-suave: var(--color-modulo-1-suave);
+  --color-dificultad-2: var(--color-bien);
+  --color-dificultad-2-relleno: var(--color-bien-relleno);
+  --color-dificultad-2-tinta: var(--color-bien-tinta);
+  --color-dificultad-2-suave: var(--color-bien-suave);
+  --color-dificultad-3: var(--color-dia);
+  --color-dificultad-3-relleno: #a26a14; /* contraste 4,56:1 con blanco */
+  --color-dificultad-3-tinta: var(--color-fijate-tinta);
+  --color-dificultad-3-suave: var(--color-fijate-suave);
+  --color-dificultad-4: var(--color-modulo-2);
+  --color-dificultad-4-relleno: var(--color-modulo-2-relleno);
+  --color-dificultad-4-tinta: var(--color-modulo-2-tinta);
+  --color-dificultad-4-suave: var(--color-modulo-2-suave);
+  --color-dificultad-5: var(--color-modulo-5);
+  --color-dificultad-5-relleno: var(--color-modulo-5-relleno);
+  --color-dificultad-5-tinta: var(--color-modulo-5-tinta);
+  --color-dificultad-5-suave: var(--color-modulo-5-suave);
 }
 
 /*

@@ -3,16 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
 import {
   AJUSTES_ABSOLUTO,
-  CROMATICA,
-  NOTAS_BASE,
-  OCTAVAS_POSIBLES,
   ajusteAbsoluto,
   getJuego,
-  nombreClase,
-  notaNuevaDelNivel,
   notasDelNivel,
   notasInicialesRapido,
-  octavasDe,
   textoJuego,
 } from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
@@ -23,32 +17,28 @@ import Rich from './Rich.jsx'
 
 /**
  * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; por ahora solo el oído absoluto):
- * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, nivel en una rueda
- * vertical (el 1 abajo; en Rápido, el multiplicador) junto a la cajita de notas, las octavas en las que suena y
- * «Responder con» en dos bloques con dibujito (piano / botones).
+ * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, y dos ruedas
+ * verticales lado a lado —Nivel (el 1 abajo; en Rápido, el multiplicador) y Dificultad (1–5 = octavas)— con
+ * puntitos al costado que se encienden (12 = las notas; 5 = las octavas). La página entera se tiñe según la
+ * dificultad: azul, verde, amarillo, naranja y rojo. Al final, «Responder con» en dos bloques con dibujito.
  * Sin textos grises de instrucciones: se entiende por el movimiento y el color.
  */
 export default function ArranqueOido({ modo, datos }) {
-  const cifrado = datos.ajustes.cifrado === 'en' ? 'en' : 'es'
-  const cambiarCifrado = () => guardarAjustes(modo.id, { cifrado: cifrado === 'en' ? 'es' : 'en' })
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
-  // Rápido: la rueda es el multiplicador (×1…×10, todos disponibles); si no, el nivel de siempre.
+  // Rápido: la rueda de nivel es el multiplicador (1…10, todos disponibles); si no, el nivel de siempre.
   const rapido = Boolean(juego?.multiplicador)
   const mult = AJUSTES_ABSOLUTO.multiplicador
+  const dif = AJUSTES_ABSOLUTO.octavas
   const rueda = rapido
-    ? {
-        total: mult.max,
-        max: mult.max,
-        valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'),
-        elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }),
-        prefijo: '',
-      }
-    : { total: modo.niveles, max: datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n), prefijo: '' }
-  // Lo que se ve en la rueda mientras se desliza (la cajita de notas lo sigue al instante).
+    ? { total: mult.max, max: mult.max, valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'), elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }) }
+    : { total: modo.niveles, max: datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n) }
+  // Lo que se ve en cada rueda mientras se desliza (los puntitos y el color lo siguen al instante).
   const [vista, setVista] = useState(rueda.valor)
+  const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
   const conPiano = datos.ajustes.respuesta !== 'botones'
-  const notas = rapido ? notasInicialesRapido(vista) : notasDelNivel(vista)
-  const nuevas = rapido ? notas.filter((c) => !NOTAS_BASE.includes(c)) : [notaNuevaDelNivel(vista)]
+  const notas = (rapido ? notasInicialesRapido(vista) : notasDelNivel(vista)).length
+  const acento = colorDificultad(vistaDif)
+  useFondoTenido(acento)
 
   return (
     <LayoutGroup>
@@ -60,8 +50,8 @@ export default function ArranqueOido({ modo, datos }) {
             initial={{ scale: 0.6, rotate: -8 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 14, delay: 0.1 }}
-            className="grid size-24 place-items-center rounded-[1.75rem] text-blanco"
-            style={{ backgroundColor: oscuro(modo.acento), boxShadow: `0 7px 0 ${labio(modo.acento)}` }}
+            className="grid size-24 place-items-center rounded-[1.75rem] text-blanco transition-[background-color,box-shadow] duration-300"
+            style={{ backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }}
             aria-hidden
           >
             <Oreja className="size-14" />
@@ -72,34 +62,36 @@ export default function ArranqueOido({ modo, datos }) {
         {modo.juegos && (
           <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
             <Titulo>Modo de juego</Titulo>
-            <ModosJuego modo={modo} datos={datos} />
+            <ModosJuego modo={modo} datos={datos} acento={acento} />
           </motion.section>
         )}
 
-        <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-          <Titulo id="nivel">Nivel</Titulo>
-          <div className="flex gap-3">
+        <motion.section variants={itemLista} layout="position" className="grid grid-cols-2 gap-4" data-medidores>
+          <Medidor id="nivel" titulo="Nivel" lado="izquierda" puntos={12} encendidos={notas} acento={acento}>
             <RuedaNivel
               key={rapido ? 'multiplicador' : 'nivel'}
+              id="nivel"
+              nombre="nivel"
               total={rueda.total}
               max={rueda.max}
               valor={rueda.valor}
-              prefijo={rueda.prefijo}
               onVista={setVista}
               onElegir={rueda.elegir}
-              acento={modo.acento}
+              acento={acento}
             />
-            <CajaNotas notas={notas} nuevas={nuevas} cifrado={cifrado} onCifrado={cambiarCifrado} acento={modo.acento} />
-          </div>
-        </motion.section>
-
-        <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-          <Titulo id="octavas">Dificultad</Titulo>
-          <Octavas
-            valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
-            onCambiar={(n) => guardarAjustes(modo.id, { octavas: n })}
-            acento={modo.acento}
-          />
+          </Medidor>
+          <Medidor id="dificultad" titulo="Dificultad" lado="derecha" puntos={dif.max} encendidos={vistaDif} acento={acento}>
+            <RuedaNivel
+              id="dificultad"
+              nombre="dificultad"
+              total={dif.max}
+              max={dif.max}
+              valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
+              onVista={setVistaDif}
+              onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
+              acento={acento}
+            />
+          </Medidor>
         </motion.section>
 
         {modo.piano && (
@@ -115,7 +107,7 @@ export default function ArranqueOido({ modo, datos }) {
                   role="radio"
                   aria-checked={(id === 'piano') === conPiano}
                   activo={(id === 'piano') === conPiano}
-                  acento={modo.acento}
+                  acento={acento}
                   onClick={() => guardarAjustes(modo.id, { respuesta: id })}
                   data-responder={id}
                 >
@@ -128,6 +120,79 @@ export default function ArranqueOido({ modo, datos }) {
         )}
       </motion.div>
     </LayoutGroup>
+  )
+}
+
+/** Color de cada dificultad (1 azul … 5 rojo; variables `--color-dificultad-N` de src/index.css). */
+const colorDificultad = (n) => `var(--color-dificultad-${n})`
+
+/**
+ * La página entera (fondo de <html> y <body>) se tiñe con el color de la dificultad mientras se ve el arranque;
+ * al salir vuelve al fondo de siempre. Fundido de 400 ms al cambiar.
+ */
+function useFondoTenido(color) {
+  useEffect(() => {
+    for (const el of [document.documentElement, document.body]) {
+      el.style.transition = 'background-color 400ms ease-out'
+      el.style.backgroundColor = `color-mix(in oklab, var(--color-fondo) 82%, ${color})`
+    }
+  }, [color])
+  useEffect(
+    () => () => {
+      for (const el of [document.documentElement, document.body]) el.style.backgroundColor = ''
+      setTimeout(() => {
+        for (const el of [document.documentElement, document.body]) el.style.transition = ''
+      }, 450)
+    },
+    [],
+  )
+}
+
+/**
+ * Columna de medidor: título y, debajo, la rueda con una columna de puntitos al costado (por fuera) que se
+ * encienden de abajo arriba según lo que marca la rueda.
+ */
+function Medidor({ id, titulo, lado, puntos, encendidos, acento, children }) {
+  const columna = <Puntitos total={puntos} encendidos={encendidos} acento={acento} />
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <h2 id={id} className="text-center font-juego text-xl font-semibold uppercase tracking-wide text-zinc-800">
+        {titulo}
+      </h2>
+      <div className="flex items-stretch gap-2.5">
+        {lado === 'izquierda' && columna}
+        {children}
+        {lado === 'derecha' && columna}
+      </div>
+    </div>
+  )
+}
+
+/** Puntitos en columna (el primero abajo): los encendidos van del color del acento y dan un pop al encenderse. */
+function Puntitos({ total, encendidos, acento }) {
+  const grande = total <= 6
+  return (
+    <div
+      className={`flex flex-col-reverse items-center justify-between ${grande ? 'py-6' : 'py-3'}`}
+      role="img"
+      aria-label={`${encendidos} de ${total}`}
+      data-puntitos={total}
+      data-encendidos={encendidos}
+    >
+      {Array.from({ length: total }, (_, i) => {
+        const on = i < encendidos
+        return (
+          <motion.span
+            key={i}
+            initial={false}
+            animate={on ? { scale: [1, 1.5, 1] } : { scale: 0.85 }}
+            transition={{ duration: 0.3 }}
+            className={`block rounded-full transition-colors duration-200 ${grande ? 'size-3.5' : 'size-2.5'}`}
+            style={{ backgroundColor: on ? acento : 'var(--color-zinc-200)' }}
+          />
+        )
+      })}
+    </div>
   )
 }
 
@@ -222,13 +287,12 @@ function Descripcion({ texto, info }) {
 
 const ICONO_JUEGO = { normal: Circulo8, rapido: Rayo, contrarreloj: Cronometro }
 
-function ModosJuego({ modo, datos }) {
+function ModosJuego({ modo, datos, acento }) {
   const actual = getJuego(datos.ajustes.juego)
   const [abierto, setAbierto] = useState(false)
   const n = modo.juegos.length
   const i = modo.juegos.findIndex((j) => j.id === actual.id)
   const centro = `${((i + 0.5) / n) * 100}%`
-  const acento = modo.acento
 
   const tocar = (j) => {
     if (j.id === actual.id) setAbierto((a) => !a)
@@ -375,52 +439,6 @@ function BotonRedondo({ acento, children, ...props }) {
 }
 
 // ---------------------------------------------------------------------------
-// Dificultad (pedido del usuario: «más octavas, más dificultad»): tira con las octavas 2…6; las que suenan se encienden. Con + se suma una arriba, luego una abajo y así
-// (4 → 4–5 → 3–5 → 3–6 → 2–6); con − se quitan en el orden inverso.
-// ---------------------------------------------------------------------------
-
-function Octavas({ valor, onCambiar, acento }) {
-  const { min, max } = AJUSTES_ABSOLUTO.octavas
-  const activas = new Set(octavasDe(valor))
-  return (
-    <div className="flex items-center gap-3" data-octavas={valor}>
-      <BotonRedondo onClick={() => onCambiar(Math.max(min, valor - 1))} disabled={valor <= min} aria-label="Menos dificultad" acento={acento}>
-        −
-      </BotonRedondo>
-      <div
-        className="grid h-14 min-w-0 flex-1 grid-cols-5 gap-1 rounded-3xl border-2 border-zinc-200 bg-white p-1.5"
-        style={{ boxShadow: RELIEVE }}
-        role="img"
-        aria-label={`Dificultad ${valor}: suena en ${activas.size === 1 ? 'la octava' : 'las octavas'} ${[...activas].join(', ')}`}
-      >
-        {OCTAVAS_POSIBLES.map((o) => {
-          const activa = activas.has(o)
-          return (
-            <motion.span
-              key={o}
-              data-octava={o}
-              data-activa={activa || undefined}
-              initial={false}
-              animate={activa ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className={`grid place-items-center rounded-2xl font-dato text-lg font-medium tabular-nums transition-[background-color,color] duration-200 ${
-                activa ? 'text-blanco' : 'text-zinc-400'
-              }`}
-              style={{ backgroundColor: activa ? oscuro(acento) : 'transparent' }}
-            >
-              {o}
-            </motion.span>
-          )
-        })}
-      </div>
-      <BotonRedondo onClick={() => onCambiar(Math.min(max, valor + 1))} disabled={valor >= max} aria-label="Más dificultad" acento={acento}>
-        +
-      </BotonRedondo>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Rueda de nivel (vertical, el 1 abajo): se desliza con el dedo (lo sigue 1:1 tras una zona muerta corta), al soltar
 // se asienta en el más cercano (con la inercia del gesto) y con goma en los extremos. Encima del último desbloqueado
 // asoma el siguiente con candado (no se puede elegir). Tocar un nivel que se ve lo elige; flechas ↑ ↓ también.
@@ -430,7 +448,7 @@ const ALTO_ITEM = 68
 const ZONA_MUERTA = 8
 const INERCIA_MS = 160
 
-function RuedaNivel({ total, max, valor, prefijo = '', onVista, onElegir, acento }) {
+function RuedaNivel({ id, nombre, total, max, valor, onVista, onElegir, acento }) {
   const ultimo = Math.max(0, Math.min(total, max) - 1) // índice del último que se puede elegir
   const vistos = Math.min(total, max + 1) // + el siguiente con candado
   const pos = useMotionValue(valor - 1)
@@ -521,19 +539,19 @@ function RuedaNivel({ total, max, valor, prefijo = '', onVista, onElegir, acento
       ref={caja}
       role="slider"
       tabIndex={0}
-      aria-labelledby="nivel"
+      aria-labelledby={id}
       aria-orientation="vertical"
       aria-valuemin={1}
       aria-valuemax={ultimo + 1}
       aria-valuenow={actual + 1}
-      data-rueda-nivel
+      data-rueda-nivel={nombre}
       data-posicion={actual + 1}
       onPointerDown={abajo}
       onPointerMove={mueve}
       onPointerUp={suelta}
       onPointerCancel={suelta}
       onKeyDown={tecla}
-      className="relative w-28 shrink-0 cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing"
+      className="relative h-56 w-28 shrink-0 cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing"
       style={{ boxShadow: RELIEVE }}
     >
       {/* Ranura del elegido: del color del modo, como el marcador de un selector de nivel. */}
@@ -550,14 +568,14 @@ function RuedaNivel({ total, max, valor, prefijo = '', onVista, onElegir, acento
         }}
       >
         {Array.from({ length: vistos }, (_, i) => (
-          <ItemRueda key={i} i={i} pos={pos} bloqueado={i > ultimo} prefijo={prefijo} acento={acento} />
+          <ItemRueda key={i} i={i} pos={pos} bloqueado={i > ultimo} acento={acento} />
         ))}
       </div>
     </div>
   )
 }
 
-function ItemRueda({ i, pos, bloqueado, prefijo, acento }) {
+function ItemRueda({ i, pos, bloqueado, acento }) {
   const y = useTransform(pos, (p) => (p - i) * ALTO_ITEM)
   const distancia = useTransform(pos, (p) => Math.abs(p - i))
   const scale = useTransform(distancia, [0, 1, 2], [1, 0.72, 0.55])
@@ -569,59 +587,8 @@ function ItemRueda({ i, pos, bloqueado, prefijo, acento }) {
       style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, y, scale, opacity, color: tinta(acento) }}
       data-nivel={i + 1}
     >
-      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-juego text-5xl leading-none">
-          {prefijo && <span className="text-2xl">{prefijo}</span>}
-          {i + 1}
-        </span>}
+      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-juego text-5xl leading-none">{i + 1}</span>}
     </motion.div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Cajita de notas: las 12 notas; las del nivel se encienden con el color del modo y las que se suman en ese nivel van
-// en oro («nuevo»; en Rápido, las extra del multiplicador). Tocar cualquier nombre cambia todas entre Do / C.
-// ---------------------------------------------------------------------------
-
-function CajaNotas({ notas, nuevas, cifrado, onCifrado, acento }) {
-  const libres = new Set(notas)
-  return (
-    <div
-      className="grid min-w-0 flex-1 grid-cols-3 content-center gap-1.5 rounded-3xl border-2 border-zinc-200 bg-white p-2.5"
-      style={{ boxShadow: RELIEVE }}
-      data-caja-notas
-    >
-      {CROMATICA.map((c) => {
-        const libre = libres.has(c)
-        const esNueva = nuevas.includes(c)
-        const nombre = nombreClase(c, cifrado)
-        return (
-          <Pulsable
-            key={c}
-            onClick={onCifrado}
-            aria-label={`${nombre}: cambiar a ${cifrado === 'en' ? 'Do, Re, Mi' : 'C, D, E'}`}
-            data-nota={c}
-            data-libre={libre || undefined}
-            className={`grid h-10 place-items-center overflow-hidden rounded-xl text-base font-semibold transition-[background-color,color,opacity] duration-200 ${
-              esNueva ? 'bg-fijate text-negro' : libre ? '' : 'text-zinc-500 opacity-50'
-            }`}
-            style={libre && !esNueva ? { backgroundColor: claro(acento), color: tinta(acento) } : undefined}
-          >
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={nombre}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ ...RESORTE.pulsar, opacity: { duration: 0.12 } }}
-                className="col-start-1 row-start-1"
-              >
-                {nombre}
-              </motion.span>
-            </AnimatePresence>
-          </Pulsable>
-        )
-      })}
-    </div>
   )
 }
 
