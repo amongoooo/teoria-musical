@@ -1,13 +1,14 @@
 import { animate, motion, useAnimationControls, useMotionValue, useMotionValueEvent, useReducedMotion, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { MINUTOS_DIA, setPrograma, useOpciones } from '../progress/opciones.js'
+import { MINUTOS_DIA, setPrograma, setReloj, useOpciones } from '../progress/opciones.js'
 import { Luna, Sol } from '../ui/Iconos.jsx'
-import { RESORTE } from '../ui/movimiento.js'
-import Pulsable from '../ui/Pulsable.jsx'
+import { HUNDIR, RESORTE } from '../ui/movimiento.js'
 
 // Opciones → Apariencia → «Programar» (pedido del usuario): a qué hora del día empieza el modo claro (sol, punto
 // amarillo) y a cuál el oscuro (luna, punto azul), sobre una BARRA DEL DÍA (0 a 24 h, 24 partes).
-//  - Tocar el sol o la luna lo elige y la barra se resalta (sin texto): ahí hay que poner el punto.
+//  - Bloques: sin hora puesta, un cuadrito del color del punto con su ícono; con hora, ícono + hora. Tocar el borde
+//    o el ícono elige el punto y la barra se resalta (sin texto); tocar la hora cambia 24 h ↔ am/pm; mantener
+//    pulsado dibuja un contorno que da la vuelta como un reloj (1,5 s) y al cerrarse borra el punto.
 //  - Los puntos caen solo en las horas exactas, con un imán (resorte); nunca entre dos horas.
 //  - Mantener un punto 1 s sobre la misma hora hace ZOOM a 2 horas alrededor (14–16 h si estaba en las 15), con
 //    marcas cada 5 min; el rango no se mueve hasta soltar, y al soltar vuelve a 0–24 h.
@@ -61,7 +62,7 @@ function fondo(p, a, b) {
 }
 
 export default function ProgramarTema() {
-  const { programa } = useOpciones()
+  const { programa, reloj } = useOpciones()
   const reducir = useReducedMotion()
   const [eligiendo, setEligiendo] = useState(null) // 'claro' | 'oscuro' | null: el bloque tocado
   const [borrador, setBorrador] = useState(null) // el programa mientras se arrastra un punto
@@ -211,30 +212,21 @@ export default function ProgramarTema() {
 
   return (
     <div className="flex flex-col gap-3" data-programar>
-      <div className="grid grid-cols-2 gap-2">
-        {CLAVES.map((k) => {
-          const { Icono, nombre, color, icono } = PUNTOS[k]
-          const activo = eligiendo === k
-          return (
-            <Pulsable
-              key={k}
-              tipo="tarjeta"
-              onClick={() => setEligiendo(activo ? null : k)}
-              aria-pressed={activo}
-              aria-label={`${nombre}: ${p[k] == null ? 'sin hora' : hora(p[k])}`}
-              data-bloque={k}
-              className="flex min-h-16 items-center gap-3 rounded-2xl border-2 px-3 transition-colors duration-200"
-              style={{ borderColor: activo ? color : 'var(--color-zinc-200)', backgroundColor: activo ? mezcla(color, 16) : 'var(--color-white)' }}
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
-                <Icono className="size-5" />
-              </span>
-              <span className={`whitespace-nowrap font-dato text-2xl font-medium tabular-nums ${p[k] == null ? 'text-zinc-400' : 'text-zinc-900'}`} data-hora={k}>
-                {hora(p[k])}
-              </span>
-            </Pulsable>
-          )
-        })}
+      <div className="flex gap-2">
+        {CLAVES.map((k) => (
+          <Bloque
+            key={k}
+            k={k}
+            minuto={p[k]}
+            activo={eligiendo === k}
+            reloj={reloj}
+            onElegir={() => setEligiendo((e) => (e === k ? null : k))}
+            onBorrar={() => {
+              setEligiendo((e) => (e === k ? null : e))
+              setPrograma({ ...programa, [k]: null })
+            }}
+          />
+        ))}
       </div>
 
       {/* La barra del día. `data-sin-arrastre`: arrastrar aquí no mueve la hoja de Opciones. */}
@@ -298,5 +290,157 @@ function Punto({ k, mv, desde, hasta, activo }) {
       animate={{ scale: activo ? 1.25 : 1 }}
       transition={RESORTE.pulsar}
     />
+  )
+}
+
+/** Mantener pulsado un bloque: `reconocer` ms hasta que cuenta como «mantener» y `borrar` ms de reloj hasta borrar. */
+const MANTENER = { reconocer: 450, borrar: 1500, mover: 10 }
+
+/** «20:30» o, en am/pm, { hora: '8:30', sufijo: 'pm' }. */
+function partesHora(m, reloj) {
+  if (reloj !== '12') return { hora: hora(m), sufijo: null }
+  const h = Math.floor(m / 60)
+  return { hora: `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, '0')}`, sufijo: h < 12 ? 'am' : 'pm' }
+}
+
+/**
+ * Bloque del sol o de la luna (pedido del usuario). Sin hora: un cuadrito del color del punto con su ícono. Con hora:
+ * ícono + hora. Tocar la hora cambia 24 h ↔ am/pm; tocar el borde o el ícono elige el punto; mantener pulsado (también
+ * sobre la hora) dibuja un contorno del color del ícono que da la vuelta como un reloj y, al cerrarse, borra el punto.
+ */
+function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
+  const { Icono, nombre, color, icono } = PUNTOS[k]
+  const puesto = minuto != null
+  const reducir = useReducedMotion()
+  const ref = useRef(null)
+  const g = useRef(null) // { id, x, y, enHora, largo, timers }
+  const [borrando, setBorrando] = useState(null) // { w, h } mientras corre el reloj
+  const vuelta = useMotionValue(0)
+
+  const cancelar = () => {
+    const d = g.current
+    if (!d) return
+    d.timers.forEach(clearTimeout)
+    g.current = null
+    setBorrando(null)
+    vuelta.stop()
+    vuelta.set(0)
+    return d
+  }
+  useEffect(() => () => g.current?.timers.forEach(clearTimeout), [])
+
+  const alPresionar = (e) => {
+    if (e.button > 0) return
+    const enHora = Boolean(e.target.closest('[data-hora]'))
+    const d = { id: e.pointerId, x: e.clientX, y: e.clientY, enHora, largo: false, timers: [] }
+    g.current = d
+    if (!puesto) return // sin punto no hay nada que borrar
+    d.timers.push(
+      setTimeout(() => {
+        d.largo = true
+        // offsetWidth/Height: sin el «hundirse» (scale) del toque.
+        setBorrando({ w: ref.current.offsetWidth, h: ref.current.offsetHeight })
+        vuelta.set(0)
+        animate(vuelta, 1, reducir ? { duration: MANTENER.borrar / 1000 } : { duration: MANTENER.borrar / 1000, ease: 'linear' })
+        d.timers.push(
+          setTimeout(() => {
+            cancelar()
+            onBorrar()
+          }, MANTENER.borrar),
+        )
+      }, MANTENER.reconocer),
+    )
+  }
+  const alMover = (e) => {
+    const d = g.current
+    if (d && e.pointerId === d.id && Math.hypot(e.clientX - d.x, e.clientY - d.y) > MANTENER.mover) cancelar()
+  }
+  const alSoltar = (e) => {
+    const d = g.current
+    if (!d || e.pointerId !== d.id) return
+    cancelar()
+    if (d.largo) return // mantener no es un toque
+    if (d.enHora && puesto) setReloj(reloj === '12' ? '24' : '12')
+    else onElegir()
+  }
+
+  const { hora: texto, sufijo } = puesto ? partesHora(minuto, reloj) : {}
+  return (
+    <motion.button
+      ref={ref}
+      type="button"
+      layout
+      transition={{ layout: RESORTE.suave }}
+      whileTap={{ scale: HUNDIR.tarjeta }}
+      onPointerDown={alPresionar}
+      onPointerMove={alMover}
+      onPointerUp={alSoltar}
+      onPointerCancel={cancelar}
+      onPointerLeave={cancelar}
+      onContextMenu={(e) => e.preventDefault()}
+      // Teclado (Enter / espacio): elige el punto.
+      onClick={(e) => e.detail === 0 && onElegir()}
+      aria-pressed={activo}
+      aria-label={`${nombre}: ${puesto ? hora(minuto) : 'sin hora'}`}
+      data-bloque={k}
+      data-puesto={puesto || undefined}
+      data-borrando={borrando ? true : undefined}
+      className={`relative flex min-h-16 select-none items-center rounded-2xl border-2 transition-colors duration-200 [-webkit-touch-callout:none] ${
+        puesto ? 'min-w-0 flex-1 gap-2.5 px-3' : 'size-16 shrink-0 justify-center'
+      }`}
+      style={{
+        touchAction: 'manipulation',
+        borderColor: puesto ? (activo ? color : 'var(--color-zinc-200)') : color,
+        backgroundColor: puesto ? (activo ? mezcla(color, 16) : 'var(--color-white)') : color,
+        // Sin hora y elegido: un aro de su color separado por la superficie.
+        boxShadow: !puesto && activo ? `0 0 0 3px var(--color-white), 0 0 0 6px ${mezcla(color, 55)}` : '0 0 0 0 transparent',
+      }}
+    >
+      {puesto ? (
+        <>
+          <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
+            <Icono className="size-5" />
+          </span>
+          <span data-hora={k} className="flex min-w-0 items-baseline gap-1 whitespace-nowrap py-2 pr-1 font-dato font-medium tabular-nums text-zinc-900">
+            <span className="text-2xl">{texto}</span>
+            {sufijo && <span className="text-sm text-zinc-500">{sufijo}</span>}
+          </span>
+        </>
+      ) : (
+        <span className="grid place-items-center" style={{ color: icono }}>
+          <Icono className="size-7" />
+        </span>
+      )}
+      {borrando && <ContornoReloj {...borrando} color={color} vuelta={vuelta} />}
+    </motion.button>
+  )
+}
+
+/** Contorno del bloque que se dibuja como la aguja de un reloj: empieza arriba al centro y da la vuelta. */
+function ContornoReloj({ w, h, color, vuelta }) {
+  const t = 3 // grosor
+  const r = 16 // radio de la esquina (rounded-2xl)
+  // Coordenadas de la caja con borde (el svg se coloca 2 px afuera, sobre el borde de 2 px del bloque).
+  const x0 = t / 2
+  const y0 = t / 2
+  const x1 = w - t / 2
+  const y1 = h - t / 2
+  const c = r - t / 2
+  const d = [
+    `M ${w / 2} ${y0}`,
+    `H ${x1 - c}`,
+    `A ${c} ${c} 0 0 1 ${x1} ${y0 + c}`,
+    `V ${y1 - c}`,
+    `A ${c} ${c} 0 0 1 ${x1 - c} ${y1}`,
+    `H ${x0 + c}`,
+    `A ${c} ${c} 0 0 1 ${x0} ${y1 - c}`,
+    `V ${y0 + c}`,
+    `A ${c} ${c} 0 0 1 ${x0 + c} ${y0}`,
+    `H ${w / 2}`,
+  ].join(' ')
+  return (
+    <svg aria-hidden className="pointer-events-none absolute -top-0.5 -left-0.5 overflow-visible" width={w} height={h}>
+      <motion.path d={d} fill="none" strokeWidth={t} strokeLinecap="round" style={{ stroke: color, pathLength: vuelta }} data-reloj-borrar />
+    </svg>
   )
 }
