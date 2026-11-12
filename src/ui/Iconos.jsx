@@ -6,6 +6,8 @@
 //  - Cómo va (con su color): Check (bien, verde) · Bombilla (fíjate, oro) · Candado (bloqueado, gris)
 //  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar · Inicio · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
+//  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
+//    · Cronometro (Contrarreloj)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
 
 function Icono({ className = 'size-6', grosor = 2, children, titulo }) {
@@ -120,6 +122,46 @@ export function Luna(props) {
   return (
     <Icono {...props}>
       <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" />
+    </Icono>
+  )
+}
+
+/** Información: la burbuja ⓘ que se despliega (arranque del entrenador de oído; en oro). */
+export function Info(props) {
+  return (
+    <Icono {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.5" />
+      <path d="M12 7.6h.01" strokeWidth="2.8" />
+    </Icono>
+  )
+}
+
+/** Modo Normal del oído absoluto: el círculo de nivel en 8 partes. */
+export function Circulo8(props) {
+  return (
+    <Icono {...props}>
+      <circle cx="12" cy="12" r="8" strokeDasharray="3.1 3.18" transform="rotate(-80 12 12)" />
+      <path d="M12 9v6M9 12h6" />
+    </Icono>
+  )
+}
+
+/** Modo Rápido: un rayo. */
+export function Rayo(props) {
+  return (
+    <Icono {...props}>
+      <path d="M13.5 2.5 5 13.5h6.5l-1 8 8.5-11h-6.5z" />
+    </Icono>
+  )
+}
+
+/** Modo Contrarreloj: un cronómetro. */
+export function Cronometro(props) {
+  return (
+    <Icono {...props}>
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M12 13.5V9.5M10 2.5h4M12 2.5v3.5M18.2 6.8l1.3-1.3" />
     </Icono>
   )
 }

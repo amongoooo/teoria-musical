@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir, seguirNotas } from '../audio/sonido.js'
 import Piano from '../components/Piano.jsx'
-import Rich from '../components/Rich.jsx'
+import ArranqueOido from '../components/ArranqueOido.jsx'
 import {
   ACIERTOS_PARA_SUBIR,
   META_SEGUNDOS,
@@ -19,7 +19,6 @@ import {
   ultimosDias,
   useOido,
 } from '../progress/oido.js'
-import { Segmentado } from '../components/Opciones.jsx'
 import { useOpciones } from '../progress/opciones.js'
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
@@ -283,7 +282,7 @@ function Entrenador({ modo }) {
     const d = datosModo(modo.id)
     const p = modo.generar(d.nivel, d.ajustes, pregunta)
     contador.current += 1
-    setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel) })
+    setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel, d.ajustes) })
     setRespuesta(null)
     setResultado(null)
     window.scrollTo(0, 0)
@@ -355,7 +354,7 @@ function Entrenador({ modo }) {
   } else {
     const bien = respuesta === pregunta.item
     const sinTiempo = respuesta === SIN_TIEMPO
-    let texto = bien || sinTiempo ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta)}. ${pregunta.explicacion}`
+    let texto = bien || sinTiempo ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta, datos.ajustes)}. ${pregunta.explicacion}`
     if (!bien) texto += conPiano ? ' Toca las teclas para compararlas.' : ' Toca las opciones para compararlas.'
     if (resultado?.subio) {
       const nuevos = modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')
@@ -367,7 +366,7 @@ function Entrenador({ modo }) {
       onClick: nueva,
       feedback: bien
         ? { tipo: 'bien', titulo: '¡Correcto!', texto }
-        : { tipo: 'mal', titulo: `${sinTiempo ? 'Se acabó el tiempo. ' : ''}Era ${modo.nombreItem(pregunta.item)}.`, texto },
+        : { tipo: 'mal', titulo: `${sinTiempo ? 'Se acabó el tiempo. ' : ''}Era ${modo.nombreItem(pregunta.item, datos.ajustes)}.`, texto },
     }
   }
 
@@ -426,7 +425,7 @@ function Entrenador({ modo }) {
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4">
         {!jugando ? (
-          <Portada modo={modo} datos={datos} />
+          modo.juegos ? <ArranqueOido modo={modo} datos={datos} /> : <Portada modo={modo} datos={datos} />
         ) : (
           <motion.div
             key={pregunta.n}
@@ -669,7 +668,7 @@ function Ventana({ datos, niveles, acento }) {
   )
 }
 
-/** Pantalla antes de empezar: qué se practica, nivel y ajustes. */
+/** Pantalla antes de empezar (intervalos y acordes; el oído absoluto usa ArranqueOido): qué se practica, nivel y ajustes. */
 function Portada({ modo, datos }) {
   const opciones = modo.opciones(datos.nivel)
   return (
@@ -681,43 +680,6 @@ function Portada({ modo, datos }) {
         <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-4xl">{modo.titulo}</h1>
         <p className="text-lg leading-relaxed text-zinc-600">{modo.descripcion}</p>
       </motion.header>
-
-      {modo.id === 'absoluto' && (
-        <motion.p variants={itemLista} className="rounded-2xl bg-fijate-suave px-4 py-3 text-base leading-relaxed text-fijate-tinta">
-          <Rich>
-            Es un **juego**: suena una nota sin ninguna referencia y la tocas en el piano. Empiezas con 2 notas (las demás
-            tienen candado) y se desbloquea una más cada vez que llenas el círculo de 8 partes. En adultos el oído absoluto
-            es muy difícil de adquirir, así que tómalo como un reto divertido, no como una promesa. Entre nota y nota suenan
-            unas notas al azar y un ruido corto: así la nota anterior no te sirve de pista.
-          </Rich>
-        </motion.p>
-      )}
-
-      {modo.juegos && (
-        <motion.section variants={itemLista} className="flex flex-col gap-3">
-          <h2 className="font-titulo text-lg font-bold">Modo de juego</h2>
-          <div className="flex flex-col gap-2">
-            {modo.juegos.map((j) => {
-              const activo = getJuego(datos.ajustes.juego).id === j.id
-              return (
-                <Pulsable
-                  key={j.id}
-                  tipo="tarjeta"
-                  onClick={() => guardarAjustes(modo.id, { juego: j.id })}
-                  aria-pressed={activo}
-                  data-juego={j.id}
-                  className={`flex min-h-16 flex-col items-start gap-0.5 rounded-2xl border-2 px-4 py-3 text-left transition-colors duration-200 ${
-                    activo ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-800'
-                  }`}
-                >
-                  <span className="text-base font-semibold">{j.nombre}</span>
-                  <span className={`text-sm leading-snug ${activo ? 'text-zinc-300' : 'text-zinc-500'}`}>{j.descripcion}</span>
-                </Pulsable>
-              )
-            })}
-          </div>
-        </motion.section>
-      )}
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
         <h2 className="font-titulo text-lg font-bold">Nivel</h2>
@@ -736,7 +698,7 @@ function Portada({ modo, datos }) {
           ))}
         </div>
         <p className="text-sm text-zinc-500">
-          {modo.juegos ? `Sube al llenar el círculo de ${PARTES_NIVEL} partes.` : `Sube solo al acertar ${ACIERTOS_PARA_SUBIR} de ${TAMANO_VENTANA}.`}
+          {`Sube solo al acertar ${ACIERTOS_PARA_SUBIR} de ${TAMANO_VENTANA}.`}
           {datos.nivelMax < modo.niveles && ' Los niveles que desbloquees aparecerán aquí.'}
         </p>
         {modo.id !== 'acordes' ? (
@@ -751,29 +713,6 @@ function Portada({ modo, datos }) {
           <p className="text-base text-zinc-700">{modo.nuevosEnNivel(datos.nivel)[0]}.</p>
         )}
       </motion.section>
-
-      {modo.piano && (
-        <motion.section variants={itemLista} className="flex flex-col gap-3">
-          <h2 id="responder-con" className="font-titulo text-lg font-bold">
-            Responder con
-          </h2>
-          <Segmentado
-            etiqueta="responder-con"
-            capa="responder-con"
-            opciones={[
-              { id: 'piano', nombre: 'Piano' },
-              { id: 'botones', nombre: 'Botones' },
-            ]}
-            valor={datos.ajustes.respuesta === 'botones' ? 'botones' : 'piano'}
-            onCambiar={(id) => guardarAjustes(modo.id, { respuesta: id })}
-          />
-          <p className="text-sm text-zinc-500">
-            {datos.ajustes.respuesta === 'botones'
-              ? 'Un botón por nota; solo las que ya desbloqueaste.'
-              : 'Tocas la nota en el piano; las que aún no desbloqueas tienen candado.'}
-          </p>
-        </motion.section>
-      )}
 
       {modo.id === 'intervalos' && (
         <motion.section variants={itemLista} className="flex flex-col gap-3">
