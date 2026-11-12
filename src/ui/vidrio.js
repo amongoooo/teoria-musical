@@ -38,7 +38,15 @@ export const VIDRIO_PANEL = [
  * se mueve debajo (la tarjeta del gesto) lleva su propio desenfoque.
  */
 export const VIDRIO_BOTON = [
-  'vidrio vidrio-color border border-blanco/60 bg-linear-to-b from-blanco/25 via-blanco/[0.08] to-blanco/[0.14]',
-  'shadow-[inset_0_1px_0_rgb(255_255_255/0.55),inset_0_-1px_0_rgb(16_18_28/0.10)]',
-  'dark:border-blanco/25 dark:from-blanco/[0.12] dark:via-blanco/[0.03] dark:to-blanco/[0.06] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.22),inset_0_-1px_0_rgb(0_0_0/0.25)]',
+  'vidrio vidrio-color border border-blanco/75 bg-linear-to-b from-blanco/40 via-blanco/[0.10] to-blanco/[0.22]',
+  // Brillo de 1 px arriba, resplandor interior en el borde de abajo (la luz que «atraviesa» el vidrio) y línea de sombra.
+  'shadow-[inset_0_1.5px_0_rgb(255_255_255/0.8),inset_0_-10px_18px_-12px_rgb(255_255_255/0.55),inset_0_-1px_0_rgb(16_18_28/0.12)]',
+  'dark:border-blanco/35 dark:from-blanco/[0.22] dark:via-blanco/[0.05] dark:to-blanco/[0.12] dark:shadow-[inset_0_1.5px_0_rgb(255_255_255/0.35),inset_0_-10px_18px_-12px_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.3)]',
 ].join(' ')
+
+/**
+ * Reflejo del botón principal (pedido del usuario: «que se note más el vidrio»): una franja brillante curva en la
+ * mitad de arriba, como la luz sobre una pieza de vidrio. En «Opaco» se quita (`vidrio-reflejo`, src/index.css).
+ */
+export const REFLEJO_BOTON =
+  'vidrio-reflejo pointer-events-none absolute inset-x-[3px] top-[3px] h-[46%] rounded-t-[0.85rem] rounded-b-[50%_70%] bg-linear-to-b from-blanco/45 to-blanco/0 dark:from-blanco/20'
