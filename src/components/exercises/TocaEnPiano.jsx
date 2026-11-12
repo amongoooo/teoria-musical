@@ -84,7 +84,7 @@ function Explorar({ paso, setAccion, siguiente }) {
 
   useEffect(() => {
     setAccion({
-      label: 'Siguiente',
+      label: 'Continuar',
       avanza: true,
       disabled: !listo,
       ayuda: listo ? null : `Toca ${cantidad} teclas distintas (${tocadas.length}/${cantidad})`,
@@ -127,7 +127,7 @@ function Extremos({ paso, setAccion, siguiente }) {
 
   useEffect(() => {
     setAccion({
-      label: 'Siguiente',
+      label: 'Continuar',
       avanza: true,
       disabled: !listo,
       ayuda: listo ? null : 'Busca en los dos extremos del teclado',
@@ -263,8 +263,8 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
     }
 
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       disabled: !resuelta,
       ayuda: resuelta || intento ? null : `Toca una nota ${palabra} que ${nombre(ronda.referencia)}`,
       feedback,
@@ -379,8 +379,8 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
     }
 
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       disabled: !listo,
       ayuda: listo || feedback ? null : `Toca todas las ${nombreSolo} (${encontradas.length}/${objetivos.length})`,
       feedback,
@@ -520,8 +520,8 @@ function Paso({ paso, setAccion, siguiente, completar }) {
       }
     }
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       disabled: !resuelta,
       ayuda: resuelta || intento ? null : `${verbo} ${palabra} desde ${desde}`,
       feedback,
@@ -638,8 +638,8 @@ function Formula({ paso, setAccion, siguiente, completar }) {
       }
     }
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       disabled: !listo,
       ayuda: listo || feedback ? null : `Sigue la fórmula (${hechas - 1}/${notas.length - 1})`,
       feedback,

@@ -1,20 +1,20 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'normal' | 'invertido', admin: boolean }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'pagina' | 'invertido', admin: boolean }
 // (admin: modo administrador, se activa con PIN en Opciones: todas las lecciones abiertas y saltar entre pasos; ver admin.js)
 // (octavas: sentido de la barra de octavas del Piano; 'teclas' = invertida, como arrastrar el teclado)
-// (gesto: sentido del gesto del botón de las lecciones; 'normal' = de izquierda a derecha es el paso siguiente,
-//  'invertido' = el lado donde empieza es de donde viene la página: de derecha a izquierda es el siguiente)
+// (gesto: sentido del gesto del botón de las lecciones; 'pagina' (predeterminado) = el lado donde empieza es de donde
+//  viene la página: de derecha a izquierda es el siguiente; 'invertido' = de izquierda a derecha es el siguiente)
 // index.html aplica el tema y el vidrio guardados ANTES de pintar (sin destello); este módulo los
 // mantiene al día cuando se cambian en Opciones o cuando el teléfono cambia de modo (Automático).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', gesto: 'normal', admin: false }
+const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
 export const VIDRIOS = ['desenfoque', 'opaco']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
-export const GESTOS = ['normal', 'invertido']
+export const GESTOS = ['pagina', 'invertido']
 const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
 
 let cache = null
@@ -88,7 +88,7 @@ export function setOctavas(octavas) {
   escribir({ ...leer(), octavas })
 }
 
-/** Sentido del gesto del botón de las lecciones: 'normal' (izquierda → derecha = siguiente) o 'invertido'. */
+/** Sentido del gesto del botón de las lecciones: 'pagina' (derecha → izquierda = siguiente) o 'invertido' (al revés). */
 export function setGesto(gesto) {
   if (!GESTOS.includes(gesto)) return
   escribir({ ...leer(), gesto })

@@ -239,8 +239,9 @@ objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, g
    `{ paso, leccionId, setAccion, siguiente, completar }`.
 2. Usa `setAccion({ label, onClick, disabled, ayuda, feedback, avanza })` para controlar el
    botón grande de abajo (`feedback: { tipo: 'bien' | 'mal', titulo, texto }`).
-   **Solo dos palabras**: `label` es «Comprobar» o «Siguiente» (también en la última ronda y en el último paso).
+   **Solo dos palabras**: `label` es «Comprobar» o «Continuar» (también en la última ronda y en el último paso; la
+   tercera palabra del botón, «Atrás», solo sale con el gesto).
    **`avanza: true`** cuando ese botón pasa al paso siguiente (el paso ya está resuelto): así el gesto del botón
-   deja avanzar sin modo administrador. Si no usa `setAccion`, se muestra «Siguiente» (y el paso cuenta como resuelto).
+   deja avanzar sin modo administrador. Si no usa `setAccion`, se muestra «Continuar» (y el paso cuenta como resuelto).
 3. Llama a `completar({ aciertos, total })` si el paso puntúa, y `siguiente()` para avanzar.
 4. Regístralo en el objeto `PASOS` de `src/pages/Leccion.jsx`.

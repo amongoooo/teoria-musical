@@ -41,7 +41,7 @@ const PASOS = {
  *
  * Cada paso recibe { paso, leccionId, setAccion, siguiente, completar }:
  *  - setAccion({ label, onClick, disabled, ayuda, feedback, avanza }) controla el botón
- *    grande de abajo. Solo dos palabras: «Comprobar» y «Siguiente». Si el paso no la usa, «Siguiente».
+ *    grande de abajo. Solo «Comprobar» y «Continuar» (el gesto añade «Atrás»). Si el paso no la usa, «Continuar».
  *  - avanza: true cuando ese botón pasa al paso siguiente (el paso está resuelto): así el gesto del botón
  *    deja avanzar (tarjeta amarilla) sin modo administrador.
  *  - feedback: { tipo: 'bien' | 'mal', titulo, texto } aparece sobre el botón.
@@ -138,7 +138,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const paso = leccion.pasos[indice]
   const Componente = PASOS[paso.tipo]
-  const boton = accion ?? { label: 'Siguiente', onClick: siguiente, avanza: true }
+  const boton = accion ?? { label: 'Continuar', onClick: siguiente, avanza: true }
 
   // El botón también pasa de paso con un gesto (deslizar o mantener un borde). Volver: siempre (salvo en el
   // primero). Avanzar: si el paso está resuelto (como «Siguiente»); en modo administrador, siempre. En los
@@ -321,15 +321,14 @@ function Etiqueta({ paso, indice }) {
 
 /**
  * Barra de abajo con el botón grande (también la usa el entrenamiento de oído). Materiales (pedido del usuario):
- * el PANEL es sólido (superficie) y el BOTÓN es de vidrio. Debajo del vidrio hay una tarjeta de color que aparece y
- * crece desde el centro con cada cambio, así parece que el vidrio cambia de color: gris claro = desactivado,
- * oscuro = listo, verde = acierto (con un SALTO al pasar de desactivado a listo). El mensaje de bien / fíjate va
- * sólido encima.
+ * el PANEL es sólido (superficie) y el BOTÓN es de vidrio. Debajo del vidrio hay un tinte de color que se extiende con
+ * cada cambio, así parece que el vidrio cambia de color: gris claro = desactivado, oscuro = listo, verde = acierto
+ * (con un SALTO al pasar de desactivado a listo). El mensaje de bien / fíjate va sólido encima.
  *
- * `navegacion` (solo en las lecciones): el botón es también un control para pasar de paso (useGestoBoton):
- * deslizar sobre él saca una tarjeta amarilla (se puede) o gris (no se puede) desde el lado donde empieza el dedo,
- * con su flechita; mantener 1 s un borde lateral muestra la flechita de ese lado. Al soltar, pasa si era amarilla.
- * { puede(dir) → bool, ir(dir), invertido }.
+ * `navegacion` (solo en las lecciones): el botón es también un control para pasar de paso (useGestoBoton): al
+ * deslizar sobre él (o mantener 0,5 s un borde) entra la flechita desde ese borde, con un brillo negro (atrás) o
+ * verde (siguiente), y la palabra del centro gira como un carrusel a «Atrás» o «Continuar». Al soltar en «suelta
+ * para ir», pasa y el color del paso nuevo se extiende desde ese lado. { puede(dir) → bool, ir(dir), invertido }.
  */
 export function BarraAccion({ accion, navegacion = null }) {
   const { feedback } = accion
@@ -343,13 +342,22 @@ export function BarraAccion({ accion, navegacion = null }) {
     antes.current = listo
   }, [listo, salto])
 
-  const { gesto, x, opacidad, cubre, handlers } = useGestoBoton({
+  // Lado desde el que se pasó de paso con el gesto: el color del paso nuevo se extiende desde ahí (un momento).
+  const origen = useRef(null)
+  const { gesto: actual, cubre, handlers } = useGestoBoton({
     puede: (dir) => Boolean(navegacion?.puede(dir)),
-    ir: (dir) => navegacion?.ir(dir),
+    ir: (dir, lado) => {
+      origen.current = { lado, hasta: performance.now() + 600 }
+      navegacion?.ir(dir)
+    },
     invertido: navegacion?.invertido,
     activo: Boolean(navegacion),
   })
-  const textoOpacidad = useTransform(cubre, [0, 1], [1, 0.35])
+  // El último gesto, para que todo se vaya donde estaba (sin saltar de lado ni de color) mientras vuelve.
+  const ultimo = useRef(actual)
+  if (actual.modo) ultimo.current = actual
+  const gesto = ultimo.current
+  const textoColor = color === 'apagado' ? 'text-zinc-500' : color === 'bien' ? 'text-blanco' : 'text-white'
 
   return (
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -381,10 +389,10 @@ export function BarraAccion({ accion, navegacion = null }) {
             {...(navegacion ? handlers : {})}
             data-boton-accion
             data-color={color}
-            data-gesto={gesto.modo ?? undefined}
-            data-gesto-lado={gesto.modo ? (gesto.lado < 0 ? 'izquierda' : 'derecha') : undefined}
-            data-gesto-puede={gesto.modo ? String(gesto.puede) : undefined}
-            data-gesto-listo={gesto.modo ? String(gesto.listo) : undefined}
+            data-gesto={actual.modo ?? undefined}
+            data-gesto-lado={actual.modo ? (actual.lado < 0 ? 'izquierda' : 'derecha') : undefined}
+            data-gesto-puede={actual.modo ? String(actual.puede) : undefined}
+            data-gesto-listo={actual.modo ? String(actual.listo) : undefined}
             className="relative select-none [-webkit-touch-callout:none]"
             style={{ touchAction: 'pan-y' }}
           >
@@ -393,28 +401,11 @@ export function BarraAccion({ accion, navegacion = null }) {
               disabled={accion.disabled}
               className={`relative isolate grid min-h-14 w-full place-items-center overflow-hidden rounded-2xl px-6 text-lg font-semibold ${accion.disabled ? 'pointer-events-none' : ''}`}
             >
-              <TarjetaColor color={color} />
-              {/* Tarjeta del gesto: debajo del vidrio, se desplaza con el dedo desde el lado donde empezó. Su borde de
-                  delante es un degradado largo (FUNDIDO_GESTO px): tiñe el vidrio poco a poco, nunca una franja plana. */}
-              <motion.span
-                aria-hidden
-                data-tarjeta-gesto
-                className="absolute inset-x-0 -inset-y-3"
-                style={{
-                  x,
-                  opacity: opacidad,
-                  backgroundImage: `linear-gradient(to ${gesto.lado < 0 ? 'right' : 'left'}, ${gesto.puede ? 'var(--color-fijate)' : 'var(--color-zinc-400)'} calc(100% - ${FUNDIDO_GESTO}px), transparent)`,
-                }}
-              />
+              <TarjetaColor color={color} origen={origen} />
               <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
-              <motion.span
-                className={`relative transition-colors duration-200 ${color === 'apagado' ? 'text-zinc-500' : color === 'bien' ? 'text-blanco' : 'text-white'}`}
-                style={{ opacity: textoOpacidad }}
-              >
-                {accion.label}
-              </motion.span>
+              <Rotulo label={accion.label} gesto={gesto} cubre={cubre} className={textoColor} />
             </Pulsable>
-            <Flechita gesto={gesto} color={color} />
+            <Flechita gesto={gesto} visible={actual.modo === 'carga' || actual.modo === 'desliza' || actual.modo === 'mantiene'} cubre={cubre} invertido={Boolean(navegacion?.invertido)} />
           </div>
         </motion.div>
       </div>
@@ -423,23 +414,29 @@ export function BarraAccion({ accion, navegacion = null }) {
 }
 
 const COLOR_BOTON = { apagado: 'var(--color-zinc-200)', listo: 'var(--color-zinc-900)', bien: 'var(--color-bien-relleno)' }
-const FUNDIDO_GESTO = 96 // px del degradado del borde de delante de la tarjeta del gesto
-// La tarjeta de color nueva es un óvalo con borde degradado (sólido hasta el 55 % del radio); a escala CUBRE ya tapa
-// las esquinas del botón con la parte sólida (√2 / 0,55 ≈ 2,6).
+// El tinte nuevo es un óvalo con borde degradado (sólido hasta el 55 % del radio). Desde el centro, a escala CUBRE la
+// parte sólida ya tapa las esquinas (√2 / 0,55 ≈ 2,6); desde un lado (óvalo el doble de ancho centrado en ese borde),
+// a escala CUBRE_LADO.
 const SOLIDO = 55
 const CUBRE = 2.7
+const CUBRE_LADO = 2.6
+const PALABRA = { 1: 'Continuar', '-1': 'Atrás' } // palabra del gesto según la dirección del paso
+const CARRUSEL = 150 // px que se desplazan las palabras del carrusel (más que una palabra: nunca se enciman)
 
 /**
- * La tarjeta de color bajo el vidrio del botón. Cada cambio de estado pone encima una tarjeta nueva: un óvalo con el
- * borde degradado (radial) que aparece en el centro y crece (RESORTE.tinte) hasta cubrir el botón, como un tinte que
- * se extiende por el vidrio; nunca un rectángulo plano. al terminar, las de debajo se quitan. Con reducir
- * movimiento, fundido. Sobresale 12 px por cada lado (el botón la recorta).
+ * La tarjeta de color bajo el vidrio del botón. Cada cambio de estado pone encima un tinte nuevo (CapaTinte): un óvalo
+ * con el borde degradado (radial) que crece (RESORTE.tinte) hasta cubrir el botón; nunca un rectángulo plano. Nace en
+ * el centro o, si se acaba de pasar de paso con el gesto, en el lado de la flechita. Al terminar, las de debajo se
+ * quitan (respaldo: 1,5 s). Con reducir movimiento, fundido. Sobresale 12 px arriba y abajo (el botón la recorta).
  */
-function TarjetaColor({ color }) {
-  const [capas, setCapas] = useState(() => [{ id: 0, color, nueva: false }])
+function TarjetaColor({ color, origen }) {
+  const [capas, setCapas] = useState(() => [{ id: 0, color, nueva: false, desde: 0 }])
   const ultimo = capas[capas.length - 1]
-  if (ultimo.color !== color) setCapas((c) => [...c.slice(-2), { id: ultimo.id + 1, color, nueva: true }])
-  // Cuando la de arriba ya cubre todo (termina su animación), las de debajo sobran. Respaldo: 1,5 s.
+  if (ultimo.color !== color) {
+    const o = origen.current
+    const desde = o && performance.now() < o.hasta ? o.lado : 0
+    setCapas((c) => [...c.slice(-2), { id: ultimo.id + 1, color, nueva: true, desde }])
+  }
   const cubierta = useCallback((id) => setCapas((cs) => (cs.length > 1 && cs[cs.length - 1].id === id ? cs.slice(-1) : cs)), [])
   useEffect(() => {
     if (capas.length < 2) return
@@ -448,7 +445,7 @@ function TarjetaColor({ color }) {
   }, [capas])
   return capas.map((c) =>
     c.nueva ? (
-      <CapaTinte key={c.id} color={c.color} onCubre={() => cubierta(c.id)} />
+      <CapaTinte key={c.id} color={c.color} desde={c.desde} onCubre={() => cubierta(c.id)} />
     ) : (
       <span key={c.id} aria-hidden data-tarjeta-color={c.color} className="absolute -inset-3" style={{ backgroundColor: COLOR_BOTON[c.color] }} />
     ),
@@ -456,69 +453,112 @@ function TarjetaColor({ color }) {
 }
 
 /**
- * Una capa nueva del tinte: crece desde el centro con una animación imperativa al montarse (el `initial` de motion no
- * se aplica a lo que se monta dentro de la página, que está en un AnimatePresence con initial={false}).
+ * Una capa nueva del tinte: crece con una animación imperativa al montarse (el `initial` de motion no se aplica a lo
+ * que se monta dentro de la página, que está en un AnimatePresence con initial={false}). `desde`: 0 = el centro;
+ * −1 / +1 = el borde izquierdo / derecho (el óvalo mide el doble de ancho y se centra en ese borde).
  * Con reducir movimiento, solo se funde.
  */
-function CapaTinte({ color, onCubre }) {
+function CapaTinte({ color, desde, onCubre }) {
   const ref = useRef(null)
   const reducir = useReducedMotion()
   const alCubrir = useRef(onCubre)
   alCubrir.current = onCubre
+  const fin = desde ? CUBRE_LADO : CUBRE
+  const inicio = desde ? 0.06 : 0.12
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const a = reducir
       ? animate(el, { opacity: [0, 1] }, { duration: 0.2 })
-      : animate(el, { scale: [0.12, CUBRE], opacity: [0, 1] }, { ...RESORTE.tinte, opacity: { duration: 0.12 } })
+      : animate(el, { scale: [inicio, fin], opacity: [0, 1] }, { ...RESORTE.tinte, opacity: { duration: 0.12 } })
     let viva = true
     a.then(() => viva && alCubrir.current?.())
     return () => {
       viva = false
       a.stop()
     }
-  }, [reducir])
+  }, [reducir, inicio, fin])
+  const caja = desde < 0 ? { left: '-100%', width: '200%' } : desde > 0 ? { left: 0, width: '200%' } : { left: '-0.75rem', right: '-0.75rem' }
   return (
     <span
       ref={ref}
       aria-hidden
       data-tarjeta-color={color}
-      className="absolute -inset-3"
-      style={{ backgroundImage: `radial-gradient(closest-side, ${COLOR_BOTON[color]} ${SOLIDO}%, transparent)`, transform: `scale(${reducir ? CUBRE : 0.12})`, opacity: 0 }}
+      data-tinte-desde={desde < 0 ? 'izquierda' : desde > 0 ? 'derecha' : 'centro'}
+      className="absolute -inset-y-3"
+      style={{ ...caja, backgroundImage: `radial-gradient(closest-side, ${COLOR_BOTON[color]} ${SOLIDO}%, transparent)`, transform: `scale(${reducir ? fin : inicio})`, opacity: 0 }}
     />
   )
 }
 
 /**
- * Flechita del gesto: solo el signo ‹ › (texto, como el resto de flechas de navegación), sin círculo, en el lado de
- * donde sale la tarjeta y APUNTANDO HACIA ESE BORDE (pedido del usuario): izquierda ‹, derecha ›. Del MISMO COLOR
- * QUE EL BOTÓN (pedido del usuario): verde si está en verde, oscuro si está listo, gris claro si está desactivado. Detrás, un brillo
- * radial ligero amarillo (se puede pasar) o gris (no) que da el contraste sin teñir una zona entera del botón. Crece un
- * poco cuando soltar ya pasaría («suelta para ir»); en la pulsación larga empieza más chica (modo 'carga') y termina
- * igual que en el deslizamiento. Va recortada al botón.
+ * Palabra del botón con carrusel (pedido del usuario): mientras se desliza (o se mantiene un borde) y se puede pasar,
+ * la palabra de siempre se va hacia donde va el dedo y entra «Atrás» o «Continuar» desde el lado de la flechita; al
+ * llegar a «suelta para ir» ya se lee entera. Si no se puede pasar, o si ya dice esa palabra, no cambia. Al pasar, sigue girando: la palabra del
+ * paso nuevo entra por el lado del gesto.
  */
-function Flechita({ gesto: actual, color }) {
-  const visible = actual.modo === 'carga' || actual.modo === 'desliza' || actual.modo === 'mantiene'
-  // Al terminar, se desvanece donde estaba (sin saltar de lado ni de color).
-  const ultimo = useRef(actual)
-  if (actual.modo) ultimo.current = actual
-  const gesto = ultimo.current
+function Rotulo({ label, gesto, cubre, className }) {
+  const g = useRef(gesto)
+  g.current = gesto
+  const actual = useRef(label)
+  actual.current = label
+  // Si la palabra ya es la misma (el botón dice «Continuar» y se va al siguiente), no gira: solo entra la flechita.
+  const cambio = (c) => (g.current.puede && PALABRA[g.current.dir] !== actual.current ? c : 0)
+  // Al pasar ('pasa'), el carrusel no rebobina: la palabra sigue saliendo hacia donde iba el dedo y la del paso nuevo
+  // entra por el lado del gesto.
+  const sentido = () => (g.current.lado || 1) * (g.current.modo === 'pasa' ? -1 : 1)
+  const xLabel = useTransform(cubre, (c) => -sentido() * cambio(c) * CARRUSEL)
+  const opLabel = useTransform(cubre, (c) => 1 - cambio(c))
+  const xPalabra = useTransform(cubre, (c) => sentido() * (1 - cambio(c)) * CARRUSEL)
+  const opPalabra = useTransform(cubre, (c) => cambio(c))
+  const palabra = PALABRA[gesto.dir] ?? null
+  return (
+    <span className={`relative grid place-items-center transition-colors duration-200 ${className}`}>
+      <motion.span className="col-start-1 row-start-1" style={{ x: xLabel, opacity: opLabel }}>
+        {label}
+      </motion.span>
+      {palabra && (
+        <motion.span aria-hidden data-palabra={palabra} className="col-start-1 row-start-1" style={{ x: xPalabra, opacity: opPalabra }}>
+          {palabra}
+        </motion.span>
+      )}
+    </span>
+  )
+}
+
+/**
+ * Flechita del gesto (pedido del usuario): solo el signo ‹ › en texto, sin círculo, BLANCA, con un brillo radial
+ * ligero detrás: NEGRO si va al paso anterior, VERDE si va al siguiente; gris (flecha y brillo) si no se puede pasar.
+ * ENTRA DESDE EL BORDE del que se jala siguiendo el avance del gesto y, al llegar a «suelta para ir», da un REBOTE
+ * (RESORTE.rebote) para que quede claro que ya se puede soltar. Por defecto apunta hacia el borde donde empieza
+ * (izquierda ‹, derecha ›); con «Invertir el gesto», al revés. Va recortada al botón.
+ */
+function Flechita({ gesto, visible, cubre, invertido }) {
+  const g = useRef(gesto)
+  g.current = gesto
+  // Entrada: desde fuera del botón hasta su sitio. Si no se puede pasar el avance es corto (goma): entra antes.
+  const x = useTransform(cubre, (c) => {
+    const e = Math.min(1, g.current.puede ? c : c * 5)
+    return (g.current.lado || 1) * 56 * (1 - e) * (1 - e)
+  })
   const izquierda = gesto.lado < 0
-  const tono = gesto.puede ? 'var(--color-fijate)' : 'var(--color-zinc-400)'
+  const tono = !gesto.puede ? 'var(--color-zinc-400)' : gesto.dir > 0 ? 'var(--color-bien-relleno)' : 'var(--color-negro)'
+  const signo = izquierda !== invertido ? '‹' : '›'
   return (
     <span aria-hidden className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-2xl">
       <motion.span
-        data-flechita={visible ? (gesto.puede ? 'amarilla' : 'gris') : undefined}
-        className={`absolute inset-y-0 grid w-16 place-items-center pb-1 text-3xl leading-none font-bold transition-colors duration-200 ${izquierda ? 'left-0' : 'right-0'}`}
+        data-flechita={visible ? (!gesto.puede ? 'gris' : gesto.dir > 0 ? 'siguiente' : 'atras') : undefined}
+        data-signo={visible ? signo : undefined}
+        className={`absolute inset-y-0 grid w-16 place-items-center pb-1 text-3xl leading-none font-bold ${izquierda ? 'left-0' : 'right-0'} ${gesto.puede ? 'text-blanco' : 'text-zinc-500'}`}
         style={{
-          color: COLOR_BOTON[color],
+          x,
           backgroundImage: `radial-gradient(closest-side, color-mix(in srgb, ${tono} 85%, transparent), color-mix(in srgb, ${tono} 35%, transparent) 55%, transparent)`,
         }}
         initial={false}
-        animate={{ opacity: visible ? 1 : 0, scale: !visible ? 0.6 : gesto.modo === 'carga' ? 0.9 : gesto.listo ? 1.15 : 1 }}
-        transition={{ ...RESORTE.pulsar, opacity: { duration: gesto.modo === 'carga' ? 0.25 : 0.12 } }}
+        animate={{ opacity: visible ? 1 : 0, scale: visible && gesto.listo ? 1.25 : 1 }}
+        transition={{ ...(visible && gesto.listo ? RESORTE.rebote : RESORTE.pulsar), opacity: { duration: 0.15 } }}
       >
-        {izquierda ? '‹' : '›'}
+        {signo}
       </motion.span>
     </span>
   )

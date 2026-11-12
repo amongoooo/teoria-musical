@@ -26,7 +26,7 @@ const OCTAVAS = [
 ]
 
 const GESTOS = [
-  { id: 'normal', nombre: 'Normal' },
+  { id: 'pagina', nombre: 'Normal' },
   { id: 'invertido', nombre: 'Invertir el gesto' },
 ]
 
@@ -73,8 +73,8 @@ const NOTA_OCTAVAS = {
   teclas: 'Octavas 5 · 4 · 3: deslizar a la derecha arrastra el teclado y trae las graves.',
 }
 const NOTA_GESTO = {
-  normal: 'Desliza el botón de abajo hacia la derecha para ir al paso siguiente y hacia la izquierda para volver.',
-  invertido: 'Como pasar una página: hacia la izquierda, el paso siguiente; hacia la derecha, el anterior.',
+  pagina: 'Como pasar una página: desliza el botón de abajo hacia la izquierda para el paso siguiente y hacia la derecha para volver.',
+  invertido: 'Hacia la derecha, el paso siguiente; hacia la izquierda, el anterior (las flechitas apuntan hacia donde deslizas).',
 }
 
 function PanelOpciones({ onCerrar }) {

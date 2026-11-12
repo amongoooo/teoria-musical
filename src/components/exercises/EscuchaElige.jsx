@@ -77,8 +77,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
     const explicacion = ronda.explicacion
     const respuesta = tarjetasSonOpciones ? `Sonido ${LETRAS[correcta]}` : ronda.opciones[correcta]
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       feedback:
         resultado === 'bien'
           ? { tipo: 'bien', titulo: '¡Correcto!', texto: explicacion }

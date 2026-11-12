@@ -245,8 +245,8 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
   useEffect(() => {
     if (!hecho) {
       setAccion({
-        label: 'Siguiente',
-        avanza: ultima, // el último «Siguiente» pasa de paso
+        label: 'Continuar',
+        avanza: ultima, // el último «Continuar» pasa de paso
         disabled: true,
         ayuda: ritmo ? `${ronda.ayuda ?? 'Toca al pulso'}: ${buenos}/${meta} a tiempo` : 'Pulsa «Empezar» y toca al ritmo',
         onClick: () => {},
@@ -255,8 +255,8 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
     }
     const media = Math.round((toques.reduce((a, x) => a + Math.abs(x), 0) / toques.length) * 1000)
     setAccion({
-      label: 'Siguiente',
-      avanza: ultima, // el último «Siguiente» pasa de paso
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
       feedback: {
         tipo: 'bien',
         titulo: '¡Tienes pulso!',
@@ -410,8 +410,8 @@ function TapTempo({ paso, leccionId, setAccion, siguiente, completar }) {
     if (resultado) {
       const { ok, estimado: est, mitad } = resultado
       setAccion({
-        label: 'Siguiente',
-        avanza: ultima, // el último «Siguiente» pasa de paso
+        label: 'Continuar',
+        avanza: ultima, // el último «Continuar» pasa de paso
         feedback: ok
           ? {
               tipo: 'bien',
@@ -501,7 +501,7 @@ function Explorar({ paso, leccionId, setAccion, siguiente }) {
 
   useEffect(() => {
     setAccion({
-      label: 'Siguiente',
+      label: 'Continuar',
       avanza: true,
       disabled: !listo,
       ayuda: listo ? null : `${paso.objetivo.prueba ?? `Prueba ${minimo} tempos distintos`} (${probados.size}/${minimo})`,
