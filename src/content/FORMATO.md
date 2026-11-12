@@ -194,7 +194,7 @@ Objetivos del paso `pianoroll`:
 objetivo: { tipo: 'libre', cantidad: 4, mensaje: '…' }   // dibujar N notas
 objetivo: { tipo: 'copiar', notas: [...], fantasma: true, instruccion: '…', pista: '…', explicacion: '…' }
   // dibujar exactamente esas notas (fantasma: contornos punteados de guía).
-  // Al fallar explica qué falta/sobra/dura distinto; tras 2 fallos ofrece «Ver la solución».
+  // Al fallar explica qué falta/sobra/dura distinto; tras 2 fallos avisa «Si vuelve a fallar, verás la solución» y el tercer «Comprobar» fallido la muestra.
 objetivo: { tipo: 'velocity', fuertes: [0, 4], explicacion: '…' }
   // con las notas de roll.notas: subir la velocity de las que empiezan en esas casillas (≥ 0.75)
   // y dejar las demás por debajo de la mitad (≤ 0.55). Solo se edita la velocity.
@@ -237,8 +237,10 @@ objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, g
 
 1. Crea el componente en `src/components/exercises/`. Recibe
    `{ paso, leccionId, setAccion, siguiente, completar }`.
-2. Usa `setAccion({ label, onClick, disabled, ayuda, feedback })` para controlar el
+2. Usa `setAccion({ label, onClick, disabled, ayuda, feedback, avanza })` para controlar el
    botón grande de abajo (`feedback: { tipo: 'bien' | 'mal', titulo, texto }`).
-   Si no lo usa, se muestra "Continuar".
+   **Solo dos palabras**: `label` es «Comprobar» o «Siguiente» (también en la última ronda y en el último paso).
+   **`avanza: true`** cuando ese botón pasa al paso siguiente (el paso ya está resuelto): así el gesto del botón
+   deja avanzar sin modo administrador. Si no usa `setAccion`, se muestra «Siguiente» (y el paso cuenta como resuelto).
 3. Llama a `completar({ aciertos, total })` si el paso puntúa, y `siguiente()` para avanzar.
 4. Regístralo en el objeto `PASOS` de `src/pages/Leccion.jsx`.

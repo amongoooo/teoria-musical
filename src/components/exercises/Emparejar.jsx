@@ -129,7 +129,8 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
     }
     const buenas = resultado.filter(Boolean).length
     setAccion({
-      label: ultima ? 'Continuar' : 'Siguiente',
+      label: 'Siguiente',
+      avanza: ultima, // el último «Siguiente» pasa de paso
       feedback:
         buenas === n
           ? { tipo: 'bien', titulo: '¡Todas bien!', texto: ronda.explicacion }

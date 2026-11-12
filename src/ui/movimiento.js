@@ -126,4 +126,7 @@ export const DESLIZAR = {
   // título o más arriba se deja al navegador recargar la página. recarga: respaldo si no hay título
   // (fracción de arriba de la pantalla que es zona de recarga: 0,1 = el 10 % de arriba).
   pagina: { umbralCelular: 0.6, umbralAncho: 320, umbralVertical: 240, recarga: 0.1 },
+  // Gesto del botón principal de la lección (useGestoBoton.js): X = `umbral` × ancho del botón (mín. `umbralMin` px);
+  // pulsación larga: `mantener` ms en un borde lateral de `borde` × ancho (mín. `bordeMin` px).
+  boton: { umbral: 0.6, umbralMin: 160, mantener: 1000, borde: 0.22, bordeMin: 56 },
 }
