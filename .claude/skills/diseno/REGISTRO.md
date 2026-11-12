@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) **Modo administrador** en Opciones (grupo «Administrador», con PIN): abre todas las lecciones del camino y, en una lección, la **píldora de la barra de pasos se vuelve botón** y abre la hoja **«Ir al paso»** (‹ Anterior / Siguiente › y la lista de pasos con su tipo).
 - 2026-11-12: (lección 3.3) La **fila de la fórmula** (P6) reutiliza el **temblor**: volver a tocar una nota ya tocada hace temblar su casilla (antes, repetir la última se ignoraba y las anteriores contaban como fallo). Opción **`grados`**: el número de grado bajo cada casilla. El Piano Roll ensancha su columna de teclas a `w-16` si hay Sol♯. Las preguntas de `elegir` admiten **negritas**.
 - 2026-11-12: (pedido del usuario) El Piano se toca con el **teclado del computador como en FL Studio** (Z…M y, en el piano libre, Q…U); las teclas **se desvanecen** (300 ms) al soltarlas.
 - 2026-11-12: (pedido del usuario) La **matraca** de la barra de puntitos se siente **como si el dedo la jalara**: la inclinación depende también de si el dedo está por encima (derecha → antihorario) o por debajo (derecha → horario) del eje; sobre el eje, o sin dedo (flechas, deslizar las islas), solo un **golpe lateral**.

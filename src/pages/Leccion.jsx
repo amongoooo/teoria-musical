@@ -13,10 +13,12 @@ import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
 import { etiquetaPaso } from '../content/actividad.js'
 import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { useOpciones } from '../progress/opciones.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
+import Hoja from '../ui/Hoja.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO, VIDRIO_PANEL } from '../ui/vidrio.js'
 
@@ -67,6 +69,8 @@ function Visor({ leccion, soloReto, onRepetir }) {
   const [terminado, setTerminado] = useState(false)
   const [accion, setAccion] = useState(null)
   const puntos = useRef({}) // índice de paso -> { aciertos, total }
+  const { admin } = useOpciones() // modo administrador: la barra de pasos abre «Ir al paso»
+  const [verPasos, setVerPasos] = useState(false)
 
   useEffect(() => {
     initPiano()
@@ -105,6 +109,16 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const salir = () => navegar(rutas.modulo(leccion.modulo))
 
+  /** Modo administrador: saltar a cualquier paso (no cuenta como avance ni guarda el paso). */
+  const irA = useCallback((n) => {
+    setVerPasos(false)
+    setAccion(null)
+    releaseAll()
+    pararRitmo()
+    window.scrollTo(0, 0)
+    setIndice(n)
+  }, [])
+
   if (terminado) {
     return <Final leccion={leccion} modulo={modulo} puntos={puntos.current} onRepetir={onRepetir} />
   }
@@ -126,7 +140,8 @@ function Visor({ leccion, soloReto, onRepetir }) {
           >
             <Cerrar className="size-6" />
           </Pulsable>
-          <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
+          {/* En modo administrador la píldora es un botón que abre «Ir al paso». */}
+          <BarraPasos admin={admin} onAbrir={() => setVerPasos(true)}>
             <div
               className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
               role="progressbar"
@@ -146,9 +161,15 @@ function Visor({ leccion, soloReto, onRepetir }) {
             <span className="w-12 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">
               {indice + 1}/{total}
             </span>
-          </div>
+          </BarraPasos>
         </div>
       </header>
+
+      {admin && (
+        <Hoja abierta={verPasos} onCerrar={() => setVerPasos(false)} etiqueta="Ir al paso">
+          <IrAlPaso pasos={leccion.pasos} indice={indice} onIr={irA} />
+        </Hoja>
+      )}
 
       {/* Cada paso entra desde la derecha con un resorte (como avanzar en iOS). */}
       <motion.main
@@ -179,6 +200,76 @@ function Visor({ leccion, soloReto, onRepetir }) {
       </motion.main>
 
       <BarraAccion accion={boton} />
+    </div>
+  )
+}
+
+/** Píldora de vidrio con la barra de pasos; en modo administrador es un botón (abre «Ir al paso»). */
+function BarraPasos({ admin, onAbrir, children }) {
+  const clase = `flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`
+  if (!admin) return <div className={clase}>{children}</div>
+  return (
+    <Pulsable onClick={onAbrir} aria-label="Ir a otro paso (modo administrador)" aria-haspopup="dialog" className={`pointer-events-auto ${clase}`}>
+      {children}
+    </Pulsable>
+  )
+}
+
+/** Hoja «Ir al paso» (modo administrador): anterior / siguiente y la lista de pasos con su tipo. */
+function IrAlPaso({ pasos, indice, onIr }) {
+  const total = pasos.length
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-titulo text-2xl font-bold tracking-tight">Ir al paso</h2>
+        <p className="text-sm text-zinc-500">
+          Modo administrador · paso <span className="font-dato tabular-nums">{indice + 1}/{total}</span>
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Pulsable
+          onClick={() => onIr(indice - 1)}
+          disabled={indice === 0}
+          className="min-h-12 rounded-2xl border-2 border-zinc-200 bg-white px-4 text-base font-semibold text-zinc-900 disabled:text-zinc-400"
+        >
+          ‹ Anterior
+        </Pulsable>
+        <Pulsable
+          onClick={() => onIr(indice + 1)}
+          disabled={indice === total - 1}
+          className="min-h-12 rounded-2xl bg-zinc-900 px-4 text-base font-semibold text-white disabled:bg-zinc-300 disabled:text-zinc-500"
+        >
+          Siguiente ›
+        </Pulsable>
+      </div>
+      <ol className="flex flex-col gap-2">
+        {pasos.map((paso, i) => {
+          const e = etiquetaPaso(paso, i)
+          const tipo = e ? (e.ejercicio ? `${e.texto} · ${e.ejercicio}` : e.texto) : paso.tipo === 'siente' ? '¿Qué se siente?' : 'Explicación'
+          const actual = i === indice
+          return (
+            <li key={i}>
+              <Pulsable
+                tipo="tarjeta"
+                onClick={() => onIr(i)}
+                aria-current={actual ? 'step' : undefined}
+                data-foco={actual || undefined}
+                className={`flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2 text-left ${actual ? 'border-zinc-900 bg-white' : 'border-zinc-200 bg-white'}`}
+              >
+                <span
+                  className={`grid size-9 shrink-0 place-items-center rounded-full font-dato text-sm font-medium tabular-nums ${actual ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700'}`}
+                >
+                  {i + 1}
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-base font-semibold leading-snug text-zinc-900">{paso.titulo}</span>
+                  <span className="text-sm text-zinc-500">{tipo}</span>
+                </span>
+              </Pulsable>
+            </li>
+          )
+        })}
+      </ol>
     </div>
   )
 }

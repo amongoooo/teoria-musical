@@ -1,9 +1,10 @@
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'
+import { desbloquearAdmin, salirAdmin } from '../progress/admin.js'
 import { setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
-import { RESORTE } from '../ui/movimiento.js'
-import { Opciones as IconoOpciones } from '../ui/Iconos.jsx'
+import { RESORTE, SUBE } from '../ui/movimiento.js'
+import { Bombilla, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import TuProgreso from './TuProgreso.jsx'
@@ -27,8 +28,8 @@ const OCTAVAS = [
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
  * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono), Vidrio (Desenfoque / Opaco), Barra de octavas
- * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano) y Tu progreso
- * (pasarlo a otro dispositivo).
+ * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano), Tu progreso
+ * (pasarlo a otro dispositivo) y Administrador (con PIN: todas las lecciones abiertas y saltar entre pasos).
  */
 export default function BotonOpciones({ className = '' }) {
   const [abierta, setAbierta] = useState(false)
@@ -88,7 +89,96 @@ function PanelOpciones({ onCerrar }) {
       </Grupo>
 
       <TuProgreso onCerrar={onCerrar} />
+
+      <Grupo titulo="Administrador" id="opciones-admin">
+        <ModoAdmin />
+      </Grupo>
     </div>
+  )
+}
+
+/**
+ * Modo administrador (pedido del usuario): bloqueado, pide el PIN; activo, lo dice con ✓ y deja salir.
+ * Abre todas las lecciones del camino y, en una lección, la barra de pasos abre «Ir al paso».
+ */
+function ModoAdmin() {
+  const { admin } = useOpciones()
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState(false)
+  const [comprobando, setComprobando] = useState(false)
+
+  if (admin) {
+    return (
+      <div className="flex flex-col gap-3 p-4" data-opcion="opciones-admin-activo">
+        <p className="flex items-center gap-2 text-base font-semibold text-bien-tinta">
+          <Check className="size-5" />
+          Modo administrador activo
+        </p>
+        <p className="text-sm leading-snug text-zinc-500">
+          Todas las lecciones están abiertas. En una lección, toca la barra de pasos de arriba para saltar a cualquier paso.
+        </p>
+        <Pulsable
+          onClick={() => {
+            salirAdmin()
+            setPin('')
+          }}
+          className="min-h-12 rounded-2xl border-2 border-zinc-200 bg-white px-5 text-base font-semibold text-zinc-900"
+        >
+          Salir del modo administrador
+        </Pulsable>
+      </div>
+    )
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-2.5 p-4"
+      data-opcion="opciones-admin"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (!pin || comprobando) return
+        setComprobando(true)
+        const ok = await desbloquearAdmin(pin)
+        setComprobando(false)
+        setError(!ok)
+        if (ok) setPin('')
+      }}
+    >
+      <label htmlFor="pin-admin" className="text-base font-semibold text-zinc-900">
+        Modo administrador
+      </label>
+      <div className="flex gap-2">
+        <input
+          id="pin-admin"
+          type="password"
+          inputMode="numeric"
+          value={pin}
+          onChange={(e) => {
+            setPin(e.target.value.replace(/\D/g, ''))
+            setError(false)
+          }}
+          placeholder="PIN"
+          autoComplete="off"
+          className="min-h-12 min-w-0 flex-1 rounded-2xl border-2 border-zinc-200 bg-white px-4 font-dato text-base tracking-widest text-zinc-900 placeholder:font-sans placeholder:tracking-normal placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none"
+        />
+        <Pulsable
+          type="submit"
+          disabled={!pin || comprobando}
+          className="min-h-12 shrink-0 rounded-2xl bg-zinc-900 px-5 text-base font-semibold text-white disabled:bg-zinc-300 disabled:text-zinc-500"
+        >
+          Desbloquear
+        </Pulsable>
+      </div>
+      <AnimatePresence initial={false}>
+        {error && (
+          <motion.p key="error" {...SUBE} exit={{ opacity: 0 }} transition={RESORTE.suave} className="flex items-start gap-2 rounded-2xl bg-fijate-suave px-4 py-3 text-base text-fijate-tinta" role="alert">
+            <Bombilla className="mt-0.5 size-5" />
+            <span>Ese PIN no es. Revísalo e inténtalo otra vez.</span>
+          </motion.p>
+        )}
+      </AnimatePresence>
+      <p className="text-sm leading-snug text-zinc-500">Abre todas las lecciones y deja saltar entre los pasos. Pide un PIN.</p>
+    </form>
   )
 }
 

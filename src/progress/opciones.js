@@ -1,13 +1,14 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas' }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', admin: boolean }
+// (admin: modo administrador, se activa con PIN en Opciones: todas las lecciones abiertas y saltar entre pasos; ver admin.js)
 // (octavas: sentido de la barra de octavas del Piano; 'teclas' = invertida, como arrastrar el teclado)
 // index.html aplica el tema y el vidrio guardados ANTES de pintar (sin destello); este módulo los
 // mantiene al día cuando se cambian en Opciones o cuando el teléfono cambia de modo (Automático).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista' }
+const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', admin: false }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
 export const VIDRIOS = ['desenfoque', 'opaco']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
@@ -24,6 +25,7 @@ function leer() {
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
     if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
+    cache.admin = cache.admin === true
   } catch {
     cache = { ...PREDETERMINADAS }
   }
@@ -80,6 +82,11 @@ export function setVidrio(vidrio) {
 export function setOctavas(octavas) {
   if (!SENTIDOS_OCTAVAS.includes(octavas)) return
   escribir({ ...leer(), octavas })
+}
+
+/** Modo administrador (lo activa `desbloquearAdmin` de admin.js tras comprobar el PIN). */
+export function setAdmin(admin) {
+  escribir({ ...leer(), admin: Boolean(admin) })
 }
 
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.
