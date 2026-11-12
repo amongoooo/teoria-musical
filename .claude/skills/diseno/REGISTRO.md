@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) **Intervalos y Acordes pasan al arranque de «iniciar nivel»** (adiós a la portada con chips y textos grises): puntitos del Nivel por modo, Dificultad = octavas, y en Intervalos la dirección en bloques con dibujito de piano roll.
+
 - 2026-11-12: (pedido del usuario) **Los carruseles nunca se quedan entre dos valores** (siempre gana uno, también mientras se arrastra). Los ajustes de los modos (aciertos, segundos) pasan de − / + a **carrusel horizontal**. Puntitos del piano roll con **negras más oscuras**. **Botón presionado = mate** (opaco, sin brillo). Coral Pixels se probó en números y títulos y **se quitó** (no se entendía): vuelve Pixelify Sans (`font-juego`).
 - 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **sin fondo teñido** (la página sigue clara u oscura; solo botones y controles toman el color de la dificultad). Los puntitos **representan lo que suena**: 12 = piano roll con las notas del nivel encendidas (Do abajo), 5 = octavas 2…6 que se encienden del centro a los extremos. Números del juego en **Coral Pixels** (`font-numero`, fuente a color).
 - 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **Nivel y Dificultad en dos ruedas verticales lado a lado** con **puntitos** al costado (12 notas / 5 octavas) en lugar de la cajita de notas y la tira de octavas; **la página se tiñe según la dificultad** (azul, verde, amarillo, naranja, rojo). Colores nuevos `dificultad-1…5`.

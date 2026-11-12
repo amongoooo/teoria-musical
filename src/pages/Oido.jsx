@@ -10,9 +10,7 @@ import {
   TAMANO_VENTANA,
   datosDeHoy,
   datosModo,
-  elegirNivel,
   empezarSesion,
-  guardarAjustes,
   rachaActual,
   registrarRespuesta,
   reiniciarOido,
@@ -23,7 +21,6 @@ import { useOpciones } from '../progress/opciones.js'
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
 import {
-  DIRECCIONES,
   MODOS_OIDO,
   PARTES_NIVEL,
   ajusteAbsoluto,
@@ -466,7 +463,7 @@ function Entrenador({ modo }) {
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4">
         {!jugando ? (
-          modo.juegos ? <ArranqueOido modo={modo} datos={datos} /> : <Portada modo={modo} datos={datos} />
+          <ArranqueOido modo={modo} datos={datos} />
         ) : (
           <motion.div
             key={pregunta.n}
@@ -725,83 +722,5 @@ function Ventana({ datos, niveles, acento }) {
         {aciertos} de los últimos {TAMANO_VENTANA} · con {ACIERTOS_PARA_SUBIR} subes de nivel
       </p>
     </div>
-  )
-}
-
-/** Pantalla antes de empezar (intervalos y acordes; el oído absoluto usa ArranqueOido): qué se practica, nivel y ajustes. */
-function Portada({ modo, datos }) {
-  const opciones = modo.opciones(datos.nivel)
-  return (
-    <motion.div variants={lista} initial="oculta" animate="visible" className="flex flex-col gap-6">
-      <motion.header variants={itemLista} className="flex flex-col gap-2">
-        <span className="grid size-14 place-items-center rounded-2xl" style={{ backgroundColor: claro(modo.acento), color: tinta(modo.acento) }} aria-hidden>
-          <Oreja className="size-8" />
-        </span>
-        <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-4xl">{modo.titulo}</h1>
-        <p className="text-lg leading-relaxed text-zinc-600">{modo.descripcion}</p>
-      </motion.header>
-
-      <motion.section variants={itemLista} className="flex flex-col gap-3">
-        <h2 className="font-titulo text-lg font-bold">Nivel</h2>
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: datos.nivelMax }, (_, i) => i + 1).map((n) => (
-            <Pulsable
-              key={n}
-              onClick={() => elegirNivel(modo.id, n)}
-              aria-pressed={datos.nivel === n}
-              className={`min-h-12 rounded-full border-2 px-4 font-juego text-base font-medium transition-colors duration-200 ${
-                datos.nivel === n ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-700'
-              }`}
-            >
-              {nombreNivel(modo, n)}
-            </Pulsable>
-          ))}
-        </div>
-        <p className="text-sm text-zinc-500">
-          {`Sube solo al acertar ${ACIERTOS_PARA_SUBIR} de ${TAMANO_VENTANA}.`}
-          {datos.nivelMax < modo.niveles && ' Los niveles que desbloquees aparecerán aquí.'}
-        </p>
-        {modo.id !== 'acordes' ? (
-          <div className="flex flex-wrap gap-2">
-            {opciones.map((o) => (
-              <span key={o.id} className="rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700">
-                {o.label}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-base text-zinc-700">{modo.nuevosEnNivel(datos.nivel)[0]}.</p>
-        )}
-      </motion.section>
-
-      {modo.id === 'intervalos' && (
-        <motion.section variants={itemLista} className="flex flex-col gap-3">
-          <h2 className="font-titulo text-lg font-bold">Cómo suenan las dos notas</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {DIRECCIONES.map((d) => {
-              const activa = (datos.ajustes.direccion ?? 'sube') === d.id
-              return (
-                <Pulsable
-                  key={d.id}
-                  onClick={() => guardarAjustes(modo.id, { direccion: d.id })}
-                  aria-pressed={activa}
-                  className={`min-h-12 rounded-2xl border-2 px-2 text-base font-semibold transition-colors duration-200 ${
-                    activa ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-700'
-                  }`}
-                >
-                  {d.label}
-                </Pulsable>
-              )
-            })}
-          </div>
-        </motion.section>
-      )}
-
-      {datos.total > 0 && (
-        <motion.p variants={itemLista} className="text-base text-zinc-500">
-          Llevas {datos.total} respuestas en total, {porcentaje(datos.aciertos, datos.total)} % bien. Mejor serie: {datos.mejorRacha} seguidas.
-        </motion.p>
-      )}
-    </motion.div>
   )
 }
