@@ -24,6 +24,10 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 const BOLA = 112 // diámetro de la isla abierta
 // «Tilt» de la isla abierta al chocar con un extremo del camino (px, grados, ms).
 const TILT = { x: 12, grados: 3, vuelve: 250 }
+// Con una isla abierta, subir la página con el dedo la cierra (pedido del usuario): el dedo tiene que bajar
+// más de `dedo` px (y más de lo que se mueve de lado) y la página subir más de `pagina` px; con la rueda,
+// `rueda` px acumulados hacia arriba.
+const SUBIR_CIERRA = { dedo: 30, pagina: 24, rueda: 60 }
 // Barra de puntitos (dos animaciones):
 //  - FLOTA: mientras el dedo está apoyado, la barra lo sigue con resistencia (como si flotara): en
 //    vertical siempre; en horizontal solo si el dedo sale más allá del primer o del último puntito.
@@ -490,11 +494,57 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
       else if (e.key === 'ArrowLeft') irARef.current(abiertaRef.current - 1)
     }
     const fuera = (e) => !e.target.closest?.('[data-nodo], [role=dialog]') && cerrarRef.current()
+
+    // Subir la página con el dedo (o la rueda) = querer ver las islas de arriba: se cierra la isla abierta
+    // (pedido del usuario). Se mira el GESTO, no solo el scroll, porque la página también se mueve sola
+    // (al abrir una isla o al pasar a otra); un arrastre de lado (cambiar de isla) no cuenta. Arriba del
+    // todo no hay nada que subir, así que «tirar desde arriba» (módulo anterior) no la cierra.
+    let toque = null // { x, y, scroll }
+    const ignorar = (e) => e.target.closest?.('[data-puntitos], [role=dialog]')
+    const empieza = (e) => {
+      const t = e.touches[0]
+      toque = e.touches.length === 1 && !ignorar(e) ? { x: t.clientX, y: t.clientY, scroll: window.scrollY } : null
+    }
+    const mueve = (e) => {
+      if (!toque) return
+      const t = e.touches[0]
+      const dedoBaja = t.clientY - toque.y
+      const deLado = Math.abs(t.clientX - toque.x)
+      if (dedoBaja > SUBIR_CIERRA.dedo && dedoBaja > deLado && toque.scroll - window.scrollY > SUBIR_CIERRA.pagina) {
+        toque = null
+        cerrarRef.current()
+      }
+    }
+    const suelta = () => (toque = null)
+    let rueda = 0
+    let ruedaT
+    const gira = (e) => {
+      if (ignorar(e) || window.scrollY <= 0) return
+      clearTimeout(ruedaT)
+      ruedaT = setTimeout(() => (rueda = 0), 250)
+      rueda = e.deltaY < 0 ? rueda + e.deltaY : 0
+      if (-rueda > SUBIR_CIERRA.rueda) {
+        rueda = 0
+        cerrarRef.current()
+      }
+    }
+
     document.addEventListener('keydown', tecla)
     document.addEventListener('click', fuera)
+    document.addEventListener('touchstart', empieza, { passive: true })
+    document.addEventListener('touchmove', mueve, { passive: true })
+    document.addEventListener('touchend', suelta, { passive: true })
+    document.addEventListener('touchcancel', suelta, { passive: true })
+    window.addEventListener('wheel', gira, { passive: true })
     return () => {
       document.removeEventListener('keydown', tecla)
       document.removeEventListener('click', fuera)
+      document.removeEventListener('touchstart', empieza)
+      document.removeEventListener('touchmove', mueve)
+      document.removeEventListener('touchend', suelta)
+      document.removeEventListener('touchcancel', suelta)
+      window.removeEventListener('wheel', gira)
+      clearTimeout(ruedaT)
     }
   }, [abiertaSiNo])
 
