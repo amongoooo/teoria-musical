@@ -249,6 +249,10 @@ html.cambiando-tema * {
   background-color: var(--color-white) !important;
   border-color: var(--color-zinc-200) !important;
 }
+/* El reflejo del botón principal es parte del vidrio: en «Opaco» no va. */
+.opaco .vidrio-reflejo {
+  display: none;
+}
 /* Sobre una tarjeta de color (✕ del globo de una isla): un velo blanco en lugar de la superficie. */
 .opaco .vidrio.vidrio-color {
   background-color: rgb(255 255 255 / 0.2) !important;

@@ -21,7 +21,7 @@ import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import useGestoBoton from '../ui/useGestoBoton.js'
-import { VIDRIO, VIDRIO_BOTON } from '../ui/vidrio.js'
+import { REFLEJO_BOTON, VIDRIO, VIDRIO_BOTON } from '../ui/vidrio.js'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
 /** Pasos que nunca muestran retroalimentación (el recuadro del foquito): su botón flota solo, sin panel. */
@@ -444,7 +444,7 @@ export function BarraAccion({ accion, navegacion = null }) {
               {/* Todo va DENTRO del botón: al presionarlo se encoge junto con él y nada se sale. */}
               {/* Debajo, el vidrio claro de «desactivado»: con el gesto, el color se desvanece y queda este. */}
               {/* Flotando (sin panel), el vidrio desenfoca lo que pasa por detrás y su color deja verlo un poco. */}
-              {translucido && <span aria-hidden data-desenfoque className="absolute inset-0 backdrop-blur-md backdrop-saturate-150" />}
+              {translucido && <span aria-hidden data-desenfoque className="absolute inset-0 backdrop-blur-lg backdrop-saturate-200" />}
               <motion.span
                 aria-hidden
                 data-translucido={translucido || undefined}
@@ -460,6 +460,7 @@ export function BarraAccion({ accion, navegacion = null }) {
               </motion.span>
               <Brillo gesto={gesto} activa={activa} fase={fase} dedoX={dedoX} dedoY={dedoY} tono={misma ? TEXTO_BOTON[color] : tonoGesto(gesto)} />
               <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
+              <span aria-hidden data-reflejo className={REFLEJO_BOTON} />
               <Rotulo label={accion.label} gesto={gesto} mezcla={mezcla} base={TEXTO_BOTON[color]} />
               <Flechita gesto={gesto} visible={visible} cubre={cubre} invertido={Boolean(navegacion?.invertido)} color={colorFlecha(gesto, activa, misma, color)} />
             </Pulsable>
@@ -471,7 +472,7 @@ export function BarraAccion({ accion, navegacion = null }) {
 }
 
 /** Opacidad del color del botón cuando flota sin panel: deja ver (desenfocado) lo que pasa por detrás. */
-const OPACIDAD_FLOTANTE = 0.88
+const OPACIDAD_FLOTANTE = 0.76
 const TEXTO_BOTON = { apagado: 'var(--color-zinc-500)', listo: 'var(--color-white)', bien: 'var(--color-blanco)' }
 const COLOR_BOTON = { apagado: 'var(--color-zinc-200)', listo: 'var(--color-zinc-900)', bien: 'var(--color-bien-relleno)' }
 // El tinte nuevo es un óvalo con borde degradado (sólido hasta el 55 % del radio). Desde el centro, a escala CUBRE la

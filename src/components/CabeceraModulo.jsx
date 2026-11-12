@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getLeccion, getModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
@@ -72,15 +72,32 @@ export default function CabeceraModulo({ numero }) {
   )
 }
 
+// Escalonado de la barra de lecciones (pedido del usuario): al pasar de un módulo a otro, los segmentos se llenan uno
+// tras otro de izquierda a derecha y se vacían de derecha a izquierda, como una sola barra.
+const ESCALON = 0.11
+
 /**
  * Barra de progreso dividida en segmentos (uno por lección), cada uno con su relleno 0–1.
  * El relleno y el color se animan; al cambiar el número de segmentos, entran y salen creciendo.
+ * Primero se vacían (de derecha a izquierda) los que bajan y luego se llenan (de izquierda a derecha) los que suben.
  */
 function BarraLecciones({ valores, color, ...props }) {
+  const limpios = valores.map((v) => Math.max(0, Math.min(1, v)))
+  const antes = useRef([])
+  const previos = antes.current
+  const bajan = limpios.map((v, i) => i).filter((i) => limpios[i] < (previos[i] ?? 0)).reverse()
+  const suben = limpios.map((v, i) => i).filter((i) => limpios[i] > (previos[i] ?? 0))
+  const primera = previos.length === 0 // al aparecer: espera un poco, como BarraProgreso
+  const retraso = {}
+  bajan.forEach((i, k) => (retraso[i] = k * ESCALON))
+  suben.forEach((i, k) => (retraso[i] = (primera ? 0.15 : 0) + (bajan.length + k) * ESCALON))
+  useEffect(() => {
+    antes.current = limpios
+  })
   return (
     <div className="flex h-2.5 w-full gap-1.5 overflow-hidden" role="img" {...props}>
       <AnimatePresence initial={false}>
-        {valores.map((v, i) => (
+        {limpios.map((v, i) => (
           <motion.div
             key={i}
             className="h-full min-w-0 overflow-hidden rounded-full bg-zinc-200"
@@ -92,9 +109,13 @@ function BarraLecciones({ valores, color, ...props }) {
           >
             <motion.div
               className="h-full rounded-full"
+              data-segmento={i}
               initial={{ width: 0, backgroundColor: color }}
-              animate={{ width: `${Math.max(0, Math.min(1, v)) * 100}%`, backgroundColor: color }}
-              transition={{ ...RESORTE.suave, delay: 0.15 + i * 0.05, backgroundColor: { duration: 0.35, ease: 'easeOut' } }}
+              animate={{ width: `${v * 100}%`, backgroundColor: color }}
+              transition={{
+                width: { ...RESORTE.pulsar, delay: retraso[i] ?? 0 },
+                backgroundColor: { duration: 0.35, ease: 'easeOut' },
+              }}
             />
           </motion.div>
         ))}

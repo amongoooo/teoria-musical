@@ -149,11 +149,20 @@ export const modoAcordes = {
 
 // Orden en que se van sumando notas: primero naturales bien separadas.
 const ORDEN_ABSOLUTO = ['C', 'G', 'E', 'A', 'D', 'F', 'B', 'F#', 'A#', 'C#', 'G#', 'D#']
-const CROMATICA = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+export const CROMATICA = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
-/** Nombre de la clase de nota: 'C#' -> 'Do♯'. */
-export function nombreClase(clase) {
+/**
+ * Nombre de la clase de nota: 'C#' -> 'Do♯'. Con cifrado 'en' (pedido del usuario: se cambia tocando una nota en la
+ * cajita de notas del arranque), en letras: 'C#' -> 'C♯'.
+ */
+export function nombreClase(clase, cifrado = 'es') {
+  if (cifrado === 'en') return clase.replace('#', '♯')
   return nombre(`${clase}4`, { octava: false })
+}
+
+/** Nombre de una nota con octava según el cifrado: 'C#4' -> 'Do♯4' o 'C♯4'. */
+function nombreCifrado(nota, cifrado = 'es') {
+  return cifrado === 'en' ? nota.replace('#', '♯') : nombre(nota)
 }
 
 /** Clase de nota de una nota con octava: 'C#4' -> 'C#'. */
@@ -183,22 +192,33 @@ export function notasDelNivel(nivel) {
   return CROMATICA.filter((c) => set.includes(c))
 }
 
+/** La nota que se suma en ese nivel (null en el 1, que empieza con dos). */
+export function notaNuevaDelNivel(nivel) {
+  return nivel >= 2 ? (ORDEN_ABSOLUTO[nivel] ?? null) : null
+}
+
 export const modoAbsoluto = {
   id: 'absoluto',
   titulo: 'Oído absoluto',
   acento: 'var(--color-modulo-1)',
   descripcion: 'Un juego: adivina la nota sin ninguna referencia.',
+  // Burbuja ⓘ del arranque (se despliega al tocarla).
+  info:
+    'Es un **juego**: suena una nota sin ninguna referencia y la tocas en el piano. Empiezas con 2 notas (las demás ' +
+    'tienen candado) y se desbloquea una más cada vez que llenas el círculo de 8 partes. En adultos el oído absoluto ' +
+    'es muy difícil de adquirir, así que tómalo como un reto divertido, no como una promesa. Entre nota y nota suenan ' +
+    'unas notas al azar y un ruido corto: así la nota anterior no te sirve de pista.',
   pregunta: '¿Qué nota es?',
   limpiar: true, // borrador de oído entre preguntas (ver limpiarOido en audio/engine.js)
   niveles: ORDEN_ABSOLUTO.length - 1,
   nombreNivel: (nivel) => `${nivel + 1} notas`,
   nuevosEnNivel: (nivel) =>
-    nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map(nombreClase) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
-  nombreItem: nombreClase,
+    nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map((c) => nombreClase(c)) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
+  nombreItem: (id, ajustes) => nombreClase(id, ajustes?.cifrado),
   piano: true, // se responde tocando el piano (las notas aún no desbloqueadas van con candado)
   juegos: JUEGOS_ABSOLUTO,
-  opciones: (nivel) => notasDelNivel(nivel).map((id) => ({ id, label: nombreClase(id) })),
-  generar(nivel) {
+  opciones: (nivel, ajustes) => notasDelNivel(nivel).map((id) => ({ id, label: nombreClase(id, ajustes?.cifrado) })),
+  generar(nivel, ajustes) {
     const item = azar(notasDelNivel(nivel))
     // Con pocas notas, siempre en la octava 4; luego cambia de octava para
     // que no se pueda adivinar comparando con la anterior.
@@ -209,7 +229,7 @@ export const modoAbsoluto = {
       sonido: { notas: [nota], modo: 'secuencia', duracion: 1.6 },
       notas: [nota],
       sonidoDe: (id) => ({ notas: [`${id}${octava}`], modo: 'secuencia', duracion: 1.6 }),
-      explicacion: `Sonó ${nombre(nota)} (${hz(frecuencia(nota))}).`,
+      explicacion: `Sonó ${nombreCifrado(nota, ajustes?.cifrado)} (${hz(frecuencia(nota))}).`,
     }
   },
 }
