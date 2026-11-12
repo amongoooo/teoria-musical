@@ -2,6 +2,7 @@ import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useRedu
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
+import { useOpciones } from '../progress/opciones.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
@@ -134,6 +135,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const anchoReal = useAncho(ref)
   const altoVentana = useAltoVentana()
   const lecciones = modulo.lecciones
+  useOpciones() // el modo administrador (Opciones) abre las islas bloqueadas: volver a pintar al cambiarlo
   // Islas del camino: las lecciones y, al final (lado opuesto a la insignia), la isla de Retos.
   // El carrusel va por NODOS: el 0 es la insignia del módulo (también se abre con su tarjetita) y la
   // isla `i` es el nodo i + 1. Así la insignia tiene su puntito y desde ella se pasa al módulo anterior.
@@ -1148,6 +1150,7 @@ function Anillo({ tam, acento, avance = 0, grosor = 6 }) {
  * El globo sale de la isla con `--contenido` (lo escribe el carrusel en cada fotograma).
  */
 function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) {
+  useOpciones() // modo administrador
   const estado = estadoLeccion(meta.id, progreso)
   const leccion = getLeccion(meta.id)
   const p = progreso.lecciones[meta.id]

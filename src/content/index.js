@@ -1,5 +1,6 @@
 // Registro del contenido: módulos + lecciones disponibles.
 // Para añadir una lección: crea su archivo en src/content/modulo-XX/ y regístrala aquí.
+import { getOpciones } from '../progress/opciones.js'
 import { MODULOS } from './modulos.js'
 import leccion11 from './modulo-01/leccion-1-1.js'
 import leccion12 from './modulo-01/leccion-1-2.js'
@@ -62,6 +63,7 @@ export function leccionesDisponibles() {
  * Desbloqueo progresivo DENTRO de cada módulo: la primera lección siempre está abierta y
  * cada una se abre al completar la anterior (o si ya se empezó). Entre módulos no se bloquea
  * (el usuario ya sabe algo de música y puede saltar al módulo que quiera).
+ * En modo administrador (Opciones → Administrador) no se bloquea ninguna: las bloqueadas pasan a 'nueva'.
  */
 export function estadoLeccion(id, progreso) {
   if (!leccionDisponible(id)) return 'proximamente'
@@ -69,7 +71,7 @@ export function estadoLeccion(id, progreso) {
   if (p?.completada) return 'hecha'
   if (p?.paso > 0) return 'empezada'
   const anterior = leccionAnterior(id)
-  if (!anterior || progreso.lecciones[anterior.id]?.completada) return 'nueva'
+  if (!anterior || progreso.lecciones[anterior.id]?.completada || getOpciones().admin) return 'nueva'
   return 'bloqueada'
 }
 
