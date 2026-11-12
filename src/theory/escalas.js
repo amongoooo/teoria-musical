@@ -6,6 +6,9 @@ import { nombre } from './notas.js'
 /** La fórmula de la escala mayor: T T S T T T S. */
 export const MAYOR = ['T', 'T', 'S', 'T', 'T', 'T', 'S']
 
+/** La fórmula de la escala menor natural: T S T T S T T (la mayor empezada en su 6.º grado). */
+export const MENOR = ['T', 'S', 'T', 'T', 'S', 'T', 'T']
+
 /** Nombre de cada grado de la escala (1.º → 7.º). */
 export const GRADOS = ['Tónica', 'Supertónica', 'Mediante', 'Subdominante', 'Dominante', 'Superdominante', 'Sensible']
 
@@ -23,8 +26,24 @@ export function escala(tonica, tipo = 'major', { bajando = false } = {}) {
 }
 
 export const escalaMayor = (tonica, opciones) => escala(tonica, 'major', opciones)
+export const escalaMenor = (tonica, opciones) => escala(tonica, 'minor', opciones)
 
-/** Nota del grado `n` (1–7) de la escala mayor de `tonica` (sin octava): grado('D', 7) → 'C#'. */
+/** Tónica de la relativa menor de una mayor (su 6.º grado), sin octava: relativaMenor('G') → 'E'. */
+export const relativaMenor = (tonica) => grado(tonica, 6)
+
+/** Tónica de la relativa mayor de una menor (su 3.er grado), sin octava: relativaMayor('D') → 'F'. */
+export const relativaMayor = (tonica) => grado(tonica, 3, 'minor')
+
+/**
+ * Melodía con grados de una escala (con octava): melodia('C4', [5, 6, 7, 8]) → ['G4', 'A4', 'B4', 'C5'].
+ * 8 = la tónica una octava arriba; 0 o negativos bajan de la tónica (0 = 7.º de abajo, −1 = 6.º de abajo…).
+ */
+export function melodia(tonica, grados, tipo = 'major') {
+  const grado = Scale.degrees(`${tonica} ${tipo}`)
+  return grados.map((n) => grado(n > 0 ? n : n - 1))
+}
+
+/** Nota del grado `n` (1–7) de la escala de `tonica` (mayor si no se dice `tipo`) (sin octava): grado('D', 7) → 'C#'. */
 export function grado(tonica, n, tipo = 'major') {
   return Note.pitchClass(Scale.degrees(`${Note.pitchClass(tonica)} ${tipo}`)(n))
 }

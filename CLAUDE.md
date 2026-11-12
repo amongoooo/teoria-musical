@@ -31,7 +31,7 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 - **Vite + React en JavaScript** (`.jsx`, sin TypeScript) · **Tailwind CSS v4** (`@tailwindcss/vite`, tema en `src/index.css`).
 - **Tone.js** para el audio (piano con samples Salamander + sintetizador de respaldo; batería sintetizada).
 - **motion** (Framer Motion) con resortes: presets en `src/ui/movimiento.js`; todo lo tocable es `src/ui/Pulsable.jsx`.
-- **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas y escalas (`src/theory/intervalos.js`: pasos, fórmulas e intervalos con nombre; `src/theory/escalas.js`: escalas y grados con `Scale`). Previsto: **@tonejs/midi**.
+- **Tonal.js** (`tonal`) para la teoría: intervalos, fórmulas y escalas (`src/theory/intervalos.js`: pasos, fórmulas e intervalos con nombre; `src/theory/escalas.js`: escalas mayor y menor, grados, relativas y melodías por grados con `Scale`). Previsto: **@tonejs/midi**.
 - **localStorage** para progreso, opciones y entrenamiento de oído (sin servidor ni cuentas).
 - Estilo: minimalista, mucho espacio, tipografía grande. **Paleta Lospec500 por significado** (gris = estructura/bloqueado, verde = bien con ✓, oro = fíjate con bombilla, un color por módulo), **íconos mínimos** propios, **fuentes por rol** (Bricolage Grotesque `font-titulo`, Figtree texto, DM Mono `font-dato`, Pixelify Sans `font-juego`) y **tres materiales**: vidrio = la app (lo que flota: cabeceras, barra de abajo, botones de navegar), superficie = la lección, color = el significado (con opción «Opaco» en Opciones). Todo en la skill de diseño.
 
@@ -44,7 +44,7 @@ src/
     modulos.js          # Los 10 módulos y sus lecciones (título, acento = var(--color-modulo-N), reto…)
     index.js            # Registro de lecciones (getLeccion, getModulo, estadoLeccion…) ← registrar aquí cada lección nueva
     actividad.js        # Código de interacción de cada paso (L1…X1) y su etiqueta (ícono + nombre)
-    modulo-0N/leccion-N-M.js   # Hechas: 1.1–1.4, 2.1–2.5, 3.1–3.3
+    modulo-0N/leccion-N-M.js   # Hechas: 1.1–1.4, 2.1–2.5, 3.1–3.4
   pages/                # Inicio, Modulo, Leccion (visor paso a paso + BarraAccion), Oido (panel + entrenador), Importar
   components/
     exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
@@ -57,7 +57,7 @@ src/
     Opciones.jsx, TuProgreso.jsx, CodigoQR.jsx                   # Opciones (tema, vidrio, sentido de la barra de octavas) y progreso entre dispositivos
     BotonSonido.jsx, Rich.jsx                                    # Botón de sonido (onNotas: señala cada nota al sonar); texto con **negritas**
   audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle), bateria.js (golpes sintetizados), sonido.js (reproducir() del contenido)
-  theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), escalas.js (Tonal Scale: escala mayor, grados, alteraciones), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
+  theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), escalas.js (Tonal Scale: escala mayor y menor, grados, alteraciones, relativas, melodías por grados), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
   progress/             # progreso.js (lecciones y retos), opciones.js (tema y vidrio), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
   pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
   ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js (gestos), useTemblor.js (animación «temblar»), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
@@ -88,18 +88,18 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~70 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~72 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
-- 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan) · ✅ 3.3 «La escala mayor» (Do, Sol, Re, Fa; grados con Tonal `Scale`; «¿mayor u otra cosa?», «¿termina en casa?», escribirla en el roll; casillas de la fórmula que tiemblan y con grados). Faltan 3.4–3.7.
+- 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan) · ✅ 3.3 «La escala mayor» (Do, Sol, Re, Fa; grados con Tonal `Scale`; «¿mayor u otra cosa?», «¿termina en casa?», escribirla en el roll; casillas de la fórmula que tiemblan y con grados) · ✅ 3.4 «La escala menor natural y la relativa» (La, Mi, Re y Sol menor; relativa = 6.º grado con `relativaMenor`; «¿mayor o menor?», «¿la mayor o su relativa?», «Encuentra la relativa» con P7; la misma melodía en mayor, paralela y relativa con `melodia()`). Faltan 3.5–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
 - ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas (sentido de la barra elegible en Opciones), «Escuchar…» que señala cada nota en el teclado y las casillas, isla que se cierra al dejar la mitad de la pantalla, Opciones ordenadas por grupos (hoja que se arrastra bien con el dedo), matraca de la barra de puntitos que se jala con el dedo, piano con el teclado del computador (Z…M / Q…U como FL Studio) y teclas que se desvanecen al soltarlas.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
-**Siguiente tarea:** lección 3.4 «La escala menor natural y la relativa» (fórmula T S T T S T T, relativa menor = 6.º grado de la mayor, mayor vs. menor de oído), o la prueba rápida al inicio de cada módulo.
+**Siguiente tarea:** lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.
