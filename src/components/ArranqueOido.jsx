@@ -1,26 +1,54 @@
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
-import { CROMATICA, getJuego, nombreClase, notaNuevaDelNivel, notasDelNivel } from '../theory/oido.js'
+import {
+  AJUSTES_ABSOLUTO,
+  CROMATICA,
+  NOTAS_BASE,
+  OCTAVAS_POSIBLES,
+  ajusteAbsoluto,
+  getJuego,
+  nombreClase,
+  notaNuevaDelNivel,
+  notasDelNivel,
+  notasInicialesRapido,
+  octavasDe,
+  textoJuego,
+} from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Circulo8, Cronometro, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
+import { Candado, Check, Circulo8, Cronometro, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import Rich from './Rich.jsx'
-import { Segmentado } from './Opciones.jsx'
 
 /**
  * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; por ahora solo el oído absoluto):
  * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, nivel en una rueda
- * vertical (el 1 abajo) junto a la cajita de notas, y «Responder con» con una vista pequeña del piano o de los botones.
+ * vertical (el 1 abajo; en Rápido, el multiplicador) junto a la cajita de notas, las octavas en las que suena y
+ * «Responder con» en dos bloques con dibujito (piano / botones).
  * Sin textos grises de instrucciones: se entiende por el movimiento y el color.
  */
 export default function ArranqueOido({ modo, datos }) {
   const cifrado = datos.ajustes.cifrado === 'en' ? 'en' : 'es'
   const cambiarCifrado = () => guardarAjustes(modo.id, { cifrado: cifrado === 'en' ? 'es' : 'en' })
-  // Nivel que se ve en la rueda mientras se desliza (la cajita de notas lo sigue al instante).
-  const [vista, setVista] = useState(datos.nivel)
+  const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
+  // Rápido: la rueda es el multiplicador (×1…×10, todos disponibles); si no, el nivel de siempre.
+  const rapido = Boolean(juego?.multiplicador)
+  const mult = AJUSTES_ABSOLUTO.multiplicador
+  const rueda = rapido
+    ? {
+        total: mult.max,
+        max: mult.max,
+        valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'),
+        elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }),
+        prefijo: '×',
+      }
+    : { total: modo.niveles, max: datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n), prefijo: '' }
+  // Lo que se ve en la rueda mientras se desliza (la cajita de notas lo sigue al instante).
+  const [vista, setVista] = useState(rueda.valor)
   const conPiano = datos.ajustes.respuesta !== 'botones'
+  const notas = rapido ? notasInicialesRapido(vista) : notasDelNivel(vista)
+  const nuevas = rapido ? notas.filter((c) => !NOTAS_BASE.includes(c)) : [notaNuevaDelNivel(vista)]
 
   return (
     <LayoutGroup>
@@ -49,55 +77,76 @@ export default function ArranqueOido({ modo, datos }) {
         )}
 
         <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-          <Titulo id="nivel">Nivel</Titulo>
+          <Titulo id="nivel">{rapido ? 'Multiplicador' : 'Nivel'}</Titulo>
           <div className="flex gap-3">
             <RuedaNivel
-              total={modo.niveles}
-              max={datos.nivelMax}
-              valor={datos.nivel}
+              key={rapido ? 'multiplicador' : 'nivel'}
+              total={rueda.total}
+              max={rueda.max}
+              valor={rueda.valor}
+              prefijo={rueda.prefijo}
               onVista={setVista}
-              onElegir={(n) => elegirNivel(modo.id, n)}
+              onElegir={rueda.elegir}
               acento={modo.acento}
             />
-            <CajaNotas nivel={vista} cifrado={cifrado} onCifrado={cambiarCifrado} acento={modo.acento} />
+            <CajaNotas notas={notas} nuevas={nuevas} cifrado={cifrado} onCifrado={cambiarCifrado} acento={modo.acento} />
           </div>
+        </motion.section>
+
+        <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
+          <Titulo id="octavas">Octavas</Titulo>
+          <Octavas
+            valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
+            onCambiar={(n) => guardarAjustes(modo.id, { octavas: n })}
+            acento={modo.acento}
+          />
         </motion.section>
 
         {modo.piano && (
           <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
             <Titulo id="responder-con">Responder con</Titulo>
-            <Segmentado
-              etiqueta="responder-con"
-              capa="responder-con"
-              opciones={[
-                { id: 'piano', nombre: 'Piano' },
-                { id: 'botones', nombre: 'Botones' },
-              ]}
-              valor={conPiano ? 'piano' : 'botones'}
-              onCambiar={(id) => guardarAjustes(modo.id, { respuesta: id })}
-            />
-            <div className="grid" data-vista-respuesta={conPiano ? 'piano' : 'botones'}>
-              <AnimatePresence initial={false}>
-                <motion.div
-                  key={conPiano ? 'piano' : 'botones'}
-                  initial={{ opacity: 0, x: conPiano ? -24 : 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: conPiano ? 24 : -24 }}
-                  transition={{ ...RESORTE.suave, opacity: { duration: 0.18 } }}
-                  className="col-start-1 row-start-1 flex justify-center"
+            <div role="radiogroup" aria-labelledby="responder-con" className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'piano', nombre: 'Piano', Dibujo: DibujoPiano },
+                { id: 'botones', nombre: 'Botones', Dibujo: DibujoBotones },
+              ].map(({ id, nombre, Dibujo }) => (
+                <Bloque
+                  key={id}
+                  role="radio"
+                  aria-checked={(id === 'piano') === conPiano}
+                  activo={(id === 'piano') === conPiano}
+                  acento={modo.acento}
+                  onClick={() => guardarAjustes(modo.id, { respuesta: id })}
+                  data-responder={id}
                 >
-                  {conPiano ? (
-                    <MiniPiano nivel={datos.nivel} />
-                  ) : (
-                    <MiniBotones nivel={datos.nivel} cifrado={cifrado} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                  <Dibujo className="h-11 w-18" />
+                  <span className="font-juego text-base font-semibold leading-tight tracking-tight">{nombre}</span>
+                </Bloque>
+              ))}
             </div>
           </motion.section>
         )}
       </motion.div>
     </LayoutGroup>
+  )
+}
+
+/**
+ * Bloque de juego (modos, «Responder con»): tarjeta con relieve; el elegido se pinta del color del módulo con su
+ * labio y texto blanco.
+ */
+function Bloque({ activo, acento, className = '', children, ...props }) {
+  return (
+    <Pulsable
+      tipo="tarjeta"
+      className={`flex min-h-26 flex-col items-center justify-center gap-2 rounded-3xl border-2 px-1 py-3 transition-[background-color,border-color,color,box-shadow] duration-200 ${
+        activo ? 'border-transparent text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
+      } ${className}`}
+      style={activo ? { backgroundColor: oscuro(acento), boxShadow: `0 5px 0 ${labio(acento)}` } : { boxShadow: RELIEVE }}
+      {...props}
+    >
+      {children}
+    </Pulsable>
   )
 }
 
@@ -196,25 +245,18 @@ function ModosJuego({ modo, datos }) {
           const Icono = ICONO_JUEGO[j.id] ?? Circulo8
           const activo = j.id === actual.id
           return (
-            <Pulsable
+            <Bloque
               key={j.id}
-              tipo="tarjeta"
+              activo={activo}
+              acento={acento}
               onClick={() => tocar(j)}
               aria-pressed={activo}
               aria-expanded={activo ? abierto : undefined}
               data-juego={j.id}
-              className={`flex min-h-26 flex-col items-center justify-center gap-2 rounded-3xl border-2 px-1 py-3 transition-[background-color,border-color,color,box-shadow] duration-200 ${
-                activo ? 'border-transparent text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
-              }`}
-              style={
-                activo
-                  ? { backgroundColor: oscuro(acento), boxShadow: `0 5px 0 ${labio(acento)}` }
-                  : { boxShadow: RELIEVE }
-              }
             >
               <Icono className="size-8" />
               <span className="font-juego text-base font-semibold leading-tight tracking-tight">{j.nombre}</span>
-            </Pulsable>
+            </Bloque>
           )
         })}
       </div>
@@ -238,23 +280,142 @@ function ModosJuego({ modo, datos }) {
               transition={RESORTE.pulsar}
               style={{ x: '-50%', rotate: 45, backgroundColor: claro(acento) }}
             />
-            <div className="relative overflow-hidden rounded-2xl px-4 py-3.5 text-center" style={{ backgroundColor: claro(acento), color: tinta(acento) }}>
+            <div className="relative overflow-hidden rounded-2xl px-4 py-4 text-center" style={{ backgroundColor: claro(acento), color: tinta(acento) }}>
               <AnimatePresence mode="popLayout" initial={false}>
-                <motion.p
+                <motion.div
                   key={actual.id}
                   initial={{ opacity: 0, x: 16 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -16 }}
                   transition={{ ...RESORTE.suave, opacity: { duration: 0.15 } }}
-                  className="text-lg font-medium leading-snug"
+                  className="flex flex-col items-center gap-3"
                 >
-                  {actual.descripcion}
-                </motion.p>
+                  <p className="text-lg font-medium leading-snug [&_strong]:font-bold [&_strong]:text-current">
+                    <Rich>{textoJuego(actual.id, datos.ajustes)}</Rich>
+                  </p>
+                  {/* Lo único que se ajusta de cada modo: cada cuántos aciertos (Rápido) o los segundos (Contrarreloj). */}
+                  {actual.multiplicador && (
+                    <Contador
+                      clave="cadaAciertos"
+                      valor={ajusteAbsoluto(datos.ajustes, 'cadaAciertos')}
+                      onCambiar={(v) => guardarAjustes(modo.id, { cadaAciertos: v })}
+                      unidad={<Check className="size-6" />}
+                      etiqueta="aciertos para sumar notas"
+                      acento={acento}
+                    />
+                  )}
+                  {actual.segundos && (
+                    <Contador
+                      clave="segundos"
+                      valor={ajusteAbsoluto(datos.ajustes, 'segundos')}
+                      onCambiar={(v) => guardarAjustes(modo.id, { segundos: v })}
+                      unidad={<span className="font-juego text-xl">s</span>}
+                      etiqueta="segundos por nota"
+                      acento={acento}
+                    />
+                  )}
+                </motion.div>
               </AnimatePresence>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/** − valor + con botones redondos de juego (los ajustes de los modos). En los límites, el botón se apaga. */
+function Contador({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
+  const { min, max } = AJUSTES_ABSOLUTO[clave]
+  const [dir, setDir] = useState(1)
+  const cambiar = (d) => {
+    setDir(d)
+    onCambiar(Math.max(min, Math.min(max, valor + d)))
+  }
+  return (
+    <div className="flex items-center gap-4" data-contador={clave}>
+      <BotonRedondo onClick={() => cambiar(-1)} disabled={valor <= min} aria-label={`Menos ${etiqueta}`} acento={acento}>
+        −
+      </BotonRedondo>
+      <span className="flex min-w-20 items-center justify-center gap-1" aria-live="polite" aria-label={`${valor} ${etiqueta}`}>
+        <span className="grid overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+            <motion.span
+              key={valor}
+              initial={{ y: dir * -18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: dir * 18, opacity: 0 }}
+              transition={{ ...RESORTE.pulsar, opacity: { duration: 0.12 } }}
+              className="col-start-1 row-start-1 font-juego text-4xl leading-none tabular-nums"
+              data-valor={valor}
+            >
+              {valor}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+        {unidad}
+      </span>
+      <BotonRedondo onClick={() => cambiar(1)} disabled={valor >= max} aria-label={`Más ${etiqueta}`} acento={acento}>
+        +
+      </BotonRedondo>
+    </div>
+  )
+}
+
+function BotonRedondo({ acento, children, ...props }) {
+  return (
+    <Pulsable
+      className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-zinc-200 bg-white font-juego text-3xl leading-none transition-opacity duration-200 disabled:opacity-40"
+      style={{ boxShadow: RELIEVE, color: tinta(acento) }}
+      {...props}
+    >
+      {children}
+    </Pulsable>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Octavas: tira con las octavas 2…6; las que suenan se encienden. Con + se suma una arriba, luego una abajo y así
+// (4 → 4–5 → 3–5 → 3–6 → 2–6); con − se quitan en el orden inverso.
+// ---------------------------------------------------------------------------
+
+function Octavas({ valor, onCambiar, acento }) {
+  const { min, max } = AJUSTES_ABSOLUTO.octavas
+  const activas = new Set(octavasDe(valor))
+  return (
+    <div className="flex items-center gap-3" data-octavas={valor}>
+      <BotonRedondo onClick={() => onCambiar(Math.max(min, valor - 1))} disabled={valor <= min} aria-label="Menos octavas" acento={acento}>
+        −
+      </BotonRedondo>
+      <div
+        className="grid h-14 min-w-0 flex-1 grid-cols-5 gap-1 rounded-3xl border-2 border-zinc-200 bg-white p-1.5"
+        style={{ boxShadow: RELIEVE }}
+        role="img"
+        aria-label={`Suena en ${activas.size === 1 ? 'la octava' : 'las octavas'} ${[...activas].join(', ')}`}
+      >
+        {OCTAVAS_POSIBLES.map((o) => {
+          const activa = activas.has(o)
+          return (
+            <motion.span
+              key={o}
+              data-octava={o}
+              data-activa={activa || undefined}
+              initial={false}
+              animate={activa ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className={`grid place-items-center rounded-2xl font-dato text-lg font-medium tabular-nums transition-[background-color,color] duration-200 ${
+                activa ? 'text-blanco' : 'text-zinc-400'
+              }`}
+              style={{ backgroundColor: activa ? oscuro(acento) : 'transparent' }}
+            >
+              {o}
+            </motion.span>
+          )
+        })}
+      </div>
+      <BotonRedondo onClick={() => onCambiar(Math.min(max, valor + 1))} disabled={valor >= max} aria-label="Más octavas" acento={acento}>
+        +
+      </BotonRedondo>
     </div>
   )
 }
@@ -269,7 +430,7 @@ const ALTO_ITEM = 60
 const ZONA_MUERTA = 8
 const INERCIA_MS = 160
 
-function RuedaNivel({ total, max, valor, onVista, onElegir, acento }) {
+function RuedaNivel({ total, max, valor, prefijo = '', onVista, onElegir, acento }) {
   const ultimo = Math.max(0, Math.min(total, max) - 1) // índice del último que se puede elegir
   const vistos = Math.min(total, max + 1) // + el siguiente con candado
   const pos = useMotionValue(valor - 1)
@@ -277,6 +438,12 @@ function RuedaNivel({ total, max, valor, onVista, onElegir, acento }) {
   const gesto = useRef(null)
   const caja = useRef(null)
   const [actual, setActual] = useState(valor - 1)
+
+  // Al montarse (p. ej. al pasar de nivel a multiplicador), la cajita toma el valor de esta rueda.
+  useEffect(() => {
+    onVista(valor)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useMotionValueEvent(pos, 'change', (v) => {
     const k = Math.max(0, Math.min(ultimo, Math.round(v)))
@@ -383,14 +550,14 @@ function RuedaNivel({ total, max, valor, onVista, onElegir, acento }) {
         }}
       >
         {Array.from({ length: vistos }, (_, i) => (
-          <ItemRueda key={i} i={i} pos={pos} bloqueado={i > ultimo} acento={acento} />
+          <ItemRueda key={i} i={i} pos={pos} bloqueado={i > ultimo} prefijo={prefijo} acento={acento} />
         ))}
       </div>
     </div>
   )
 }
 
-function ItemRueda({ i, pos, bloqueado, acento }) {
+function ItemRueda({ i, pos, bloqueado, prefijo, acento }) {
   const y = useTransform(pos, (p) => (p - i) * ALTO_ITEM)
   const distancia = useTransform(pos, (p) => Math.abs(p - i))
   const scale = useTransform(distancia, [0, 1, 2], [1, 0.72, 0.55])
@@ -402,19 +569,21 @@ function ItemRueda({ i, pos, bloqueado, acento }) {
       style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, y, scale, opacity, color: tinta(acento) }}
       data-nivel={i + 1}
     >
-      {bloqueado ? <Candado className="size-8 text-zinc-400" /> : <span className="font-juego text-4xl leading-none">{i + 1}</span>}
+      {bloqueado ? <Candado className="size-8 text-zinc-400" /> : <span className="font-juego text-4xl leading-none">
+          {prefijo && <span className="text-2xl">{prefijo}</span>}
+          {i + 1}
+        </span>}
     </motion.div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Cajita de notas: las 12 notas; las del nivel se encienden con el color del modo y la que se suma en ese nivel va
-// en oro («nuevo»). Tocar cualquier nombre cambia todas entre Do / C.
+// Cajita de notas: las 12 notas; las del nivel se encienden con el color del modo y las que se suman en ese nivel van
+// en oro («nuevo»; en Rápido, las extra del multiplicador). Tocar cualquier nombre cambia todas entre Do / C.
 // ---------------------------------------------------------------------------
 
-function CajaNotas({ nivel, cifrado, onCifrado, acento }) {
-  const libres = new Set(notasDelNivel(nivel))
-  const nueva = notaNuevaDelNivel(nivel)
+function CajaNotas({ notas, nuevas, cifrado, onCifrado, acento }) {
+  const libres = new Set(notas)
   return (
     <div
       className="grid min-w-0 flex-1 grid-cols-3 content-center gap-1.5 rounded-3xl border-2 border-zinc-200 bg-white p-2.5"
@@ -423,7 +592,7 @@ function CajaNotas({ nivel, cifrado, onCifrado, acento }) {
     >
       {CROMATICA.map((c) => {
         const libre = libres.has(c)
-        const esNueva = c === nueva
+        const esNueva = nuevas.includes(c)
         const nombre = nombreClase(c, cifrado)
         return (
           <Pulsable
@@ -457,64 +626,28 @@ function CajaNotas({ nivel, cifrado, onCifrado, acento }) {
 }
 
 // ---------------------------------------------------------------------------
-// Vistas pequeñas de «Responder con» (solo se miran): el piano de una octava con candados en las notas que faltan, o
-// los botones con los nombres de las notas del nivel.
+// Dibujitos de «Responder con» (fijos: no cambian con el nivel; para eso está la cajita de notas).
 // ---------------------------------------------------------------------------
 
-const BLANCAS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-const NEGRAS = [
-  ['C#', 1],
-  ['D#', 2],
-  ['F#', 4],
-  ['G#', 5],
-  ['A#', 6],
-]
-
-function MiniPiano({ nivel }) {
-  const libres = new Set(notasDelNivel(nivel))
+function DibujoPiano({ className }) {
   return (
-    <div className="tema-claro relative flex h-24 w-full max-w-xs overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-300" data-mini-piano aria-hidden>
-      {BLANCAS.map((c) => (
-        <div
-          key={c}
-          className={`flex flex-1 items-end justify-center border-r border-zinc-300 pb-2 last:border-r-0 transition-colors duration-200 ${
-            libres.has(c) ? 'bg-white' : 'bg-zinc-100'
-          }`}
-        >
-          {!libres.has(c) && <Candado className="size-4 text-zinc-400" />}
-        </div>
-      ))}
-      {NEGRAS.map(([c, k]) => (
-        <div
-          key={c}
-          className={`absolute top-0 flex h-[58%] w-[9%] items-end justify-center rounded-b-md pb-1.5 transition-colors duration-200 ${
-            libres.has(c) ? 'bg-zinc-800' : 'bg-zinc-400'
-          }`}
-          style={{ left: `${(k / 7) * 100}%`, transform: 'translateX(-50%)' }}
-        >
-          {!libres.has(c) && <Candado className="size-3 text-zinc-200" />}
-        </div>
-      ))}
-    </div>
+    <svg viewBox="0 0 72 44" className={className} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="2" width="68" height="40" rx="6" />
+      <path d="M15.6 2v40M29.2 2v40M42.8 2v40M56.4 2v40" />
+      <rect x="11" y="2" width="9" height="23" rx="2" fill="currentColor" />
+      <rect x="24.6" y="2" width="9" height="23" rx="2" fill="currentColor" />
+      <rect x="51.8" y="2" width="9" height="23" rx="2" fill="currentColor" />
+    </svg>
   )
 }
 
-function MiniBotones({ nivel, cifrado }) {
-  const notas = notasDelNivel(nivel)
+function DibujoBotones({ className }) {
   return (
-    <div
-      className={`grid w-full max-w-xs gap-1.5 ${notas.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}
-      data-mini-botones
-      aria-hidden
-    >
-      {notas.map((c) => (
-        <div
-          key={c}
-          className="grid min-h-10 place-items-center rounded-xl border-2 border-zinc-200 bg-white text-base font-semibold text-zinc-800"
-        >
-          {nombreClase(c, cifrado)}
-        </div>
-      ))}
-    </div>
+    <svg viewBox="0 0 72 44" className={className} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden>
+      <rect x="2" y="2" width="31" height="17" rx="6" />
+      <rect x="39" y="2" width="31" height="17" rx="6" />
+      <rect x="2" y="25" width="31" height="17" rx="6" />
+      <rect x="39" y="25" width="31" height="17" rx="6" fill="currentColor" />
+    </svg>
   )
 }

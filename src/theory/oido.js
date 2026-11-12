@@ -174,17 +174,58 @@ export function claseDe(nota) {
 export const PARTES_NIVEL = 8
 
 /**
- * Modos de juego del oído absoluto (pedido del usuario; se elige en la portada, `ajustes.juego`).
- * acierto / fallo = partes del círculo que llena o vacía cada respuesta; segundos = tiempo por nota.
+ * Modos de juego del oído absoluto (pedido del usuario; se eligen en el arranque, `ajustes.juego`).
+ *  - normal: cada acierto llena una parte del círculo de nivel (`acierto`) y cada fallo vacía una (`fallo`).
+ *  - rapido: el nivel es un MULTIPLICADOR (`ajustes.multiplicador`, ×1…×10): empiezas con 2 + N notas, cada
+ *    `ajustes.cadaAciertos` aciertos (8 por defecto) se suman N más y cada fallo quita una al azar. Es una partida
+ *    aparte: no mueve el nivel del modo normal.
+ *  - contrarreloj: como el normal, con `ajustes.segundos` por nota (5 por defecto).
  */
 export const JUEGOS_ABSOLUTO = [
-  { id: 'normal', nombre: 'Normal', descripcion: 'Cada acierto llena una parte del círculo y cada fallo vacía una.', acierto: 1, fallo: 1 },
-  { id: 'rapido', nombre: 'Rápido', descripcion: 'Cada acierto llena dos partes: las notas se desbloquean el doble de rápido.', acierto: 2, fallo: 1 },
-  { id: 'contrarreloj', nombre: 'Contrarreloj', descripcion: 'Tienes 5 segundos por nota. Si se acaba el tiempo, cuenta como fallo.', acierto: 1, fallo: 1, segundos: 5 },
+  { id: 'normal', nombre: 'Normal', acierto: 1, fallo: 1 },
+  { id: 'rapido', nombre: 'Rápido', multiplicador: true },
+  { id: 'contrarreloj', nombre: 'Contrarreloj', acierto: 1, fallo: 1, segundos: 5 },
 ]
+
+/** Ajustes que se pueden cambiar en el arranque (valor por defecto y límites). */
+export const AJUSTES_ABSOLUTO = {
+  multiplicador: { defecto: 1, min: 1, max: 10 },
+  cadaAciertos: { defecto: 8, min: 2, max: 20 },
+  segundos: { defecto: 5, min: 2, max: 15 },
+  octavas: { defecto: 1, min: 1, max: 5 },
+}
+
+/** Valor de un ajuste del oído absoluto, dentro de sus límites. */
+export function ajusteAbsoluto(ajustes, clave) {
+  const { defecto, min, max } = AJUSTES_ABSOLUTO[clave]
+  const v = Number(ajustes?.[clave])
+  return Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : defecto
+}
+
+/** Texto de cada modo de juego según los ajustes (los números van en negrita). */
+export function textoJuego(id, ajustes) {
+  if (id === 'rapido') {
+    const n = ajusteAbsoluto(ajustes, 'multiplicador')
+    const k = ajusteAbsoluto(ajustes, 'cadaAciertos')
+    return `Tu nivel multiplica: empiezas con **${n} ${n === 1 ? 'nota extra' : 'notas extra'}** y cada **${k} aciertos** se suman ${n} más. Cada fallo quita una nota al azar.`
+  }
+  if (id === 'contrarreloj') {
+    return `Tienes **${ajusteAbsoluto(ajustes, 'segundos')} segundos** por nota. Si se acaba el tiempo, cuenta como fallo.`
+  }
+  return 'Cada acierto llena una parte del círculo y cada fallo vacía una. Al llenarlo, se suma una nota.'
+}
 
 export function getJuego(id) {
   return JUEGOS_ABSOLUTO.find((j) => j.id === id) ?? JUEGOS_ABSOLUTO[0]
+}
+
+// Octavas (pedido del usuario): se van sumando una arriba, una abajo y así: 4 → 4–5 → 3–5 → 3–6 → 2–6.
+const ORDEN_OCTAVAS = [4, 5, 3, 6, 2]
+export const OCTAVAS_POSIBLES = [2, 3, 4, 5, 6]
+
+/** Las octavas en las que puede sonar la nota con `n` octavas elegidas (de grave a aguda). */
+export function octavasDe(n) {
+  return ORDEN_OCTAVAS.slice(0, Math.max(1, Math.min(ORDEN_OCTAVAS.length, n))).sort((a, b) => a - b)
 }
 
 export function notasDelNivel(nivel) {
@@ -195,6 +236,25 @@ export function notasDelNivel(nivel) {
 /** La nota que se suma en ese nivel (null en el 1, que empieza con dos). */
 export function notaNuevaDelNivel(nivel) {
   return nivel >= 2 ? (ORDEN_ABSOLUTO[nivel] ?? null) : null
+}
+
+/** Modo Rápido: las dos notas de base (Do y Sol) y las del principio con el multiplicador N (2 + N). */
+export const NOTAS_BASE = ORDEN_ABSOLUTO.slice(0, 2)
+export function notasInicialesRapido(n) {
+  return notasDelNivel(Math.min(ORDEN_ABSOLUTO.length - 1, 1 + n))
+}
+
+/** Modo Rápido: suma `n` notas (las siguientes del orden que aún no estén). Devuelve { notas, sumadas }. */
+export function sumarNotas(notas, n) {
+  const sumadas = ORDEN_ABSOLUTO.filter((c) => !notas.includes(c)).slice(0, n)
+  return { notas: CROMATICA.filter((c) => notas.includes(c) || sumadas.includes(c)), sumadas }
+}
+
+/** Modo Rápido: quita una nota al azar (siempre quedan al menos 2). Devuelve { notas, quitada }. */
+export function quitarNotaAlAzar(notas) {
+  if (notas.length <= 2) return { notas, quitada: null }
+  const quitada = azar(notas)
+  return { notas: notas.filter((c) => c !== quitada), quitada }
 }
 
 export const modoAbsoluto = {
@@ -217,12 +277,12 @@ export const modoAbsoluto = {
   nombreItem: (id, ajustes) => nombreClase(id, ajustes?.cifrado),
   piano: true, // se responde tocando el piano (las notas aún no desbloqueadas van con candado)
   juegos: JUEGOS_ABSOLUTO,
-  opciones: (nivel, ajustes) => notasDelNivel(nivel).map((id) => ({ id, label: nombreClase(id, ajustes?.cifrado) })),
+  // `ajustes.notas` (modo Rápido): las notas de la partida en lugar de las del nivel.
+  opciones: (nivel, ajustes) => (ajustes?.notas ?? notasDelNivel(nivel)).map((id) => ({ id, label: nombreClase(id, ajustes?.cifrado) })),
   generar(nivel, ajustes) {
-    const item = azar(notasDelNivel(nivel))
-    // Con pocas notas, siempre en la octava 4; luego cambia de octava para
-    // que no se pueda adivinar comparando con la anterior.
-    const octava = nivel >= 4 ? entre(3, 5) : 4
+    const item = azar(ajustes?.notas ?? notasDelNivel(nivel))
+    // La octava sale al azar entre las elegidas en el arranque (`ajustes.octavas`: 1 = solo la 4).
+    const octava = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
     const nota = `${item}${octava}`
     return {
       item,

@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **Octavas** (tira 2…6 con − / +), **«Responder con» en bloques con dibujito fijo** (no cambian con el nivel: para eso está la cajita), **Rápido = multiplicador** (rueda ×1…×10, notas extra en oro en la cajita) y los ajustes de cada modo (aciertos / segundos) con un **contador − valor +** dentro de su texto.
 - 2026-11-12: (pedido del usuario) **Arranque del entrenador como pantalla de «iniciar nivel» de videojuego** (por ahora oído absoluto): centrado, insignia con relieve, burbuja ⓘ desplegable (oro + `Info`), modos en bloques con ícono que se abren y cierran, **rueda vertical** de nivel con la cajita de notas (Do ↔ C al tocar), vista pequeña de «Responder con». `font-juego` también en títulos de sección y nombres de modo de esta pantalla. Barra de lecciones del módulo que se vacía de derecha a izquierda y se llena de izquierda a derecha. Vidrio del botón principal más notorio (reflejo curvo, más brillo, flotante al 76 %).
 - 2026-11-12: (pedido del usuario) «Programar»: en am/pm la hora va más chica para que quepa; las etiquetas de la barra siguen el formato (12 am · 12 pm · 12 am; con zoom «2:00 pm») y las de las orillas no se salen.
 - 2026-11-12: (pedido del usuario) «Programar»: temblor que crece al mantener para borrar (`useTemblorCreciente`); hora que se desvanece si no cabe; cada bloque en su mitad (cerrados en 1/3 y 2/3).

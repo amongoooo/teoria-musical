@@ -153,10 +153,11 @@ export function empezarSesion() {
  * Registra una respuesta. Devuelve { subio, nuevoNivel, metaCumplida, carga }:
  *  - Con `carga` ({ acierto, fallo, partes }; oído absoluto) se sube al llenar el círculo: cada acierto suma
  *    `acierto` partes y cada fallo resta `fallo`. Sin `carga`, se sube con ACIERTOS_PARA_SUBIR de TAMANO_VENTANA.
+ *  - Con `sinNivel` (modo Rápido del oído absoluto) no se toca el nivel ni el círculo.
  *  - subio: true si con esta respuesta se pasa al siguiente nivel
  *  - metaCumplida: true si con esta respuesta se llega a los 5 minutos de hoy
  */
-export function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga }) {
+export function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga, sinNivel = false }) {
   const e = leer()
   const m = datosModo(id, e)
   const ahora = Date.now()
@@ -183,7 +184,9 @@ export function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga 
   let nivel = m.nivel
   let subio = false
   let carga = m.carga ?? 0
-  if (reglaCarga) {
+  if (sinNivel) {
+    // Partida aparte (oído absoluto, modo Rápido): cuenta para el día y las estadísticas, pero no mueve el nivel.
+  } else if (reglaCarga) {
     carga = Math.max(0, carga + (bien ? reglaCarga.acierto : -reglaCarga.fallo))
     if (nivel < niveles && carga >= reglaCarga.partes) {
       nivel += 1
@@ -198,7 +201,7 @@ export function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga 
     ...m,
     nivel,
     nivelMax: Math.max(m.nivelMax, nivel),
-    ventana: subio ? [] : ventana,
+    ventana: sinNivel ? m.ventana : subio ? [] : ventana,
     carga,
     aciertos: m.aciertos + (bien ? 1 : 0),
     total: m.total + 1,
