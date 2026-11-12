@@ -50,7 +50,7 @@ src/
     exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
                         #   PianoRollEjercicio (pianoroll), Pulso (pulso), RetoFL (reto) + Rondas
     pasos/              # Pasos sin puntuación: PasoTexto (texto, con Fichas que suenan), PasoSiente (siente), Nota
-    Piano.jsx           # Piano táctil en una tira que se desliza entre octavas (multitouch, `marcadas`, `ir`, `senalar`, `compacto`, `showLabels`) + SelectorOctava.jsx (barra de octavas: tocar o deslizar)
+    Piano.jsx           # Piano táctil en una tira que se desliza entre octavas (multitouch, teclado del computador como FL Studio, `marcadas`, `ir`, `senalar`, `tecladoArriba`, `compacto`, `showLabels`) + SelectorOctava.jsx (barra de octavas: tocar o deslizar)
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos
@@ -95,7 +95,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan). Faltan 3.3–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
-- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas (sentido de la barra elegible en Opciones), «Escuchar…» que señala cada nota en el teclado y las casillas, isla que se cierra al dejar la mitad de la pantalla, Opciones ordenadas por grupos (hoja que se arrastra bien con el dedo), matraca de la barra de puntitos que se jala con el dedo.
+- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas (sentido de la barra elegible en Opciones), «Escuchar…» que señala cada nota en el teclado y las casillas, isla que se cierra al dejar la mitad de la pantalla, Opciones ordenadas por grupos (hoja que se arrastra bien con el dedo), matraca de la barra de puntitos que se jala con el dedo, piano con el teclado del computador (Z…M / Q…U como FL Studio) y teclas que se desvanecen al soltarlas.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.

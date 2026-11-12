@@ -101,7 +101,7 @@ export default function Inicio() {
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <h2 className="font-titulo text-2xl font-bold tracking-tight">Piano libre</h2>
-        <Piano />
+        <Piano tecladoArriba />
       </motion.section>
     </motion.main>
   )

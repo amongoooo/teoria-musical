@@ -397,6 +397,7 @@ function Entrenador({ modo }) {
                 <p className="text-sm text-zinc-500">En el teclado (puedes tocarlo):</p>
                 <Piano
                   key={pregunta.n}
+                  tecladoArriba
                   compacto
                   startOctave={octavaInicial(pregunta.notas)}
                   octaves={2}
