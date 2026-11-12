@@ -42,7 +42,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **P1** | Explorar el teclado | Toca N teclas distintas libremente | `explorar` (`cantidad`) |
 | **P2** | Extremos | Toca la tecla más grave y la más aguda | `extremos` |
 | **P3** | Comparar con referencia | Oye una nota y toca una más aguda / más grave | `comparar` (`referencia`, `direccion`) |
-| **P4** | Encontrar en todas las octavas | Toca una nota en todas las octavas visibles | `octavas` (`nota`, `pista`) |
+| **P4** | Encontrar en todas las octavas | Toca una nota en todas las octavas visibles (título corto «Encuentra la nota», sin `intro`: pedido del usuario) | `octavas` (`nota`, `pista`) |
 | **P5** | Medir un paso | Desde una nota marcada, toca la que está a un semitono o un tono (sube / baja); al fallar dice cuánto se movió y tras 2 fallos marca la tecla | `paso` (`desde`, `paso: 'S' \| 'T'`, `direccion`, `pista`) |
 | **P6** | Seguir la fórmula | Desde una nota dada, toca en orden las notas de una fórmula de pasos (T T S T T T S…); la fila de casillas se llena al acertar | `formula` (`desde`, `pasos`, `titulo`, `mensaje`) |
 | **P7** | Construir un intervalo | Desde una nota marcada, toca la que forma un intervalo con nombre (3.ª mayor, 5.ª justa, tritono…); el fallo dice qué intervalo tocó y tras 2 fallos marca la tecla | `paso` con `intervalo` (`desde`, `intervalo: '3M'`, `direccion`, `pista`, `mensaje`) |

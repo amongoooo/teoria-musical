@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { motion, useAnimationControls } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { Note } from 'tonal'
@@ -143,21 +143,29 @@ function UltimaNota({ nota }) {
 /**
  * Casilla de un objetivo del teclado («La3», «La más grave»…). Pedido del usuario: sin ✓ ni círculo, más
  * grande; al conseguirla da un «pop» y se rellena de verde (el relleno sólido es la segunda señal además del color).
+ * `sacude` (un contador): cada vez que sube, la casilla tiembla un poco (se tocó otra vez una ya conseguida:
+ * así se ve cuál es).
  */
-function Casilla({ ok, children }) {
+function Casilla({ ok, sacude = 0, children }) {
+  const temblor = useAnimationControls()
+  useEffect(() => {
+    if (sacude > 0) temblor.start({ x: [0, -7, 7, -5, 5, -2, 0], transition: { duration: 0.4, ease: 'easeOut' } })
+  }, [sacude, temblor])
   return (
-    <motion.li
-      initial={false}
-      animate={ok ? POP : { scale: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
-        ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
-      }`}
-    >
-      <span>
-        {children}
-        {ok && <span className="sr-only"> (conseguida)</span>}
-      </span>
+    <motion.li animate={temblor}>
+      <motion.div
+        initial={false}
+        animate={ok ? POP : { scale: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
+          ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
+        }`}
+      >
+        <span>
+          {children}
+          {ok && <span className="sr-only"> (conseguida)</span>}
+        </span>
+      </motion.div>
     </motion.li>
   )
 }
@@ -265,6 +273,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
   const [intento, setIntento] = useState(null) // { nota, tipo: 'nueva' | 'repetida' | 'otra' }
   const [fallos, setFallos] = useState(0) // fallos en la ronda actual
   const [aciertos, setAciertos] = useState(0) // rondas sin fallos
+  const [sacudida, setSacudida] = useState({ nota: null, n: 0 }) // casilla ya conseguida que se volvió a tocar
   const ronda = rondas[r]
   const objetivos = enCadaOctava(ronda.nota, paso.piano)
   const listo = encontradas.length === objetivos.length
@@ -282,6 +291,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
       const objetivo = objetivos.find((o) => midi(o) === midi(nota))
       if (encontradas.includes(objetivo)) {
         setIntento({ nota, tipo: 'repetida' })
+        setSacudida((s) => ({ nota: objetivo, n: s.n + 1 }))
         return
       }
       const nuevas = [...encontradas, objetivo]
@@ -341,7 +351,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
 
       <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${objetivos.length}, minmax(0, 1fr))` }}>
         {objetivos.map((o) => (
-          <Casilla key={o} ok={encontradas.includes(o)}>
+          <Casilla key={o} ok={encontradas.includes(o)} sacude={sacudida.nota === o ? sacudida.n : 0}>
             {nombre(o)}
           </Casilla>
         ))}

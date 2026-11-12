@@ -90,6 +90,21 @@ export default function Piano({
   const firstOctave = startOctave + Math.min(offset, maxOffset)
   const { white, black } = buildKeys(firstOctave, visibleOctaves)
 
+  // Al cambiar de octava, las teclas pintadas (marcadas) se desvanecen y aparecen las de la nueva octava
+  // (pedido del usuario: así se entiende que cambió). Las teclas van por POSICIÓN (key = índice), no por
+  // nota, para que sea la misma tecla la que cambia de color con un fundido de 300 ms; el resto del tiempo,
+  // 75 ms (lo que se toca responde al instante).
+  const [cambiando, setCambiando] = useState(false)
+  const octavaAntes = useRef(firstOctave)
+  useEffect(() => {
+    if (octavaAntes.current === firstOctave) return
+    octavaAntes.current = firstOctave
+    setCambiando(true)
+    const t = setTimeout(() => setCambiando(false), 400)
+    return () => clearTimeout(t)
+  }, [firstOctave])
+  const fundido = cambiando ? 'duration-300' : 'duration-75'
+
   // Llevar la vista a la octava de `ir` si queda fuera (solo cuando cambia `ir`).
   const octavaIr = ir ? Math.floor(midi(ir) / 12) - 1 : null
   useEffect(() => {
@@ -201,11 +216,11 @@ export default function Piano({
         onContextMenu={(e) => e.preventDefault()}
       >
         <div className="flex h-full gap-px">
-          {white.map(({ note, label, octave }) => (
+          {white.map(({ note, label, octave }, i) => (
             <div
-              key={note}
+              key={i}
               data-note={note}
-              className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
+              className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors ${fundido} ${
                 active.has(note)
                   ? 'bg-sky-200 text-sky-900'
                   : marcadasSet.has(note)
@@ -223,11 +238,11 @@ export default function Piano({
           ))}
         </div>
 
-        {black.map(({ note, afterWhite }) => (
+        {black.map(({ note, afterWhite }, i) => (
           <div
-            key={note}
+            key={i}
             data-note={note}
-            className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
+            className={`absolute top-0 h-[60%] rounded-b-md transition-colors ${fundido} ${
               active.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
             }`}
             style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
