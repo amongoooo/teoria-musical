@@ -13,6 +13,8 @@ export const RESORTE = {
   // Tinte que se extiende bajo el vidrio del botón principal (BarraAccion): sin rebote y algo más pausado (~0,35 s)
   // para que se vea el borde degradado avanzar.
   tinte: { type: 'spring', stiffness: 160, damping: 26, mass: 0.8 },
+  // Rebote de la flechita del gesto al llegar a «suelta para ir»: poca amortiguación, se nota que ya puede pasar.
+  rebote: { type: 'spring', stiffness: 520, damping: 11, mass: 0.7 },
 }
 
 /** Cuánto se hunde algo al tocarlo. */
@@ -132,5 +134,5 @@ export const DESLIZAR = {
   // Gesto del botón principal de la lección (useGestoBoton.js): X = `umbral` × ancho del botón (mín. `umbralMin` px);
   // pulsación larga: `mantener` ms en un borde lateral de `borde` × ancho (mín. `bordeMin` px); a los `brillo` ms
   // empieza el brillo radial y la tarjeta va saliendo hasta quedar como el deslizamiento en «suelta para ir».
-  boton: { umbral: 0.6, umbralMin: 160, mantener: 1000, brillo: 120, borde: 0.22, bordeMin: 56 },
+  boton: { umbral: 0.6, umbralMin: 160, mantener: 500, brillo: 120, borde: 0.22, bordeMin: 56 },
 }

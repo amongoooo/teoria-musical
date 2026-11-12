@@ -38,7 +38,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       const cantidad = objetivo.cantidad ?? 3
       const listo = notas.length >= cantidad
       setAccion({
-        label: 'Siguiente',
+        label: 'Continuar',
         avanza: true,
         disabled: !listo,
         ayuda: listo ? null : `Dibuja ${cantidad} notas (${notas.length}/${cantidad})`,
@@ -50,7 +50,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
 
     if (resultado?.ok || solucion) {
       setAccion({
-        label: 'Siguiente',
+        label: 'Continuar',
         avanza: true,
         feedback: resultado?.ok
           ? { tipo: 'bien', titulo: '¡Perfecto!', texto: objetivo.explicacion ?? 'Pulsa Reproducir para escucharlo.' }

@@ -12,7 +12,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 
 | Código | Interacción | Qué hace el usuario | Contenido | Para qué |
 |---|---|---|---|---|
-| **L1** | Texto solo | Lee y pulsa Siguiente | `texto` con `parrafos` | Una idea corta sin ejemplo sonoro (raro: casi siempre conviene L2) |
+| **L1** | Texto solo | Lee y pulsa Continuar | `texto` con `parrafos` | Una idea corta sin ejemplo sonoro (raro: casi siempre conviene L2) |
 | **L2** | Texto + sonidos | Lee y toca botones de sonido para escuchar los ejemplos | `texto` + `sonidos: []` | **La explicación normal**: cada concepto con su sonido |
 | **L3** | Texto + Piano Roll de lectura | Lee, mira el roll y pulsa Reproducir (cabezal) | `texto` + `roll` | Ver una idea en el tiempo: duración, ritmo, pirámide de figuras |
 | **L4** | Dato / nota al pie | Lee un recuadro gris («Dato:», «En producción:») | `nota` en `texto` o `siente` | Curiosidad, aclaración o truco de FL; nunca la idea principal |

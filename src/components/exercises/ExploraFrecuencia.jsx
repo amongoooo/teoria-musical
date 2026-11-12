@@ -25,7 +25,7 @@ export default function ExploraFrecuencia({ paso, setAccion, siguiente }) {
 
   useEffect(() => {
     setAccion({
-      label: 'Siguiente',
+      label: 'Continuar',
       avanza: true,
       disabled: !listo,
       ayuda: listo ? null : 'Llega hasta abajo del todo y hasta arriba del todo',

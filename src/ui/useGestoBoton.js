@@ -7,27 +7,25 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  * Gesto del botón principal de la lección (BarraAccion): el botón es también un control para pasar de paso
  * (pedido del usuario; skill de diseño, «BarraAccion» y «Gestos»). Dos maneras:
  *
- *  - DESLIZAR sobre el botón: una tarjeta (amarilla si se puede pasar, gris si no) sale del lado donde empezó
- *    el dedo y se desplaza con él; en ese lado aparece la flechita. Mismas reglas que useDeslizar: zona
- *    muerta real (DESLIZAR.zonaMuerta), resistencia fuerte hasta el 30 % de X, alcanza al dedo con
- *    RESORTE.pulsar y lo sigue 1:1, y «suelta para ir» pasado el 50 % (goma más allá). Sin gesto rápido:
- *    pasar de paso tiene que ser a propósito. Si no se puede pasar: goma todo el recorrido y nunca «listo».
- *    Al soltar sin «listo», la tarjeta vuelve con RESORTE.pantalla.
+ *  - DESLIZAR sobre el botón: desde el lado donde empezó el dedo entra la flechita (con su brillo) y la palabra
+ *    del centro gira como un carrusel a «Atrás» o «Continuar». El avance sigue las reglas de useDeslizar: zona
+ *    muerta real (DESLIZAR.zonaMuerta), resistencia fuerte hasta el 30 % de X, alcanza al dedo con RESORTE.pulsar
+ *    y lo sigue 1:1, y «suelta para ir» pasado el 50 % (goma más allá). Sin gesto rápido: pasar de paso tiene que
+ *    ser a propósito. Si no se puede pasar: goma todo el recorrido y nunca «listo». Al soltar, todo vuelve con
+ *    RESORTE.pantalla (si pasa, el botón toma el color del paso nuevo desde ese lado).
  *  - MANTENER pulsado un borde lateral (DESLIZAR.boton.borde del ancho) DESLIZAR.boton.mantener ms: a los
- *    DESLIZAR.boton.brillo ms aparece el brillo radial de la flechita (modo 'carga') y la tarjeta sale de ese borde
- *    poco a poco hasta quedar, al segundo, igual que el deslizamiento en «suelta para ir» (modo 'mantiene'); al
- *    soltar, pasa si era amarilla. Soltar antes es un toque normal; moverse más que la zona muerta lo convierte
- *    en un deslizamiento.
+ *    DESLIZAR.boton.brillo ms empieza a entrar la flechita con su brillo (modo 'carga') y el avance crece hasta
+ *    quedar, al terminar, igual que el deslizamiento en «suelta para ir» (modo 'mantiene'); al soltar, pasa si se
+ *    puede. Soltar antes es un toque normal; moverse más que la zona muerta lo convierte en un deslizamiento.
  *
- * Lado (−1 izquierda, +1 derecha) = de donde sale la tarjeta = donde empezó el gesto. Dirección del paso:
- * por defecto, de izquierda a derecha = siguiente (+1) y de derecha a izquierda = anterior (−1);
- * con `invertido`, al revés (el lado de donde empieza es de donde viene la página: derecha → izquierda = siguiente).
+ * Lado (−1 izquierda, +1 derecha) = donde empezó el gesto. Dirección del paso: por defecto el lado donde empieza es
+ * de donde viene la página (derecha → izquierda = siguiente, +1; izquierda → derecha = anterior, −1); con
+ * `invertido`, al revés (izquierda → derecha = siguiente).
  *
- * Opciones: { puede(dir) → bool, ir(dir), invertido, activo }.
- * Devuelve { handlers, gesto: { modo: null | 'carga' | 'desliza' | 'mantiene' | 'vuelve', lado, dir, puede, listo }, x, opacidad, cubre }:
- *  - x: MotionValue con la posición (px) de la tarjeta respecto al botón (±ancho = fuera; 0 = lo cubre todo).
- *  - opacidad: MotionValue de la tarjeta (se desvanece después de pasar de paso).
- *  - cubre: 0…1, cuánto se ha desplazado la tarjeta respecto a X/2 (para atenuar el texto del botón).
+ * Opciones: { puede(dir) → bool, ir(dir, lado), invertido, activo }.
+ * Devuelve { handlers, gesto: { modo: null | 'carga' | 'desliza' | 'mantiene' | 'vuelve' | 'pasa', lado, dir, puede, listo }, avance, cubre }:
+ *  - avance: MotionValue, px que ha avanzado el gesto (con resistencia y goma).
+ *  - cubre: 0…1, el avance respecto a X/2 (1 = «suelta para ir»): mueve la flechita y el carrusel de palabras.
  */
 export default function useGestoBoton({ puede, ir, invertido = false, activo = true }) {
   const reducir = useReducedMotion()
@@ -41,11 +39,8 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
   // Lo que se ve = base (lo que pide el dedo) + desfase (lo que falta por asentar, con resorte).
   const base = useMotionValue(0)
   const desfase = useMotionValue(0)
-  const lado = useMotionValue(0)
-  const opacidad = useMotionValue(1) // de la tarjeta (se desvanece tras pasar de paso)
   const anim = useRef(null)
   const avance = useTransform([base, desfase], ([b, d]) => Math.max(0, b + d))
-  const x = useTransform([avance, lado], ([a, l]) => (l === 0 ? ancho.current + 40 : l * (ancho.current - a)))
   const cubre = useTransform(avance, (a) => Math.min(1, a / (umbral(ancho.current) * DESLIZAR.iman)))
 
   const asentar = (resorte) => {
@@ -73,47 +68,21 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
     setGesto(nuevo)
   }
 
-  const dirDe = (l) => (op.current.invertido ? l : -l)
+  const dirDe = (l) => (op.current.invertido ? -l : l)
 
-  const terminarVisual = (paso) => {
-    anim.current?.stop()
-    if (paso && !reducir) {
-      // Pasa: la tarjeta acaba de cubrir el botón y se desvanece con el cambio de paso.
-      const vis = base.get() + desfase.get()
-      base.set(ancho.current)
-      desfase.set(vis - ancho.current)
-      anim.current = animate(desfase, 0, RESORTE.pulsar)
-      // …y, ya cubierto, se desvanece (fundido de 200 ms) para dejar ver el color del paso nuevo.
-      animate(opacidad, 0, { duration: 0.2, delay: 0.12 }).then(() => {
-        if (g.current) return
-        setGesto(NADA)
-        base.set(0)
-        desfase.set(0)
-        lado.set(0)
-        opacidad.set(1)
-      })
-      return
-    }
-    if (paso) {
-      base.set(0)
-      desfase.set(0)
-      lado.set(0)
-      setGesto(NADA)
-      return
-    }
+  /**
+   * Al soltar: todo vuelve a su sitio con resorte. Si pasa, el modo es 'pasa' (el carrusel sigue girando en el mismo
+   * sentido: la palabra del paso nuevo entra por el lado del gesto) y el paso nuevo ya pinta su color.
+   */
+  const terminarVisual = (pasa = false) => {
     colocar(0, RESORTE.pantalla)
-    setGesto((e) => (e.modo ? { ...e, modo: 'vuelve', listo: false } : e))
-    if (reducir) {
-      lado.set(0)
+    setGesto((e) => (e.modo ? { ...e, modo: pasa ? 'pasa' : 'vuelve', listo: false } : e))
+    if (reducir) return setGesto(NADA)
+    const vuelta = anim.current
+    vuelta?.then?.(() => {
+      if (g.current || anim.current !== vuelta) return // ya empezó otro gesto
       setGesto(NADA)
-    } else {
-      const vuelta = anim.current
-      vuelta?.then?.(() => {
-        if (g.current || anim.current !== vuelta) return // ya empezó otro gesto
-        lado.set(0)
-        setGesto(NADA)
-      })
-    }
+    })
   }
 
   const onPointerDown = (e) => {
@@ -139,8 +108,7 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
         anim.current?.stop()
         base.set(0)
         desfase.set(0)
-        lado.set(ladoBorde)
-        opacidad.set(1)
+        s.lado = ladoBorde
         cambiarGesto(s, { modo: 'carga', lado: ladoBorde, dir, puede, listo: false })
         if (!reducir) anim.current = animate(base, meta(puede), { duration: (mantener - brillo) / 1000, ease: [0.4, 0, 0.6, 1] })
       }, brillo)
@@ -151,7 +119,6 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
         anim.current?.stop()
         base.set(meta(puede))
         desfase.set(0)
-        lado.set(ladoBorde)
         cambiarGesto(s, { modo: 'mantiene', lado: ladoBorde, dir, puede, listo: puede })
       }, mantener)
     }
@@ -170,7 +137,7 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
         clearTimeout(s.timer)
         clearTimeout(s.carga)
         g.current = null // vertical: es scroll
-        if (s.estado.modo) terminarVisual(false)
+        if (s.estado.modo) terminarVisual()
         return
       }
       s.decidido = true
@@ -202,13 +169,14 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
     const l = dx < 0 ? 1 : -1 // sale del lado donde empezó el dedo
     const dir = dirDe(l)
     const permitido = op.current.puede(dir)
-    if (lado.get() !== l) {
-      // Cambió de lado (o empieza): la tarjeta sale de su borde, sin arrastrar lo de antes.
-      anim.current?.stop()
-      base.set(0)
-      desfase.set(0)
-      lado.set(l)
-      opacidad.set(1)
+    if (s.lado !== l) {
+      // Cambió de lado (o empieza): la flechita entra desde su borde, sin arrastrar lo de antes.
+      if (s.lado) {
+        anim.current?.stop()
+        base.set(0)
+        desfase.set(0)
+      }
+      s.lado = l
       s.fase = 'quieto'
       s.sigue = false
     }
@@ -246,7 +214,7 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
     const pasa = !cancelado && modo && listo
     if (!modo) return
     terminarVisual(pasa)
-    if (pasa) op.current.ir(dir)
+    if (pasa) op.current.ir(dir, s.estado.lado)
   }
 
   useEffect(() => () => clearTimeout(g.current?.timer), [])
@@ -260,8 +228,7 @@ export default function useGestoBoton({ puede, ir, invertido = false, activo = t
 
   return {
     gesto,
-    x,
-    opacidad,
+    avance,
     cubre,
     handlers: {
       onPointerDown,
