@@ -56,6 +56,9 @@ En el Piano Roll de solo lectura, esas notas se dibujan corridas de su línea.
 Escalas y grados (lección 3.3): `theory/escalas.js` (Tonal `Scale`): `MAYOR` (T T S T T T S), `escalaMayor('G3')` (8 notas
 con octava; `{ bajando: true }`), `escalaCambiada('C4', { grado: 3, semitonos: -1 })` (para «¿mayor u otra cosa?»),
 `grado('D', 7)` → `'C#'`, `alteraciones`, `armadura('D')` → `'2♯'`, `nombresEscala('D')` → «Re · Mi · Fa♯ · …», `GRADOS` y `ordinal`.
+Menor natural y relativas (lección 3.4): `MENOR` (T S T T S T T), `escalaMenor('E4')`, `relativaMenor('G')` → `'E'` (6.º grado),
+`relativaMayor('D')` → `'F'` (3.er grado de la menor), `melodia('C4', [5, 6, 7, 8, 5, 3, 2, 1], 'minor')` (una melodía por grados:
+la misma forma en mayor, en su paralela menor o en la relativa). `grado`, `alteraciones`, `armadura` y `nombresEscala` aceptan `tipo: 'minor'`.
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):

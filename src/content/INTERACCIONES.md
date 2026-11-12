@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5 y 3.1–3.3) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5 y 3.1–3.4) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -27,7 +27,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | Código | Interacción | Qué hace el usuario | Contenido | Ejemplo |
 |---|---|---|---|---|
 | **O1** | Elegir entre sonidos | Escucha 2+ tarjetas de sonido y elige una (A, B…) | rondas con `sonidos` y **sin** `opciones` (`mezclar`, `mostrarNotas`) | «¿Cuál es más agudo?», «¿Cuál va más rápido?» |
-| **O2** | Escuchar y elegir respuesta | Escucha un sonido y elige entre 2–4 textos | `sonidos` + `opciones` | «¿4/4 o 3/4?», «¿Semitono o tono?», «¿Qué figura suena?», «¿Escala mayor u otra cosa?», «¿Termina en casa?» (3.3) |
+| **O2** | Escuchar y elegir respuesta | Escucha un sonido y elige entre 2–4 textos | `sonidos` + `opciones` | «¿4/4 o 3/4?», «¿Semitono o tono?», «¿Qué figura suena?», «¿Escala mayor u otra cosa?», «¿Termina en casa?» (3.3), «¿Mayor o menor?», «¿La mayor o su relativa?» (3.4) |
 | **O3** | Quiz de texto | Lee la pregunta y elige (sin audio) | solo `opciones` | «Comprueba la idea» |
 | **O4** | Leer el roll y elegir | Mira (y reproduce) un Piano Roll y elige | `roll` en la ronda + `opciones` | «Lee el roll», «¿Dónde está el silencio?» |
 | **O5** | Gancho de oído | 1 ronda de O1 al empezar, antes de explicar nada | `elegir` con 1 ronda | «Empecemos con el oído» (1.1, 1.2, 1.3) |
@@ -36,6 +36,8 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 ## C. Teclado (puntúan al cumplir el objetivo)
 
 `tocar` (`TocaEnPiano`); `piano: { startOctave, octaves, showLabels }`. `showLabels: false` = más difícil.
+A 375 px se ve **una octava** y el teclado va a la de `desde`: en P5/P7 elige `desde` y meta **en la misma octava**
+(p. ej. «Encuentra la relativa» de la 3.4: Do4 → La4 subiendo una 6.ª, no Do5 → La4 bajando una 3.ª).
 
 | Código | Interacción | Qué hace el usuario | Objetivo |
 |---|---|---|---|
@@ -45,7 +47,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **P4** | Encontrar en todas las octavas | Toca una nota en todas las octavas visibles (título corto «Encuentra la nota», sin `intro`: pedido del usuario) | `octavas` (`nota`, `pista`) |
 | **P5** | Medir un paso | Desde una nota marcada, toca la que está a un semitono o un tono (sube / baja); al fallar dice cuánto se movió y tras 2 fallos marca la tecla | `paso` (`desde`, `paso: 'S' \| 'T'`, `direccion`, `pista`) |
 | **P6** | Seguir la fórmula | Desde una nota dada, toca en orden las notas de una fórmula de pasos (T T S T T T S…); la fila de casillas se llena al acertar y, si vuelve a tocar una ya tocada, esa casilla tiembla | `formula` (`desde`, `pasos`, `titulo`, `mensaje`, `grados`: número de grado bajo cada casilla) |
-| **P7** | Construir un intervalo | Desde una nota marcada, toca la que forma un intervalo con nombre (3.ª mayor, 5.ª justa, tritono…); el fallo dice qué intervalo tocó y tras 2 fallos marca la tecla | `paso` con `intervalo` (`desde`, `intervalo: '3M'`, `direccion`, `pista`, `mensaje`) |
+| **P7** | Construir un intervalo | Desde una nota marcada, toca la que forma un intervalo con nombre (3.ª mayor, 5.ª justa, tritono…); el fallo dice qué intervalo tocó y tras 2 fallos marca la tecla | `paso` con `intervalo` (`desde`, `intervalo: '3M'`, `direccion`, `pista`, `mensaje`); en la 3.4, «Encuentra la relativa» (sube una 6.ª mayor / baja una 3.ª menor) |
 
 ## D. Sonido continuo
 
