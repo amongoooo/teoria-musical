@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) Bloques de «Programar»: sin hora = cuadrito relleno del color con su ícono; tocar la hora = 24 h ↔ am/pm; tocar borde o ícono = elegir; mantener = contorno que da la vuelta como reloj (1,5 s) y borra el punto.
 - 2026-11-12: (pedido del usuario) **Explicar lo mínimo**: sin textos de cómo se usa la app; que el diseño lo diga. Se quitó la frase de «Programar» en Apariencia.
 - 2026-11-12: (pedido del usuario) **Apariencia → Programar**: bloques de sol y luna con su hora y una **barra del día** (24 partes) donde se ponen dos puntos (amarillo = claro, azul = oscuro) con imán a las horas exactas; mantener 1 s hace zoom a 2 horas (cada 5 min); cada punto pinta su tramo hasta el otro dando la vuelta; sin puntos, degradado ligero de noche y día. Colores nuevos `dia` / `noche` e íconos `Sol` / `Luna`. Apariencia pasa a 2 × 2.
 - 2026-11-12: (pedido del usuario) **Botón flotante sin panel**: cuando el botón de abajo nunca puede tener el recuadro de información (explicaciones, retos en FL, «Empezar» del oído), se quita el panel y queda solo el botón de vidrio flotando; su color al 88 % sobre un desenfoque deja ver ligeramente el fondo.

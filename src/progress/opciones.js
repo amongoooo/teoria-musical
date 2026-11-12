@@ -12,9 +12,10 @@
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', programa: { claro: null, oscuro: null }, vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
+const PREDETERMINADAS = { tema: 'claro', programa: { claro: null, oscuro: null }, reloj: '24', vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
 export const TEMAS = ['claro', 'oscuro', 'sistema', 'programa']
 export const MINUTOS_DIA = 24 * 60
+export const RELOJES = ['24', '12'] // formato de las horas de «Programar»: 24 h o am/pm
 export const VIDRIOS = ['desenfoque', 'opaco']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
 export const GESTOS = ['pagina', 'invertido']
@@ -30,6 +31,7 @@ function leer() {
     cache = { ...PREDETERMINADAS, ...(data && typeof data === 'object' ? data : {}) }
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
     cache.programa = limpiarPrograma(cache.programa)
+    if (!RELOJES.includes(cache.reloj)) cache.reloj = PREDETERMINADAS.reloj
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
     if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
     if (!GESTOS.includes(cache.gesto)) cache.gesto = PREDETERMINADAS.gesto
@@ -101,6 +103,12 @@ export function setPrograma(programa) {
   const datos = { ...leer(), programa: limpiarPrograma(programa) }
   escribir(datos)
   aplicarTema(datos.tema, { fundido: true })
+}
+
+/** Formato de las horas de «Programar»: '24' (20:30) o '12' (8:30 pm). */
+export function setReloj(reloj) {
+  if (!RELOJES.includes(reloj)) return
+  escribir({ ...leer(), reloj })
 }
 
 /** Pone o quita la clase `opaco` en <html>: el vidrio pasa a superficie sólida (reglas en src/index.css). */
