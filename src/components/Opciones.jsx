@@ -50,47 +50,69 @@ export default function BotonOpciones({ className = '' }) {
   )
 }
 
+// Pedido del usuario: la hoja ordenada por grupos, como los Ajustes de iOS: un título corto por grupo y,
+// debajo, una tarjeta con sus filas (nombre · control · una frase corta de qué hace).
+const NOTA_TEMA = {
+  claro: 'Fondo claro.',
+  oscuro: 'Fondo oscuro, más cómodo de noche.',
+  sistema: 'Sigue el modo claro u oscuro de tu teléfono.',
+}
+const NOTA_VIDRIO = {
+  desenfoque: 'Las barras que flotan dejan ver la lección desenfocada.',
+  opaco: 'Barras sólidas: más contraste y menos trabajo para el teléfono.',
+}
+const NOTA_OCTAVAS = {
+  vista: 'Octavas 3 · 4 · 5: deslizar a la derecha lleva la vista a las agudas.',
+  teclas: 'Octavas 5 · 4 · 3: deslizar a la derecha arrastra el teclado y trae las graves.',
+}
+
 function PanelOpciones({ onCerrar }) {
   const { tema, vidrio, octavas } = useOpciones()
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
 
-      <section className="flex flex-col gap-3" aria-labelledby="opciones-apariencia">
-        <h3 id="opciones-apariencia" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          Apariencia
-        </h3>
-        <Segmentado opciones={TEMAS} valor={tema} onCambiar={setTema} etiqueta="opciones-apariencia" capa="tema-activo" foco />
-        <p className="text-base text-zinc-600">
-          {tema === 'sistema' ? 'Sigue el modo claro u oscuro de tu teléfono.' : tema === 'oscuro' ? 'Fondo oscuro, más cómodo de noche.' : 'Fondo claro, como siempre.'}
-        </p>
-      </section>
+      <Grupo titulo="Pantalla" id="opciones-pantalla">
+        <Fila titulo="Apariencia" id="opciones-apariencia" nota={NOTA_TEMA[tema]}>
+          <Segmentado opciones={TEMAS} valor={tema} onCambiar={setTema} etiqueta="opciones-apariencia" capa="tema-activo" foco />
+        </Fila>
+        <Fila titulo="Vidrio" id="opciones-vidrio" nota={NOTA_VIDRIO[vidrio]}>
+          <Segmentado opciones={VIDRIOS} valor={vidrio} onCambiar={setVidrio} etiqueta="opciones-vidrio" capa="vidrio-activo" />
+        </Fila>
+      </Grupo>
 
-      <section className="flex flex-col gap-3" aria-labelledby="opciones-vidrio">
-        <h3 id="opciones-vidrio" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          Vidrio
-        </h3>
-        <Segmentado opciones={VIDRIOS} valor={vidrio} onCambiar={setVidrio} etiqueta="opciones-vidrio" capa="vidrio-activo" />
-        <p className="text-base text-zinc-600">
-          {vidrio === 'opaco'
-            ? 'Las barras y los botones que flotan son sólidos: más contraste y menos trabajo para el teléfono.'
-            : 'Las barras y los botones que flotan dejan ver la lección desenfocada por detrás.'}
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-3" aria-labelledby="opciones-octavas">
-        <h3 id="opciones-octavas" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          Barra de octavas del piano
-        </h3>
-        <Segmentado opciones={OCTAVAS} valor={octavas} onCambiar={setOctavas} etiqueta="opciones-octavas" capa="octavas-activo" />
-        <p className="text-base text-zinc-600">
-          {octavas === 'teclas'
-            ? 'Las octavas van de aguda a grave (5 · 4 · 3): deslizar a la derecha arrastra el teclado y trae las notas graves.'
-            : 'Las octavas van de grave a aguda (3 · 4 · 5): deslizar a la derecha mueve la vista hacia las notas agudas.'}
-        </p>
-      </section>
+      <Grupo titulo="Piano" id="opciones-piano">
+        <Fila titulo="Barra de octavas" id="opciones-octavas" nota={NOTA_OCTAVAS[octavas]}>
+          <Segmentado opciones={OCTAVAS} valor={octavas} onCambiar={setOctavas} etiqueta="opciones-octavas" capa="octavas-activo" />
+        </Fila>
+      </Grupo>
 
       <TuProgreso onCerrar={onCerrar} />
+    </div>
+  )
+}
+
+/** Grupo de opciones: título corto en versalitas y una tarjeta con sus filas separadas por una línea. */
+function Grupo({ titulo, id, children }) {
+  return (
+    <section className="flex flex-col gap-2.5" aria-labelledby={id}>
+      <h3 id={id} className="px-1 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+        {titulo}
+      </h3>
+      <div className="flex flex-col divide-y divide-zinc-200 rounded-3xl border border-zinc-200">{children}</div>
+    </section>
+  )
+}
+
+/** Fila de un grupo: nombre, control y una frase corta de qué hace la opción elegida. */
+function Fila({ titulo, id, nota, children }) {
+  return (
+    <div className="flex flex-col gap-2.5 p-4" data-opcion={id}>
+      <span id={id} className="text-base font-semibold text-zinc-900">
+        {titulo}
+      </span>
+      {children}
+      <p className="text-sm leading-snug text-zinc-500">{nota}</p>
     </div>
   )
 }

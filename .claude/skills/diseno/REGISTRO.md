@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) La **matraca** de la barra de puntitos se siente **como si el dedo la jalara**: la inclinación depende también de si el dedo está por encima (derecha → antihorario) o por debajo (derecha → horario) del eje; sobre el eje, o sin dedo (flechas, deslizar las islas), solo un **golpe lateral**.
+- 2026-11-12: (pedido del usuario) **Opciones ordenadas por grupos** (Pantalla · Piano · Tu progreso, tarjetas tipo Ajustes de iOS con frases cortas); la **hoja se arrastra con eventos táctiles propios** (con el contenido arriba del todo, tirar hacia abajo la arrastra; ya no «se suelta» en Android); el aviso **«Siguiente · Módulo N» sale por encima de la barra de puntitos**.
 - 2026-11-12: (pedido del usuario) **Escuchar y ver**: al pulsar un «Escuchar…», cada nota se ilumina en el teclado (que va a su octava) y su casilla lleva aro celeste mientras suena.
 - 2026-11-12: (pedido del usuario) Opción **Barra de octavas del piano: Mover la vista / Mover las teclas** en Opciones: con «Mover las teclas» la barra va 5 · 4 · 3 y deslizar a la derecha arrastra el teclado hacia las graves.
 - 2026-11-12: (pedido del usuario) Una isla abierta ya no se cierra al «subir la página» sino **cuando ella y su tarjetita dejan la mitad de la pantalla** (por arriba o por abajo); con el dedo aún apoyado, volver a la mitad **la reabre**; al soltar cerrada, queda cerrada.

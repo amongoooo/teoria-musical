@@ -106,6 +106,10 @@ export default function useCambioModulo(modulo, { isla = null } = {}) {
   return { handlers, estilo: { x, y, touchAction: 'pan-y pinch-zoom' }, indicadores }
 }
 
+/** Espacio bajo el indicador de abajo: la barra de puntitos (58 px + su margen de abajo, 16 px o la zona segura) + 14 px
+ * (lo que la barra puede flotar con el dedo). */
+const SOBRE_BARRA = 'calc(max(env(safe-area-inset-bottom), 16px) + 58px + 14px)'
+
 /** Copia de un MotionValue que deja de cambiar cuando `congelar.current` es true. */
 function useCongelado(fuente, congelar) {
   const mv = useMotionValue(fuente.get())
@@ -165,9 +169,14 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
         aria-hidden
         // El de arriba sale por DEBAJO de la cabecera fija (que va encima, con su desvanecido).
         className={`pointer-events-none absolute inset-x-0 flex justify-center px-3 ${
-          signo > 0 ? 'bottom-0 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]' : 'pt-2 pb-3'
+          signo > 0 ? 'bottom-0 pt-3' : 'pt-2 pb-3'
         }`}
-        style={{ y: yVertical, ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : {}) }}
+        // El de abajo queda POR ENCIMA de la barra de puntitos (pedido del usuario: la barra lo tapaba): sale de
+        // detrás de ella y se para encima (SOBRE_BARRA = alto de la barra + su margen + aire).
+        style={{
+          y: yVertical,
+          ...(signo < 0 ? { top: `calc(${ALTO_CABECERA - 20}px + env(safe-area-inset-top))` } : { paddingBottom: SOBRE_BARRA }),
+        }}
       >
         {/* La opacidad va en el propio panel de vidrio: en un antecesor, el desenfoque dejaría de ver lo de detrás. */}
         <motion.div className={`flex items-center gap-4 rounded-3xl py-3 pr-6 pl-3 ${VIDRIO_PANEL}`} style={{ opacity: vis }}>

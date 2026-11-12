@@ -34,17 +34,24 @@ const MITAD_CIERRA = { margen: 8, dedo: 10, quieto: 150 }
 //  - FLOTA: mientras el dedo está apoyado, la barra lo sigue con resistencia (como si flotara): en
 //    vertical siempre; en horizontal solo si el dedo sale más allá del primer o del último puntito.
 //    Se acerca a `max` px sin llegar nunca; al soltar vuelve a su sitio con RESORTE.suave.
-//  - MATRACA: cada vez que el dedo llega a otro puntito, la barra da un golpe de inclinación que depende
-//    SOLO de la posición de ese puntito en la barra (no del dedo): a la izquierda del centro gira en
-//    sentido antihorario y a la derecha en sentido horario; la magnitud crece con la distancia al centro,
-//    de 0° en el puntito central a `max` en los de las orillas (con 7: 3 · 2 · 1 · 0 · 1 · 2 · 3).
-//    La inclinación vuelve a 0 a los `vuelve` ms. Contra un extremo, golpe del puntito de la orilla.
+//  - MATRACA: cada vez que el dedo (o el ratón) llega a otro puntito, la barra da un golpe, COMO SI EL DEDO LA
+//    JALARA (pedido del usuario): la inclinación depende de la posición del puntito en la barra (0° en el
+//    central, `max` en las orillas: con 7, 3 · 2 · 1 · 0 · 1 · 2 · 3) y de dónde está el dedo respecto al EJE
+//    de la barra (su línea horizontal del medio): por ENCIMA, a la derecha gira en sentido antihorario y a la
+//    izquierda en horario; por DEBAJO, al revés; SOBRE el eje (± `eje` px) no se inclina, y crece hasta el
+//    máximo a `eje + rango` px. Lo que no se va en inclinación se va en un golpe LATERAL (`lateral` px hacia
+//    donde va el dedo): sobre el eje o en el puntito central, solo golpe lateral. Sin dedo que jale (flechas
+//    del teclado, deslizar las islas, tocar otra isla), solo el golpe lateral. Todo vuelve a 0 a los `vuelve` ms.
+//    Contra un extremo, golpe del puntito de la orilla.
 const FLOTA = { factor: 0.5, max: 14 }
 // (Pedido del usuario: el doble de inclinación y la mitad de tiempo.) Los resortes son los de siempre
 // (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
 // «secos», pero duran la mitad.
 const MATRACA = {
   max: 3,
+  eje: 4,
+  rango: 22,
+  lateral: 4,
   vuelve: 50,
   golpe: { ...RESORTE.pulsar, stiffness: RESORTE.pulsar.stiffness * 4, damping: RESORTE.pulsar.damping * 2 },
   vuelta: { ...RESORTE.suave, stiffness: RESORTE.suave.stiffness * 4, damping: RESORTE.suave.damping * 2 },
@@ -310,14 +317,35 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   const flotaX = useMotionValue(0)
   const flotaY = useMotionValue(0)
   const giro = useMotionValue(0)
+  const golpe = useMotionValue(0) // golpe lateral de la matraca (px)
   const tiltBarra = useRef(null)
-  /** Golpe de matraca al llegar al puntito `i` de `total`: sentido y magnitud según su lugar en la barra. */
-  const matraca = (i, total) => {
+  const ultimaMatraca = useRef(0) // cuándo la movió el dedo por última vez (para no repetir con el cambio de isla)
+  /**
+   * Golpe de matraca al llegar al puntito `i` de `total` (ver MATRACA). `tiron` (−1 … 1): cuánto jala el dedo y
+   * hacia dónde (negativo = por encima del eje, positivo = por debajo, 0 = sobre el eje o sin dedo). `dir`: hacia
+   * dónde va (−1 izquierda, +1 derecha), para el golpe lateral.
+   */
+  const matraca = (i, total, { tiron = 0, dir = 0 } = {}) => {
+    ultimaMatraca.current = performance.now()
     if (reducir) return
     clearTimeout(tiltBarra.current)
-    animate(giro, gradosMatraca(i, total), MATRACA.golpe)
-    tiltBarra.current = setTimeout(() => animate(giro, 0, MATRACA.vuelta), MATRACA.vuelve)
+    const grados = gradosMatraca(i, total) * tiron
+    animate(giro, grados, MATRACA.golpe)
+    animate(golpe, dir * MATRACA.lateral * (1 - Math.abs(grados) / MATRACA.max), MATRACA.golpe)
+    tiltBarra.current = setTimeout(() => {
+      animate(giro, 0, MATRACA.vuelta)
+      animate(golpe, 0, MATRACA.vuelta)
+    }, MATRACA.vuelve)
   }
+  // Cambio de isla sin el dedo en la barra (flechas, deslizar las islas, tocar otra): solo el golpe lateral.
+  const abiertaAntes = useRef(null)
+  useEffect(() => {
+    const antes = abiertaAntes.current
+    abiertaAntes.current = abierta
+    if (antes == null || abierta == null || antes === abierta) return
+    if (performance.now() - ultimaMatraca.current < 120) return // ya lo hizo la barra con el dedo
+    matraca(abierta, n + 1, { dir: Math.sign(abierta - antes) })
+  }, [abierta]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
   const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, acepta, alTope: inclinar })
@@ -795,6 +823,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
               flotaX={flotaX}
               flotaY={flotaY}
               giro={giro}
+              golpe={golpe}
               reducir={reducir}
               onMatraca={matraca}
             />
@@ -813,7 +842,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
  * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
  * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, reducir, onMatraca }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca }) {
   const sep = DESLIZAR.puntitos.separacion
   const pildora = useRef(null)
   const g = useRef(null) // gesto sobre la barra
@@ -842,7 +871,7 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
           aria-label="Lecciones del módulo"
           ref={pildora}
           className={`pointer-events-auto relative flex select-none items-center rounded-full px-3 ${VIDRIO}`}
-          style={{ touchAction: 'none', rotate: giro }}
+          style={{ touchAction: 'none', rotate: giro, x: golpe }}
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return
             e.currentTarget.setPointerCapture?.(e.pointerId)
@@ -860,6 +889,10 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
               punto: masCercano(centros, e.clientX),
               tope: 0, // −1 / +1 mientras el dedo está más allá del primer / último puntito
             }
+            // Eje de la barra en reposo: se mide en la capa que flota (no gira; la inclinada mediría de más).
+            const capa = pildora.current.parentElement.getBoundingClientRect()
+            g.current.ejeY = capa.top + capa.height / 2 - flotaY.get()
+            onMatraca(g.current.punto, centros.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
             onIr(g.current.punto) // tocar un puntito va directo a su isla
           }}
           onPointerMove={(e) => {
@@ -871,17 +904,20 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
               const fuera = e.clientX - limitar(e.clientX, s.centros[0], s.centros[s.centros.length - 1])
               flotaX.set(flotar(fuera))
             }
+            // Cuánto jala el dedo: su distancia al eje de la barra (que flota con él), con signo (− = por encima).
+            const dy = e.clientY - (s.ejeY + flotaY.get())
+            const tiron = Math.sign(dy) * limitar((Math.abs(dy) - MATRACA.eje) / MATRACA.rango, 0, 1)
             // Al pasar a otro puntito: su isla se abre (gana siempre una) y la barra da un golpe de matraca.
             const p = masCercano(s.centros, e.clientX)
             if (p !== s.punto) {
-              onMatraca(p, s.centros.length)
+              onMatraca(p, s.centros.length, { tiron, dir: Math.sign(p - s.punto) })
               s.punto = p
               onIr(p)
             }
             // Contra un extremo (medio puntito más allá del primero o del último): un golpe al chocar.
             const mitad = (s.centros[1] - s.centros[0] || sep) / 2
             const tope = e.clientX < s.centros[0] - mitad ? -1 : e.clientX > s.centros[s.centros.length - 1] + mitad ? 1 : 0
-            if (tope && tope !== s.tope) onMatraca(tope < 0 ? 0 : s.centros.length - 1, s.centros.length)
+            if (tope && tope !== s.tope) onMatraca(tope < 0 ? 0 : s.centros.length - 1, s.centros.length, { tiron, dir: tope })
             s.tope = tope
           }}
           onPointerUp={soltar}
@@ -924,7 +960,8 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
   )
 }
 
-/** Grados de la matraca para el puntito `i` de `total`: −max (orilla izquierda, antihorario) … 0 (centro) … +max (orilla derecha, horario). */
+/** Grados de la matraca para el puntito `i` de `total` jalando hacia ABAJO (`tiron` = 1): −max (orilla izquierda,
+ * antihorario) … 0 (centro) … +max (orilla derecha, horario). Por encima del eje se multiplica por un tirón negativo. */
 export function gradosMatraca(i, total) {
   const centro = (total - 1) / 2
   return centro > 0 ? (MATRACA.max * (i - centro)) / centro : 0
