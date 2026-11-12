@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
-import { reproducir } from '../audio/sonido.js'
+import { reproducir, seguirNotas } from '../audio/sonido.js'
 import Piano from '../components/Piano.jsx'
 import Rich from '../components/Rich.jsx'
 import {
@@ -237,6 +237,10 @@ function Entrenador({ modo }) {
   const contador = useRef(0)
   const [limpiando, setLimpiando] = useState(false)
   const temporizador = useRef(null)
+  // Ya respondida, tocar una opción la hace sonar y sus notas se iluminan en el teclado de repaso al sonar.
+  const [senal, setSenal] = useState(null) // { notas, n } para la prop `senalar` del Piano
+  const cancelarSenal = useRef(null)
+  useEffect(() => () => cancelarSenal.current?.(), [])
 
   useEffect(() => {
     initPiano()
@@ -277,8 +281,11 @@ function Entrenador({ modo }) {
   const responder = (id) => {
     if (limpiando) return
     if (respuesta) {
-      // Ya respondida: tocar una opción la hace sonar para comparar.
-      reproducir(pregunta.sonidoDe(id))
+      // Ya respondida: tocar una opción la hace sonar para comparar (y se ve en el teclado).
+      const sonido = pregunta.sonidoDe(id)
+      reproducir(sonido)
+      cancelarSenal.current?.()
+      cancelarSenal.current = seguirNotas(sonido, (notas) => setSenal((s) => ({ notas, n: (s?.n ?? 0) + 1 })))
       return
     }
     const bien = id === pregunta.item
@@ -394,6 +401,7 @@ function Entrenador({ modo }) {
                   startOctave={octavaInicial(pregunta.notas)}
                   octaves={2}
                   marcadas={pregunta.notas}
+                  senalar={senal}
                 />
               </motion.div>
             )}

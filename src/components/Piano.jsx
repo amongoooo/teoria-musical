@@ -13,7 +13,8 @@ import {
 import { notaDesdeMidi, midi } from '../theory/notas.js'
 import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
-import { RESORTE } from '../ui/movimiento.js'
+import { useOpciones } from '../progress/opciones.js'
+import { BRILLO_MS, RESORTE } from '../ui/movimiento.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -63,8 +64,9 @@ function useVisibleOctaves(ref, max) {
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
  *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
  *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
- *  - senalar ({ nota, n }): cada vez que cambia `n`, el teclado va a la octava de `nota` (si no se ve) y su tecla
- *    se ilumina un momento, como si se tocara (no llama a onNoteOn ni suena: el sonido lo pone quien señala).
+ *  - senalar ({ notas: ['A4'], n }): cada vez que cambia `n`, el teclado va a la octava de la primera nota (si no
+ *    se ve) y sus teclas se iluminan un momento, como si se tocaran (no llama a onNoteOn ni suena: el sonido lo
+ *    pone quien señala; p. ej. «Escuchar las 3 La» o una casilla verde).
  * Si no caben todas las octavas, el teclado completo va en una TIRA que se recorre con un resorte hasta la octava
  * elegida (pedido del usuario) y debajo va la barra de octavas (SelectorOctava): tocar una o deslizar; mientras
  * se desliza, la tira acompaña al dedo y al soltar se ajusta a la octava más cercana.
@@ -85,12 +87,13 @@ export default function Piano({
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
   const [offset, setOffset] = useState(0) // octava desplazada cuando no caben todas
   const [active, setActive] = useState(() => new Set())
-  const [brillo, setBrillo] = useState(null) // tecla iluminada por `senalar`
+  const [brillo, setBrillo] = useState(() => new Set()) // teclas iluminadas por `senalar`
   // Marcadas normalizadas a sostenidos (así "Db4" resalta la tecla C#4).
   const marcadasSet = new Set(marcadas.map((n) => notaDesdeMidi(midi(n))))
   const [status, setStatus] = useState(getStatus)
   const [audioOn, setAudioOn] = useState(isAudioRunning)
   const reducir = useReducedMotion()
+  const { octavas: sentidoOctavas } = useOpciones()
 
   // pointerId -> nota que está sonando con ese dedo
   const pointers = useRef(new Map())
@@ -156,16 +159,18 @@ export default function Piano({
     setOffset((o) => desplazarA(`C${octavaIr}`, o))
   }, [octavaIr, maxOffset, desplazarA])
 
-  // `senalar`: ir a su octava e iluminar la tecla un momento.
+  // `senalar`: ir a la octava de la (primera) nota e iluminar sus teclas un momento.
   const nSenal = senalar?.n
-  const notaSenal = senalar?.nota
+  const notasSenal = senalar?.notas
   useEffect(() => {
-    if (!notaSenal) return
-    if (maxOffset > 0) setOffset((o) => desplazarA(notaSenal, o))
-    setBrillo(notaDesdeMidi(midi(notaSenal)))
-    const t = setTimeout(() => setBrillo(null), 600)
+    if (!notasSenal?.length) return
+    // Si hay que ir a otra octava, la tecla se ilumina mientras llega y un poco más (para verla ya quieta).
+    const viaja = maxOffset > 0 && desplazarA(notasSenal[0], indiceRef.current) !== indiceRef.current
+    if (viaja) setOffset((o) => desplazarA(notasSenal[0], o))
+    setBrillo(new Set(notasSenal.map((n) => notaDesdeMidi(midi(n)))))
+    const t = setTimeout(() => setBrillo(new Set()), BRILLO_MS + (viaja && !reducir ? 300 : 0))
     return () => clearTimeout(t)
-  }, [nSenal])
+  }, [nSenal]) // solo cuando llega una señal nueva
 
   useEffect(() => {
     initPiano()
@@ -278,7 +283,7 @@ export default function Piano({
                 key={note}
                 data-note={note}
                 className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
-                  active.has(note) || brillo === note
+                  active.has(note) || brillo.has(note)
                     ? 'bg-sky-200 text-sky-900'
                     : marcadasSet.has(note)
                       ? 'bg-fijate-claro text-fijate-tinta'
@@ -300,7 +305,7 @@ export default function Piano({
               key={note}
               data-note={note}
               className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
-                active.has(note) || brillo === note ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
+                active.has(note) || brillo.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
               }`}
               style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
             />
@@ -315,6 +320,7 @@ export default function Piano({
           indice={indice}
           onCambiar={setOffset}
           onSeguir={seguir}
+          invertida={sentidoOctavas === 'teclas'}
         />
       )}
     </div>

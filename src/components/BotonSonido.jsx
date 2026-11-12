@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
-import { reproducir } from '../audio/sonido.js'
+import { reproducir, seguirNotas } from '../audio/sonido.js'
 import { Reproducir } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 
-/** Botón grande que reproduce un sonido del contenido y se ilumina mientras suena. */
-export default function BotonSonido({ sonido, etiqueta, className = '', onPlay }) {
+/**
+ * Botón grande que reproduce un sonido del contenido y se ilumina mientras suena.
+ * onNotas(notas, i): opcional, se llama justo cuando suena cada nota (o grupo), para señalarla en el teclado
+ * o en las casillas mientras suena (pedido del usuario).
+ */
+export default function BotonSonido({ sonido, etiqueta, className = '', onPlay, onNotas }) {
   const [sonando, setSonando] = useState(false)
   const timer = useRef(null)
+  const cancelar = useRef(null)
 
-  useEffect(() => () => clearTimeout(timer.current), [])
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current)
+      cancelar.current?.()
+    },
+    [],
+  )
 
   const tocar = () => {
     const dur = reproducir(sonido)
+    cancelar.current?.()
+    if (onNotas) cancelar.current = seguirNotas(sonido, onNotas)
     onPlay?.()
     setSonando(true)
     clearTimeout(timer.current)

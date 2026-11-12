@@ -60,6 +60,9 @@ export const SALTO = { scale: [1, 1.05, 1] }
 /** «Pop» más marcado (casilla que se consigue al tocar la tecla correcta). Uso: animate={ok ? POP : { scale: 1 }} transition={{ duration: 0.4 }} */
 export const POP = { scale: [1, 1.14, 0.97, 1] }
 
+/** Ms que una nota señalada (al sonar en «Escuchar…» o al tocar una casilla verde) queda iluminada en el teclado y en su casilla. */
+export const BRILLO_MS = 550
+
 /**
  * «Temblor» (useTemblor.js): algo que ya está hecho y se vuelve a pedir (casilla ya conseguida…).
  * Se mueve en x, en y y gira sobre su eje durante `duracion` s en total. Amplitud en cada eje = `px` / tamaño

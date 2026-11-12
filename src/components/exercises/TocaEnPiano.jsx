@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { Note } from 'tonal'
 import {
@@ -15,7 +15,7 @@ import {
 } from '../../theory/intervalos.js'
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
-import { ENTRA_DERECHA, POP, SALTO, SUBE } from '../../ui/movimiento.js'
+import { BRILLO_MS, ENTRA_DERECHA, POP, SALTO, SUBE } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import useTemblor from '../../ui/useTemblor.js'
 import Piano from '../Piano.jsx'
@@ -51,6 +51,26 @@ function rango(piano = {}) {
   const start = piano.startOctave ?? 4
   const octaves = piano.octaves ?? 2
   return { grave: `C${start}`, aguda: `B${start + octaves - 1}` }
+}
+
+/**
+ * Notas señaladas (pedido del usuario: al pulsar «Escuchar…», cada nota se indica en el teclado y en las
+ * casillas mientras suena). `senalar(notas)` → `senal` = { notas, n, activa }: el Piano la recibe en `senalar`
+ * (va a su octava e ilumina las teclas) y las casillas miran `suena(nota)` (true durante BRILLO_MS); `i` = qué
+ * nota del sonido es (la fila de la fórmula marca esa casilla).
+ */
+function useSenal() {
+  const [senal, setSenal] = useState(null)
+  const t = useRef(null)
+  useEffect(() => () => clearTimeout(t.current), [])
+  const senalar = useCallback((notas, i = null) => {
+    const lista = Array.isArray(notas) ? notas : [notas]
+    setSenal((s) => ({ notas: lista, i, n: (s?.n ?? 0) + 1, activa: true }))
+    clearTimeout(t.current)
+    t.current = setTimeout(() => setSenal((s) => s && { ...s, activa: false }), BRILLO_MS)
+  }, [])
+  const suena = (nota) => Boolean(senal?.activa && senal.notas.some((n) => midi(n) === midi(nota)))
+  return { senal, senalar, suena }
 }
 
 function Explorar({ paso, setAccion, siguiente }) {
@@ -151,25 +171,29 @@ function UltimaNota({ nota }) {
  * `sacude` (un contador): cada vez que sube, la casilla tiembla (`useTemblor`: se tocó otra vez en el piano una
  * nota ya conseguida, así se ve cuál es).
  * Con `onTocar` la casilla también es un botón (`etiqueta` = su nombre para lectores de pantalla).
+ * `sonando`: su nota suena ahora («Escuchar…»): aro celeste (el color de «suena», como la tecla) y un `SALTO`.
  */
-function Casilla({ ok, sacude = 0, onTocar, etiqueta, children }) {
+function Casilla({ ok, sacude = 0, sonando = false, onTocar, etiqueta, children }) {
   const [ref, temblar] = useTemblor()
   useEffect(() => {
     if (sacude > 0) temblar()
   }, [sacude, temblar])
   const caja = (
-    <motion.div
-      initial={false}
-      animate={ok ? POP : { scale: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
-        ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
-      }`}
-    >
-      <span>
-        {children}
-        {ok && !onTocar && <span className="sr-only"> (conseguida)</span>}
-      </span>
+    <motion.div initial={false} animate={sonando ? SALTO : { scale: 1 }} transition={{ duration: 0.3 }}>
+      <motion.div
+        initial={false}
+        animate={ok ? POP : { scale: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        data-sonando={sonando || undefined}
+        className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${
+          ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
+        } ${sonando ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''}`}
+      >
+        <span>
+          {children}
+          {ok && !onTocar && <span className="sr-only"> (conseguida)</span>}
+        </span>
+      </motion.div>
     </motion.div>
   )
   return (
@@ -195,6 +219,7 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
   const resuelta = intento?.ok === true
   const ultima = r === rondas.length - 1
   const palabra = ronda.direccion === 'agudo' ? 'más aguda' : 'más grave'
+  const { senal, senalar } = useSenal()
 
   const onNoteOn = useCallback(
     (nota) => {
@@ -263,11 +288,12 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
         <BotonSonido
           sonido={{ notas: [ronda.referencia] }}
           etiqueta={nombre(ronda.referencia)}
+          onNotas={senalar}
           className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
         />
       </motion.div>
 
-      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia]} />
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia]} senalar={senal} />
     </div>
   )
 }
@@ -289,7 +315,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
   const [fallos, setFallos] = useState(0) // fallos en la ronda actual
   const [aciertos, setAciertos] = useState(0) // rondas sin fallos
   const [sacudidas, setSacudidas] = useState({}) // { A4: 2 }: veces que se volvió a tocar una ya conseguida
-  const [senal, setSenal] = useState(null) // { nota, n }: casilla verde tocada → el piano va a su tecla
+  const { senal, senalar, suena } = useSenal() // casilla verde o «Escuchar las 3 La» → el piano va a la tecla
   const ronda = rondas[r]
   const objetivos = enCadaOctava(ronda.nota, paso.piano)
   const listo = encontradas.length === objetivos.length
@@ -327,7 +353,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
   // piano va a su octava e ilumina la tecla (sirve para repasar, también con todas encontradas).
   const tocarCasilla = (o) => {
     playNotes(o)
-    if (encontradas.includes(o)) setSenal((s) => ({ nota: o, n: (s?.n ?? 0) + 1 }))
+    if (encontradas.includes(o)) senalar(o)
   }
 
   useEffect(() => {
@@ -361,7 +387,6 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
         setIntento(null)
         setFallos(0)
         setSacudidas({})
-        setSenal(null)
       },
     })
   }, [listo, intento, ronda, objetivos, encontradas.length, nombreSolo, ultima, r, setAccion, siguiente])
@@ -383,6 +408,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
               key={o}
               ok={ok}
               sacude={sacudidas[o]}
+              sonando={suena(o)}
               onTocar={() => tocarCasilla(o)}
               etiqueta={ok ? `${nombre(o)}, encontrada: ver en el teclado` : `Escuchar ${nombre(o)}`}
             >
@@ -397,6 +423,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
           <BotonSonido
             sonido={{ notas: objetivos, intervalo: 0.6 }}
             etiqueta={`Escuchar las ${objetivos.length} ${nombreSolo}`}
+            onNotas={senalar}
             className="w-full"
           />
         </motion.div>
@@ -440,6 +467,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
   const resuelta = intento?.ok === true
   const ultima = r === rondas.length - 1
   const verbo = dir > 0 ? 'Sube' : 'Baja'
+  const { senal, senalar } = useSenal()
 
   const onNoteOn = useCallback(
     (nota) => {
@@ -518,6 +546,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
         <BotonSonido
           sonido={{ notas: [ronda.desde] }}
           etiqueta={nombre(simple(ronda.desde))}
+          onNotas={senalar}
           className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
         />
       </motion.div>
@@ -527,12 +556,13 @@ function Paso({ paso, setAccion, siguiente, completar }) {
           <BotonSonido
             sonido={{ notas: [ronda.desde, meta], intervalo: 0.6 }}
             etiqueta={`Escuchar ${nombre(simple(ronda.desde), { octava: false })} → ${nombre(meta, { octava: false })}`}
+            onNotas={senalar}
             className="w-full"
           />
         </motion.div>
       )}
 
-      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(ronda.desde)} />
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(ronda.desde)} senalar={senal} />
     </div>
   )
 }
@@ -553,6 +583,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
   const ultima = r === rondas.length - 1
   const actual = notas[hechas] // la que toca ahora
   const anterior = notas[hechas - 1]
+  const { senal, senalar } = useSenal()
 
   const onNoteOn = useCallback(
     (nota) => {
@@ -629,15 +660,15 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         )}
       </motion.p>
 
-      <FilaFormula notas={notas} pasos={ronda.pasos} hechas={hechas} />
+      <FilaFormula notas={notas} pasos={ronda.pasos} hechas={hechas} senal={senal} />
 
       {listo && (
         <motion.div {...SUBE}>
-          <BotonSonido sonido={{ notas, intervalo: 0.4 }} etiqueta="Escuchar lo que tocaste" className="w-full" />
+          <BotonSonido sonido={{ notas, intervalo: 0.4 }} etiqueta="Escuchar lo que tocaste" onNotas={(ns, i) => senalar(ns.map(simple), i)} className="w-full" />
         </motion.div>
       )}
 
-      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(listo ? anterior : actual)} />
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(listo ? anterior : actual)} senalar={senal} />
     </div>
   )
 }
@@ -645,8 +676,9 @@ function Formula({ paso, setAccion, siguiente, completar }) {
 /**
  * La fórmula como una fila: una casilla por nota (las tocadas con su nombre en verde, la que toca
  * ahora con borde negro, las pendientes con «?») y, encima, el paso (T / S) entre cada pareja.
+ * `senal` (de useSenal): al «Escuchar lo que tocaste», la casilla de la nota que suena lleva aro celeste.
  */
-function FilaFormula({ notas, pasos, hechas }) {
+function FilaFormula({ notas, pasos, hechas, senal }) {
   const columnas = { gridTemplateColumns: `repeat(${notas.length}, minmax(0, 1fr))` }
   return (
     <div className="flex flex-col gap-1.5" aria-label={`Fórmula: ${pasos.join(' ')}`}>
@@ -669,13 +701,15 @@ function FilaFormula({ notas, pasos, hechas }) {
         {notas.map((n, i) => {
           const hecha = i < hechas
           const ahora = i === hechas
+          const suena = Boolean(senal?.activa && senal.i === i)
           return (
             <motion.li
               key={i}
               initial={false}
               animate={hecha && i > 0 && i === hechas - 1 ? SALTO : { scale: 1 }}
               transition={{ duration: 0.35 }}
-              className={`grid h-11 place-items-center rounded-xl border-2 text-sm font-semibold transition-colors duration-200 ${
+              data-sonando={suena || undefined}
+              className={`grid h-11 place-items-center rounded-xl border-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${suena ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''} ${
                 hecha
                   ? 'border-bien bg-bien-suave text-bien-tinta'
                   : ahora

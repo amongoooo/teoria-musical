@@ -54,8 +54,8 @@ src/
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos
-    Opciones.jsx, TuProgreso.jsx, CodigoQR.jsx                   # Opciones (tema, vidrio) y progreso entre dispositivos
-    BotonSonido.jsx, Rich.jsx                                    # Botón de sonido; texto con **negritas**
+    Opciones.jsx, TuProgreso.jsx, CodigoQR.jsx                   # Opciones (tema, vidrio, sentido de la barra de octavas) y progreso entre dispositivos
+    BotonSonido.jsx, Rich.jsx                                    # Botón de sonido (onNotas: señala cada nota al sonar); texto con **negritas**
   audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle), bateria.js (golpes sintetizados), sonido.js (reproducir() del contenido)
   theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
   progress/             # progreso.js (lecciones y retos), opciones.js (tema y vidrio), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
@@ -77,7 +77,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - Comandos: `npm run dev`, `npm run build`, `npm run preview` (abre `/teoria-musical/`).
 - **Lecciones**: un archivo de datos por lección en `src/content/modulo-XX/`, registrado en `src/content/index.js`. El visor muestra un paso por pantalla y un botón grande abajo que cada ejercicio controla con `setAccion` (Comprobar → retroalimentación → Siguiente). El error nunca castiga: muestra la respuesta y la explica.
 - **Desbloqueo** (`estadoLeccion` en `content/index.js` → `proximamente | hecha | empezada | nueva | bloqueada`): progresivo dentro de cada módulo; entre módulos no se bloquea; las URLs directas no se bloquean.
-- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (`tema`, `vidrio`: desenfoque | opaco) · `teoria-musical:oido:v1` (entrenador).
+- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (`tema`, `vidrio`: desenfoque | opaco, `octavas`: vista | teclas) · `teoria-musical:oido:v1` (entrenador).
 - **Probar** con Playwright (ya instalado en el entorno) a **375 px en claro y oscuro**; tema con `localStorage` `teoria-musical:opciones:v1` = `{ "tema": "oscuro" }`. Los samples del piano no cargan en el entorno de pruebas (suena el sintetizador): es normal.
 
 ## Decisiones de contenido
@@ -88,14 +88,14 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~67 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~68 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan). Faltan 3.3–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
-- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas.
+- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas (sentido de la barra elegible en Opciones), «Escuchar…» que señala cada nota en el teclado y las casillas, isla que se cierra al dejar la mitad de la pantalla.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.

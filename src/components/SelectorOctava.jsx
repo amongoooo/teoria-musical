@@ -13,13 +13,18 @@ const ZONA_MUERTA = 6
  * `RESORTE.pantalla` y el teclado cambia de octava.
  *  - octavas: números de octava que se pueden mostrar (p. ej. [3, 4, 5]).
  *  - indice: la que se ve ahora; onCambiar(i) para ir a otra.
+ *  - invertida (Opciones → Barra de octavas → «Mover las teclas»): los segmentos van al revés (5 · 4 · 3), así al
+ *    deslizar a la derecha el teclado se mueve con el dedo y trae las graves (como arrastrar las teclas).
+ *    `indice`, onCambiar y onSeguir siguen hablando en el orden real (0 = la más grave).
  *  - onSeguir(p): mientras se arrastra, la posición CONTINUA del dedo en segmentos (0 … n − 1), para que el
  *    teclado lo acompañe; al soltar (o si el navegador cancela el gesto), onSeguir(null): ajustarse a `indice`.
  */
-export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir }) {
+export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir, invertida = false }) {
   const n = octavas.length
+  // Índice real ↔ posición en la barra (es su propia inversa). Todo lo de dentro trabaja en posiciones.
+  const enBarra = (i) => (invertida ? n - 1 - i : i)
   const caja = useRef(null)
-  const pos = useMotionValue(indice) // posición de la píldora, en segmentos (entre dos solo mientras salta)
+  const pos = useMotionValue(enBarra(indice)) // posición de la píldora, en segmentos (entre dos solo mientras salta)
   const x = useTransform(pos, (p) => `${p * 100}%`)
   const gesto = useRef(null) // { id, x0, arrastrando, ultimo }
   const tras = useRef(false) // ignora el click que llega justo después de arrastrar
@@ -27,10 +32,11 @@ export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir })
   // La píldora va a la octava elegida (por el dedo, un toque o la prop `ir` del Piano) con un resorte.
   const reducir = useReducedMotion()
   useEffect(() => {
-    if (reducir) return pos.set(indice)
-    const control = animate(pos, indice, RESORTE.pantalla)
+    const destino = invertida ? n - 1 - indice : indice
+    if (reducir) return pos.set(destino)
+    const control = animate(pos, destino, RESORTE.pantalla)
     return () => control.stop()
-  }, [indice, pos, reducir])
+  }, [indice, pos, reducir, invertida, n])
 
   /** Posición continua (en segmentos) bajo el dedo: el centro de cada segmento es un número entero. */
   const enSegmentos = (clientX) => {
@@ -55,8 +61,8 @@ export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir })
     // El teclado acompaña al dedo; la píldora no: siempre gana una octava, la más cercana al dedo (salta a
     // ella con el resorte del efecto).
     const p = enSegmentos(e.clientX)
-    onSeguir?.(p)
-    const cerca = Math.round(p)
+    onSeguir?.(enBarra(p))
+    const cerca = enBarra(Math.round(p))
     if (cerca !== g.ultimo) {
       g.ultimo = cerca
       onCambiar(cerca)
@@ -90,7 +96,9 @@ export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir })
         className="absolute top-1 bottom-1 left-1 rounded-full bg-white shadow-sm dark:bg-zinc-300"
         style={{ width: `calc((100% - 0.5rem) / ${n})`, x }}
       />
-      {octavas.map((o, i) => {
+      {octavas.map((_, v) => {
+        const i = enBarra(v) // segmento v de la barra = octava real i
+        const o = octavas[i]
         const activa = i === indice
         return (
           <button
