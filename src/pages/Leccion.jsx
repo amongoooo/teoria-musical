@@ -443,8 +443,9 @@ export function BarraAccion({ accion, navegacion = null }) {
             >
               {/* Todo va DENTRO del botón: al presionarlo se encoge junto con él y nada se sale. */}
               {/* Debajo, el vidrio claro de «desactivado»: con el gesto, el color se desvanece y queda este. */}
-              {/* Flotando (sin panel), el vidrio desenfoca lo que pasa por detrás y su color deja verlo un poco. */}
-              {translucido && <span aria-hidden data-desenfoque className="absolute inset-0 backdrop-blur-lg backdrop-saturate-200" />}
+              {/* Flotando (sin panel), el vidrio deja ver lo que pasa por detrás: poco desenfoque y más saturación y contraste
+                  (pedido del usuario: que se resalte lo de detrás con el mismo color y opacidad). */}
+              {translucido && <span aria-hidden data-desenfoque className="absolute inset-0 backdrop-blur-[5px] backdrop-saturate-[2.6] backdrop-contrast-[1.6]" />}
               <motion.span
                 aria-hidden
                 data-translucido={translucido || undefined}

@@ -41,7 +41,7 @@ export default function ArranqueOido({ modo, datos }) {
         max: mult.max,
         valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'),
         elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }),
-        prefijo: '×',
+        prefijo: '',
       }
     : { total: modo.niveles, max: datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n), prefijo: '' }
   // Lo que se ve en la rueda mientras se desliza (la cajita de notas lo sigue al instante).
@@ -77,7 +77,7 @@ export default function ArranqueOido({ modo, datos }) {
         )}
 
         <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-          <Titulo id="nivel">{rapido ? 'Multiplicador' : 'Nivel'}</Titulo>
+          <Titulo id="nivel">Nivel</Titulo>
           <div className="flex gap-3">
             <RuedaNivel
               key={rapido ? 'multiplicador' : 'nivel'}
@@ -94,7 +94,7 @@ export default function ArranqueOido({ modo, datos }) {
         </motion.section>
 
         <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-          <Titulo id="octavas">Octavas</Titulo>
+          <Titulo id="octavas">Dificultad</Titulo>
           <Octavas
             valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
             onCambiar={(n) => guardarAjustes(modo.id, { octavas: n })}
@@ -375,7 +375,7 @@ function BotonRedondo({ acento, children, ...props }) {
 }
 
 // ---------------------------------------------------------------------------
-// Octavas: tira con las octavas 2…6; las que suenan se encienden. Con + se suma una arriba, luego una abajo y así
+// Dificultad (pedido del usuario: «más octavas, más dificultad»): tira con las octavas 2…6; las que suenan se encienden. Con + se suma una arriba, luego una abajo y así
 // (4 → 4–5 → 3–5 → 3–6 → 2–6); con − se quitan en el orden inverso.
 // ---------------------------------------------------------------------------
 
@@ -384,14 +384,14 @@ function Octavas({ valor, onCambiar, acento }) {
   const activas = new Set(octavasDe(valor))
   return (
     <div className="flex items-center gap-3" data-octavas={valor}>
-      <BotonRedondo onClick={() => onCambiar(Math.max(min, valor - 1))} disabled={valor <= min} aria-label="Menos octavas" acento={acento}>
+      <BotonRedondo onClick={() => onCambiar(Math.max(min, valor - 1))} disabled={valor <= min} aria-label="Menos dificultad" acento={acento}>
         −
       </BotonRedondo>
       <div
         className="grid h-14 min-w-0 flex-1 grid-cols-5 gap-1 rounded-3xl border-2 border-zinc-200 bg-white p-1.5"
         style={{ boxShadow: RELIEVE }}
         role="img"
-        aria-label={`Suena en ${activas.size === 1 ? 'la octava' : 'las octavas'} ${[...activas].join(', ')}`}
+        aria-label={`Dificultad ${valor}: suena en ${activas.size === 1 ? 'la octava' : 'las octavas'} ${[...activas].join(', ')}`}
       >
         {OCTAVAS_POSIBLES.map((o) => {
           const activa = activas.has(o)
@@ -413,7 +413,7 @@ function Octavas({ valor, onCambiar, acento }) {
           )
         })}
       </div>
-      <BotonRedondo onClick={() => onCambiar(Math.min(max, valor + 1))} disabled={valor >= max} aria-label="Más octavas" acento={acento}>
+      <BotonRedondo onClick={() => onCambiar(Math.min(max, valor + 1))} disabled={valor >= max} aria-label="Más dificultad" acento={acento}>
         +
       </BotonRedondo>
     </div>
@@ -426,7 +426,7 @@ function Octavas({ valor, onCambiar, acento }) {
 // asoma el siguiente con candado (no se puede elegir). Tocar un nivel que se ve lo elige; flechas ↑ ↓ también.
 // ---------------------------------------------------------------------------
 
-const ALTO_ITEM = 60
+const ALTO_ITEM = 68
 const ZONA_MUERTA = 8
 const INERCIA_MS = 160
 
@@ -533,7 +533,7 @@ function RuedaNivel({ total, max, valor, prefijo = '', onVista, onElegir, acento
       onPointerUp={suelta}
       onPointerCancel={suelta}
       onKeyDown={tecla}
-      className="relative w-24 shrink-0 cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing"
+      className="relative w-28 shrink-0 cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing"
       style={{ boxShadow: RELIEVE }}
     >
       {/* Ranura del elegido: del color del modo, como el marcador de un selector de nivel. */}
@@ -569,7 +569,7 @@ function ItemRueda({ i, pos, bloqueado, prefijo, acento }) {
       style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, y, scale, opacity, color: tinta(acento) }}
       data-nivel={i + 1}
     >
-      {bloqueado ? <Candado className="size-8 text-zinc-400" /> : <span className="font-juego text-4xl leading-none">
+      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-juego text-5xl leading-none">
           {prefijo && <span className="text-2xl">{prefijo}</span>}
           {i + 1}
         </span>}
