@@ -480,7 +480,7 @@ function Entrenador({ modo }) {
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
                   <Oreja className="size-[18px]" />
                   {modo.titulo} · {juego.nombre}
-                  {rapido && <> · Nivel <span className="font-numero text-base">{multiplicador}</span></>}
+                  {rapido && <> · Nivel <span className="font-juego text-base">{multiplicador}</span></>}
                 </span>
                 {rapido ? (
                   // Rápido: el círculo tiene una parte por acierto de la ronda y en el centro, las notas de la partida.
@@ -649,7 +649,7 @@ function CirculoNivel({ numero, llenas, maximo, subio, nuevo, acento, partes = P
         initial={nuevo ? { scale: 0.6, opacity: 0 } : false}
         animate={{ scale: 1, opacity: 1 }}
         transition={RESORTE.pulsar}
-        className="font-numero text-xl tabular-nums"
+        className="font-juego text-xl font-semibold tabular-nums"
         style={{ color: tinta(acento) }}
       >
         {n}
