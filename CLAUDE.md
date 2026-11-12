@@ -50,7 +50,7 @@ src/
     exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
                         #   PianoRollEjercicio (pianoroll), Pulso (pulso), RetoFL (reto) + Rondas
     pasos/              # Pasos sin puntuación: PasoTexto (texto, con Fichas que suenan), PasoSiente (siente), Nota
-    Piano.jsx           # Piano táctil (multitouch, octavas, `marcadas`, `ir`, `compacto`, `showLabels`) + SelectorOctava.jsx (barra de octavas: tocar o deslizar)
+    Piano.jsx           # Piano táctil en una tira que se desliza entre octavas (multitouch, `marcadas`, `ir`, `senalar`, `compacto`, `showLabels`) + SelectorOctava.jsx (barra de octavas: tocar o deslizar)
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos
@@ -60,7 +60,7 @@ src/
   theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
   progress/             # progreso.js (lecciones y retos), opciones.js (tema y vidrio), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
   pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
-  ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js (gestos), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
+  ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js (gestos), useTemblor.js (animación «temblar»), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
                         #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js (VIDRIO, VIDRIO_PANEL), useSobreBarra.js
 public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
@@ -88,14 +88,14 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~66 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~67 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan). Faltan 3.3–3.7.
 - ✅ **Entrenamiento de oído** (`#/oido`): intervalos, acordes y oído absoluto, con racha y niveles.
-- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos.
+- ✅ **Diseño**: tipo iOS con resortes, modo oscuro, paleta/íconos/fuentes con significado, tres materiales (vidrio/superficie/color; barra de abajo de vidrio con botón que «se llena»; opción Desenfoque/Opaco), camino de islas con swipe y barra de puntitos, cabecera fija, swipe entre módulos, animación «temblar» general (`useTemblor`), piano que se desliza entre octavas.
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.

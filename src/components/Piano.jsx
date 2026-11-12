@@ -1,3 +1,4 @@
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   getStatus,
@@ -12,6 +13,7 @@ import {
 import { notaDesdeMidi, midi } from '../theory/notas.js'
 import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
+import { RESORTE } from '../ui/movimiento.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -61,7 +63,11 @@ function useVisibleOctaves(ref, max) {
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
  *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
  *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
- * Si no caben todas las octavas, debajo va la barra de octavas (SelectorOctava): tocar una o deslizar.
+ *  - senalar ({ nota, n }): cada vez que cambia `n`, el teclado va a la octava de `nota` (si no se ve) y su tecla
+ *    se ilumina un momento, como si se tocara (no llama a onNoteOn ni suena: el sonido lo pone quien señala).
+ * Si no caben todas las octavas, el teclado completo va en una TIRA que se recorre con un resorte hasta la octava
+ * elegida (pedido del usuario) y debajo va la barra de octavas (SelectorOctava): tocar una o deslizar; mientras
+ * se desliza, la tira acompaña al dedo y al soltar se ajusta a la octava más cercana.
  */
 export default function Piano({
   startOctave = 4,
@@ -72,49 +78,94 @@ export default function Piano({
   marcadas = [],
   compacto = false,
   ir,
+  senalar,
 }) {
   const wrapperRef = useRef(null)
   const raizRef = useRef(null)
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
   const [offset, setOffset] = useState(0) // octava desplazada cuando no caben todas
   const [active, setActive] = useState(() => new Set())
+  const [brillo, setBrillo] = useState(null) // tecla iluminada por `senalar`
   // Marcadas normalizadas a sostenidos (así "Db4" resalta la tecla C#4).
   const marcadasSet = new Set(marcadas.map((n) => notaDesdeMidi(midi(n))))
   const [status, setStatus] = useState(getStatus)
   const [audioOn, setAudioOn] = useState(isAudioRunning)
+  const reducir = useReducedMotion()
 
   // pointerId -> nota que está sonando con ese dedo
   const pointers = useRef(new Map())
 
   const maxOffset = octaves - visibleOctaves
-  const firstOctave = startOctave + Math.min(offset, maxOffset)
-  const { white, black } = buildKeys(firstOctave, visibleOctaves)
+  const indice = Math.min(offset, maxOffset)
+  // Todas las teclas están siempre; la tira mide `octaves / visibleOctaves` veces el ancho del teclado.
+  const { white, black } = buildKeys(startOctave, octaves)
 
-  // Al cambiar de octava, las teclas pintadas (marcadas) se desvanecen y aparecen las de la nueva octava
-  // (pedido del usuario: así se entiende que cambió). Las teclas van por POSICIÓN (key = índice), no por
-  // nota, para que sea la misma tecla la que cambia de color con un fundido de 300 ms; el resto del tiempo,
-  // 75 ms (lo que se toca responde al instante).
-  const [cambiando, setCambiando] = useState(false)
-  const octavaAntes = useRef(firstOctave)
+  // ——— La tira: `pos` = octava que se ve (en octavas desde startOctave; continua mientras se mueve) ———
+  const pos = useMotionValue(indice)
+  const xTira = useTransform(pos, (p) => `${(-p * 100) / octaves}%`)
+  const siguiendo = useRef(false) // el dedo arrastra la barra de octavas: la tira lo acompaña
+  const animacion = useRef(null)
+  const indiceRef = useRef(indice)
+  indiceRef.current = indice
+
+  const mover = useCallback(
+    (destino, resorte) => {
+      animacion.current?.stop()
+      if (reducir) pos.set(destino) // reducir movimiento: sin recorrido, salta
+      else animacion.current = animate(pos, destino, resorte)
+    },
+    [pos, reducir],
+  )
+
+  // La octava elegida (toque en la barra, `ir`, `senalar`, soltar el dedo) → la tira se recorre hasta ella.
   useEffect(() => {
-    if (octavaAntes.current === firstOctave) return
-    octavaAntes.current = firstOctave
-    setCambiando(true)
-    const t = setTimeout(() => setCambiando(false), 400)
-    return () => clearTimeout(t)
-  }, [firstOctave])
-  const fundido = cambiando ? 'duration-300' : 'duration-75'
+    if (!siguiendo.current) mover(indice, RESORTE.pantalla)
+  }, [indice, mover])
+  useEffect(() => () => animacion.current?.stop(), [])
+
+  // Mientras se arrastra la barra: la tira sigue al dedo (posición continua en octavas); al soltar, se ajusta.
+  const seguir = useCallback(
+    (p) => {
+      if (p == null) {
+        siguiendo.current = false
+        mover(indiceRef.current, RESORTE.pantalla)
+      } else {
+        siguiendo.current = true
+        if (reducir) pos.set(p)
+        else mover(p, RESORTE.pulsar)
+      }
+    },
+    [mover, pos, reducir],
+  )
+
+  /** Octava visible a la que hay que ir para ver `nota` (o la de ahora si ya se ve). */
+  const desplazarA = useCallback(
+    (nota, o) => {
+      const octava = Math.floor(midi(nota) / 12) - 1
+      const primera = startOctave + Math.min(o, maxOffset)
+      if (octava >= primera && octava < primera + visibleOctaves) return o
+      return Math.max(0, Math.min(maxOffset, octava - startOctave))
+    },
+    [startOctave, maxOffset, visibleOctaves],
+  )
 
   // Llevar la vista a la octava de `ir` si queda fuera (solo cuando cambia `ir`).
   const octavaIr = ir ? Math.floor(midi(ir) / 12) - 1 : null
   useEffect(() => {
     if (octavaIr == null || maxOffset <= 0) return
-    setOffset((o) => {
-      const primera = startOctave + Math.min(o, maxOffset)
-      if (octavaIr >= primera && octavaIr < primera + visibleOctaves) return o
-      return Math.max(0, Math.min(maxOffset, octavaIr - startOctave))
-    })
-  }, [octavaIr, startOctave, maxOffset, visibleOctaves])
+    setOffset((o) => desplazarA(`C${octavaIr}`, o))
+  }, [octavaIr, maxOffset, desplazarA])
+
+  // `senalar`: ir a su octava e iluminar la tecla un momento.
+  const nSenal = senalar?.n
+  const notaSenal = senalar?.nota
+  useEffect(() => {
+    if (!notaSenal) return
+    if (maxOffset > 0) setOffset((o) => desplazarA(notaSenal, o))
+    setBrillo(notaDesdeMidi(midi(notaSenal)))
+    const t = setTimeout(() => setBrillo(null), 600)
+    return () => clearTimeout(t)
+  }, [nSenal])
 
   useEffect(() => {
     initPiano()
@@ -156,14 +207,15 @@ export default function Piano({
 
   const release = useCallback((pointerId) => press(pointerId, null), [press])
 
-  // Al desmontar o cambiar de octava, soltar todo
+  // Al desmontar o cambiar cuántas octavas caben, soltar todo. (Al recorrer la tira no: la nota que se
+  // mantiene sigue sonando y, al mover el dedo, pasa a la tecla que quede debajo.)
   useEffect(() => {
     const map = pointers.current
     return () => {
       map.clear()
       releaseAll()
     }
-  }, [firstOctave, visibleOctaves])
+  }, [visibleOctaves])
 
   const noteAt = (x, y) => {
     const el = document.elementFromPoint(x, y)
@@ -215,47 +267,54 @@ export default function Piano({
         onPointerLeave={handlePointerEnd}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <div className="flex h-full gap-px">
-          {white.map(({ note, label, octave }, i) => (
-            <div
-              key={i}
-              data-note={note}
-              className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors ${fundido} ${
-                active.has(note)
-                  ? 'bg-sky-200 text-sky-900'
-                  : marcadasSet.has(note)
-                    ? 'bg-fijate-claro text-fijate-tinta'
-                    : 'bg-white text-zinc-400'
-              }`}
-            >
-              {showLabels && (
-                <span className="pointer-events-none">
-                  {label}
-                  {label === 'Do' && <sub className="text-[0.7em]">{octave}</sub>}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        <motion.div
+          data-tira
+          className="absolute inset-y-0 left-0"
+          style={{ width: `${(octaves / visibleOctaves) * 100}%`, x: xTira }}
+        >
+          <div className="flex h-full gap-px">
+            {white.map(({ note, label, octave }) => (
+              <div
+                key={note}
+                data-note={note}
+                className={`flex flex-1 items-end justify-center rounded-b-lg pb-3 text-sm font-medium transition-colors duration-75 ${
+                  active.has(note) || brillo === note
+                    ? 'bg-sky-200 text-sky-900'
+                    : marcadasSet.has(note)
+                      ? 'bg-fijate-claro text-fijate-tinta'
+                      : 'bg-white text-zinc-400'
+                }`}
+              >
+                {showLabels && (
+                  <span className="pointer-events-none">
+                    {label}
+                    {label === 'Do' && <sub className="text-[0.7em]">{octave}</sub>}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
 
-        {black.map(({ note, afterWhite }, i) => (
-          <div
-            key={i}
-            data-note={note}
-            className={`absolute top-0 h-[60%] rounded-b-md transition-colors ${fundido} ${
-              active.has(note) ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
-            }`}
-            style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
-          />
-        ))}
+          {black.map(({ note, afterWhite }) => (
+            <div
+              key={note}
+              data-note={note}
+              className={`absolute top-0 h-[60%] rounded-b-md transition-colors duration-75 ${
+                active.has(note) || brillo === note ? 'bg-sky-500' : marcadasSet.has(note) ? 'bg-fijate' : 'bg-zinc-900'
+              }`}
+              style={{ left: `${afterWhite * whiteWidth - blackWidth / 2}%`, width: `${blackWidth}%` }}
+            />
+          ))}
+        </motion.div>
       </div>
 
       {/* Si no caben todas las octavas (celular), una barra de octavas debajo: tocar o deslizar. */}
       {maxOffset > 0 && (
         <SelectorOctava
           octavas={Array.from({ length: maxOffset + 1 }, (_, i) => startOctave + i)}
-          indice={Math.min(offset, maxOffset)}
+          indice={indice}
           onCambiar={setOffset}
+          onSeguir={seguir}
         />
       )}
     </div>

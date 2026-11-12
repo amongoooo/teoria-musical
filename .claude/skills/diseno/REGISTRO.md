@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) Nueva animación general **«temblar»** (`useTemblor` + `TEMBLOR`): x, y y giro en ~0,25 s, amplitud inversa al tamaño en cada eje, giro inverso al tamaño, sentido e inicio al azar por movimiento; con reducir movimiento, parpadeo. Reemplaza el temblor solo en x de `Casilla`. En «Encuentra la nota» las **casillas también son botones** (gris = solo suena; verde = el piano va a su tecla y la ilumina). El **Piano va en una tira** que se recorre con resorte entre octavas y acompaña al dedo en la barra de octavas (sustituye al fundido de teclas al cambiar de octava).
 - 2026-11-12: (pedido del usuario) La píldora de la **barra de octavas nunca se queda entre dos valores** (salta con resorte); al cambiar de octava las **teclas pintadas se desvanecen**; una casilla ya conseguida **tiembla** si se vuelve a tocar su nota; pasos P4 **compactos** («Encuentra la nota», sin texto explicativo).
 - 2026-11-12: (pedido del usuario) Con una isla abierta, **subir la página** (dedo hacia abajo o rueda hacia arriba) **cierra la isla** y vuelve la vista completa; los desplazamientos automáticos, deslizar de lado y bajar la página no la cierran.
 - 2026-11-11: (pedido del usuario) **Barra de octavas** debajo del Piano (control segmentado delgado que también es slider) en lugar de las flechas ‹ ›; **casillas de objetivo** del teclado más grandes, sin ✓ ni círculo: al acertar dan un `POP` y se rellenan de verde.

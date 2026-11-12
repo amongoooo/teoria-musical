@@ -1,4 +1,4 @@
-import { motion, useAnimationControls } from 'motion/react'
+import { motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { Note } from 'tonal'
@@ -16,6 +16,8 @@ import {
 import { compararAltura, frecuencia, hz, midi, nombre } from '../../theory/notas.js'
 import BotonSonido from '../BotonSonido.jsx'
 import { ENTRA_DERECHA, POP, SALTO, SUBE } from '../../ui/movimiento.js'
+import Pulsable from '../../ui/Pulsable.jsx'
+import useTemblor from '../../ui/useTemblor.js'
 import Piano from '../Piano.jsx'
 import Rondas from './Rondas.jsx'
 
@@ -89,14 +91,17 @@ function Explorar({ paso, setAccion, siguiente }) {
 function Extremos({ paso, setAccion, siguiente }) {
   const { grave, aguda } = rango(paso.piano)
   const [encontradas, setEncontradas] = useState({ grave: false, aguda: false })
+  const [sacudidas, setSacudidas] = useState({}) // { grave: 2 }: veces que se volvió a tocar una ya encontrada
   const listo = encontradas.grave && encontradas.aguda
 
   const onNoteOn = useCallback(
     (nota) => {
-      if (nota === grave) setEncontradas((e) => ({ ...e, grave: true }))
-      if (nota === aguda) setEncontradas((e) => ({ ...e, aguda: true }))
+      const cual = nota === grave ? 'grave' : nota === aguda ? 'aguda' : null
+      if (!cual) return
+      if (encontradas[cual]) setSacudidas((s) => ({ ...s, [cual]: (s[cual] ?? 0) + 1 }))
+      else setEncontradas((e) => ({ ...e, [cual]: true }))
     },
-    [grave, aguda],
+    [grave, aguda, encontradas],
   )
 
   useEffect(() => {
@@ -118,8 +123,8 @@ function Extremos({ paso, setAccion, siguiente }) {
   return (
     <div className="flex flex-col gap-3">
       <ul className="grid grid-cols-2 gap-3">
-        <Casilla ok={encontradas.grave}>La más grave</Casilla>
-        <Casilla ok={encontradas.aguda}>La más aguda</Casilla>
+        <Casilla ok={encontradas.grave} sacude={sacudidas.grave}>La más grave</Casilla>
+        <Casilla ok={encontradas.aguda} sacude={sacudidas.aguda}>La más aguda</Casilla>
       </ul>
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} />
     </div>
@@ -143,30 +148,40 @@ function UltimaNota({ nota }) {
 /**
  * Casilla de un objetivo del teclado («La3», «La más grave»…). Pedido del usuario: sin ✓ ni círculo, más
  * grande; al conseguirla da un «pop» y se rellena de verde (el relleno sólido es la segunda señal además del color).
- * `sacude` (un contador): cada vez que sube, la casilla tiembla un poco (se tocó otra vez una ya conseguida:
- * así se ve cuál es).
+ * `sacude` (un contador): cada vez que sube, la casilla tiembla (`useTemblor`: se tocó otra vez en el piano una
+ * nota ya conseguida, así se ve cuál es).
+ * Con `onTocar` la casilla también es un botón (`etiqueta` = su nombre para lectores de pantalla).
  */
-function Casilla({ ok, sacude = 0, children }) {
-  const temblor = useAnimationControls()
+function Casilla({ ok, sacude = 0, onTocar, etiqueta, children }) {
+  const [ref, temblar] = useTemblor()
   useEffect(() => {
-    if (sacude > 0) temblor.start({ x: [0, -7, 7, -5, 5, -2, 0], transition: { duration: 0.4, ease: 'easeOut' } })
-  }, [sacude, temblor])
+    if (sacude > 0) temblar()
+  }, [sacude, temblar])
+  const caja = (
+    <motion.div
+      initial={false}
+      animate={ok ? POP : { scale: 1 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
+        ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
+      }`}
+    >
+      <span>
+        {children}
+        {ok && !onTocar && <span className="sr-only"> (conseguida)</span>}
+      </span>
+    </motion.div>
+  )
   return (
-    <motion.li animate={temblor}>
-      <motion.div
-        initial={false}
-        animate={ok ? POP : { scale: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className={`grid min-h-16 place-items-center rounded-2xl border-2 px-3 py-2 text-center text-xl font-semibold transition-colors duration-200 ${
-          ok ? 'border-bien-relleno bg-bien-relleno text-blanco' : 'border-zinc-200 bg-white text-zinc-700'
-        }`}
-      >
-        <span>
-          {children}
-          {ok && <span className="sr-only"> (conseguida)</span>}
-        </span>
-      </motion.div>
-    </motion.li>
+    <li ref={ref}>
+      {onTocar ? (
+        <Pulsable onClick={onTocar} aria-label={etiqueta} data-casilla={ok ? 'ok' : 'pendiente'} className="block w-full rounded-2xl">
+          {caja}
+        </Pulsable>
+      ) : (
+        caja
+      )}
+    </li>
   )
 }
 
@@ -273,7 +288,8 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
   const [intento, setIntento] = useState(null) // { nota, tipo: 'nueva' | 'repetida' | 'otra' }
   const [fallos, setFallos] = useState(0) // fallos en la ronda actual
   const [aciertos, setAciertos] = useState(0) // rondas sin fallos
-  const [sacudida, setSacudida] = useState({ nota: null, n: 0 }) // casilla ya conseguida que se volvió a tocar
+  const [sacudidas, setSacudidas] = useState({}) // { A4: 2 }: veces que se volvió a tocar una ya conseguida
+  const [senal, setSenal] = useState(null) // { nota, n }: casilla verde tocada → el piano va a su tecla
   const ronda = rondas[r]
   const objetivos = enCadaOctava(ronda.nota, paso.piano)
   const listo = encontradas.length === objetivos.length
@@ -282,16 +298,17 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
 
   const onNoteOn = useCallback(
     (nota) => {
-      if (listo) return
-      if (!mismaNota(nota, objetivos[0])) {
-        setFallos((f) => f + 1)
-        setIntento({ nota, tipo: 'otra' })
+      const objetivo = objetivos.find((o) => midi(o) === midi(nota))
+      // Una ya conseguida: su casilla tiembla (también cuando ya están todas).
+      if (objetivo && encontradas.includes(objetivo)) {
+        setSacudidas((s) => ({ ...s, [objetivo]: (s[objetivo] ?? 0) + 1 }))
+        if (!listo) setIntento({ nota, tipo: 'repetida' })
         return
       }
-      const objetivo = objetivos.find((o) => midi(o) === midi(nota))
-      if (encontradas.includes(objetivo)) {
-        setIntento({ nota, tipo: 'repetida' })
-        setSacudida((s) => ({ nota: objetivo, n: s.n + 1 }))
+      if (listo) return
+      if (!objetivo || !mismaNota(nota, objetivos[0])) {
+        setFallos((f) => f + 1)
+        setIntento({ nota, tipo: 'otra' })
         return
       }
       const nuevas = [...encontradas, objetivo]
@@ -305,6 +322,13 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
     },
     [listo, objetivos, encontradas, aciertos, fallos, ultima, rondas.length, completar],
   )
+
+  // Las casillas también son botones: gris → solo suena su nota (no se regala dónde está); verde → suena y el
+  // piano va a su octava e ilumina la tecla (sirve para repasar, también con todas encontradas).
+  const tocarCasilla = (o) => {
+    playNotes(o)
+    if (encontradas.includes(o)) setSenal((s) => ({ nota: o, n: (s?.n ?? 0) + 1 }))
+  }
 
   useEffect(() => {
     let feedback = null
@@ -336,6 +360,8 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
         setEncontradas([])
         setIntento(null)
         setFallos(0)
+        setSacudidas({})
+        setSenal(null)
       },
     })
   }, [listo, intento, ronda, objetivos, encontradas.length, nombreSolo, ultima, r, setAccion, siguiente])
@@ -350,11 +376,20 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
       </motion.p>
 
       <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${objetivos.length}, minmax(0, 1fr))` }}>
-        {objetivos.map((o) => (
-          <Casilla key={o} ok={encontradas.includes(o)} sacude={sacudida.nota === o ? sacudida.n : 0}>
-            {nombre(o)}
-          </Casilla>
-        ))}
+        {objetivos.map((o) => {
+          const ok = encontradas.includes(o)
+          return (
+            <Casilla
+              key={o}
+              ok={ok}
+              sacude={sacudidas[o]}
+              onTocar={() => tocarCasilla(o)}
+              etiqueta={ok ? `${nombre(o)}, encontrada: ver en el teclado` : `Escuchar ${nombre(o)}`}
+            >
+              {nombre(o)}
+            </Casilla>
+          )
+        })}
       </ul>
 
       {listo && (
@@ -367,7 +402,7 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
         </motion.div>
       )}
 
-      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={encontradas} />
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={encontradas} senalar={senal} />
     </div>
   )
 }
