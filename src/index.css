@@ -62,6 +62,9 @@
   --color-bien-suave: #e7f4e5;
   /* Fíjate / pista / tecla marcada (con bombilla). El relleno lleva texto oscuro (`text-negro`). */
   --color-fijate: #dab163;
+  /* Programar el tema (Opciones → Apariencia): sol = modo claro, luna = modo oscuro (Lospec500). */
+  --color-dia: #f3a833;
+  --color-noche: #3859b3;
   --color-fijate-tinta: #816838;
   --color-fijate-suave: #faf3e8;
   --color-fijate-claro: #f0dcae;
@@ -125,6 +128,7 @@
 .dark {
   color-scheme: dark;
   --mezcla-tinta: white;
+  --color-noche: #4667ba;
   --color-fondo: #07080f;
   --color-white: #1d1f29;
   --color-zinc-50: #262833;

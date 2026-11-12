@@ -1,6 +1,8 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'pagina' | 'invertido', admin: boolean }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema' | 'programa', programa: { claro: 420, oscuro: 1200 }, vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'pagina' | 'invertido', admin: boolean }
+// (programa: a qué hora del día empieza el modo claro y a cuál el oscuro, en minutos desde las 0:00, o null si no se ha
+//  puesto; cada punto manda desde su hora hasta la del otro. Sin ninguno, «Programar» se comporta como Automático)
 // (admin: modo administrador, se activa con PIN en Opciones: todas las lecciones abiertas y saltar entre pasos; ver admin.js)
 // (octavas: sentido de la barra de octavas del Piano; 'teclas' = invertida, como arrastrar el teclado)
 // (gesto: sentido del gesto del botón de las lecciones; 'pagina' (predeterminado) = el lado donde empieza es de donde
@@ -10,8 +12,9 @@
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
-export const TEMAS = ['claro', 'oscuro', 'sistema']
+const PREDETERMINADAS = { tema: 'claro', programa: { claro: null, oscuro: null }, vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
+export const TEMAS = ['claro', 'oscuro', 'sistema', 'programa']
+export const MINUTOS_DIA = 24 * 60
 export const VIDRIOS = ['desenfoque', 'opaco']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
 export const GESTOS = ['pagina', 'invertido']
@@ -26,6 +29,7 @@ function leer() {
     const data = JSON.parse(localStorage.getItem(CLAVE) ?? 'null')
     cache = { ...PREDETERMINADAS, ...(data && typeof data === 'object' ? data : {}) }
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
+    cache.programa = limpiarPrograma(cache.programa)
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
     if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
     if (!GESTOS.includes(cache.gesto)) cache.gesto = PREDETERMINADAS.gesto
@@ -48,8 +52,29 @@ function escribir(datos) {
 
 const sistema = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)')
 
+const esMinuto = (m) => Number.isInteger(m) && m >= 0 && m < MINUTOS_DIA
+function limpiarPrograma(p) {
+  return { claro: esMinuto(p?.claro) ? p.claro : null, oscuro: esMinuto(p?.oscuro) ? p.oscuro : null }
+}
+
+/**
+ * Con «Programar»: ¿toca oscuro a esta hora? Cada punto manda desde su hora (hacia la derecha, dando la vuelta a
+ * medianoche) hasta la del otro; con un solo punto, ese manda todo el día; sin ninguno, null (como Automático).
+ */
+export function oscuroProgramado({ claro, oscuro } = {}, fecha = new Date()) {
+  if (claro == null && oscuro == null) return null
+  if (oscuro == null) return false
+  if (claro == null) return true
+  const m = fecha.getHours() * 60 + fecha.getMinutes()
+  const d = MINUTOS_DIA
+  return (m - oscuro + d) % d < (claro - oscuro + d) % d
+}
+
 /** ¿Se ve oscuro con este tema? */
-export const esOscuro = (tema) => tema === 'oscuro' || (tema === 'sistema' && Boolean(sistema()?.matches))
+export const esOscuro = (tema, programa = leer().programa) =>
+  tema === 'oscuro' ||
+  (tema === 'sistema' && Boolean(sistema()?.matches)) ||
+  (tema === 'programa' && (oscuroProgramado(programa) ?? Boolean(sistema()?.matches)))
 
 /** Pone o quita la clase `dark` en <html> y ajusta el color de la barra del navegador. */
 export function aplicarTema(tema = leer().tema, { fundido = false } = {}) {
@@ -69,6 +94,13 @@ export function setTema(tema) {
   if (!TEMAS.includes(tema)) return
   escribir({ ...leer(), tema })
   aplicarTema(tema, { fundido: true })
+}
+
+/** «Programar»: guarda a qué hora empieza el modo claro y a cuál el oscuro (minutos o null) y lo aplica. */
+export function setPrograma(programa) {
+  const datos = { ...leer(), programa: limpiarPrograma(programa) }
+  escribir(datos)
+  aplicarTema(datos.tema, { fundido: true })
 }
 
 /** Pone o quita la clase `opaco` en <html>: el vidrio pasa a superficie sólida (reglas en src/index.css). */
@@ -101,6 +133,13 @@ export function setAdmin(admin) {
 
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.
 sistema()?.addEventListener?.('change', () => aplicarTema(leer().tema, { fundido: true }))
+
+// En «Programar», cambiar a la hora puesta aunque la app siga abierta (y al volver a ella).
+if (typeof window !== 'undefined') {
+  const revisar = () => leer().tema === 'programa' && aplicarTema('programa', { fundido: true })
+  setInterval(revisar, 20 * 1000)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && revisar())
+}
 
 function subscribe(l) {
   listeners.add(l)
