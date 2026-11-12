@@ -347,7 +347,7 @@ function Entrenador({ modo }) {
 
   let accion
   if (!jugando) {
-    accion = { label: 'Empezar', onClick: empezar }
+    accion = { label: 'Empezar', onClick: empezar, flotante: true }
   } else if (limpiando) {
     accion = { label: 'Continuar', disabled: true, onClick: () => {}, ayuda: 'Borrando la referencia… escucha: ahora viene la nota' }
   } else if (!respuesta) {

@@ -24,6 +24,9 @@ import useGestoBoton from '../ui/useGestoBoton.js'
 import { VIDRIO, VIDRIO_BOTON } from '../ui/vidrio.js'
 
 // Tipo de paso -> componente. Para un tipo nuevo: créalo y añádelo aquí.
+/** Pasos que nunca muestran retroalimentación (el recuadro del foquito): su botón flota solo, sin panel. */
+const SIN_INFORMACION = new Set(['texto', 'siente', 'reto'])
+
 const PASOS = {
   texto: PasoTexto,
   siente: PasoSiente,
@@ -45,6 +48,7 @@ const PASOS = {
  *  - avanza: true cuando ese botón pasa al paso siguiente (el paso está resuelto): así el gesto del botón
  *    deja avanzar (tarjeta amarilla) sin modo administrador.
  *  - feedback: { tipo: 'bien' | 'mal', titulo, texto } aparece sobre el botón.
+ *  - flotante: true cuando el botón nunca tendrá retroalimentación ni ayuda: va solo, sin el panel de debajo.
  *  - completar({ aciertos, total }) guarda la puntuación del paso.
  *  - siguiente() avanza al siguiente paso.
  */
@@ -138,7 +142,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const paso = leccion.pasos[indice]
   const Componente = PASOS[paso.tipo]
-  const boton = accion ?? { label: 'Continuar', onClick: siguiente, avanza: true }
+  const boton = accion ?? { label: 'Continuar', onClick: siguiente, avanza: true, flotante: SIN_INFORMACION.has(paso.tipo) }
 
   // El botón también pasa de paso con un gesto (deslizar o mantener un borde). Volver: siempre (salvo en el
   // primero). Avanzar: si el paso está resuelto (como «Siguiente»); en modo administrador, siempre. En los
@@ -332,6 +336,11 @@ function Etiqueta({ paso, indice }) {
  */
 export function BarraAccion({ accion, navegacion = null }) {
   const { feedback } = accion
+  // Sin retroalimentación posible (explicaciones, «Empezar»…): solo el botón de vidrio, flotando, sin el panel
+  // (pedido del usuario). Su color es un poco translúcido y desenfoca lo de detrás: se nota que es vidrio.
+  const flotante = Boolean(accion.flotante) && !feedback && !accion.ayuda
+  const { vidrio: material } = useOpciones()
+  const translucido = flotante && material !== 'opaco'
   const bien = feedback?.tipo === 'bien'
   const listo = !accion.disabled
   const color = !listo ? 'apagado' : bien ? 'bien' : 'listo'
@@ -379,7 +388,18 @@ export function BarraAccion({ accion, navegacion = null }) {
 
   return (
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] border border-zinc-200 bg-white p-2.5 shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]">
+      <div
+        data-panel={flotante ? 'flotante' : 'panel'}
+        className={`relative mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] p-2.5 ${flotante ? '' : 'pointer-events-auto'}`}
+      >
+        {/* El panel sólido (superficie) va en su propia capa: aparece y se va con un fundido. */}
+        <motion.div
+          aria-hidden
+          className="absolute inset-0 rounded-[1.625rem] border border-zinc-200 bg-white shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]"
+          initial={false}
+          animate={{ opacity: flotante ? 0 : 1 }}
+          transition={{ duration: 0.2 }}
+        />
         {feedback && (
           <motion.div
             key={feedback.titulo + feedback.texto}
@@ -387,7 +407,7 @@ export function BarraAccion({ accion, navegacion = null }) {
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={RESORTE.suave}
-            className={`flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-bien-suave text-bien-tinta' : 'bg-fijate-suave text-fijate-tinta'}`}
+            className={`relative flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-bien-suave text-bien-tinta' : 'bg-fijate-suave text-fijate-tinta'}`}
           >
             <p className="flex items-center gap-2 text-base font-bold leading-snug">
               {bien ? <Check className="size-5" /> : <Bombilla className="size-5" />}
@@ -400,8 +420,8 @@ export function BarraAccion({ accion, navegacion = null }) {
             )}
           </motion.div>
         )}
-        {accion.ayuda && <p className="px-2 pt-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
-        <motion.div animate={salto}>
+        {accion.ayuda && <p className="relative px-2 pt-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
+        <motion.div animate={salto} className="pointer-events-auto relative">
           {/* Zona del gesto: recibe los toques aunque el botón esté desactivado (volver atrás siempre se puede). */}
           <div
             {...(navegacion ? handlers : {})}
@@ -411,7 +431,9 @@ export function BarraAccion({ accion, navegacion = null }) {
             data-gesto-lado={actual.modo ? (actual.lado < 0 ? 'izquierda' : 'derecha') : undefined}
             data-gesto-puede={actual.modo ? String(actual.puede) : undefined}
             data-gesto-listo={actual.modo ? String(actual.listo) : undefined}
-            className="relative select-none [-webkit-touch-callout:none]"
+            className={`relative select-none rounded-2xl transition-shadow duration-200 [-webkit-touch-callout:none] ${
+              flotante ? 'shadow-[0_8px_24px_rgb(16_18_28/0.20)] dark:shadow-[0_8px_24px_rgb(0_0_0/0.55)]' : ''
+            }`}
             style={{ touchAction: 'pan-y' }}
           >
             <Pulsable
@@ -421,9 +443,20 @@ export function BarraAccion({ accion, navegacion = null }) {
             >
               {/* Todo va DENTRO del botón: al presionarlo se encoge junto con él y nada se sale. */}
               {/* Debajo, el vidrio claro de «desactivado»: con el gesto, el color se desvanece y queda este. */}
-              <span aria-hidden className="absolute -inset-3 bg-zinc-200" />
-              <motion.span aria-hidden data-tarjeta className="absolute inset-0" style={{ opacity: opTarjeta }}>
-                <TarjetaColor color={color} origen={origen} />
+              {/* Flotando (sin panel), el vidrio desenfoca lo que pasa por detrás y su color deja verlo un poco. */}
+              {translucido && <span aria-hidden data-desenfoque className="absolute inset-0 backdrop-blur-md backdrop-saturate-150" />}
+              <motion.span
+                aria-hidden
+                data-translucido={translucido || undefined}
+                className="absolute inset-0"
+                initial={false}
+                animate={{ opacity: translucido ? OPACIDAD_FLOTANTE : 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span aria-hidden className="absolute -inset-3 bg-zinc-200" />
+                <motion.span aria-hidden data-tarjeta className="absolute inset-0" style={{ opacity: opTarjeta }}>
+                  <TarjetaColor color={color} origen={origen} />
+                </motion.span>
               </motion.span>
               <Brillo gesto={gesto} activa={activa} fase={fase} dedoX={dedoX} dedoY={dedoY} tono={misma ? TEXTO_BOTON[color] : tonoGesto(gesto)} />
               <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
@@ -437,6 +470,8 @@ export function BarraAccion({ accion, navegacion = null }) {
   )
 }
 
+/** Opacidad del color del botón cuando flota sin panel: deja ver (desenfocado) lo que pasa por detrás. */
+const OPACIDAD_FLOTANTE = 0.88
 const TEXTO_BOTON = { apagado: 'var(--color-zinc-500)', listo: 'var(--color-white)', bien: 'var(--color-blanco)' }
 const COLOR_BOTON = { apagado: 'var(--color-zinc-200)', listo: 'var(--color-zinc-900)', bien: 'var(--color-bien-relleno)' }
 // El tinte nuevo es un óvalo con borde degradado (sólido hasta el 55 % del radio). Desde el centro, a escala CUBRE la
