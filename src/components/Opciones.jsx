@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
-import { setTema, setVidrio, useOpciones } from '../progress/opciones.js'
+import { setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import { Opciones as IconoOpciones } from '../ui/Iconos.jsx'
@@ -19,9 +19,15 @@ const VIDRIOS = [
   { id: 'opaco', nombre: 'Opaco' },
 ]
 
+const OCTAVAS = [
+  { id: 'vista', nombre: 'Mover la vista' },
+  { id: 'teclas', nombre: 'Mover las teclas' },
+]
+
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
- * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono), Vidrio (Desenfoque / Opaco) y Tu progreso
+ * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono), Vidrio (Desenfoque / Opaco), Barra de octavas
+ * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano) y Tu progreso
  * (pasarlo a otro dispositivo).
  */
 export default function BotonOpciones({ className = '' }) {
@@ -45,7 +51,7 @@ export default function BotonOpciones({ className = '' }) {
 }
 
 function PanelOpciones({ onCerrar }) {
-  const { tema, vidrio } = useOpciones()
+  const { tema, vidrio, octavas } = useOpciones()
   return (
     <div className="flex flex-col gap-6">
       <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
@@ -69,6 +75,18 @@ function PanelOpciones({ onCerrar }) {
           {vidrio === 'opaco'
             ? 'Las barras y los botones que flotan son sólidos: más contraste y menos trabajo para el teléfono.'
             : 'Las barras y los botones que flotan dejan ver la lección desenfocada por detrás.'}
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="opciones-octavas">
+        <h3 id="opciones-octavas" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          Barra de octavas del piano
+        </h3>
+        <Segmentado opciones={OCTAVAS} valor={octavas} onCambiar={setOctavas} etiqueta="opciones-octavas" capa="octavas-activo" />
+        <p className="text-base text-zinc-600">
+          {octavas === 'teclas'
+            ? 'Las octavas van de aguda a grave (5 · 4 · 3): deslizar a la derecha arrastra el teclado y trae las notas graves.'
+            : 'Las octavas van de grave a aguda (3 · 4 · 5): deslizar a la derecha mueve la vista hacia las notas agudas.'}
         </p>
       </section>
 

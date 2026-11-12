@@ -1,14 +1,16 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco' }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema', vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas' }
+// (octavas: sentido de la barra de octavas del Piano; 'teclas' = invertida, como arrastrar el teclado)
 // index.html aplica el tema y el vidrio guardados ANTES de pintar (sin destello); este módulo los
 // mantiene al día cuando se cambian en Opciones o cuando el teléfono cambia de modo (Automático).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque' }
+const PREDETERMINADAS = { tema: 'claro', vidrio: 'desenfoque', octavas: 'vista' }
 export const TEMAS = ['claro', 'oscuro', 'sistema']
 export const VIDRIOS = ['desenfoque', 'opaco']
+export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
 const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
 
 let cache = null
@@ -21,6 +23,7 @@ function leer() {
     cache = { ...PREDETERMINADAS, ...(data && typeof data === 'object' ? data : {}) }
     if (!TEMAS.includes(cache.tema)) cache.tema = PREDETERMINADAS.tema
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
+    if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
   } catch {
     cache = { ...PREDETERMINADAS }
   }
@@ -71,6 +74,12 @@ export function setVidrio(vidrio) {
   if (!VIDRIOS.includes(vidrio)) return
   escribir({ ...leer(), vidrio })
   aplicarVidrio(vidrio)
+}
+
+/** Sentido de la barra de octavas: 'vista' (a la derecha = más agudo) o 'teclas' (al revés: se arrastra el teclado). */
+export function setOctavas(octavas) {
+  if (!SENTIDOS_OCTAVAS.includes(octavas)) return
+  escribir({ ...leer(), octavas })
 }
 
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.

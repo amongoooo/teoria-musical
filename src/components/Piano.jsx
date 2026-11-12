@@ -13,6 +13,7 @@ import {
 import { notaDesdeMidi, midi } from '../theory/notas.js'
 import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
+import { useOpciones } from '../progress/opciones.js'
 import { RESORTE } from '../ui/movimiento.js'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -91,6 +92,7 @@ export default function Piano({
   const [status, setStatus] = useState(getStatus)
   const [audioOn, setAudioOn] = useState(isAudioRunning)
   const reducir = useReducedMotion()
+  const { octavas: sentidoOctavas } = useOpciones()
 
   // pointerId -> nota que está sonando con ese dedo
   const pointers = useRef(new Map())
@@ -315,6 +317,7 @@ export default function Piano({
           indice={indice}
           onCambiar={setOffset}
           onSeguir={seguir}
+          invertida={sentidoOctavas === 'teclas'}
         />
       )}
     </div>
