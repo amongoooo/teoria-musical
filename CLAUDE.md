@@ -10,6 +10,7 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 - **Responder siempre en español.**
 - **Indicar el porcentaje de avance del proyecto en cada respuesta**, y también el **avance aproximado de la tarea en curso** (p. ej. «Tarea actual: ~40 %»).
 - **Hacer push después de cada commit.**
+- **Hacer merge a `main` siempre que se pueda** (crear el PR de la rama y unirlo al terminar cada tarea, para que se publique).
 - **Al terminar una tarea, mandar el link de la página:** https://amongoooo.github.io/teoria-musical/
 - **Al terminar, recomendar** para la siguiente tarea: chat (seguir en el mismo o abrir uno nuevo), modelo, nivel de esfuerzo y el prompt listo para copiar.
 - El usuario trabaja **casi siempre desde el celular**: evitar pasos que necesiten terminal. Todo debe poder hacerse desde GitHub web o pidiéndoselo a Claude.
