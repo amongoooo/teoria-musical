@@ -38,7 +38,8 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const [ultimaVel, setUltimaVel] = useState(null)
   const alto = filas.length > 6 ? 'h-8' : 'h-10'
   const nombres = roll.nombres ?? null
-  const ancho = nombres ? 'w-[6.5rem]' : filas.some(esPercusion) ? 'w-[4.5rem]' : 'w-14'
+  // «Sol♯4» no cabe en w-14 (DM Mono): con alguna fila de Sol♯, la columna se ensancha un poco.
+  const ancho = nombres ? 'w-[6.5rem]' : filas.some(esPercusion) ? 'w-[4.5rem]' : filas.some((f) => /^G#/.test(f)) ? 'w-16' : 'w-14'
 
   const areaRef = useRef(null)
   const cajaRef = useRef(null)

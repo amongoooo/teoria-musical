@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
 import { Note } from 'tonal'
 import {
@@ -578,17 +578,20 @@ function Formula({ paso, setAccion, siguiente, completar }) {
   const [fallosRonda, setFallosRonda] = useState(0)
   const [aciertos, setAciertos] = useState(0)
   const ronda = rondas[r]
-  const notas = formula(ronda.desde, ronda.pasos)
+  const notas = useMemo(() => formula(ronda.desde, ronda.pasos), [ronda])
   const listo = hechas === notas.length
   const ultima = r === rondas.length - 1
   const actual = notas[hechas] // la que toca ahora
   const anterior = notas[hechas - 1]
   const { senal, senalar } = useSenal()
+  const [sacudidas, setSacudidas] = useState({}) // { 3: 2 }: veces que se volvió a tocar la nota ya tocada de esa casilla
 
   const onNoteOn = useCallback(
     (nota) => {
+      // Una nota ya tocada (también con la fórmula completa): su casilla tiembla, no cuenta como fallo.
+      const ya = notas.slice(0, hechas).findLastIndex((n) => mismaTecla(n, nota))
+      if (ya >= 0) return setSacudidas((s) => ({ ...s, [ya]: (s[ya] ?? 0) + 1 }))
       if (listo) return
-      if (mismaTecla(nota, anterior)) return // repetir la última no cuenta como fallo
       if (mismaTecla(nota, actual)) {
         const n = hechas + 1
         setHechas(n)
@@ -605,7 +608,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         setFallosRonda((f) => f + 1)
       }
     },
-    [listo, anterior, actual, hechas, notas.length, aciertos, fallosRonda, ultima, rondas.length, completar],
+    [listo, notas, actual, hechas, aciertos, fallosRonda, ultima, rondas.length, completar],
   )
 
   useEffect(() => {
@@ -641,6 +644,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         setIntento(null)
         setFallos(0)
         setFallosRonda(0)
+        setSacudidas({})
         playNotes(rondas[r + 1].desde)
       },
     })
@@ -660,7 +664,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         )}
       </motion.p>
 
-      <FilaFormula notas={notas} pasos={ronda.pasos} hechas={hechas} senal={senal} />
+      <FilaFormula key={r} notas={notas} pasos={ronda.pasos} hechas={hechas} senal={senal} sacudidas={sacudidas} grados={ronda.grados} />
 
       {listo && (
         <motion.div {...SUBE}>
@@ -677,8 +681,10 @@ function Formula({ paso, setAccion, siguiente, completar }) {
  * La fórmula como una fila: una casilla por nota (las tocadas con su nombre en verde, la que toca
  * ahora con borde negro, las pendientes con «?») y, encima, el paso (T / S) entre cada pareja.
  * `senal` (de useSenal): al «Escuchar lo que tocaste», la casilla de la nota que suena lleva aro celeste.
+ * `sacudidas` ({ índice: veces }): al volver a tocar una nota ya tocada, su casilla tiembla.
+ * `grados`: debajo, el número de grado de cada nota (1 … 7 y la octava otra vez 1).
  */
-function FilaFormula({ notas, pasos, hechas, senal }) {
+function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = false }) {
   const columnas = { gridTemplateColumns: `repeat(${notas.length}, minmax(0, 1fr))` }
   return (
     <div className="flex flex-col gap-1.5" aria-label={`Fórmula: ${pasos.join(' ')}`}>
@@ -698,30 +704,55 @@ function FilaFormula({ notas, pasos, hechas, senal }) {
         ))}
       </div>
       <ol className="grid gap-1.5" style={columnas}>
-        {notas.map((n, i) => {
-          const hecha = i < hechas
-          const ahora = i === hechas
-          const suena = Boolean(senal?.activa && senal.i === i)
-          return (
-            <motion.li
-              key={i}
-              initial={false}
-              animate={hecha && i > 0 && i === hechas - 1 ? SALTO : { scale: 1 }}
-              transition={{ duration: 0.35 }}
-              data-sonando={suena || undefined}
-              className={`grid h-11 place-items-center rounded-xl border-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${suena ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''} ${
-                hecha
-                  ? 'border-bien bg-bien-suave text-bien-tinta'
-                  : ahora
-                    ? 'border-zinc-900 bg-white text-zinc-600'
-                    : 'border-zinc-200 bg-white text-zinc-500'
-              }`}
-            >
-              {hecha ? nombre(simple(n), { octava: false }) : '?'}
-            </motion.li>
-          )
-        })}
+        {notas.map((n, i) => (
+          <CasillaFormula
+            key={i}
+            hecha={i < hechas}
+            ahora={i === hechas}
+            salta={i > 0 && i === hechas - 1}
+            suena={Boolean(senal?.activa && senal.i === i)}
+            sacude={sacudidas[i] ?? 0}
+          >
+            {i < hechas ? nombre(simple(n), { octava: false }) : '?'}
+          </CasillaFormula>
+        ))}
       </ol>
+      {grados && (
+        <div className="grid gap-1.5" style={columnas} aria-label="Grados de la escala">
+          {notas.map((_, i) => (
+            <span key={i} className="text-center font-dato text-sm font-medium tabular-nums text-zinc-500">
+              {(i % 7) + 1}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
+  )
+}
+
+/** Una casilla de la fila de la fórmula. El `li` tiembla (useTemblor); dentro, el SALTO al acertar. */
+function CasillaFormula({ hecha, ahora, salta, suena, sacude, children }) {
+  const [ref, temblar] = useTemblor()
+  useEffect(() => {
+    if (sacude > 0) temblar()
+  }, [sacude, temblar])
+  return (
+    <li ref={ref} data-casilla={hecha ? 'ok' : ahora ? 'ahora' : 'pendiente'}>
+      <motion.div
+        initial={false}
+        animate={hecha && salta ? SALTO : { scale: 1 }}
+        transition={{ duration: 0.35 }}
+        data-sonando={suena || undefined}
+        className={`grid h-11 place-items-center rounded-xl border-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${suena ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''} ${
+          hecha
+            ? 'border-bien bg-bien-suave text-bien-tinta'
+            : ahora
+              ? 'border-zinc-900 bg-white text-zinc-600'
+              : 'border-zinc-200 bg-white text-zinc-500'
+        }`}
+      >
+        {children}
+      </motion.div>
+    </li>
   )
 }
