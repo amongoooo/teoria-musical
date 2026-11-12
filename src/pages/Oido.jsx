@@ -480,7 +480,7 @@ function Entrenador({ modo }) {
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
                   <Oreja className="size-[18px]" />
                   {modo.titulo} · {juego.nombre}
-                  {rapido && <span className="font-juego text-base">×{multiplicador}</span>}
+                  {rapido && <> · Nivel <span className="font-juego text-base">{multiplicador}</span></>}
                 </span>
                 {rapido ? (
                   // Rápido: el círculo tiene una parte por acierto de la ronda y en el centro, las notas de la partida.
