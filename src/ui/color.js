@@ -4,12 +4,13 @@
 // cada uno tiene sus variantes calculadas para cada tema en src/index.css (`-relleno`, `-tinta`,
 // `-suave`). Para esos, los helpers devuelven la variante; para cualquier otro color, una mezcla.
 
-const MODULO = /^var\(--color-modulo-(\d+)\)$/
+// También los colores de dificultad del entrenador de oído (`var(--color-dificultad-N)`), que tienen las mismas variantes.
+const MODULO = /^var\(--color-(modulo|dificultad)-(\d+)\)$/
 
 /** Variante de un color de papel (`var(--color-modulo-N)` → `var(--color-modulo-N-<variante>)`), o null. */
 const variante = (color, nombre) => {
   const m = MODULO.exec(String(color).trim())
-  return m ? `var(--color-modulo-${m[1]}-${nombre})` : null
+  return m ? `var(--color-${m[1]}-${m[2]}-${nombre})` : null
 }
 
 /** El color para FONDOS con texto blanco encima (`text-blanco`, contraste ≥ 4.5:1). */
