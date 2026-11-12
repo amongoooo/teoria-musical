@@ -388,6 +388,24 @@ export function BarraAccion({ accion, navegacion = null }) {
   const opTarjeta = useTransform(fase, (f) => (mismaRef.current ? 1 : 1 - f))
   const mezcla = useTransform(fase, (f) => (mismaRef.current ? 0 : f * 100))
 
+  // En computadora (pedido del usuario): Enter presiona el botón (Comprobar / Continuar), salvo escribiendo en un campo
+  // o con una hoja abierta. Se toma aunque el foco esté en una opción, para no volver a tocarla.
+  const accionRef = useRef(accion)
+  accionRef.current = accion
+  useEffect(() => {
+    const alTeclado = (e) => {
+      if (e.key !== 'Enter' || e.repeat || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const t = e.target
+      if (t?.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+      if (document.querySelector('[role="dialog"]')) return
+      const a = accionRef.current
+      e.preventDefault()
+      if (!a.disabled && a.onClick) a.onClick()
+    }
+    window.addEventListener('keydown', alTeclado)
+    return () => window.removeEventListener('keydown', alTeclado)
+  }, [])
+
   return (
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div

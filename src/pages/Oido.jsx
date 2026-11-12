@@ -34,7 +34,7 @@ import {
 } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
-import { Bocina, Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
+import { Atras, Bocina, Check, Oreja } from '../ui/Iconos.jsx'
 import { POP, RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
@@ -431,7 +431,7 @@ function Entrenador({ modo }) {
             aria-label="Volver al entrenamiento de oído"
             className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
           >
-            <Cerrar className="size-6" />
+            <Atras className="size-6" />
           </Pulsable>
           <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
             <BarraProgreso
