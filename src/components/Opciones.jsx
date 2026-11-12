@@ -7,12 +7,14 @@ import { RESORTE, SUBE } from '../ui/movimiento.js'
 import { Bombilla, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
+import ProgramarTema from './ProgramarTema.jsx'
 import TuProgreso from './TuProgreso.jsx'
 
 const TEMAS = [
   { id: 'claro', nombre: 'Claro' },
   { id: 'oscuro', nombre: 'Oscuro' },
   { id: 'sistema', nombre: 'Automático' },
+  { id: 'programa', nombre: 'Programar' },
 ]
 
 const VIDRIOS = [
@@ -32,7 +34,7 @@ const GESTOS = [
 
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
- * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono), Vidrio (Desenfoque / Opaco), Barra de octavas
+ * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono / Programar: a ciertas horas, ProgramarTema), Vidrio (Desenfoque / Opaco), Barra de octavas
  * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano), Gesto del botón de las lecciones
  * (Normal / Invertir el gesto), Tu progreso
  * (pasarlo a otro dispositivo) y Administrador (con PIN: todas las lecciones abiertas y saltar entre pasos).
@@ -63,6 +65,7 @@ const NOTA_TEMA = {
   claro: 'Fondo claro.',
   oscuro: 'Fondo oscuro, más cómodo de noche.',
   sistema: 'Sigue el modo claro u oscuro de tu teléfono.',
+  programa: null, // sin texto (pedido del usuario): la barra del día se entiende sola
 }
 const NOTA_VIDRIO = {
   desenfoque: 'Las barras que flotan dejan ver la lección desenfocada.',
@@ -92,6 +95,11 @@ function PanelOpciones({ onCerrar }) {
       <Grupo titulo="Pantalla" id="opciones-pantalla">
         <Fila titulo="Apariencia" id="opciones-apariencia" nota={NOTA_TEMA[tema]}>
           <Segmentado opciones={TEMAS} valor={tema} onCambiar={setTema} etiqueta="opciones-apariencia" capa="tema-activo" foco />
+          {tema === 'programa' && (
+            <motion.div {...SUBE}>
+              <ProgramarTema />
+            </motion.div>
+          )}
         </Fila>
         <Fila titulo="Vidrio" id="opciones-vidrio" nota={NOTA_VIDRIO[vidrio]}>
           <Segmentado opciones={VIDRIOS} valor={vidrio} onCambiar={setVidrio} etiqueta="opciones-vidrio" capa="vidrio-activo" />
@@ -224,7 +232,7 @@ function Fila({ titulo, id, nota, children }) {
         {titulo}
       </span>
       {children}
-      <p className="text-sm leading-snug text-zinc-500">{nota}</p>
+      {nota && <p className="text-sm leading-snug text-zinc-500">{nota}</p>}
     </div>
   )
 }
@@ -236,7 +244,8 @@ export function Segmentado({ opciones, valor, onCambiar, etiqueta, capa, foco = 
       role="radiogroup"
       aria-labelledby={etiqueta}
       className="grid gap-1 rounded-2xl bg-zinc-100 p-1"
-      style={{ gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))` }}
+      // Con 4 opciones (Apariencia) no caben en una fila a 375 px: van en 2 × 2.
+      style={{ gridTemplateColumns: `repeat(${opciones.length > 3 ? 2 : opciones.length}, minmax(0, 1fr))` }}
     >
       {opciones.map(({ id, nombre }) => {
         const activo = valor === id

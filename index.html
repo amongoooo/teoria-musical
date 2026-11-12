@@ -21,7 +21,18 @@
         var o = JSON.parse(localStorage.getItem('teoria-musical:opciones:v1') || '{}') || {}
         if (o.vidrio === 'opaco') document.documentElement.classList.add('opaco')
         var t = o.tema
-        if (t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        var tel = matchMedia('(prefers-color-scheme: dark)').matches
+        var osc = t === 'oscuro' || (t === 'sistema' && tel)
+        if (t === 'programa') {
+          // Igual que oscuroProgramado(): cada punto manda desde su hora hasta la del otro.
+          var p = o.programa || {}, c = p.claro, k = p.oscuro, d = new Date(), m = d.getHours() * 60 + d.getMinutes()
+          var ok = function (x) { return typeof x === 'number' && x >= 0 && x < 1440 }
+          if (!ok(c) && !ok(k)) osc = tel
+          else if (!ok(k)) osc = false
+          else if (!ok(c)) osc = true
+          else osc = (m - k + 1440) % 1440 < (c - k + 1440) % 1440
+        }
+        if (osc) {
           document.documentElement.classList.add('dark')
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#07080f')
         }

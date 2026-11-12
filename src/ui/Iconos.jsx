@@ -5,6 +5,7 @@
 //  - Qué te pide el paso:  Oreja (oído) · Teclas (practicar) · Trofeo (reto en FL)
 //  - Cómo va (con su color): Check (bien, verde) · Bombilla (fíjate, oro) · Candado (bloqueado, gris)
 //  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar · Inicio · Opciones
+//  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
 
 function Icono({ className = 'size-6', grosor = 2, children, titulo }) {
@@ -100,6 +101,25 @@ export function Bocina(props) {
     <Icono {...props}>
       <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />
       <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6.5a7.8 7.8 0 0 1 0 11" />
+    </Icono>
+  )
+}
+
+/** Sol: el modo claro (Opciones → Apariencia → Programar). */
+export function Sol(props) {
+  return (
+    <Icono {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+    </Icono>
+  )
+}
+
+/** Luna: el modo oscuro (Opciones → Apariencia → Programar). */
+export function Luna(props) {
+  return (
+    <Icono {...props}>
+      <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" />
     </Icono>
   )
 }
