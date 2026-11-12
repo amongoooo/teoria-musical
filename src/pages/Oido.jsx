@@ -22,7 +22,19 @@ import {
 import { useOpciones } from '../progress/opciones.js'
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
-import { DIRECCIONES, MODOS_OIDO, PARTES_NIVEL, claseDe, getJuego, getModoOido } from '../theory/oido.js'
+import {
+  DIRECCIONES,
+  MODOS_OIDO,
+  PARTES_NIVEL,
+  ajusteAbsoluto,
+  claseDe,
+  getJuego,
+  getModoOido,
+  nombreClase,
+  notasInicialesRapido,
+  quitarNotaAlAzar,
+  sumarNotas,
+} from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
 import { Bocina, Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
@@ -234,6 +246,18 @@ function Entrenador({ modo }) {
   const dia = datosDeHoy(estado)
   // Oído absoluto: modo de juego (Normal, Rápido, Contrarreloj) y respuesta con el piano.
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
+  // Modo Rápido: el nivel es un multiplicador y la partida lleva sus propias notas (ver JUEGOS_ABSOLUTO).
+  const rapido = Boolean(juego?.multiplicador)
+  const multiplicador = ajusteAbsoluto(datos.ajustes, 'multiplicador')
+  const cadaAciertos = ajusteAbsoluto(datos.ajustes, 'cadaAciertos')
+  const segundosPorNota = juego?.segundos ? ajusteAbsoluto(datos.ajustes, 'segundos') : null
+  // { notas, aciertos }: las notas de la partida y los aciertos que lleva (cada `cadaAciertos` se suman notas).
+  const [partida, setPartida] = useState(null)
+  const partidaRef = useRef(null)
+  const cambiarPartida = (p) => {
+    partidaRef.current = p
+    setPartida(p)
+  }
   // Se elige en la portada (junto al nivel): responder con el piano o con botones.
   const conPiano = Boolean(modo.piano) && datos.ajustes.respuesta !== 'botones'
   const { gesto: sentidoGesto } = useOpciones()
@@ -280,9 +304,10 @@ function Entrenador({ modo }) {
 
   const nueva = () => {
     const d = datosModo(modo.id)
-    const p = modo.generar(d.nivel, d.ajustes, pregunta)
+    const ajustes = rapido && partidaRef.current ? { ...d.ajustes, notas: partidaRef.current.notas } : d.ajustes
+    const p = modo.generar(d.nivel, ajustes, pregunta)
     contador.current += 1
-    setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel, d.ajustes) })
+    setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel, ajustes) })
     setRespuesta(null)
     setResultado(null)
     window.scrollTo(0, 0)
@@ -298,14 +323,15 @@ function Entrenador({ modo }) {
       setLimpiando(false)
     }
     escuchar(p.sonido, retraso)
-    if (juego?.segundos) {
+    if (segundosPorNota) {
       const desde = performance.now() + retraso * 1000
-      setReloj({ desde, hasta: desde + juego.segundos * 1000 })
+      setReloj({ desde, hasta: desde + segundosPorNota * 1000 })
     } else setReloj(null)
   }
 
   const empezar = () => {
     empezarSesion()
+    if (rapido) cambiarPartida({ notas: notasInicialesRapido(multiplicador), aciertos: 0 })
     setJugando(true)
     nueva()
   }
@@ -324,14 +350,24 @@ function Entrenador({ modo }) {
     }
     const bien = id === pregunta.item
     setRespuesta(id)
-    setResultado(
-      registrarRespuesta(modo.id, {
-        item: pregunta.item,
-        bien,
-        niveles: modo.niveles,
-        carga: juego ? { acierto: juego.acierto, fallo: juego.fallo, partes: PARTES_NIVEL } : undefined,
-      }),
-    )
+    const r = registrarRespuesta(modo.id, {
+      item: pregunta.item,
+      bien,
+      niveles: modo.niveles,
+      sinNivel: rapido,
+      carga: juego && !rapido ? { acierto: juego.acierto, fallo: juego.fallo, partes: PARTES_NIVEL } : undefined,
+    })
+    if (rapido) {
+      // Cada `cadaAciertos` aciertos se suman N notas (el multiplicador); cada fallo quita una al azar.
+      const antes = partidaRef.current
+      const aciertos = antes.aciertos + (bien ? 1 : 0)
+      let cambio = { notas: antes.notas, sumadas: [], quitada: null }
+      if (bien && aciertos % cadaAciertos === 0) cambio = { ...cambio, ...sumarNotas(antes.notas, multiplicador) }
+      if (!bien) cambio = { ...cambio, ...quitarNotaAlAzar(antes.notas) }
+      cambiarPartida({ notas: cambio.notas, aciertos })
+      r.partida = { sumadas: cambio.sumadas, quitada: cambio.quitada }
+    }
+    setResultado(r)
     setSesion((s) => ({ aciertos: s.aciertos + (bien ? 1 : 0), total: s.total + 1 }))
   }
 
@@ -356,6 +392,11 @@ function Entrenador({ modo }) {
     const sinTiempo = respuesta === SIN_TIEMPO
     let texto = bien || sinTiempo ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta, datos.ajustes)}. ${pregunta.explicacion}`
     if (!bien) texto += conPiano ? ' Toca las teclas para compararlas.' : ' Toca las opciones para compararlas.'
+    const cambio = resultado?.partida
+    if (cambio?.sumadas.length) {
+      texto += ` **¡+${cambio.sumadas.length} ${cambio.sumadas.length === 1 ? 'nota' : 'notas'}!** ${cambio.sumadas.map((c) => nombreClase(c, datos.ajustes.cifrado)).join(', ')}.`
+    }
+    if (cambio?.quitada) texto += ` Se fue ${nombreClase(cambio.quitada, datos.ajustes.cifrado)}.`
     if (resultado?.subio) {
       const nuevos = modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')
       texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
@@ -439,15 +480,31 @@ function Entrenador({ modo }) {
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
                   <Oreja className="size-[18px]" />
                   {modo.titulo} · {juego.nombre}
+                  {rapido && <span className="font-juego text-base">×{multiplicador}</span>}
                 </span>
-                <CirculoNivel
-                  numero={modo.nombreNivel ? pregunta.nivel + 1 : pregunta.nivel}
-                  llenas={resultado ? (resultado.subio ? PARTES_NIVEL : resultado.carga) : datos.carga}
-                  maximo={datos.nivel >= modo.niveles}
-                  subio={Boolean(resultado?.subio)}
-                  nuevo={resultado?.subio ? resultado.nuevoNivel + 1 : null}
-                  acento={modo.acento}
-                />
+                {rapido ? (
+                  // Rápido: el círculo tiene una parte por acierto de la ronda y en el centro, las notas de la partida.
+                  <CirculoNivel
+                    partes={cadaAciertos}
+                    numero={pregunta.opciones.length}
+                    llenas={
+                      resultado?.partida?.sumadas.length ? cadaAciertos : (partida?.aciertos ?? 0) % cadaAciertos
+                    }
+                    maximo={false}
+                    subio={Boolean(resultado?.partida?.sumadas.length)}
+                    nuevo={resultado?.partida && (resultado.partida.sumadas.length || resultado.partida.quitada) ? partida.notas.length : null}
+                    acento={modo.acento}
+                  />
+                ) : (
+                  <CirculoNivel
+                    numero={modo.nombreNivel ? pregunta.nivel + 1 : pregunta.nivel}
+                    llenas={resultado ? (resultado.subio ? PARTES_NIVEL : resultado.carga) : datos.carga}
+                    maximo={datos.nivel >= modo.niveles}
+                    subio={Boolean(resultado?.subio)}
+                    nuevo={resultado?.subio ? resultado.nuevoNivel + 1 : null}
+                    acento={modo.acento}
+                  />
+                )}
               </div>
             ) : (
               <>
@@ -548,36 +605,39 @@ function PianoRespuesta({ pregunta, respuesta, inactivo, onResponder }) {
  * Indicador de nivel (pedido del usuario): un círculo en 8 partes que se llenan con los aciertos; en el centro, el
  * número de notas. Al llenarse sube de nivel (da un «pop» y cambia el número).
  */
-function CirculoNivel({ numero, llenas, maximo, subio, nuevo, acento }) {
+function CirculoNivel({ numero, llenas, maximo, subio, nuevo, acento, partes = PARTES_NIVEL }) {
   const R = 23
   const C = 28
   const HUECO = 20 // grados entre partes (con las puntas redondeadas)
+  const redondas = partes <= 12
   const arco = (i) => {
-    const a0 = ((-90 + i * (360 / PARTES_NIVEL) + HUECO / 2) * Math.PI) / 180
-    const a1 = ((-90 + (i + 1) * (360 / PARTES_NIVEL) - HUECO / 2) * Math.PI) / 180
+    // Con muchas partes (Rápido: hasta 20) las puntas van rectas y el hueco se achica para que cada arco se vea.
+    const hueco = redondas ? HUECO : (360 / partes) * 0.3
+    const a0 = ((-90 + i * (360 / partes) + hueco / 2) * Math.PI) / 180
+    const a1 = ((-90 + (i + 1) * (360 / partes) - hueco / 2) * Math.PI) / 180
     const p = (a) => `${(C + R * Math.cos(a)).toFixed(2)} ${(C + R * Math.sin(a)).toFixed(2)}`
     return `M ${p(a0)} A ${R} ${R} 0 0 1 ${p(a1)}`
   }
-  const total = maximo ? PARTES_NIVEL : llenas
+  const total = maximo ? partes : llenas
   const n = nuevo ?? numero
   return (
     <motion.div
       data-circulo-nivel
       data-llenas={total}
       role="img"
-      aria-label={maximo ? `${n} notas: nivel máximo` : nuevo ? `¡Subiste a ${n} notas!` : `${n} notas · ${total} de ${PARTES_NIVEL} para la siguiente`}
+      aria-label={maximo ? `${n} notas: nivel máximo` : nuevo ? `¡Subiste a ${n} notas!` : `${n} notas · ${total} de ${partes} para la siguiente`}
       className="relative grid size-14 shrink-0 place-items-center"
       animate={subio ? POP : { scale: 1 }}
       transition={{ duration: 0.4 }}
     >
       <svg viewBox="0 0 56 56" className="absolute inset-0 size-full" aria-hidden>
-        {Array.from({ length: PARTES_NIVEL }, (_, i) => (
+        {Array.from({ length: partes }, (_, i) => (
           <motion.path
             key={i}
             d={arco(i)}
             fill="none"
             strokeWidth={6}
-            strokeLinecap="round"
+            strokeLinecap={redondas ? 'round' : 'butt'}
             initial={false}
             animate={{ stroke: i < total ? acento : 'var(--color-zinc-200)' }}
             transition={{ duration: 0.25, delay: subio ? i * 0.03 : 0 }}
