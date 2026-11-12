@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MINUTOS_DIA, setPrograma, setReloj, useOpciones } from '../progress/opciones.js'
 import { Luna, Sol } from '../ui/Iconos.jsx'
 import { HUNDIR, RESORTE } from '../ui/movimiento.js'
+import { useTemblorCreciente } from '../ui/useTemblor.js'
 
 // Opciones → Apariencia → «Programar» (pedido del usuario): a qué hora del día empieza el modo claro (sol, punto
 // amarillo) y a cuál el oscuro (luna, punto azul), sobre una BARRA DEL DÍA (0 a 24 h, 24 partes).
@@ -212,11 +213,14 @@ export default function ProgramarTema() {
 
   return (
     <div className="flex flex-col gap-3" data-programar>
-      <div className="flex gap-2">
-        {CLAVES.map((k) => (
+      {/* Cada bloque vive en su mitad de la fila (pedido del usuario). */}
+      <div className="grid grid-cols-2 gap-2">
+        {CLAVES.map((k, i) => (
           <Bloque
             key={k}
             k={k}
+            lado={i}
+            ambosCerrados={p.claro == null && p.oscuro == null}
             minuto={p[k]}
             activo={eligiendo === k}
             reloj={reloj}
@@ -308,7 +312,7 @@ function partesHora(m, reloj) {
  * ícono + hora. Tocar la hora cambia 24 h ↔ am/pm; tocar el borde o el ícono elige el punto; mantener pulsado (también
  * sobre la hora) dibuja un contorno del color del ícono que da la vuelta como un reloj y, al cerrarse, borra el punto.
  */
-function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
+function Bloque({ k, lado, ambosCerrados, minuto, activo, reloj, onElegir, onBorrar }) {
   const { Icono, nombre, color, icono } = PUNTOS[k]
   const puesto = minuto != null
   const reducir = useReducedMotion()
@@ -316,6 +320,8 @@ function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
   const g = useRef(null) // { id, x, y, enHora, largo, timers }
   const [borrando, setBorrando] = useState(null) // { w, h } mientras corre el reloj
   const vuelta = useMotionValue(0)
+  // Mientras corre el reloj, el bloque tiembla cada vez más (pedido del usuario).
+  const [refTemblor, empezarTemblor, pararTemblor] = useTemblorCreciente()
 
   const cancelar = () => {
     const d = g.current
@@ -323,6 +329,7 @@ function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
     d.timers.forEach(clearTimeout)
     g.current = null
     setBorrando(null)
+    pararTemblor()
     vuelta.stop()
     vuelta.set(0)
     return d
@@ -342,6 +349,7 @@ function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
         setBorrando({ w: ref.current.offsetWidth, h: ref.current.offsetHeight })
         vuelta.set(0)
         animate(vuelta, 1, reducir ? { duration: MANTENER.borrar / 1000 } : { duration: MANTENER.borrar / 1000, ease: 'linear' })
+        empezarTemblor(MANTENER.borrar)
         d.timers.push(
           setTimeout(() => {
             cancelar()
@@ -365,56 +373,84 @@ function Bloque({ k, minuto, activo, reloj, onElegir, onBorrar }) {
   }
 
   const { hora: texto, sufijo } = puesto ? partesHora(minuto, reloj) : {}
+
+  // Si la hora no cabe (p. ej. «12:00 pm» en una mitad estrecha), se desvanece antes del borde.
+  const refHora = useRef(null)
+  const [noCabe, setNoCabe] = useState(false)
+  useEffect(() => {
+    const el = refHora.current
+    if (!el) return setNoCabe(false)
+    const medir = () => setNoCabe(el.scrollWidth > el.clientWidth + 0.5)
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [texto, sufijo, puesto])
+
+  // Dónde va en su mitad: con hora, la llena; sin hora, cuadrito centrado en su mitad; con los dos sin hora, en 1/3 y
+  // 2/3 de la fila (2/3 de la mitad izquierda y 1/3 de la derecha).
+  const izquierda = puesto ? 0 : ambosCerrados ? (lado === 0 ? 'calc(66.667% - 2rem)' : 'calc(33.333% - 2rem)') : 'calc(50% - 2rem)'
   return (
-    <motion.button
-      ref={ref}
-      type="button"
-      layout
-      transition={{ layout: RESORTE.suave }}
-      whileTap={{ scale: HUNDIR.tarjeta }}
-      onPointerDown={alPresionar}
-      onPointerMove={alMover}
-      onPointerUp={alSoltar}
-      onPointerCancel={cancelar}
-      onPointerLeave={cancelar}
-      onContextMenu={(e) => e.preventDefault()}
-      // Teclado (Enter / espacio): elige el punto.
-      onClick={(e) => e.detail === 0 && onElegir()}
-      aria-pressed={activo}
-      aria-label={`${nombre}: ${puesto ? hora(minuto) : 'sin hora'}`}
-      data-bloque={k}
-      data-puesto={puesto || undefined}
-      data-borrando={borrando ? true : undefined}
-      className={`relative flex min-h-16 select-none items-center rounded-2xl border-2 transition-colors duration-200 [-webkit-touch-callout:none] ${
-        puesto ? 'min-w-0 flex-1 gap-2.5 px-3' : 'size-16 shrink-0 justify-center'
-      }`}
-      style={{
-        touchAction: 'manipulation',
-        borderColor: puesto ? (activo ? color : 'var(--color-zinc-200)') : color,
-        backgroundColor: puesto ? (activo ? mezcla(color, 16) : 'var(--color-white)') : color,
-        // Sin hora y elegido: un aro de su color separado por la superficie.
-        boxShadow: !puesto && activo ? `0 0 0 3px var(--color-white), 0 0 0 6px ${mezcla(color, 55)}` : '0 0 0 0 transparent',
-      }}
-    >
-      {puesto ? (
-        <>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
-            <Icono className="size-5" />
+    <div ref={refTemblor} className="h-16" style={{ width: puesto ? '100%' : '4rem', marginLeft: izquierda }} data-celda={k}>
+      <motion.button
+        ref={ref}
+        type="button"
+        layout
+        transition={{ layout: RESORTE.suave }}
+        whileTap={{ scale: HUNDIR.tarjeta }}
+        onPointerDown={alPresionar}
+        onPointerMove={alMover}
+        onPointerUp={alSoltar}
+        onPointerCancel={cancelar}
+        onPointerLeave={cancelar}
+        onContextMenu={(e) => e.preventDefault()}
+        // Teclado (Enter / espacio): elige el punto.
+        onClick={(e) => e.detail === 0 && onElegir()}
+        aria-pressed={activo}
+        aria-label={`${nombre}: ${puesto ? hora(minuto) : 'sin hora'}`}
+        data-bloque={k}
+        data-puesto={puesto || undefined}
+        data-borrando={borrando ? true : undefined}
+        className={`relative flex size-full select-none items-center rounded-2xl border-2 transition-colors duration-200 [-webkit-touch-callout:none] ${
+          puesto ? 'gap-2.5 px-3' : 'justify-center'
+        }`}
+        style={{
+          touchAction: 'manipulation',
+          borderColor: puesto ? (activo ? color : 'var(--color-zinc-200)') : color,
+          backgroundColor: puesto ? (activo ? mezcla(color, 16) : 'var(--color-white)') : color,
+          // Sin hora y elegido: un aro de su color separado por la superficie.
+          boxShadow: !puesto && activo ? `0 0 0 3px var(--color-white), 0 0 0 6px ${mezcla(color, 55)}` : '0 0 0 0 transparent',
+        }}
+      >
+        {puesto ? (
+          <>
+            <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ backgroundColor: color, color: icono }}>
+              <Icono className="size-5" />
+            </span>
+            <span
+              ref={refHora}
+              data-hora={k}
+              data-no-cabe={noCabe || undefined}
+              className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden whitespace-nowrap py-2 font-dato font-medium tabular-nums text-zinc-900"
+              style={noCabe ? { maskImage: MASCARA, WebkitMaskImage: MASCARA } : undefined}
+            >
+              <span className="text-2xl">{texto}</span>
+              {sufijo && <span className="text-sm text-zinc-500">{sufijo}</span>}
+            </span>
+          </>
+        ) : (
+          <span className="grid place-items-center" style={{ color: icono }}>
+            <Icono className="size-7" />
           </span>
-          <span data-hora={k} className="flex min-w-0 items-baseline gap-1 whitespace-nowrap py-2 pr-1 font-dato font-medium tabular-nums text-zinc-900">
-            <span className="text-2xl">{texto}</span>
-            {sufijo && <span className="text-sm text-zinc-500">{sufijo}</span>}
-          </span>
-        </>
-      ) : (
-        <span className="grid place-items-center" style={{ color: icono }}>
-          <Icono className="size-7" />
-        </span>
-      )}
-      {borrando && <ContornoReloj {...borrando} color={color} vuelta={vuelta} />}
-    </motion.button>
+        )}
+        {borrando && <ContornoReloj {...borrando} color={color} vuelta={vuelta} />}
+      </motion.button>
+    </div>
   )
 }
+
+/** Desvanecido a la derecha de la hora cuando no cabe (no llega a tocar el borde). */
+const MASCARA = 'linear-gradient(to right, black calc(100% - 1.25rem), transparent)'
 
 /** Contorno del bloque que se dibuja como la aguja de un reloj: empieza arriba al centro y da la vuelta. */
 function ContornoReloj({ w, h, color, vuelta }) {
