@@ -76,8 +76,8 @@ export default function ArranqueOido({ modo, datos }) {
         )}
 
         <motion.section variants={itemLista} layout="position" className="grid grid-cols-2 gap-4" data-medidores>
-          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={encendidasNotas} etiquetas={CROMATICA.map((c) => nombreClase(c))} acento={acento}>
-            <RuedaNivel
+          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={encendidasNotas} etiquetas={CROMATICA.map((c) => nombreClase(c))} negras={CROMATICA.map((c) => c.includes('#'))} acento={acento}>
+            <Rueda
               key={rapido ? 'multiplicador' : 'nivel'}
               id="nivel"
               nombre="nivel"
@@ -90,7 +90,7 @@ export default function ArranqueOido({ modo, datos }) {
             />
           </Medidor>
           <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
-            <RuedaNivel
+            <Rueda
               id="dificultad"
               nombre="dificultad"
               total={dif.max}
@@ -139,8 +139,8 @@ const colorDificultad = (n) => `var(--color-dificultad-${n})`
  * Columna de medidor: título y, debajo, la rueda con una columna de puntitos al costado (por fuera). Los puntitos
  * son lo que suena: en el Nivel, las 12 notas como un piano roll (Do abajo); en la Dificultad, las octavas 2…6.
  */
-function Medidor({ id, titulo, lado, encendidos, etiquetas, acento, children }) {
-  const columna = <Puntitos encendidos={encendidos} etiquetas={etiquetas} acento={acento} />
+function Medidor({ id, titulo, lado, encendidos, etiquetas, negras, acento, children }) {
+  const columna = <Puntitos encendidos={encendidos} etiquetas={etiquetas} negras={negras} acento={acento} />
   return (
     <div className="flex flex-col items-center gap-3">
       <h2 id={id} className="text-center font-juego text-xl font-semibold uppercase tracking-wide text-zinc-800">
@@ -155,8 +155,12 @@ function Medidor({ id, titulo, lado, encendidos, etiquetas, acento, children }) 
   )
 }
 
-/** Puntitos en columna (el primero abajo): los encendidos van del color del acento y dan un pop al encenderse. */
-function Puntitos({ encendidos, etiquetas, acento }) {
+/**
+ * Puntitos en columna (el primero abajo): los encendidos van del color del acento y dan un pop al encenderse.
+ * Con `negras` (el piano roll del Nivel; pedido del usuario), los de las teclas negras van más oscuros que los de las
+ * blancas, encendidos o apagados, para distinguirlas como en un teclado.
+ */
+function Puntitos({ encendidos, etiquetas, negras, acento }) {
   const total = encendidos.length
   const grande = total <= 6
   const cuantos = encendidos.filter(Boolean).length
@@ -172,15 +176,22 @@ function Puntitos({ encendidos, etiquetas, acento }) {
       {encendidos.map((on, i) => (
         <motion.span
           key={i}
+          data-negra={negras?.[i] || undefined}
           initial={false}
           animate={on ? { scale: [1, 1.5, 1] } : { scale: 0.85 }}
           transition={{ duration: 0.3 }}
           className={`block rounded-full transition-colors duration-200 ${grande ? 'size-3.5' : 'size-2.5'}`}
-          style={{ backgroundColor: on ? acento : 'var(--color-zinc-200)' }}
+          style={{ backgroundColor: colorPuntito(on, negras?.[i], acento) }}
         />
       ))}
     </div>
   )
+}
+
+/** Color de un puntito: encendido = acento; apagado = gris; la tecla negra, más oscura en los dos casos. */
+function colorPuntito(on, negra, acento) {
+  const base = on ? acento : 'var(--color-zinc-200)'
+  return negra ? `color-mix(in oklab, ${base} ${on ? 62 : 58}%, black)` : base
 }
 
 /**
@@ -346,22 +357,22 @@ function ModosJuego({ modo, datos, acento }) {
                   </p>
                   {/* Lo único que se ajusta de cada modo: cada cuántos aciertos (Rápido) o los segundos (Contrarreloj). */}
                   {actual.multiplicador && (
-                    <Contador
+                    <AjusteRueda
                       clave="cadaAciertos"
                       valor={ajusteAbsoluto(datos.ajustes, 'cadaAciertos')}
                       onCambiar={(v) => guardarAjustes(modo.id, { cadaAciertos: v })}
-                      unidad={<Check className="size-6" />}
-                      etiqueta="aciertos para sumar notas"
+                      unidad={<Check className="size-7" />}
+                      etiqueta="Aciertos para sumar notas"
                       acento={acento}
                     />
                   )}
                   {actual.segundos && (
-                    <Contador
+                    <AjusteRueda
                       clave="segundos"
                       valor={ajusteAbsoluto(datos.ajustes, 'segundos')}
                       onCambiar={(v) => guardarAjustes(modo.id, { segundos: v })}
-                      unidad={<span className="font-juego text-xl">s</span>}
-                      etiqueta="segundos por nota"
+                      unidad={<span className="font-juego text-2xl">s</span>}
+                      etiqueta="Segundos por nota"
                       acento={acento}
                     />
                   )}
@@ -375,102 +386,92 @@ function ModosJuego({ modo, datos, acento }) {
   )
 }
 
-/** − valor + con botones redondos de juego (los ajustes de los modos). En los límites, el botón se apaga. */
-function Contador({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
+/** Ajuste de un modo (cada cuántos aciertos, segundos) en un carrusel horizontal, con su unidad al lado. */
+function AjusteRueda({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
   const { min, max } = AJUSTES_ABSOLUTO[clave]
-  const [dir, setDir] = useState(1)
-  const cambiar = (d) => {
-    setDir(d)
-    onCambiar(Math.max(min, Math.min(max, valor + d)))
-  }
   return (
-    <div className="flex items-center gap-4" data-contador={clave}>
-      <BotonRedondo onClick={() => cambiar(-1)} disabled={valor <= min} aria-label={`Menos ${etiqueta}`} acento={acento}>
-        −
-      </BotonRedondo>
-      <span className="flex min-w-20 items-center justify-center gap-1" aria-live="polite" aria-label={`${valor} ${etiqueta}`}>
-        <span className="grid overflow-hidden">
-          <AnimatePresence mode="popLayout" initial={false} custom={dir}>
-            <motion.span
-              key={valor}
-              initial={{ y: dir * -18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: dir * 18, opacity: 0 }}
-              transition={{ ...RESORTE.pulsar, opacity: { duration: 0.12 } }}
-              className="col-start-1 row-start-1 font-numero text-4xl leading-none tabular-nums"
-              data-valor={valor}
-            >
-              {valor}
-            </motion.span>
-          </AnimatePresence>
-        </span>
-        {unidad}
-      </span>
-      <BotonRedondo onClick={() => cambiar(1)} disabled={valor >= max} aria-label={`Más ${etiqueta}`} acento={acento}>
-        +
-      </BotonRedondo>
+    <div className="flex w-full items-center gap-3" data-ajuste={clave}>
+      <Rueda
+        etiqueta={etiqueta}
+        nombre={clave}
+        eje="x"
+        min={min}
+        total={max - min + 1}
+        max={max - min + 1}
+        valor={valor}
+        onElegir={onCambiar}
+        acento={acento}
+        className="h-16 min-w-0 flex-1"
+      />
+      <span className="shrink-0">{unidad}</span>
     </div>
   )
 }
 
-function BotonRedondo({ acento, children, ...props }) {
-  return (
-    <Pulsable
-      className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-zinc-200 bg-white font-juego text-3xl leading-none transition-opacity duration-200 disabled:opacity-40"
-      style={{ boxShadow: RELIEVE, color: tinta(acento) }}
-      {...props}
-    >
-      {children}
-    </Pulsable>
-  )
-}
-
 // ---------------------------------------------------------------------------
-// Rueda de nivel (vertical, el 1 abajo): se desliza con el dedo (lo sigue 1:1 tras una zona muerta corta), al soltar
-// se asienta en el más cercano (con la inercia del gesto) y con goma en los extremos. Encima del último desbloqueado
-// asoma el siguiente con candado (no se puede elegir). Tocar un nivel que se ve lo elige; flechas ↑ ↓ también.
+// Rueda (carrusel de valores): vertical (Nivel y Dificultad: el 1 abajo, los altos arriba) u horizontal (ajustes de
+// los modos: los altos a la derecha). Regla de la app (pedido del usuario): un carrusel NUNCA se queda entre dos
+// valores, siempre gana uno: mientras se arrastra, salta al más cercano al dedo con RESORTE.pulsar (tras una zona
+// muerta de 8 px); al soltar se asienta usando la inercia del gesto (RESORTE.pantalla). Más allá de los extremos,
+// goma. En Nivel, encima del último desbloqueado asoma el siguiente con candado (no se puede elegir). Tocar un valor
+// lo elige; flechas del teclado también.
 // ---------------------------------------------------------------------------
 
-const ALTO_ITEM = 68
+const TAM_ITEM = { y: 68, x: 58 }
 const ZONA_MUERTA = 8
 const INERCIA_MS = 160
 
-function RuedaNivel({ id, nombre, total, max, valor, onVista, onElegir, acento }) {
+function Rueda({
+  id,
+  etiqueta,
+  nombre,
+  eje = 'y',
+  min = 1,
+  total,
+  max,
+  valor,
+  onVista,
+  onElegir,
+  acento,
+  className = 'h-56 w-28 shrink-0',
+}) {
+  const vertical = eje === 'y'
+  const T = TAM_ITEM[eje]
   const ultimo = Math.max(0, Math.min(total, max) - 1) // índice del último que se puede elegir
   const vistos = Math.min(total, max + 1) // + el siguiente con candado
-  const pos = useMotionValue(valor - 1)
+  const pos = useMotionValue(valor - min)
   const anim = useRef(null)
   const gesto = useRef(null)
   const caja = useRef(null)
-  const [actual, setActual] = useState(valor - 1)
+  const [actual, setActual] = useState(valor - min)
 
-  // Al montarse (p. ej. al pasar de nivel a multiplicador), la cajita toma el valor de esta rueda.
+  // Al montarse (p. ej. al pasar de nivel a multiplicador), quien la usa toma su valor.
   useEffect(() => {
-    onVista(valor)
+    onVista?.(valor)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useMotionValueEvent(pos, 'change', (v) => {
     const k = Math.max(0, Math.min(ultimo, Math.round(v)))
     setActual(k)
-    onVista(k + 1)
+    onVista?.(k + min)
   })
 
+  const llevar = (k, resorte) => {
+    anim.current?.stop()
+    anim.current = animate(pos, k, resorte)
+  }
   const ir = (k) => {
     const destino = Math.max(0, Math.min(ultimo, k))
-    anim.current?.stop()
-    anim.current = animate(pos, destino, RESORTE.pantalla)
-    if (destino + 1 !== valor) onElegir(destino + 1)
+    llevar(destino, RESORTE.pantalla)
+    if (destino + min !== valor) onElegir(destino + min)
   }
 
-  // Si el nivel cambia por fuera (p. ej. se desbloquea uno), la rueda va a él.
+  // Si el valor cambia por fuera (p. ej. se desbloquea un nivel), la rueda va a él.
   useEffect(() => {
     if (gesto.current) return
-    if (Math.round(pos.get()) !== valor - 1) {
-      anim.current?.stop()
-      anim.current = animate(pos, valor - 1, RESORTE.pantalla)
-    }
-  }, [valor, pos])
+    if (Math.round(pos.get()) !== valor - min) llevar(valor - min, RESORTE.pantalla)
+  }, [valor, pos, min])
 
   const goma = (v) => {
     if (v > ultimo) return ultimo + 0.6 * (1 - 1 / (1 + (v - ultimo) * 0.9))
@@ -478,103 +479,133 @@ function RuedaNivel({ id, nombre, total, max, valor, onVista, onElegir, acento }
     return v
   }
 
+  // Coordenada del dedo en el eje: en vertical, bajar el dedo sube el valor; en horizontal, ir a la izquierda.
+  const coord = (e) => (vertical ? e.clientY : -e.clientX)
+
   const abajo = (e) => {
     anim.current?.stop()
-    gesto.current = { y0: e.clientY, p0: pos.get(), movido: false, muestras: [{ t: e.timeStamp, y: e.clientY }] }
+    const c = coord(e)
+    const k = Math.round(pos.get())
+    gesto.current = { c0: c, p0: k, objetivo: k, movido: false, muestras: [{ t: e.timeStamp, c }] }
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const mueve = (e) => {
     const g = gesto.current
     if (!g) return
-    const dy = e.clientY - g.y0
-    if (!g.movido && Math.abs(dy) < ZONA_MUERTA) return
+    const c = coord(e)
+    const d = c - g.c0
+    if (!g.movido && Math.abs(d) < ZONA_MUERTA) return
     if (!g.movido) {
       g.movido = true
-      g.y0 += Math.sign(dy) * ZONA_MUERTA // desde aquí sigue al dedo 1:1, sin salto
+      g.c0 += Math.sign(d) * ZONA_MUERTA
     }
-    g.muestras.push({ t: e.timeStamp, y: e.clientY })
+    g.muestras.push({ t: e.timeStamp, c })
     if (g.muestras.length > 6) g.muestras.shift()
-    // Dedo hacia abajo = sube el nivel (los niveles altos están arriba).
-    pos.set(goma(g.p0 + (e.clientY - g.y0) / ALTO_ITEM))
+    const crudo = g.p0 + (c - g.c0) / T
+    if (crudo > ultimo || crudo < 0) {
+      // Más allá de los extremos: goma (no hay otro valor con el que quedarse a medias).
+      anim.current?.stop()
+      g.objetivo = null
+      pos.set(goma(crudo))
+      return
+    }
+    // Siempre gana uno: salta al valor más cercano al dedo.
+    const k = Math.round(crudo)
+    if (k !== g.objetivo) {
+      g.objetivo = k
+      llevar(k, RESORTE.pulsar)
+    }
   }
   const suelta = (e) => {
     const g = gesto.current
     gesto.current = null
     if (!g) return
     if (!g.movido) {
-      // Toque: elige el nivel que está bajo el dedo.
+      // Toque: elige el valor que está bajo el dedo.
       const r = caja.current.getBoundingClientRect()
-      const k = Math.round(pos.get() - (e.clientY - (r.top + r.height / 2)) / ALTO_ITEM)
-      ir(k)
+      const desde = vertical ? -(e.clientY - (r.top + r.height / 2)) : e.clientX - (r.left + r.width / 2)
+      ir(Math.round(pos.get() + desde / T))
       return
     }
     const a = g.muestras[0]
     const b = g.muestras[g.muestras.length - 1]
-    const v = b.t > a.t ? (b.y - a.y) / (b.t - a.t) : 0 // px/ms
-    ir(Math.round(pos.get() + (v * INERCIA_MS) / ALTO_ITEM))
+    // Si el dedo se quedó quieto antes de soltar (> 80 ms sin moverse), no hay inercia: gana el valor que se ve.
+    const quieto = e.timeStamp - b.t > 80
+    const v = !quieto && b.t > a.t ? (b.c - a.c) / (b.t - a.t) : 0 // px/ms
+    const base = g.objetivo ?? pos.get()
+    ir(Math.round(base + (v * INERCIA_MS) / T))
   }
 
   const tecla = (e) => {
-    if (e.key === 'ArrowUp') ir(actual + 1)
-    else if (e.key === 'ArrowDown') ir(actual - 1)
+    const sube = vertical ? 'ArrowUp' : 'ArrowRight'
+    const baja = vertical ? 'ArrowDown' : 'ArrowLeft'
+    if (e.key === sube) ir(actual + 1)
+    else if (e.key === baja) ir(actual - 1)
     else return
     e.preventDefault()
   }
 
+  const borde = vertical ? 'to bottom' : 'to right'
+  const mascara = `linear-gradient(${borde}, transparent, black ${vertical ? 28 : 22}%, black ${vertical ? 72 : 78}%, transparent)`
   return (
     <div
       ref={caja}
       role="slider"
       tabIndex={0}
       aria-labelledby={id}
-      aria-orientation="vertical"
-      aria-valuemin={1}
-      aria-valuemax={ultimo + 1}
-      aria-valuenow={actual + 1}
-      data-rueda-nivel={nombre}
-      data-posicion={actual + 1}
+      aria-label={id ? undefined : etiqueta}
+      aria-orientation={vertical ? 'vertical' : 'horizontal'}
+      aria-valuemin={min}
+      aria-valuemax={ultimo + min}
+      aria-valuenow={actual + min}
+      data-rueda={nombre}
+      data-posicion={actual + min}
       onPointerDown={abajo}
       onPointerMove={mueve}
       onPointerUp={suelta}
       onPointerCancel={suelta}
       onKeyDown={tecla}
-      className="relative h-56 w-28 shrink-0 cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing"
+      className={`relative cursor-grab touch-none select-none rounded-3xl border-2 border-zinc-200 bg-white outline-none focus-visible:ring-4 focus-visible:ring-sky-300 active:cursor-grabbing ${className}`}
       style={{ boxShadow: RELIEVE }}
     >
-      {/* Ranura del elegido: del color del modo, como el marcador de un selector de nivel. */}
+      {/* Ranura del elegido, del color de la dificultad. */}
       <div
-        className="pointer-events-none absolute inset-x-1.5 top-1/2 rounded-2xl"
-        style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, backgroundColor: claro(acento) }}
+        className={`pointer-events-none absolute rounded-2xl ${vertical ? 'inset-x-1.5 top-1/2' : 'inset-y-1.5 left-1/2'}`}
+        style={vertical ? { height: T, marginTop: -T / 2, backgroundColor: claro(acento) } : { width: T, marginLeft: -T / 2, backgroundColor: claro(acento) }}
         aria-hidden
       />
-      <div
-        className="absolute inset-0 overflow-hidden rounded-[1.375rem]"
-        style={{
-          maskImage: 'linear-gradient(to bottom, transparent, black 28%, black 72%, transparent)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 28%, black 72%, transparent)',
-        }}
-      >
+      <div className="absolute inset-0 overflow-hidden rounded-[1.375rem]" style={{ maskImage: mascara, WebkitMaskImage: mascara }}>
         {Array.from({ length: vistos }, (_, i) => (
-          <ItemRueda key={i} i={i} pos={pos} bloqueado={i > ultimo} acento={acento} />
+          <ItemRueda key={i} i={i} valor={i + min} pos={pos} vertical={vertical} bloqueado={i > ultimo} acento={acento} />
         ))}
       </div>
     </div>
   )
 }
 
-function ItemRueda({ i, pos, bloqueado, acento }) {
-  const y = useTransform(pos, (p) => (p - i) * ALTO_ITEM)
+function ItemRueda({ i, valor, pos, vertical, bloqueado, acento }) {
+  const T = TAM_ITEM[vertical ? 'y' : 'x']
+  const desplaza = useTransform(pos, (p) => (vertical ? (p - i) * T : (i - p) * T))
   const distancia = useTransform(pos, (p) => Math.abs(p - i))
   const scale = useTransform(distancia, [0, 1, 2], [1, 0.72, 0.55])
   const opacity = useTransform(distancia, [0, 1, 2.2], [1, 0.45, 0])
   return (
     <motion.div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-1/2 grid place-items-center"
-      style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, y, scale, opacity, color: tinta(acento) }}
-      data-nivel={i + 1}
+      className={`pointer-events-none absolute grid place-items-center ${vertical ? 'inset-x-0 top-1/2' : 'inset-y-0 left-1/2'}`}
+      style={{
+        ...(vertical ? { height: T, marginTop: -T / 2, y: desplaza } : { width: T, marginLeft: -T / 2, x: desplaza }),
+        scale,
+        opacity,
+        color: tinta(acento),
+      }}
+      data-valor={valor}
     >
-      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-numero text-5xl leading-none">{i + 1}</span>}
+      {bloqueado ? (
+        <Candado className="size-9 text-zinc-400" />
+      ) : (
+        <span className={`font-juego leading-none ${vertical ? 'text-5xl' : 'text-4xl'}`}>{valor}</span>
+      )}
     </motion.div>
   )
 }

@@ -341,6 +341,8 @@ export function BarraAccion({ accion, navegacion = null }) {
   const flotante = Boolean(accion.flotante) && !feedback && !accion.ayuda
   const { vidrio: material } = useOpciones()
   const translucido = flotante && material !== 'opaco'
+  // Presionado (pedido del usuario): el botón se vuelve mate —color opaco, sin dejar ver lo de detrás y sin brillo—.
+  const [presionado, setPresionado] = useState(false)
   const bien = feedback?.tipo === 'bien'
   const listo = !accion.disabled
   const color = !listo ? 'apagado' : bien ? 'bien' : 'listo'
@@ -439,6 +441,10 @@ export function BarraAccion({ accion, navegacion = null }) {
             <Pulsable
               onClick={accion.onClick}
               disabled={accion.disabled}
+              onTapStart={() => setPresionado(true)}
+              onTap={() => setPresionado(false)}
+              onTapCancel={() => setPresionado(false)}
+              data-presionado={presionado || undefined}
               className={`relative isolate grid min-h-14 w-full place-items-center overflow-hidden rounded-2xl px-6 text-lg font-semibold ${accion.disabled ? 'pointer-events-none' : ''}`}
             >
               {/* Todo va DENTRO del botón: al presionarlo se encoge junto con él y nada se sale. */}
@@ -451,8 +457,8 @@ export function BarraAccion({ accion, navegacion = null }) {
                 data-translucido={translucido || undefined}
                 className="absolute inset-0"
                 initial={false}
-                animate={{ opacity: translucido ? OPACIDAD_FLOTANTE : 1 }}
-                transition={{ duration: 0.2 }}
+                animate={{ opacity: translucido && !presionado ? OPACIDAD_FLOTANTE : 1 }}
+                transition={{ duration: presionado ? 0.08 : 0.25 }}
               >
                 <span aria-hidden className="absolute -inset-3 bg-zinc-200" />
                 <motion.span aria-hidden data-tarjeta className="absolute inset-0" style={{ opacity: opTarjeta }}>
@@ -460,8 +466,11 @@ export function BarraAccion({ accion, navegacion = null }) {
                 </motion.span>
               </motion.span>
               <Brillo gesto={gesto} activa={activa} fase={fase} dedoX={dedoX} dedoY={dedoY} tono={misma ? TEXTO_BOTON[color] : tonoGesto(gesto)} />
-              <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
-              <span aria-hidden data-reflejo className={REFLEJO_BOTON} />
+              <span
+                aria-hidden
+                className={`absolute inset-0 rounded-2xl transition-opacity ${presionado ? 'opacity-25 duration-75' : 'duration-300'} ${VIDRIO_BOTON}`}
+              />
+              <span aria-hidden data-reflejo className={`${REFLEJO_BOTON} transition-opacity ${presionado ? 'opacity-0 duration-75' : 'duration-300'}`} />
               <Rotulo label={accion.label} gesto={gesto} mezcla={mezcla} base={TEXTO_BOTON[color]} />
               <Flechita gesto={gesto} visible={visible} cubre={cubre} invertido={Boolean(navegacion?.invertido)} color={colorFlecha(gesto, activa, misma, color)} />
             </Pulsable>
