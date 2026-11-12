@@ -13,6 +13,7 @@ App web gratuita (GitHub Pages) para aprender teoría musical y producción en F
 - **Al terminar una tarea, mandar el link de la página:** https://amongoooo.github.io/teoria-musical/
 - **Al terminar, recomendar** para la siguiente tarea: chat (seguir en el mismo o abrir uno nuevo), modelo, nivel de esfuerzo y el prompt listo para copiar.
 - El usuario trabaja **casi siempre desde el celular**: evitar pasos que necesiten terminal. Todo debe poder hacerse desde GitHub web o pidiéndoselo a Claude.
+- **Explicar lo mínimo cómo funciona la app**: que sea intuitiva (resaltar, color, movimiento) en vez de textos de instrucciones.
 - **Diseño pensado primero para celular** (mobile-first): botones grandes, nada que dependa de hover o teclado físico.
 
 ## Qué leer según la tarea

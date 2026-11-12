@@ -18,7 +18,8 @@ todo responde al instante, se hunde al tocarlo y se mueve con resortes, nunca co
 2. **Una acción principal por pantalla**: el botón grande de abajo (`BarraAccion`), un vidrio que «cambia de color» (gris claro → oscuro → verde) y que también se desliza o se mantiene para pasar de paso.
 3. **Calma**: fondo claro, mucho espacio, tipografía grande. El color se usa para guiar, no para decorar.
 4. **El error no castiga**: los fallos usan el oro de «fíjate» con bombilla (nunca rojo) y siempre explican la respuesta.
-5. **Respuesta inmediata**: todo lo tocable reacciona en el mismo frame (se hunde) y el sonido sale enseguida.
+5. **Explicar lo mínimo** (pedido del usuario): la app debe entenderse sola. Nada de textos que expliquen cómo se usa un control (gestos, barras, bloques): que lo diga el diseño (resaltar, color, movimiento). Solo texto cuando enseña música.
+6. **Respuesta inmediata**: todo lo tocable reacciona en el mismo frame (se hunde) y el sonido sale enseguida.
 
 ## 2. Tokens
 

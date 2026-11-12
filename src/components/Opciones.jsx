@@ -65,7 +65,7 @@ const NOTA_TEMA = {
   claro: 'Fondo claro.',
   oscuro: 'Fondo oscuro, más cómodo de noche.',
   sistema: 'Sigue el modo claro u oscuro de tu teléfono.',
-  programa: 'Claro y oscuro a las horas que elijas: toca el sol o la luna y ponlo en la barra del día.',
+  programa: null, // sin texto (pedido del usuario): la barra del día se entiende sola
 }
 const NOTA_VIDRIO = {
   desenfoque: 'Las barras que flotan dejan ver la lección desenfocada.',
@@ -232,7 +232,7 @@ function Fila({ titulo, id, nota, children }) {
         {titulo}
       </span>
       {children}
-      <p className="text-sm leading-snug text-zinc-500">{nota}</p>
+      {nota && <p className="text-sm leading-snug text-zinc-500">{nota}</p>}
     </div>
   )
 }
