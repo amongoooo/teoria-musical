@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **sin fondo teñido** (la página sigue clara u oscura; solo botones y controles toman el color de la dificultad). Los puntitos **representan lo que suena**: 12 = piano roll con las notas del nivel encendidas (Do abajo), 5 = octavas 2…6 que se encienden del centro a los extremos. Números del juego en **Coral Pixels** (`font-numero`, fuente a color).
 - 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **Nivel y Dificultad en dos ruedas verticales lado a lado** con **puntitos** al costado (12 notas / 5 octavas) en lugar de la cajita de notas y la tira de octavas; **la página se tiñe según la dificultad** (azul, verde, amarillo, naranja, rojo). Colores nuevos `dificultad-1…5`.
 - 2026-11-12: (pedido del usuario) Arranque del oído absoluto: en Rápido la rueda se llama **Nivel** (sin «×») y es lo principal (más grande); «Octavas» pasa a **«Dificultad»**. Botón flotante: mismo color y opacidad, pero **lo de detrás se resalta más** (poco desenfoque, más saturación y contraste).
 - 2026-11-12: (pedido del usuario) Arranque del oído absoluto: **Octavas** (tira 2…6 con − / +), **«Responder con» en bloques con dibujito fijo** (no cambian con el nivel: para eso está la cajita), **Rápido = multiplicador** (rueda ×1…×10, notas extra en oro en la cajita) y los ajustes de cada modo (aciertos / segundos) con un **contador − valor +** dentro de su texto.

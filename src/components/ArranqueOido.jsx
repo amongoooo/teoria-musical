@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
 import {
   AJUSTES_ABSOLUTO,
+  CROMATICA,
+  OCTAVAS_POSIBLES,
   ajusteAbsoluto,
+  nombreClase,
+  octavasDe,
   getJuego,
   notasDelNivel,
   notasInicialesRapido,
@@ -19,8 +23,8 @@ import Rich from './Rich.jsx'
  * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; por ahora solo el oído absoluto):
  * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, y dos ruedas
  * verticales lado a lado —Nivel (el 1 abajo; en Rápido, el multiplicador) y Dificultad (1–5 = octavas)— con
- * puntitos al costado que se encienden (12 = las notas; 5 = las octavas). La página entera se tiñe según la
- * dificultad: azul, verde, amarillo, naranja y rojo. Al final, «Responder con» en dos bloques con dibujito.
+ * puntitos al costado (12 = las notas como un piano roll; 5 = las octavas). Los botones y controles toman el color
+ * de la dificultad (azul, verde, amarillo, naranja, rojo); la página sigue clara u oscura. Al final, «Responder con».
  * Sin textos grises de instrucciones: se entiende por el movimiento y el color.
  */
 export default function ArranqueOido({ modo, datos }) {
@@ -36,9 +40,14 @@ export default function ArranqueOido({ modo, datos }) {
   const [vista, setVista] = useState(rueda.valor)
   const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
   const conPiano = datos.ajustes.respuesta !== 'botones'
-  const notas = (rapido ? notasInicialesRapido(vista) : notasDelNivel(vista)).length
+  // Puntitos: el Nivel es un mini piano roll (Do abajo … Si arriba) con las notas de ese nivel encendidas; la
+  // Dificultad, las octavas 2…6 (abajo la grave), que se encienden del centro a los extremos (4, 5, 3, 6, 2).
+  const notas = new Set(rapido ? notasInicialesRapido(vista) : notasDelNivel(vista))
+  const encendidasNotas = CROMATICA.map((c) => notas.has(c))
+  const octavas = new Set(octavasDe(vistaDif))
+  const encendidasOctavas = OCTAVAS_POSIBLES.map((o) => octavas.has(o))
+  // Solo los botones y controles cambian de color con la dificultad (la página sigue clara u oscura).
   const acento = colorDificultad(vistaDif)
-  useFondoTenido(acento)
 
   return (
     <LayoutGroup>
@@ -67,7 +76,7 @@ export default function ArranqueOido({ modo, datos }) {
         )}
 
         <motion.section variants={itemLista} layout="position" className="grid grid-cols-2 gap-4" data-medidores>
-          <Medidor id="nivel" titulo="Nivel" lado="izquierda" puntos={12} encendidos={notas} acento={acento}>
+          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={encendidasNotas} etiquetas={CROMATICA.map((c) => nombreClase(c))} acento={acento}>
             <RuedaNivel
               key={rapido ? 'multiplicador' : 'nivel'}
               id="nivel"
@@ -80,7 +89,7 @@ export default function ArranqueOido({ modo, datos }) {
               acento={acento}
             />
           </Medidor>
-          <Medidor id="dificultad" titulo="Dificultad" lado="derecha" puntos={dif.max} encendidos={vistaDif} acento={acento}>
+          <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
             <RuedaNivel
               id="dificultad"
               nombre="dificultad"
@@ -127,33 +136,11 @@ export default function ArranqueOido({ modo, datos }) {
 const colorDificultad = (n) => `var(--color-dificultad-${n})`
 
 /**
- * La página entera (fondo de <html> y <body>) se tiñe con el color de la dificultad mientras se ve el arranque;
- * al salir vuelve al fondo de siempre. Fundido de 400 ms al cambiar.
+ * Columna de medidor: título y, debajo, la rueda con una columna de puntitos al costado (por fuera). Los puntitos
+ * son lo que suena: en el Nivel, las 12 notas como un piano roll (Do abajo); en la Dificultad, las octavas 2…6.
  */
-function useFondoTenido(color) {
-  useEffect(() => {
-    for (const el of [document.documentElement, document.body]) {
-      el.style.transition = 'background-color 400ms ease-out'
-      el.style.backgroundColor = `color-mix(in oklab, var(--color-fondo) 82%, ${color})`
-    }
-  }, [color])
-  useEffect(
-    () => () => {
-      for (const el of [document.documentElement, document.body]) el.style.backgroundColor = ''
-      setTimeout(() => {
-        for (const el of [document.documentElement, document.body]) el.style.transition = ''
-      }, 450)
-    },
-    [],
-  )
-}
-
-/**
- * Columna de medidor: título y, debajo, la rueda con una columna de puntitos al costado (por fuera) que se
- * encienden de abajo arriba según lo que marca la rueda.
- */
-function Medidor({ id, titulo, lado, puntos, encendidos, acento, children }) {
-  const columna = <Puntitos total={puntos} encendidos={encendidos} acento={acento} />
+function Medidor({ id, titulo, lado, encendidos, etiquetas, acento, children }) {
+  const columna = <Puntitos encendidos={encendidos} etiquetas={etiquetas} acento={acento} />
   return (
     <div className="flex flex-col items-center gap-3">
       <h2 id={id} className="text-center font-juego text-xl font-semibold uppercase tracking-wide text-zinc-800">
@@ -169,29 +156,29 @@ function Medidor({ id, titulo, lado, puntos, encendidos, acento, children }) {
 }
 
 /** Puntitos en columna (el primero abajo): los encendidos van del color del acento y dan un pop al encenderse. */
-function Puntitos({ total, encendidos, acento }) {
+function Puntitos({ encendidos, etiquetas, acento }) {
+  const total = encendidos.length
   const grande = total <= 6
+  const cuantos = encendidos.filter(Boolean).length
   return (
     <div
       className={`flex flex-col-reverse items-center justify-between ${grande ? 'py-6' : 'py-3'}`}
       role="img"
-      aria-label={`${encendidos} de ${total}`}
+      aria-label={etiquetas.filter((_, i) => encendidos[i]).join(', ')}
       data-puntitos={total}
-      data-encendidos={encendidos}
+      data-encendidos={cuantos}
+      data-patron={encendidos.map((on) => (on ? 1 : 0)).join('')}
     >
-      {Array.from({ length: total }, (_, i) => {
-        const on = i < encendidos
-        return (
-          <motion.span
-            key={i}
-            initial={false}
-            animate={on ? { scale: [1, 1.5, 1] } : { scale: 0.85 }}
-            transition={{ duration: 0.3 }}
-            className={`block rounded-full transition-colors duration-200 ${grande ? 'size-3.5' : 'size-2.5'}`}
-            style={{ backgroundColor: on ? acento : 'var(--color-zinc-200)' }}
-          />
-        )
-      })}
+      {encendidos.map((on, i) => (
+        <motion.span
+          key={i}
+          initial={false}
+          animate={on ? { scale: [1, 1.5, 1] } : { scale: 0.85 }}
+          transition={{ duration: 0.3 }}
+          className={`block rounded-full transition-colors duration-200 ${grande ? 'size-3.5' : 'size-2.5'}`}
+          style={{ backgroundColor: on ? acento : 'var(--color-zinc-200)' }}
+        />
+      ))}
     </div>
   )
 }
@@ -410,7 +397,7 @@ function Contador({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: dir * 18, opacity: 0 }}
               transition={{ ...RESORTE.pulsar, opacity: { duration: 0.12 } }}
-              className="col-start-1 row-start-1 font-juego text-4xl leading-none tabular-nums"
+              className="col-start-1 row-start-1 font-numero text-4xl leading-none tabular-nums"
               data-valor={valor}
             >
               {valor}
@@ -587,7 +574,7 @@ function ItemRueda({ i, pos, bloqueado, acento }) {
       style={{ height: ALTO_ITEM, marginTop: -ALTO_ITEM / 2, y, scale, opacity, color: tinta(acento) }}
       data-nivel={i + 1}
     >
-      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-juego text-5xl leading-none">{i + 1}</span>}
+      {bloqueado ? <Candado className="size-9 text-zinc-400" /> : <span className="font-numero text-5xl leading-none">{i + 1}</span>}
     </motion.div>
   )
 }

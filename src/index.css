@@ -6,6 +6,7 @@
 @import "@fontsource/dm-mono/400.css";
 @import "@fontsource/dm-mono/500.css";
 @import "@fontsource-variable/pixelify-sans";
+@import "@fontsource/coral-pixels/latin-400.css";
 
 /* Modo oscuro: clase `dark` en <html> (la pone src/progress/opciones.js y el script de index.html). */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -31,6 +32,8 @@
   --font-dato: "DM Mono", ui-monospace, Menlo, monospace;
   /* Juego y logros: solo racha y niveles. */
   --font-juego: "Pixelify Sans Variable", "Bricolage Grotesque Variable", ui-sans-serif, sans-serif;
+  /* Números del juego (ruedas de Nivel y Dificultad, contadores, círculo de nivel): Coral Pixels (pedido del usuario). */
+  --font-numero: "Coral Pixels", "Pixelify Sans Variable", ui-sans-serif, sans-serif;
 
   /* Estructura (gris de Lospec500: el neutro #10121c mezclado con blanco). */
   --color-fondo: #f4f4f5;
