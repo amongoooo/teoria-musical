@@ -89,7 +89,7 @@ export default {
     {
       tipo: 'tocar',
       titulo: 'Encuentra los extremos',
-      intro: 'Toca la tecla **más grave** y la **más aguda** de este teclado. En el celular, muévete con ◀ ▶.',
+      intro: 'Toca la tecla **más grave** y la **más aguda** de este teclado. En el celular, cambia de octava con la barra de abajo.',
       objetivo: { tipo: 'extremos' },
       piano: { startOctave: 3, octaves: 3 },
     },

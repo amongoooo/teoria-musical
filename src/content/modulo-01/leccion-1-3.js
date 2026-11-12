@@ -79,8 +79,7 @@ export default {
 
     {
       tipo: 'tocar',
-      titulo: 'Encuentra Do♯',
-      intro: 'Toca **Do♯** en todas las octavas. Pista: empieza en un **Do** y da un paso a la derecha.',
+      titulo: 'Encuentra la nota',
       objetivo: {
         tipo: 'octavas',
         rondas: [
@@ -95,8 +94,7 @@ export default {
 
     {
       tipo: 'tocar',
-      titulo: 'Ahora, Re♭',
-      intro: 'Sin nombres en las teclas. Toca **Re♭** en todas las octavas: piensa en **Re** y da un paso a la izquierda.',
+      titulo: 'Encuentra la nota',
       objetivo: {
         tipo: 'octavas',
         rondas: [
@@ -127,8 +125,7 @@ export default {
 
     {
       tipo: 'tocar',
-      titulo: 'Más teclas negras',
-      intro: 'Sin nombres. En cada ronda, toca la nota en **todas** las octavas. Usa los grupos de 2 y de 3 negras.',
+      titulo: 'Encuentra la nota',
       objetivo: {
         tipo: 'octavas',
         rondas: [

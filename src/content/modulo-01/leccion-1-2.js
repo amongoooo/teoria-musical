@@ -98,16 +98,14 @@ export default {
 
     {
       tipo: 'tocar',
-      titulo: 'Todas las Do',
-      intro: 'Este teclado tiene 3 octavas. Toca **todas las Do**. En el celular, muévete con ◀ ▶.',
+      titulo: 'Encuentra la nota',
       objetivo: { tipo: 'octavas', rondas: [{ nota: 'C' }] },
       piano: { startOctave: 3, octaves: 3 },
     },
 
     {
       tipo: 'tocar',
-      titulo: 'La misma nota en 3 octavas',
-      intro: 'Ahora con otras notas. En cada ronda, encuentra la nota en las **3 octavas** y escucha cómo suena igual pero más grave o más aguda.',
+      titulo: 'Encuentra la nota',
       objetivo: {
         tipo: 'octavas',
         rondas: [{ nota: 'A' }, { nota: 'E' }, { nota: 'G' }],
@@ -128,8 +126,7 @@ export default {
 
     {
       tipo: 'tocar',
-      titulo: 'Sin nombres: todas las Fa',
-      intro: 'Este teclado no tiene etiquetas. Usa el mapa: **Fa** está a la izquierda del grupo de **3 negras**.',
+      titulo: 'Encuentra la nota',
       objetivo: {
         tipo: 'octavas',
         rondas: [
