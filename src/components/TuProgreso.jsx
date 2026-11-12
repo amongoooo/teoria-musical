@@ -112,96 +112,99 @@ export default function TuProgreso({ onCerrar }) {
   ]
 
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="opciones-progreso">
-      <h3 id="opciones-progreso" className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+    <section className="flex flex-col gap-2.5" aria-labelledby="opciones-progreso">
+      <h3 id="opciones-progreso" className="px-1 text-sm font-semibold uppercase tracking-wider text-zinc-500">
         Tu progreso
       </h3>
-      <p className="text-base text-zinc-600">
-        Pásalo a otro teléfono o computadora, sin cuenta: lecciones, retos, entrenamiento de oído y apariencia.
-      </p>
+      {/* Tarjeta como los grupos de Opciones (Grupo en Opciones.jsx). */}
+      <div className="flex flex-col gap-3 rounded-3xl border border-zinc-200 p-4">
+        <p className="text-sm leading-snug text-zinc-500">
+          Pásalo a otro teléfono o computadora, sin cuenta: lecciones, retos, entrenamiento de oído y opciones.
+        </p>
 
-      <div className="grid grid-cols-3 gap-2">
-        {acciones.map(({ id, nombre, onClick, activo }) => {
-          const hecho = aviso?.id === id
-          return (
-            <Pulsable
-              key={id}
-              tipo="tarjeta"
-              onClick={onClick}
-              disabled={!codigo}
-              aria-expanded={id === 'qr' ? verQR : undefined}
-              animate={hecho ? SALTO : { scale: 1 }}
-              data-accion-progreso={id}
-              className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-center text-base leading-tight font-semibold transition-colors duration-200 disabled:opacity-50 ${
-                activo ? 'bg-zinc-900 text-white' : hecho && aviso.ok ? 'bg-bien-suave text-bien-tinta' : hecho ? 'bg-fijate-suave text-fijate-tinta' : 'bg-zinc-100 text-zinc-800'
-              }`}
-            >
-              {hecho && aviso.ok && <Check className="size-6" />}
-              <span aria-live="polite">{hecho ? aviso.texto : nombre}</span>
-            </Pulsable>
-          )
-        })}
-      </div>
-
-      <AnimatePresence initial={false}>
-        {verQR && link && (
-          <motion.div key="qr" {...SUBE} exit={{ opacity: 0, y: 16 }} className="flex flex-col items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-4">
-            {link.length <= MAX_QR ? (
-              <>
-                <CodigoQR texto={link} etiqueta="Código QR con el link de tu progreso" className="w-full max-w-72" />
-                <p className="text-center text-base text-zinc-600">Escanéalo con la cámara del otro teléfono y abre el link.</p>
-              </>
-            ) : (
-              <p className="text-base text-zinc-600">
-                Tu progreso ya es demasiado largo para un QR que se lea bien. Usa <strong>Compartir link</strong> o <strong>Copiar código</strong>.
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <form
-        className="flex flex-col gap-2 pt-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          cargar()
-        }}
-      >
-        <label htmlFor="codigo-progreso" className="text-base font-semibold text-zinc-800">
-          ¿Tienes un código de otro dispositivo?
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="codigo-progreso"
-            value={pegado}
-            onChange={(e) => {
-              setPegado(e.target.value)
-              setError('')
-            }}
-            placeholder="Pega el código o el link"
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            className="min-h-12 min-w-0 flex-1 rounded-2xl border-2 border-zinc-200 bg-white px-4 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none"
-          />
-          <Pulsable
-            type="submit"
-            disabled={!pegado.trim()}
-            className="min-h-12 shrink-0 rounded-2xl bg-zinc-900 px-5 text-base font-semibold text-white disabled:bg-zinc-300 disabled:text-zinc-500"
-          >
-            Cargar
-          </Pulsable>
+        <div className="grid grid-cols-3 gap-2">
+          {acciones.map(({ id, nombre, onClick, activo }) => {
+            const hecho = aviso?.id === id
+            return (
+              <Pulsable
+                key={id}
+                tipo="tarjeta"
+                onClick={onClick}
+                disabled={!codigo}
+                aria-expanded={id === 'qr' ? verQR : undefined}
+                animate={hecho ? SALTO : { scale: 1 }}
+                data-accion-progreso={id}
+                className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-center text-base leading-tight font-semibold transition-colors duration-200 disabled:opacity-50 ${
+                  activo ? 'bg-zinc-900 text-white' : hecho && aviso.ok ? 'bg-bien-suave text-bien-tinta' : hecho ? 'bg-fijate-suave text-fijate-tinta' : 'bg-zinc-100 text-zinc-800'
+                }`}
+              >
+                {hecho && aviso.ok && <Check className="size-6" />}
+                <span aria-live="polite">{hecho ? aviso.texto : nombre}</span>
+              </Pulsable>
+            )
+          })}
         </div>
+
         <AnimatePresence initial={false}>
-          {error && (
-            <motion.p ref={refError} key="error" {...SUBE} exit={{ opacity: 0 }} transition={RESORTE.suave} className="flex items-start gap-2 rounded-2xl bg-fijate-suave px-4 py-3 text-base text-fijate-tinta" role="alert">
-              <Bombilla className="mt-0.5 size-5" />
-              <span>{error}</span>
-            </motion.p>
+          {verQR && link && (
+            <motion.div key="qr" {...SUBE} exit={{ opacity: 0, y: 16 }} className="flex flex-col items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-4">
+              {link.length <= MAX_QR ? (
+                <>
+                  <CodigoQR texto={link} etiqueta="Código QR con el link de tu progreso" className="w-full max-w-72" />
+                  <p className="text-center text-base text-zinc-600">Escanéalo con la cámara del otro teléfono y abre el link.</p>
+                </>
+              ) : (
+                <p className="text-base text-zinc-600">
+                  Tu progreso ya es demasiado largo para un QR que se lea bien. Usa <strong>Compartir link</strong> o <strong>Copiar código</strong>.
+                </p>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
-      </form>
+
+        <form
+          className="flex flex-col gap-2 border-t border-zinc-200 pt-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            cargar()
+          }}
+        >
+          <label htmlFor="codigo-progreso" className="text-base font-semibold text-zinc-800">
+            ¿Tienes un código de otro dispositivo?
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="codigo-progreso"
+              value={pegado}
+              onChange={(e) => {
+                setPegado(e.target.value)
+                setError('')
+              }}
+              placeholder="Pega el código o el link"
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="min-h-12 min-w-0 flex-1 rounded-2xl border-2 border-zinc-200 bg-white px-4 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none"
+            />
+            <Pulsable
+              type="submit"
+              disabled={!pegado.trim()}
+              className="min-h-12 shrink-0 rounded-2xl bg-zinc-900 px-5 text-base font-semibold text-white disabled:bg-zinc-300 disabled:text-zinc-500"
+            >
+              Cargar
+            </Pulsable>
+          </div>
+          <AnimatePresence initial={false}>
+            {error && (
+              <motion.p ref={refError} key="error" {...SUBE} exit={{ opacity: 0 }} transition={RESORTE.suave} className="flex items-start gap-2 rounded-2xl bg-fijate-suave px-4 py-3 text-base text-fijate-tinta" role="alert">
+                <Bombilla className="mt-0.5 size-5" />
+                <span>{error}</span>
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </form>
+      </div>
     </section>
   )
 }
