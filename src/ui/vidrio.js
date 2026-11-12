@@ -33,12 +33,12 @@ export const VIDRIO_PANEL = [
 /**
  * El botón principal de la lección (BarraAccion): un vidrio fino SOBRE una tarjeta de color (gris claro = desactivado,
  * oscuro = listo, verde = acierto), así parece que el vidrio cambia de color. Más transparente que VIDRIO para que el
- * color se vea; brillo de 1 px arriba y una línea de sombra abajo (relieve). En «Opaco» lleva `vidrio-color` (velo blanco).
+ * color se vea; un brillo vertical sutil (más claro arriba), brillo de 1 px arriba y una línea de sombra abajo (relieve). En «Opaco» lleva `vidrio-color` (velo blanco).
  * Sin `backdrop-blur`: debajo solo hay color liso y, recortado por el botón, el desenfoque aclaraba sus bordes; lo que
  * se mueve debajo (la tarjeta del gesto) lleva su propio desenfoque.
  */
 export const VIDRIO_BOTON = [
-  'vidrio vidrio-color border border-blanco/60 bg-blanco/[0.14]',
+  'vidrio vidrio-color border border-blanco/60 bg-linear-to-b from-blanco/25 via-blanco/[0.08] to-blanco/[0.14]',
   'shadow-[inset_0_1px_0_rgb(255_255_255/0.55),inset_0_-1px_0_rgb(16_18_28/0.10)]',
-  'dark:border-blanco/25 dark:bg-blanco/[0.07] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.22),inset_0_-1px_0_rgb(0_0_0/0.25)]',
+  'dark:border-blanco/25 dark:from-blanco/[0.12] dark:via-blanco/[0.03] dark:to-blanco/[0.06] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.22),inset_0_-1px_0_rgb(0_0_0/0.25)]',
 ].join(' ')

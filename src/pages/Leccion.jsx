@@ -1,4 +1,4 @@
-import { motion, useAnimationControls, useTransform } from 'motion/react'
+import { animate, motion, useAnimationControls, useReducedMotion, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
 import Emparejar from '../components/exercises/Emparejar.jsx'
@@ -394,11 +394,17 @@ export function BarraAccion({ accion, navegacion = null }) {
               className={`relative isolate grid min-h-14 w-full place-items-center overflow-hidden rounded-2xl px-6 text-lg font-semibold ${accion.disabled ? 'pointer-events-none' : ''}`}
             >
               <TarjetaColor color={color} />
-              {/* Tarjeta del gesto: debajo del vidrio, se desplaza con el dedo desde el lado donde empezó (borde desenfocado). */}
+              {/* Tarjeta del gesto: debajo del vidrio, se desplaza con el dedo desde el lado donde empezó. Su borde de
+                  delante es un degradado largo (FUNDIDO_GESTO px): tiñe el vidrio poco a poco, nunca una franja plana. */}
               <motion.span
                 aria-hidden
-                className={`absolute inset-x-0 -inset-y-3 blur-[5px] ${gesto.puede ? 'bg-fijate' : 'bg-zinc-400'}`}
-                style={{ x, opacity: opacidad }}
+                data-tarjeta-gesto
+                className="absolute inset-x-0 -inset-y-3"
+                style={{
+                  x,
+                  opacity: opacidad,
+                  backgroundImage: `linear-gradient(to ${gesto.lado < 0 ? 'right' : 'left'}, ${gesto.puede ? 'var(--color-fijate)' : 'var(--color-zinc-400)'} calc(100% - ${FUNDIDO_GESTO}px), transparent)`,
+                }}
               />
               <span aria-hidden className={`absolute inset-0 rounded-2xl ${VIDRIO_BOTON}`} />
               <motion.span
@@ -408,7 +414,7 @@ export function BarraAccion({ accion, navegacion = null }) {
                 {accion.label}
               </motion.span>
             </Pulsable>
-            <Flechita gesto={gesto} />
+            <Flechita gesto={gesto} color={color} />
           </div>
         </motion.div>
       </div>
@@ -416,61 +422,105 @@ export function BarraAccion({ accion, navegacion = null }) {
   )
 }
 
-const COLOR_BOTON = { apagado: 'bg-zinc-200', listo: 'bg-zinc-900', bien: 'bg-bien-relleno' }
+const COLOR_BOTON = { apagado: 'var(--color-zinc-200)', listo: 'var(--color-zinc-900)', bien: 'var(--color-bien-relleno)' }
+const FUNDIDO_GESTO = 96 // px del degradado del borde de delante de la tarjeta del gesto
+// La tarjeta de color nueva es un óvalo con borde degradado (sólido hasta el 55 % del radio); a escala CUBRE ya tapa
+// las esquinas del botón con la parte sólida (√2 / 0,55 ≈ 2,6).
+const SOLIDO = 55
+const CUBRE = 2.7
 
 /**
- * La tarjeta de color bajo el vidrio del botón. Cada cambio de estado pone una tarjeta nueva encima que aparece y
- * crece desde el centro (RESORTE.suave); 0,7 s después, las de debajo se quitan. Con reducir movimiento, fundido.
- * Sobresale 12 px por cada lado (el botón la recorta): así el desenfoque del vidrio no aclara los bordes.
+ * La tarjeta de color bajo el vidrio del botón. Cada cambio de estado pone encima una tarjeta nueva: un óvalo con el
+ * borde degradado (radial) que aparece en el centro y crece (RESORTE.tinte) hasta cubrir el botón, como un tinte que
+ * se extiende por el vidrio; nunca un rectángulo plano. al terminar, las de debajo se quitan. Con reducir
+ * movimiento, fundido. Sobresale 12 px por cada lado (el botón la recorta).
  */
 function TarjetaColor({ color }) {
   const [capas, setCapas] = useState(() => [{ id: 0, color, nueva: false }])
   const ultimo = capas[capas.length - 1]
   if (ultimo.color !== color) setCapas((c) => [...c.slice(-2), { id: ultimo.id + 1, color, nueva: true }])
-  // Cuando la de arriba ya cubre todo, las de debajo sobran.
+  // Cuando la de arriba ya cubre todo (termina su animación), las de debajo sobran. Respaldo: 1,5 s.
+  const cubierta = useCallback((id) => setCapas((cs) => (cs.length > 1 && cs[cs.length - 1].id === id ? cs.slice(-1) : cs)), [])
   useEffect(() => {
     if (capas.length < 2) return
-    const t = setTimeout(() => setCapas((cs) => cs.slice(-1)), 700)
+    const t = setTimeout(() => setCapas((cs) => cs.slice(-1)), 1500)
     return () => clearTimeout(t)
   }, [capas])
-  return capas.map((c) => (
-    <motion.span
-      key={c.id}
-      aria-hidden
-      data-tarjeta-color={c.color}
-      className={`absolute -inset-3 ${COLOR_BOTON[c.color]}`}
-      initial={c.nueva ? { opacity: 0, scaleX: 0.2, scaleY: 0.45 } : false}
-      animate={{ opacity: 1, scaleX: 1, scaleY: 1 }}
-      transition={{ ...RESORTE.suave, opacity: { duration: 0.15 } }}
-    />
-  ))
+  return capas.map((c) =>
+    c.nueva ? (
+      <CapaTinte key={c.id} color={c.color} onCubre={() => cubierta(c.id)} />
+    ) : (
+      <span key={c.id} aria-hidden data-tarjeta-color={c.color} className="absolute -inset-3" style={{ backgroundColor: COLOR_BOTON[c.color] }} />
+    ),
+  )
 }
 
 /**
- * Flechita del gesto (texto ‹ ›, como el resto de flechas de navegación) en el lado de donde sale la tarjeta.
- * Apunta hacia donde va el paso: › siguiente, ‹ anterior. Amarilla si se puede pasar, gris si no; crece un poco
- * cuando soltar ya pasaría («suelta para ir»).
+ * Una capa nueva del tinte: crece desde el centro con una animación imperativa al montarse (el `initial` de motion no
+ * se aplica a lo que se monta dentro de la página, que está en un AnimatePresence con initial={false}).
+ * Con reducir movimiento, solo se funde.
  */
-function Flechita({ gesto: actual }) {
-  const visible = actual.modo === 'desliza' || actual.modo === 'mantiene'
+function CapaTinte({ color, onCubre }) {
+  const ref = useRef(null)
+  const reducir = useReducedMotion()
+  const alCubrir = useRef(onCubre)
+  alCubrir.current = onCubre
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const a = reducir
+      ? animate(el, { opacity: [0, 1] }, { duration: 0.2 })
+      : animate(el, { scale: [0.12, CUBRE], opacity: [0, 1] }, { ...RESORTE.tinte, opacity: { duration: 0.12 } })
+    let viva = true
+    a.then(() => viva && alCubrir.current?.())
+    return () => {
+      viva = false
+      a.stop()
+    }
+  }, [reducir])
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      data-tarjeta-color={color}
+      className="absolute -inset-3"
+      style={{ backgroundImage: `radial-gradient(closest-side, ${COLOR_BOTON[color]} ${SOLIDO}%, transparent)`, transform: `scale(${reducir ? CUBRE : 0.12})`, opacity: 0 }}
+    />
+  )
+}
+
+/**
+ * Flechita del gesto: solo el signo ‹ › (texto, como el resto de flechas de navegación), sin círculo, en el lado de
+ * donde sale la tarjeta y APUNTANDO HACIA ESE BORDE (pedido del usuario): izquierda ‹, derecha ›. Del MISMO COLOR
+ * QUE EL BOTÓN (pedido del usuario): verde si está en verde, oscuro si está listo, gris claro si está desactivado. Detrás, un brillo
+ * radial ligero amarillo (se puede pasar) o gris (no) que da el contraste sin teñir una zona entera del botón. Crece un
+ * poco cuando soltar ya pasaría («suelta para ir»); en la pulsación larga empieza más chica (modo 'carga') y termina
+ * igual que en el deslizamiento. Va recortada al botón.
+ */
+function Flechita({ gesto: actual, color }) {
+  const visible = actual.modo === 'carga' || actual.modo === 'desliza' || actual.modo === 'mantiene'
   // Al terminar, se desvanece donde estaba (sin saltar de lado ni de color).
   const ultimo = useRef(actual)
   if (actual.modo) ultimo.current = actual
   const gesto = ultimo.current
-  const lado = gesto.lado < 0 ? 'left-2' : 'right-2'
+  const izquierda = gesto.lado < 0
+  const tono = gesto.puede ? 'var(--color-fijate)' : 'var(--color-zinc-400)'
   return (
-    <motion.span
-      aria-hidden
-      data-flechita={visible ? (gesto.puede ? 'amarilla' : 'gris') : undefined}
-      className={`pointer-events-none absolute top-1/2 z-10 -mt-[1.125rem] grid size-9 place-items-center rounded-full pb-1 text-3xl leading-none font-bold ${lado} ${
-        gesto.puede ? 'bg-fijate text-negro ring-2 ring-blanco/80' : 'bg-zinc-300 text-zinc-600 ring-2 ring-white/70'
-      }`}
-      initial={false}
-      animate={{ opacity: visible ? 1 : 0, scale: !visible ? 0.6 : gesto.listo && gesto.modo === 'desliza' ? 1.15 : 1 }}
-      transition={RESORTE.pulsar}
-    >
-      {gesto.dir > 0 ? '›' : '‹'}
-    </motion.span>
+    <span aria-hidden className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-2xl">
+      <motion.span
+        data-flechita={visible ? (gesto.puede ? 'amarilla' : 'gris') : undefined}
+        className={`absolute inset-y-0 grid w-16 place-items-center pb-1 text-3xl leading-none font-bold transition-colors duration-200 ${izquierda ? 'left-0' : 'right-0'}`}
+        style={{
+          color: COLOR_BOTON[color],
+          backgroundImage: `radial-gradient(closest-side, color-mix(in srgb, ${tono} 85%, transparent), color-mix(in srgb, ${tono} 35%, transparent) 55%, transparent)`,
+        }}
+        initial={false}
+        animate={{ opacity: visible ? 1 : 0, scale: !visible ? 0.6 : gesto.modo === 'carga' ? 0.9 : gesto.listo ? 1.15 : 1 }}
+        transition={{ ...RESORTE.pulsar, opacity: { duration: gesto.modo === 'carga' ? 0.25 : 0.12 } }}
+      >
+        {izquierda ? '‹' : '›'}
+      </motion.span>
+    </span>
   )
 }
 
