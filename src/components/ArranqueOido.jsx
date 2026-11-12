@@ -1,18 +1,7 @@
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
-import {
-  AJUSTES_ABSOLUTO,
-  CROMATICA,
-  OCTAVAS_POSIBLES,
-  ajusteAbsoluto,
-  nombreClase,
-  octavasDe,
-  getJuego,
-  notasDelNivel,
-  notasInicialesRapido,
-  textoJuego,
-} from '../theory/oido.js'
+import { AJUSTES_ABSOLUTO, DIRECCIONES, OCTAVAS_POSIBLES, ajusteAbsoluto, octavasDe, getJuego, textoJuego } from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Check, Circulo8, Cronometro, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
@@ -20,11 +9,13 @@ import Pulsable from '../ui/Pulsable.jsx'
 import Rich from './Rich.jsx'
 
 /**
- * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; por ahora solo el oído absoluto):
+ * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; intervalos, acordes y oído absoluto):
  * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, y dos ruedas
  * verticales lado a lado —Nivel (el 1 abajo; en Rápido, el multiplicador) y Dificultad (1–5 = octavas)— con
- * puntitos al costado (12 = las notas como un piano roll; 5 = las octavas). Los botones y controles toman el color
- * de la dificultad (azul, verde, amarillo, naranja, rojo); la página sigue clara u oscura. Al final, «Responder con».
+ * puntitos al costado (los del Nivel los da `modo.puntosNivel`: las notas como un piano roll, los 12 intervalos o los
+ * 3 niveles de acordes; 5 = las octavas). Los botones y controles toman el color de la dificultad (azul, verde,
+ * amarillo, naranja, rojo); la página sigue clara u oscura. Al final, lo propio de cada modo: «Dirección»
+ * (intervalos: subiendo, bajando, a la vez) o «Responder con» (oído absoluto).
  * Sin textos grises de instrucciones: se entiende por el movimiento y el color.
  */
 export default function ArranqueOido({ modo, datos }) {
@@ -40,10 +31,11 @@ export default function ArranqueOido({ modo, datos }) {
   const [vista, setVista] = useState(rueda.valor)
   const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
   const conPiano = datos.ajustes.respuesta !== 'botones'
-  // Puntitos: el Nivel es un mini piano roll (Do abajo … Si arriba) con las notas de ese nivel encendidas; la
-  // Dificultad, las octavas 2…6 (abajo la grave), que se encienden del centro a los extremos (4, 5, 3, 6, 2).
-  const notas = new Set(rapido ? notasInicialesRapido(vista) : notasDelNivel(vista))
-  const encendidasNotas = CROMATICA.map((c) => notas.has(c))
+  const direccion = datos.ajustes.direccion ?? 'sube'
+  // Puntitos: los del Nivel los da el modo (oído absoluto: mini piano roll con las notas del nivel; intervalos: los 12
+  // intervalos; acordes: sus niveles); la Dificultad, las octavas 2…6 (abajo la grave), que se encienden del centro a
+  // los extremos (4, 5, 3, 6, 2).
+  const puntos = modo.puntosNivel(vista, { rapido })
   const octavas = new Set(octavasDe(vistaDif))
   const encendidasOctavas = OCTAVAS_POSIBLES.map((o) => octavas.has(o))
   // Solo los botones y controles cambian de color con la dificultad (la página sigue clara u oscura).
@@ -75,8 +67,8 @@ export default function ArranqueOido({ modo, datos }) {
           </motion.section>
         )}
 
-        <motion.section variants={itemLista} layout="position" className="grid grid-cols-2 gap-4" data-medidores>
-          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={encendidasNotas} etiquetas={CROMATICA.map((c) => nombreClase(c))} negras={CROMATICA.map((c) => c.includes('#'))} acento={acento}>
+        <motion.section variants={itemLista} layout="position" className={`grid gap-4 ${modo.dificultad ? 'grid-cols-2' : 'grid-cols-1'}`} data-medidores>
+          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={puntos.encendidos} etiquetas={puntos.etiquetas} negras={puntos.negras} acento={acento}>
             <Rueda
               key={rapido ? 'multiplicador' : 'nivel'}
               id="nivel"
@@ -89,6 +81,7 @@ export default function ArranqueOido({ modo, datos }) {
               acento={acento}
             />
           </Medidor>
+          {modo.dificultad && (
           <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
             <Rueda
               id="dificultad"
@@ -101,7 +94,30 @@ export default function ArranqueOido({ modo, datos }) {
               acento={acento}
             />
           </Medidor>
+          )}
         </motion.section>
+
+        {modo.direcciones && (
+          <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
+            <Titulo id="direccion">Dirección</Titulo>
+            <div role="radiogroup" aria-labelledby="direccion" className="grid grid-cols-3 gap-2">
+              {DIRECCIONES.map(({ id, label }) => (
+                <Bloque
+                  key={id}
+                  role="radio"
+                  aria-checked={direccion === id}
+                  activo={direccion === id}
+                  acento={acento}
+                  onClick={() => guardarAjustes(modo.id, { direccion: id })}
+                  data-direccion={id}
+                >
+                  <DibujoDireccion direccion={id} className="h-11 w-18" />
+                  <span className="font-juego text-base font-semibold leading-tight tracking-tight">{label}</span>
+                </Bloque>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {modo.piano && (
           <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
@@ -622,6 +638,26 @@ function DibujoPiano({ className }) {
       <rect x="11" y="2" width="9" height="23" rx="2" fill="currentColor" />
       <rect x="24.6" y="2" width="9" height="23" rx="2" fill="currentColor" />
       <rect x="51.8" y="2" width="9" height="23" rx="2" fill="currentColor" />
+    </svg>
+  )
+}
+
+/**
+ * Dibujito de cada dirección de un intervalo: dos notas como en un piano roll (pedido del usuario: bloques con
+ * dibujito). Subiendo = la grave y luego la aguda; bajando = al revés; a la vez = una encima de la otra.
+ */
+const NOTAS_DIRECCION = {
+  sube: [[4, 28], [40, 6]],
+  baja: [[4, 6], [40, 28]],
+  juntas: [[22, 6], [22, 28]],
+}
+
+function DibujoDireccion({ direccion, className }) {
+  return (
+    <svg viewBox="0 0 72 44" className={className} fill="currentColor" aria-hidden>
+      {NOTAS_DIRECCION[direccion].map(([x, y], i) => (
+        <rect key={i} x={x} y={y} width="28" height="10" rx="4" />
+      ))}
     </svg>
   )
 }

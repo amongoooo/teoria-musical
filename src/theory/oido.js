@@ -70,15 +70,29 @@ export const modoIntervalos = {
   // Color del módulo con el que se relaciona (un color = un lugar): intervalos → M3, acordes → M4, notas → M1.
   acento: 'var(--color-modulo-3)',
   descripcion: 'Escucha dos notas y elige la distancia entre ellas.',
+  info:
+    'Cada intervalo tiene su **carácter**: la 3.ª mayor es luminosa, la 5.ª justa hueca y estable, el tritono ' +
+    'inquietante. Empiezas con 3.ª mayor y 5.ª justa y en cada nivel se suman más. Subes al acertar ' +
+    '**8 de las últimas 10**. La dificultad abre más octavas para la nota de abajo.',
   pregunta: '¿Qué intervalo suena?',
+  dificultad: true, // rueda de Dificultad (octavas en las que puede sonar)
+  direcciones: true, // Subiendo / Bajando / A la vez
+  // Puntitos del arranque: los 12 intervalos de la 2.ª menor (abajo) a la octava (arriba); encendidos los del nivel.
+  puntosNivel: (nivel) => {
+    const ids = new Set(intervalosDelNivel(nivel))
+    return { encendidos: ORDEN_INTERVALOS.map((id) => ids.has(id)), etiquetas: ORDEN_INTERVALOS.map((id) => INTERVALOS[id].nombre) }
+  },
   niveles: NUEVOS_POR_NIVEL.length,
   nuevosEnNivel: (nivel) => (NUEVOS_POR_NIVEL[nivel - 1] ?? []).map((id) => INTERVALOS[id].nombre),
   nombreItem: (id) => INTERVALOS[id]?.nombre ?? id,
   opciones: (nivel) => intervalosDelNivel(nivel).map((id) => ({ id, label: INTERVALOS[id].nombre })),
-  generar(nivel, { direccion = 'sube' } = {}, anterior) {
+  generar(nivel, ajustes = {}, anterior) {
+    const direccion = ajustes.direccion ?? 'sube'
     const ids = intervalosDelNivel(nivel)
     const item = elegirDistinto(ids, anterior?.item)
-    const raiz = entre(midi('F3'), midi('F4'))
+    // La nota de abajo, entre Fa de la octava anterior y Mi de una de las octavas elegidas (dificultad 1 = Fa3–Mi4).
+    const o = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
+    const raiz = entre(midi(`F${o - 1}`), midi(`E${o}`))
     const semitonos = INTERVALOS[item].semitonos
     return {
       item,
@@ -99,11 +113,7 @@ const ACORDES = {
   menor: { nombre: 'Menor', terceras: [3, 7], siente: 'íntimo y melancólico' },
 }
 
-const NIVELES_ACORDES = [
-  'Arpegio y luego el acorde',
-  'Solo el acorde',
-  'Acordes invertidos y en otros registros',
-]
+const NIVELES_ACORDES = ['Arpegio y luego el acorde', 'Solo el acorde', 'Acordes invertidos']
 
 function notasAcorde(raiz, tipo, inversion) {
   const [t, q] = ACORDES[tipo].terceras
@@ -122,15 +132,24 @@ export const modoAcordes = {
   titulo: 'Acordes',
   acento: 'var(--color-modulo-4)',
   descripcion: 'Escucha un acorde y decide si es mayor o menor.',
+  info:
+    'El acorde **mayor** suena luminoso y el **menor** íntimo; solo cambia la nota del medio (la 3.ª). ' +
+    'Nivel 1: suena el arpegio y luego el acorde. Nivel 2: solo el acorde. Nivel 3: acordes invertidos ' +
+    '(otra nota abajo). Subes al acertar **8 de las últimas 10**. La dificultad abre más octavas.',
   pregunta: '¿Mayor o menor?',
+  dificultad: true,
+  // Puntitos del arranque: los 3 niveles, encendidos hasta el elegido.
+  puntosNivel: (nivel) => ({ encendidos: NIVELES_ACORDES.map((_, i) => i < nivel), etiquetas: NIVELES_ACORDES }),
   niveles: NIVELES_ACORDES.length,
   nuevosEnNivel: (nivel) => [NIVELES_ACORDES[nivel - 1]],
   nombreItem: (id) => ACORDES[id]?.nombre ?? id,
   opciones: () => Object.entries(ACORDES).map(([id, a]) => ({ id, label: a.nombre })),
-  generar(nivel) {
+  generar(nivel, ajustes) {
     // Sin evitar repeticiones: que salga dos veces seguidas el mismo es parte del reto.
     const item = azar(Object.keys(ACORDES))
-    const raiz = nivel >= 3 ? entre(midi('C3'), midi('B4')) : entre(midi('C4'), midi('A4'))
+    // Registro: una de las octavas elegidas con la Dificultad (1 = Do4–La4).
+    const o = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
+    const raiz = entre(midi(`C${o}`), midi(`A${o}`))
     const inversion = nivel >= 3 ? entre(0, 2) : 0
     const notas = notasAcorde(raiz, item, inversion)
     return {
@@ -275,6 +294,16 @@ export const modoAbsoluto = {
   nuevosEnNivel: (nivel) =>
     nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map((c) => nombreClase(c)) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
   nombreItem: (id, ajustes) => nombreClase(id, ajustes?.cifrado),
+  dificultad: true,
+  // Puntitos del arranque: un piano roll de 12 notas (Do abajo) con las del nivel (en Rápido, las 2 + N del principio).
+  puntosNivel: (nivel, { rapido } = {}) => {
+    const notas = new Set(rapido ? notasInicialesRapido(nivel) : notasDelNivel(nivel))
+    return {
+      encendidos: CROMATICA.map((c) => notas.has(c)),
+      etiquetas: CROMATICA.map((c) => nombreClase(c)),
+      negras: CROMATICA.map((c) => c.includes('#')),
+    }
+  },
   piano: true, // se responde tocando el piano (las notas aún no desbloqueadas van con candado)
   juegos: JUEGOS_ABSOLUTO,
   // `ajustes.notas` (modo Rápido): las notas de la partida en lugar de las del nivel.
