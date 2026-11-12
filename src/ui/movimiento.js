@@ -10,6 +10,9 @@ export const RESORTE = {
   pulsar: { type: 'spring', stiffness: 600, damping: 32, mass: 0.6 },
   suave: { type: 'spring', stiffness: 320, damping: 30 },
   pantalla: { type: 'spring', stiffness: 380, damping: 36, mass: 0.9 },
+  // Tinte que se extiende bajo el vidrio del botón principal (BarraAccion): sin rebote y algo más pausado (~0,35 s)
+  // para que se vea el borde degradado avanzar.
+  tinte: { type: 'spring', stiffness: 160, damping: 26, mass: 0.8 },
 }
 
 /** Cuánto se hunde algo al tocarlo. */
@@ -127,6 +130,7 @@ export const DESLIZAR = {
   // (fracción de arriba de la pantalla que es zona de recarga: 0,1 = el 10 % de arriba).
   pagina: { umbralCelular: 0.6, umbralAncho: 320, umbralVertical: 240, recarga: 0.1 },
   // Gesto del botón principal de la lección (useGestoBoton.js): X = `umbral` × ancho del botón (mín. `umbralMin` px);
-  // pulsación larga: `mantener` ms en un borde lateral de `borde` × ancho (mín. `bordeMin` px).
-  boton: { umbral: 0.6, umbralMin: 160, mantener: 1000, borde: 0.22, bordeMin: 56 },
+  // pulsación larga: `mantener` ms en un borde lateral de `borde` × ancho (mín. `bordeMin` px); a los `brillo` ms
+  // empieza el brillo radial y la tarjeta va saliendo hasta quedar como el deslizamiento en «suelta para ir».
+  boton: { umbral: 0.6, umbralMin: 160, mantener: 1000, brillo: 120, borde: 0.22, bordeMin: 56 },
 }
