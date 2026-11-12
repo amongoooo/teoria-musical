@@ -53,6 +53,10 @@ Los eventos pueden tener `inicio` con decimales (notas fuera de la rejilla). Ayu
 `humanizar(eventos, { tiempo, fuerza, semilla })` varía al azar (pero siempre igual) el tiempo y la velocity.
 En el Piano Roll de solo lectura, esas notas se dibujan corridas de su línea.
 
+Escalas y grados (lección 3.3): `theory/escalas.js` (Tonal `Scale`): `MAYOR` (T T S T T T S), `escalaMayor('G3')` (8 notas
+con octava; `{ bajando: true }`), `escalaCambiada('C4', { grado: 3, semitonos: -1 })` (para «¿mayor u otra cosa?»),
+`grado('D', 7)` → `'C#'`, `alteraciones`, `armadura('D')` → `'2♯'`, `nombresEscala('D')` → «Re · Mi · Fa♯ · …», `GRADOS` y `ordinal`.
+
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
 sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 'snare', 'kick']`).
@@ -88,7 +92,7 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
   tipo: 'elegir',
   rondas: [
     {
-      pregunta: '¿Cuál es más agudo?',
+      pregunta: '¿Cuál es más agudo?',   // admite **negritas**
       sonidos: [{ notas: ['C4'] }, { notas: ['G4'] }],
       // sin `opciones`: las tarjetas de sonido son las respuestas (A, B…)
       opciones: ['texto 1', 'texto 2'],   // opcional
@@ -144,6 +148,8 @@ fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Pun
   // objetivo: { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S','T','T','T','S'], titulo, mensaje }] }
   //   → tocar en orden las notas de la fórmula (T = tono, S = semitono) desde `desde` (que ya viene marcada).
   //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.
+  //     `grados: true` → debajo de cada casilla, su grado (1 … 7 y la octava otra vez 1). Volver a tocar una
+  //     nota ya tocada no es fallo: su casilla tiembla (también con la fórmula completa).
 }
 ```
 

@@ -96,7 +96,9 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
       <Rondas total={rondas.length} actual={r} hecha={respondida} />
 
       <motion.div key={r} {...ENTRA_DERECHA} className="flex flex-col gap-4">
-        <p className="text-xl font-semibold leading-snug sm:text-2xl">{ronda.pregunta}</p>
+        <p className="text-xl font-semibold leading-snug sm:text-2xl">
+          <Rich>{ronda.pregunta}</Rich>
+        </p>
         {ronda.roll && <PianoRoll roll={ronda.roll} notas={notasRoll[r]} color={color} />}
       </motion.div>
 
