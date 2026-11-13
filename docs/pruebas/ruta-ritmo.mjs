@@ -2,12 +2,14 @@
 // en claro y oscuro (y con «reducir movimiento»):
 //  - Inicio: Módulos · Prácticas · Rutas · Herramientas; el cuadrito de la ruta de Ritmo dice 0/10 y los de Letras y
 //    Acordes van con candado; el Piano abre #/piano con su teclado.
-//  - #/ruta/ritmo: cabecera fija con 10 segmentos, «RUTA · Ritmo», la barra de puntitos (insignia + 10 paradas) y las
+//  - #/ruta/ritmo: cabecera fija con una barra LISA (un solo segmento), «RUTA · Ritmo», la barra de puntitos (insignia + 10 paradas) y las
 //    islas del camino; con 2.1, 2.2 y Seguir nivel 2: 3/10; tocar el puntito de «Eco · nivel 3» abre su globo con
 //    «Tu nivel» y «Practicar» (lleva a #/ritmo/eco); una bloqueada dice «Antes: …»; la insignia abierta tiene
-//    «Módulos y prácticas»; la tarjetita del final abre la hoja con el Módulo 2 y Seguir / Eco.
+//    «Módulos y prácticas»; el botón de vidrio sobre la barra de puntitos (ya no hay tarjetita al final) abre la hoja
+//    con el Módulo 2 y Seguir / Eco. Ruta LINEAL: con Seguir nivel 5 pero sin Eco 3, «Seguir · nivel 5» sigue bloqueada.
 //  - Flow con candado sin la 2.4 (no cambia al tocarlo); con todo el módulo 2: 9/10, «Lo hice» en el reto → 10/10.
 //  - El panel de #/ritmo lleva a la ruta. Sin errores en la consola.
+//  - Computadora: como mucho 6 nodos a la vista; la tira se arrastra de lado y con la rueda.
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/ruta-ritmo.mjs [carpeta-de-capturas]
 import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -74,7 +76,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await espera(1600)
   comprobar(r, 'abre #/ruta/ritmo', page.url().includes('#/ruta/ritmo'))
   comprobar(r, 'título «Ritmo» y etiqueta «Ruta»', (await page.textContent('[data-titulo-modulo]')).trim() === 'Ritmo')
-  comprobar(r, 'cabecera con 10 segmentos', (await page.locator('[data-segmento]').count()) === 10, String(await page.locator('[data-segmento]').count()))
+  comprobar(r, 'cabecera con barra lisa', (await page.locator('[data-segmento]').count()) === 1, String(await page.locator('[data-segmento]').count()))
   comprobar(r, 'barra de puntitos: insignia + 10', (await page.locator('[data-punto]').count()) === 11)
   const etiquetaCab = await page.getAttribute('[data-pildora-cabecera] [aria-label]', 'aria-label')
   comprobar(r, 'cabecera: 3 de 10 paradas', (etiquetaCab ?? '').includes('3 de 10'), etiquetaCab)
@@ -103,18 +105,29 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await espera(800)
   comprobar(r, '«Practicar» lleva a #/ritmo/eco', page.url().includes('#/ritmo/eco'), page.url())
 
-  // 4) La tarjetita del final y su hoja.
+  // 4) El botón «Módulos y prácticas» sobre la barra de puntitos y su hoja (la tarjetita del final ya no está).
   await page.goto(BASE + '#/ruta/ritmo')
   await espera(1400)
-  await page.locator('[data-tarjeta-modulos]').scrollIntoViewIfNeeded()
-  await espera(300)
-  await foto('tarjeta-final')
-  await page.locator('[data-tarjeta-modulos]').click()
+  comprobar(r, 'sin la tarjetita del final', (await page.locator('[data-tarjeta-modulos]').count()) === 0)
+  const caja = await page.locator('[data-encima-barra]').boundingBox()
+  const barra = await page.locator('[data-puntitos] [role=group]').boundingBox()
+  comprobar(r, 'botón de 44 px encima de la barra', caja && Math.round(caja.width) === 44 && caja.y + caja.height <= barra.y, JSON.stringify({ caja, barra }))
+  comprobar(r, 'barra de puntitos de 44 px', Math.round(barra.height) === 44, String(barra.height))
+  await foto('boton-modulos')
+  await page.locator('[data-encima-barra]').click()
   await page.waitForSelector('[data-hoja-modulos]')
   await espera(600)
   const hoja = await page.textContent('[data-hoja-modulos]')
   comprobar(r, 'hoja: Módulo 2 y Seguir / Eco', hoja.includes('Ritmo y groove') && (await page.locator('[data-practica="seguir"]').count()) === 1 && (await page.locator('[data-practica="eco"]').count()) === 1, hoja)
   await foto('hoja-modulos')
+
+  // 4b) Ruta lineal: Seguir nivel 5 alcanzado, pero sin Eco 3 → «Seguir · nivel 5» bloqueada y 3/10.
+  await preparar({ ruta: '#/ruta/ritmo', lecciones: completadas(['2.1', '2.2']), nivelSeguir: 5 })
+  const cabLineal = await page.getAttribute('[data-pildora-cabecera] [aria-label]', 'aria-label')
+  comprobar(r, 'lineal: 3 de 10 aunque Seguir 5 ya se alcanzó', (cabLineal ?? '').includes('3 de 10'), cabLineal)
+  await punto(6).click()
+  await espera(1000)
+  comprobar(r, 'lineal: «Seguir · nivel 5» bloqueada', (await page.getByRole('group', { name: 'Seguir · nivel 5' }).textContent()).includes('Antes: Eco · nivel 3'))
 
   // 5) El panel de ritmo lleva a la ruta.
   await page.goto(BASE + '#/ritmo')
@@ -150,6 +163,50 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await espera(600)
   comprobar(r, 'Flow abierto con la 2.4', (await page.locator('[role="radio"]', { hasText: 'Flow' }).getAttribute('data-bloqueado')) === null)
 
+  comprobar(r, 'sin errores en la consola', errores.length === 0, errores.join(' | '))
+  await browser.close()
+}
+
+// 8) Computadora (1440 × 900): como mucho 6 nodos a la vez; el camino cerrado es una TIRA que se arrastra de lado
+//    (con el ratón o la rueda) sin cambiar de ruta, y al cerrar una isla lejana la tira la deja a la vista.
+{
+  const r = (resultados['computadora'] = {})
+  const browser = await chromium.launch()
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  const errores = []
+  page.on('pageerror', (e) => errores.push(String(e)))
+  await page.goto(BASE)
+  await page.evaluate(() => localStorage.clear())
+  await page.goto(BASE + '#/ruta/ritmo')
+  await page.reload()
+  await espera(1600)
+  const tira = () => page.getAttribute('[data-tira]', 'data-tira')
+  comprobar(r, 'tira al inicio (0)', (await tira()) === '0', await tira())
+  const caja = await page.locator('[data-tira]').boundingBox()
+  const visibles = await page.$$eval('[data-punto]', (ps) => ps.length)
+  comprobar(r, 'barra con los 11 puntitos', visibles === 11)
+  await page.mouse.move(caja.x + caja.width * 0.8, caja.y + caja.height / 2)
+  await page.mouse.down()
+  for (let k = 1; k <= 30; k++) {
+    await page.mouse.move(caja.x + caja.width * (0.8 - (0.4 * k) / 30), caja.y + caja.height / 2)
+    await espera(16)
+  }
+  await page.mouse.up()
+  await espera(900)
+  comprobar(r, 'arrastrar corre la tira', Number(await tira()) >= 1, await tira())
+  comprobar(r, 'arrastrar no cambia de ruta', page.url().endsWith('#/ruta/ritmo'), page.url())
+  const antes = Number(await tira())
+  await page.mouse.wheel(120, 0)
+  await espera(800)
+  comprobar(r, 'la rueda de lado corre una columna', Number(await tira()) === antes + 1, await tira())
+  await page.locator('[data-punto="0"]').click()
+  await espera(1000)
+  await page.keyboard.press('Escape')
+  await espera(900)
+  comprobar(r, 'al cerrar la insignia, la tira vuelve al inicio', (await tira()) === '0', await tira())
+  await page.goto(BASE + '#/modulo/1')
+  await espera(1400)
+  comprobar(r, 'módulo 1 (6 nodos): sin tira', (await page.locator('[data-tira]').count()) === 0)
   comprobar(r, 'sin errores en la consola', errores.length === 0, errores.join(' | '))
   await browser.close()
 }

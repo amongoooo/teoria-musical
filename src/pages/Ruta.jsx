@@ -17,13 +17,13 @@ import Pulsable from '../ui/Pulsable.jsx'
 
 /** Modos de cada práctica (para la hoja «Módulos y prácticas»). */
 const MODOS = { ritmo: MODOS_RITMO, oido: MODOS_OIDO, letras: [] }
-const RELIEVE = '0 5px 0 var(--color-zinc-200)'
 
 /**
  * Página de una RUTA (#/ruta/ritmo). Pedido del usuario: «que las rutas salgan igual a los módulos, mismas
  * animaciones y visualmente iguales»: es la página de Módulo con la ruta presentada como un módulo
  * (`rutaModulo.js`): misma cabecera fija, mismo camino de islas con globos, barra de puntitos, desenfoque y
- * deslizar entre rutas. La diferencia: hasta abajo, una tarjetita con los módulos de la ruta y sus prácticas.
+ * deslizar entre rutas. La diferencia: sobre la barra de puntitos, un botón de vidrio (solo ícono) que abre la hoja
+ * «Módulos y prácticas» (los módulos de la ruta y los ejercicios de su práctica).
  */
 export default function Ruta({ id }) {
   if (!rutaDisponible(RUTAS[id])) {
@@ -43,7 +43,8 @@ function PaginaRuta({ id }) {
   const r = useRuta(id)
   const [isla, setIsla] = useState(null)
   const [verModulos, setVerModulos] = useState(false)
-  const cambio = useCambioModulo(r.modulo, { isla })
+  const [tira, setTira] = useState(null) // pantallas anchas: camino cerrado que se arrastra de lado ({ inicio, fin })
+  const cambio = useCambioModulo(r.modulo, { isla, tira })
   const modulos = r.ruta.modulos.map(getModulo).filter(Boolean)
   const modos = MODOS[r.ruta.practica] ?? []
 
@@ -80,6 +81,7 @@ function PaginaRuta({ id }) {
             modulo={r.modulo}
             progreso={r.progreso}
             onAbierta={setIsla}
+            onTira={setTira}
             ruta={{
               estado: r.estado,
               nivelMax: r.nivelMax,
@@ -91,41 +93,10 @@ function PaginaRuta({ id }) {
           />
         </motion.section>
 
-        <motion.div variants={itemLista} className="mx-auto w-full max-w-2xl" data-sin-tirar>
-          <TarjetaModulos modulos={modulos} modos={modos} acento={r.modulo.acento} onClick={() => setVerModulos(true)} />
-        </motion.div>
       </motion.main>
       {cambio.indicadores}
       <HojaModulos abierta={verModulos} onCerrar={() => setVerModulos(false)} r={r} modulos={modulos} modos={modos} />
     </>
-  )
-}
-
-/** Tarjetita del final: los módulos de la ruta y sus prácticas. */
-function TarjetaModulos({ modulos, modos, acento, onClick }) {
-  const resumen = [...modulos.map((m) => `Módulo ${m.numero}`), ...modos.map((m) => m.titulo)].join(' · ')
-  return (
-    <Pulsable
-      tipo="tarjeta"
-      onClick={onClick}
-      data-tarjeta-modulos
-      aria-label="Módulos y prácticas de la ruta"
-      className="flex w-full items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
-      style={{ boxShadow: RELIEVE }}
-    >
-      <span className="grid size-20 shrink-0 place-items-center">
-        {modulos[0] ? <Cuadrito modulo={modulos[0]} tam={60} /> : <span className="size-14 rounded-3xl" style={{ backgroundColor: claro(acento) }} />}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Módulos y prácticas</span>
-        <span className="text-base font-semibold leading-snug" style={{ color: tinta(acento) }}>
-          {resumen}
-        </span>
-      </span>
-      <span className="text-2xl text-zinc-400" aria-hidden>
-        ›
-      </span>
-    </Pulsable>
   )
 }
 

@@ -91,8 +91,11 @@ export function tituloLeccion(id) {
 }
 
 /**
- * Estado de cada parada: `hecha` (se cumplió) y `estado`:
+ * Estado de cada parada: `hecha` y `estado`:
  *   'hecha' | 'actual' (la primera sin cumplir) | 'bloqueada' (después de la actual; en modo administrador, 'abierta').
+ * La ruta es LINEAL (pedido del usuario): una parada solo cuenta como hecha si también lo están todas las de antes.
+ * Si ya llegaste a un nivel (o hiciste una lección) que la ruta pide más adelante, esa parada sale bloqueada
+ * hasta cumplir las anteriores; entonces se marca sola. `cumplida` = la condición, sin mirar el orden.
  * `nivelMax(modo)` = nivel más alto alcanzado en ese modo del entrenamiento.
  */
 export function estadoRuta(ruta, { progreso, nivelMax, admin = false }) {
@@ -105,9 +108,10 @@ export function estadoRuta(ruta, { progreso, nivelMax, admin = false }) {
   }
   let actual = -1
   const paradas = ruta.paradas.map((p, i) => {
-    const hecha = cumplida(p)
+    const ok = cumplida(p)
+    const hecha = ok && actual < 0 // lineal: nada cuenta después de la primera sin cumplir
     if (!hecha && actual < 0) actual = i
-    return { ...p, i, hecha, titulo: p.titulo ?? tituloLeccion(p.id) }
+    return { ...p, i, hecha, cumplida: ok, titulo: p.titulo ?? tituloLeccion(p.id) }
   })
   for (const p of paradas) p.estado = p.hecha ? 'hecha' : p.i === actual ? 'actual' : admin ? 'abierta' : 'bloqueada'
   return { paradas, hechas: paradas.filter((p) => p.hecha).length, total: paradas.length, actual }

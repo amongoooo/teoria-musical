@@ -8,6 +8,7 @@
 //    o una hoja) · Atras (volver al apartado anterior) · Inicio (ir a la pantalla de inicio) · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
 //  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo) · Pluma (letras)
+//  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
@@ -232,6 +233,18 @@ export function Opciones(props) {
     <Icono {...props}>
       <circle cx="12" cy="12" r="3.2" />
       <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
+    </Icono>
+  )
+}
+
+/** Cuadritos: «módulos y prácticas» de una ruta (como los cuadritos de los módulos en Inicio). */
+export function Cuadritos(props) {
+  return (
+    <Icono {...props}>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.8" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" />
     </Icono>
   )
 }
