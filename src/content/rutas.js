@@ -88,10 +88,28 @@ RUTAS.acordes = {
   nombre: 'Acordes',
   titulo: 'Ruta de acordes',
   acento: 'var(--color-modulo-4)',
-  descripcion: 'Terceras, tríadas, mayor o menor al oído, inversiones y voicings.',
+  descripcion: 'Terceras, tríadas, mayor o menor al oído, acordes de la tonalidad, inversiones y voicings.',
   modulos: [3, 4],
   practica: 'oido',
-  paradas: [],
+  // Las lecciones 4.3–4.5 salen «próximamente» hasta que existan (la ruta espera en ellas).
+  paradas: [
+    { tipo: 'leccion', id: '3.2' },
+    { tipo: 'meta', modo: 'intervalos', nivel: 4, titulo: 'Intervalos · nivel 4', texto: 'Llega al nivel en el que se suman la 3.ª menor y la 4.ª: las terceras son los ladrillos de los acordes.' },
+    { tipo: 'leccion', id: '4.1' },
+    { tipo: 'meta', modo: 'acordes', nivel: 2, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
+    { tipo: 'leccion', id: '4.2' },
+    { tipo: 'abre', herramienta: 'circulo', titulo: 'Círculo de quintas', texto: 'Las tonalidades y sus vecinas, de donde salen los acordes de cada tonalidad.' },
+    { tipo: 'leccion', id: '4.3' },
+    { tipo: 'leccion', id: '4.4' },
+    { tipo: 'meta', modo: 'acordes', nivel: 3, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
+    { tipo: 'leccion', id: '4.5' },
+    {
+      tipo: 'reto',
+      id: 'ruta-acordes',
+      titulo: 'Tu progresión I–V–vi–IV',
+      texto: 'En FL Studio, escribe I–V–vi–IV en la tonalidad que quieras (C – G – Am – F en Do), con inversiones que se muevan poco y el bajo en la fundamental.',
+    },
+  ],
 }
 
 /** Orden de las rutas (en Inicio y al deslizar entre rutas). */

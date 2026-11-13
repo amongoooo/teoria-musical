@@ -1559,7 +1559,7 @@ function estadoParada(p, progreso) {
 function textoParada(p, estado, progreso) {
   if (estado === 'hecha') return p.tipo === 'leccion' ? 'Completada' : 'Hecha'
   if (estado === 'bloqueada') return 'Bloqueada'
-  if (p.tipo === 'leccion') return textoEstado(estado, progreso.lecciones[p.id], getLeccion(p.id))
+  if (p.tipo === 'leccion') return getLeccion(p.id) ? textoEstado(estado, progreso.lecciones[p.id], getLeccion(p.id)) : 'Llega pronto'
   return { meta: 'Practicar', abre: 'Se abre', reto: 'Reto en FL' }[p.tipo]
 }
 
@@ -1604,6 +1604,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
         <MarcaBien className="size-5" /> {p.tipo === 'leccion' ? 'Completada' : 'Hecha'}
       </>
     )
+  else if (p.tipo === 'leccion' && !leccion) detalle = 'Llega pronto'
   else if (p.tipo === 'leccion')
     detalle = estado === 'empezada' ? <>Paso {lp.paso + 1} de {pasos} · {porcentaje} %</> : <>~{leccion?.minutos} min · {pasos} pasos</>
   else if (p.tipo === 'meta') detalle = <span className="font-dato">{ruta.meta(p).detalle}</span>
@@ -1612,7 +1613,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   let boton = null
   if (estado === 'bloqueada') {
     if (actual) boton = { texto: `Ir a: ${actual.titulo}`, onClick: () => onIr(actual.parada.i) }
-  } else if (p.tipo === 'leccion') {
+  } else if (p.tipo === 'leccion' && leccion) {
     boton = {
       texto: estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir',
       icono: estado !== 'hecha',
@@ -1623,6 +1624,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
     }
   } else if (p.tipo === 'meta') boton = { texto: 'Practicar', onClick: () => ruta.meta(p).ir() }
   else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'flow') boton = { texto: 'Ir a Letras', onClick: () => navegar(rutas.letras()) }
+  else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'circulo') boton = { texto: 'Ir al círculo', onClick: () => navegar(rutas.circulo()) }
   else if (reto) boton = { texto: p.hecha ? '¡Hecho!' : 'Lo hice', check: p.hecha, onClick: () => guardarReto(p.id, { hecho: !p.hecha }) }
 
   return (

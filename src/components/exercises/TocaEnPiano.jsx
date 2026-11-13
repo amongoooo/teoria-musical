@@ -19,6 +19,7 @@ import { BRILLO_MS, ENTRA_DERECHA, POP, SALTO, SUBE } from '../../ui/movimiento.
 import Pulsable from '../../ui/Pulsable.jsx'
 import useTemblor from '../../ui/useTemblor.js'
 import Piano from '../Piano.jsx'
+import { TERCERA, TRIADAS, arpegioYAcorde, cifrado as cifradoDe, nombreAcorde, triada } from '../../theory/acordes.js'
 import Rondas from './Rondas.jsx'
 
 /**
@@ -36,6 +37,8 @@ import Rondas from './Rondas.jsx'
  *        → tocar la nota a un semitono / un tono de `desde`
  *  - { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S',…], nombre }] }
  *        → tocar en orden las notas que salen de aplicar la fórmula de pasos desde `desde`
+ *  - { tipo: 'acorde', rondas: [{ raiz: 'D4', tipo: 'mayor' | 'menor' | 'dis' | 'aum', cifrado, guia, escuchar }] }
+ *        → construir la tríada: la fundamental viene marcada y se tocan la 3.ª y la 5.ª (en cualquier orden y octava)
  */
 export default function TocaEnPiano(props) {
   const { objetivo } = props.paso
@@ -45,6 +48,7 @@ export default function TocaEnPiano(props) {
   if (objetivo.tipo === 'octavas') return <Octavas {...props} />
   if (objetivo.tipo === 'paso') return <Paso {...props} />
   if (objetivo.tipo === 'formula') return <Formula {...props} />
+  if (objetivo.tipo === 'acorde') return <Acorde {...props} />
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
 
@@ -762,5 +766,221 @@ function CasillaFormula({ hecha, ahora, salta, suena, sacude, children }) {
         {children}
       </motion.div>
     </li>
+  )
+}
+
+// ——— Construir un acorde (P8): la fundamental marcada; tocar la 3.ª y la 5.ª ———
+
+/** Semitonos hacia arriba de `a` a `b` sin contar octavas (0…11). */
+const haciaArriba = (a, b) => (((midi(b) - midi(a)) % 12) + 12) % 12
+const PARTES = ['fundamental', '3.ª', '5.ª']
+
+/**
+ * Ronda: { raiz: 'D4', tipo: 'mayor', cifrado: true (pide «Dm» en vez de «Re menor»), guia: true (las terceras
+ * «3M / 3m» entre las casillas), escuchar: true (suena el acorde y no se dice cuál es), pista, titulo, mensaje }.
+ * Vale la nota en cualquier octava (un acorde es un acorde aunque se reparta); la que se tocó queda marcada.
+ */
+function Acorde({ paso, setAccion, siguiente, completar }) {
+  const rondas = paso.objetivo.rondas
+  const [r, setR] = useState(0)
+  const [tocadas, setTocadas] = useState({}) // { 1: 'F#4', 2: 'A4' }: la tecla con la que se encontró cada parte
+  const [intento, setIntento] = useState(null) // { nota, ok }
+  const [fallos, setFallos] = useState(0) // fallos seguidos (con 2, se marcan las que faltan)
+  const [fallosRonda, setFallosRonda] = useState(0)
+  const [aciertos, setAciertos] = useState(0)
+  const [sacudidas, setSacudidas] = useState({})
+  const { senal, senalar } = useSenal()
+  const ronda = rondas[r]
+  const notas = useMemo(() => triada(ronda.raiz, ronda.tipo), [ronda])
+  const listo = Boolean(tocadas[1] && tocadas[2])
+  const ultima = r === rondas.length - 1
+  const escuchar = Boolean(ronda.escuchar)
+  const guia = !escuchar && ronda.guia !== false
+  const raiz = nombre(ronda.raiz)
+  const nombreDelAcorde = nombreAcorde(ronda.raiz, ronda.tipo)
+  const pedido = ronda.cifrado ? cifradoDe(ronda.raiz, ronda.tipo) : nombreDelAcorde
+  const sonidoAcorde = { notas: arpegioYAcorde(notas), intervalo: 0.4, duracion: 1.2 }
+
+  const onNoteOn = useCallback(
+    (nota) => {
+      const i = notas.findIndex((n) => haciaArriba(n, nota) === 0)
+      if (i === 0 || (i > 0 && tocadas[i])) return setSacudidas((s) => ({ ...s, [i]: (s[i] ?? 0) + 1 }))
+      if (listo) return
+      if (i > 0) {
+        const nuevas = { ...tocadas, [i]: nota }
+        setTocadas(nuevas)
+        setIntento({ nota, ok: true })
+        setFallos(0)
+        if (nuevas[1] && nuevas[2]) {
+          playNotes(notas, { modo: 'acorde', duracion: 1.4, retraso: 0.35 })
+          const total = aciertos + (fallosRonda === 0 ? 1 : 0)
+          setAciertos(total)
+          if (ultima) completar({ aciertos: total, total: rondas.length })
+        }
+      } else {
+        setIntento({ nota, ok: false })
+        setFallos((f) => f + 1)
+        setFallosRonda((f) => f + 1)
+      }
+    },
+    [notas, tocadas, listo, aciertos, fallosRonda, ultima, rondas.length, completar],
+  )
+
+  useEffect(() => {
+    let feedback = null
+    const [abajo, arriba] = TRIADAS[ronda.tipo].terceras
+    if (listo) {
+      feedback = {
+        tipo: 'bien',
+        titulo: ronda.titulo ?? `¡${nombreDelAcorde[0].toUpperCase()}${nombreDelAcorde.slice(1)}!`,
+        texto:
+          ronda.mensaje ??
+          `${notas.map((n) => nombre(n, { octava: false })).join(' · ')}: ${TERCERA[abajo].nombre} y encima ${TERCERA[arriba].nombre}.`,
+      }
+    } else if (intento && !intento.ok) {
+      const d = haciaArriba(ronda.raiz, intento.nota)
+      const tocada = nombre(Note.fromMidiSharps(Note.midi(intento.nota)), { octava: false })
+      const desde = nombre(ronda.raiz, { octava: false })
+      const falta = [1, 2].filter((i) => !tocadas[i])
+      const busca = escuchar
+        ? 'Escucha otra vez: la del medio decide si es mayor o menor.'
+        : falta
+            .map((i) =>
+              i === 1
+                ? `la **3.ª** está a ${plural(abajo)} (${TERCERA[abajo].nombre})`
+                : `la **5.ª**, a ${plural(abajo + arriba)} (${TERCERA[arriba].nombre} sobre la 3.ª)`,
+            )
+            .join(' y ')
+      feedback = {
+        tipo: 'mal',
+        titulo: `Esa es ${tocada}.`,
+        texto:
+          `De ${desde} a ${tocada} hay ${plural(d)} hacia arriba. ` +
+          (escuchar ? busca : `${busca[0].toUpperCase()}${busca.slice(1)}.`) +
+          (ronda.pista ? ` ${ronda.pista}` : '') +
+          (fallos >= 2 ? ' Te las marco en el teclado.' : ''),
+      }
+    }
+    const cuantas = [1, 2].filter((i) => tocadas[i]).length
+    setAccion({
+      label: 'Continuar',
+      avanza: ultima, // el último «Continuar» pasa de paso
+      disabled: !listo,
+      ayuda: listo || feedback ? null : escuchar ? `Toca la 3.ª y la 5.ª que oíste (${cuantas}/2)` : `Toca la 3.ª y la 5.ª (${cuantas}/2)`,
+      feedback,
+      onClick: () => {
+        if (ultima) return siguiente()
+        const next = rondas[r + 1]
+        setR(r + 1)
+        setTocadas({})
+        setIntento(null)
+        setFallos(0)
+        setFallosRonda(0)
+        setSacudidas({})
+        if (next.escuchar) playNotes(arpegioYAcorde(triada(next.raiz, next.tipo)), { intervalo: 0.4, duracion: 1.2 })
+        else playNotes(next.raiz)
+      },
+    })
+  }, [listo, intento, ronda, notas, tocadas, fallos, escuchar, nombreDelAcorde, ultima, r, rondas, setAccion, siguiente])
+
+  // Tras 2 fallos seguidos, las que faltan se marcan en la octava de la fundamental (la que se ve).
+  const octava = Note.octave(ronda.raiz)
+  const pistas = fallos >= 2 && !listo ? [1, 2].filter((i) => !tocadas[i]).map((i) => simple(`${Note.pitchClass(notas[i])}${octava}`)) : []
+  const marcadas = [simple(ronda.raiz), ...Object.values(tocadas), ...pistas]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Rondas total={rondas.length} actual={r} hecha={listo} />
+
+      <motion.div key={r} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
+        <p className="text-xl font-semibold leading-snug sm:text-2xl">
+          {escuchar ? (
+            <>
+              Escucha y construye el acorde desde <span className="rounded-md bg-fijate-claro px-1.5">{raiz}</span>
+            </>
+          ) : (
+            <>
+              Construye{' '}
+              <span className={`underline decoration-fijate decoration-4 underline-offset-4 ${ronda.cifrado ? 'font-dato font-medium' : ''}`}>
+                {pedido}
+              </span>{' '}
+              desde <span className="rounded-md bg-fijate-claro px-1.5">{raiz}</span>
+            </>
+          )}
+        </p>
+        <BotonSonido
+          sonido={escuchar ? sonidoAcorde : { notas: [ronda.raiz] }}
+          etiqueta={escuchar ? 'Escuchar' : raiz}
+          onNotas={escuchar ? undefined : senalar}
+          className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
+        />
+      </motion.div>
+
+      <FilaAcorde key={r} notas={notas} tipo={ronda.tipo} tocadas={tocadas} guia={guia} senal={senal} sacudidas={sacudidas} />
+
+      {listo && (
+        <motion.div {...SUBE}>
+          <BotonSonido
+            sonido={sonidoAcorde}
+            etiqueta={`Escuchar ${nombreDelAcorde}`}
+            onNotas={(ns, i) => senalar(ns.flat().map(simple), i < 3 ? i : null)}
+            className="w-full"
+          />
+        </motion.div>
+      )}
+
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(ronda.raiz)} senalar={senal} />
+    </div>
+  )
+}
+
+/**
+ * El acorde como una fila de tres casillas (fundamental, 3.ª, 5.ª): la fundamental ya va en verde; las otras
+ * con «?» hasta encontrarlas. Con `guia`, entre cada pareja la 3.ª que la separa (3M / 3m). Debajo, 1 · 3 · 5.
+ */
+function FilaAcorde({ notas, tipo, tocadas, guia, senal, sacudidas = {} }) {
+  const terceras = TRIADAS[tipo].terceras
+  const columnas = { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
+  return (
+    <div className="flex flex-col gap-1.5" data-fila-acorde>
+      {guia && (
+        <div className="grid gap-1.5" style={columnas} aria-label={`Terceras: ${terceras.map((t) => TERCERA[t].nombre).join(' y ')}`}>
+          {notas.map((_, i) => (
+            <span key={i} className="relative h-6">
+              {i > 0 && (
+                <span className="absolute left-0 top-0 -ml-[3px] grid h-6 -translate-x-1/2 place-items-center rounded-full bg-zinc-100 px-2 font-dato text-sm font-medium text-zinc-700">
+                  {TERCERA[terceras[i - 1]].corto}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      <ol className="grid gap-1.5" style={columnas}>
+        {notas.map((n, i) => {
+          const hecha = i === 0 || Boolean(tocadas[i])
+          return (
+            <CasillaFormula
+              key={i}
+              hecha={hecha}
+              ahora={false}
+              salta={i > 0 && hecha}
+              suena={Boolean(senal?.activa && senal.i === i)}
+              sacude={sacudidas[i] ?? 0}
+            >
+              <span className="sr-only">{PARTES[i]}: </span>
+              {hecha ? nombre(n, { octava: false }) : '?'}
+            </CasillaFormula>
+          )
+        })}
+      </ol>
+      <div className="grid gap-1.5" style={columnas} aria-hidden>
+        {[1, 3, 5].map((g) => (
+          <span key={g} className="text-center font-dato text-sm font-medium tabular-nums text-zinc-500">
+            {g}
+          </span>
+        ))}
+      </div>
+    </div>
   )
 }
