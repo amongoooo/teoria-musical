@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: (pedido del usuario) **Vidas** en el entrenador: rueda central (1–20, ∞; Escalada en Rápido) y barra roja dividida bajo la de aciertos. Contrarreloj: la barra no se vacía hasta el final del borrador y el tiempo corre en amarillo. El piano de respuesta ya no cambia de octava solo (salvo administrador).
+
 - 2026-11-13: (pedido del usuario) **✕ / ‹ / casita**: la ✕ solo sale de lecciones y hojas, la flechita vuelve al apartado anterior, la casita va a Inicio. En el entrenador: sin círculo de nivel (solo «Nivel N») y la barra de arriba se llena con aciertos (Contrarreloj: también con el tiempo). Ajustes de los modos fuera del cuadro de texto. Rueda del mouse en los carruseles y Enter = botón principal en computadora.
 
 - 2026-11-12: (pedido del usuario) **Intervalos y Acordes pasan al arranque de «iniciar nivel»** (adiós a la portada con chips y textos grises): puntitos del Nivel por modo, Dificultad = octavas, y en Intervalos la dirección en bloques con dibujito de piano roll.

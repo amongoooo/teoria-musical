@@ -2,9 +2,20 @@ import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotio
 import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
 import { useOpciones } from '../progress/opciones.js'
-import { AJUSTES_ABSOLUTO, DIRECCIONES, OCTAVAS_POSIBLES, ajusteAbsoluto, octavasDe, getJuego, textoJuego } from '../theory/oido.js'
+import {
+  AJUSTES_ABSOLUTO,
+  DIRECCIONES,
+  OCTAVAS_POSIBLES,
+  VIDAS_ESCALADA,
+  VIDAS_INFINITAS,
+  ajusteAbsoluto,
+  octavasDe,
+  getJuego,
+  textoJuego,
+  vidasDe,
+} from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Check, Circulo8, Cronometro, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
+import { Candado, Check, Circulo8, Cronometro, Escalada, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
@@ -36,6 +47,7 @@ export default function ArranqueOido({ modo, datos }) {
   const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
   const conPiano = datos.ajustes.respuesta !== 'botones'
   const direccion = datos.ajustes.direccion ?? 'sube'
+  const minVidas = rapido ? VIDAS_ESCALADA : 1
   // Puntitos: los del Nivel los da el modo (oído absoluto: mini piano roll con las notas del nivel; intervalos: los 12
   // intervalos; acordes: sus niveles); la Dificultad, las octavas 2…6 (abajo la grave), que se encienden del centro a
   // los extremos (4, 5, 3, 6, 2).
@@ -71,7 +83,8 @@ export default function ArranqueOido({ modo, datos }) {
           </motion.section>
         )}
 
-        <motion.section variants={itemLista} layout="position" className={`grid gap-4 ${modo.dificultad ? 'grid-cols-2' : 'grid-cols-1'}`} data-medidores>
+        {/* Nivel · Vidas · Dificultad: tres ruedas lado a lado (las de los lados con sus puntitos por fuera). */}
+        <motion.section variants={itemLista} layout="position" className="flex items-start justify-center gap-2" data-medidores>
           <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={puntos.encendidos} etiquetas={puntos.etiquetas} negras={puntos.negras} acento={acento}>
             <Rueda
               key={rapido ? 'multiplicador' : 'nivel'}
@@ -83,21 +96,39 @@ export default function ArranqueOido({ modo, datos }) {
               onVista={setVista}
               onElegir={rueda.elegir}
               acento={acento}
+              className={ANCHO_RUEDA}
+            />
+          </Medidor>
+          {/* Vidas (pedido del usuario): 1…20 y encima ∞; en Rápido, debajo del 1, la Escalada. */}
+          <Medidor id="vidas" titulo="Vidas" acento={acento}>
+            <Rueda
+              key={rapido ? 'vidas-rapido' : 'vidas'}
+              id="vidas"
+              nombre="vidas"
+              min={minVidas}
+              total={VIDAS_INFINITAS - minVidas + 1}
+              max={VIDAS_INFINITAS - minVidas + 1}
+              valor={vidasDe(datos.ajustes, rapido)}
+              onElegir={(n) => guardarAjustes(modo.id, { vidas: n })}
+              formato={formatoVidas}
+              acento={acento}
+              className={ANCHO_RUEDA}
             />
           </Medidor>
           {modo.dificultad && (
-          <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
-            <Rueda
-              id="dificultad"
-              nombre="dificultad"
-              total={dif.max}
-              max={dif.max}
-              valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
-              onVista={setVistaDif}
-              onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
-              acento={acento}
-            />
-          </Medidor>
+            <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
+              <Rueda
+                id="dificultad"
+                nombre="dificultad"
+                total={dif.max}
+                max={dif.max}
+                valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
+                onVista={setVistaDif}
+                onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
+                acento={acento}
+                className={ANCHO_RUEDA}
+              />
+            </Medidor>
           )}
         </motion.section>
 
@@ -152,6 +183,16 @@ export default function ArranqueOido({ modo, datos }) {
   )
 }
 
+/** Ancho de las tres ruedas verticales (caben lado a lado a 375 px con sus puntitos). */
+const ANCHO_RUEDA = 'h-56 w-[5.5rem] shrink-0'
+
+/** Cómo se ve cada valor de la rueda de Vidas: 21 = ∞; 0 (Rápido) = la Escalada (escalones que suben). */
+function formatoVidas(v) {
+  if (v === VIDAS_INFINITAS) return <span className="font-titulo text-5xl font-bold leading-none" aria-label="Infinitas">∞</span>
+  if (v === VIDAS_ESCALADA) return <Escalada className="size-11" titulo="Escalada" />
+  return null
+}
+
 /** Color de cada dificultad (1 azul … 5 rojo; variables `--color-dificultad-N` de src/index.css). */
 const colorDificultad = (n) => `var(--color-dificultad-${n})`
 
@@ -160,10 +201,10 @@ const colorDificultad = (n) => `var(--color-dificultad-${n})`
  * son lo que suena: en el Nivel, las 12 notas como un piano roll (Do abajo); en la Dificultad, las octavas 2…6.
  */
 function Medidor({ id, titulo, lado, encendidos, etiquetas, negras, acento, children }) {
-  const columna = <Puntitos encendidos={encendidos} etiquetas={etiquetas} negras={negras} acento={acento} />
+  const columna = encendidos && <Puntitos encendidos={encendidos} etiquetas={etiquetas} negras={negras} acento={acento} />
   return (
     <div className="flex flex-col items-center gap-3">
-      <h2 id={id} className="text-center font-juego text-xl font-semibold uppercase tracking-wide text-zinc-800">
+      <h2 id={id} className="text-center font-juego text-base font-semibold uppercase tracking-wide text-zinc-800">
         {titulo}
       </h2>
       <div className="flex items-stretch gap-2.5">
@@ -466,6 +507,7 @@ function Rueda({
   onVista,
   onElegir,
   acento,
+  formato,
   className = 'h-56 w-28 shrink-0',
 }) {
   const vertical = eje === 'y'
@@ -616,14 +658,14 @@ function Rueda({
       />
       <div className="absolute inset-0 overflow-hidden rounded-[1.375rem]" style={{ maskImage: mascara, WebkitMaskImage: mascara }}>
         {Array.from({ length: vistos }, (_, i) => (
-          <ItemRueda key={i} i={i} valor={i + min} pos={pos} vertical={vertical} bloqueado={i > ultimo} acento={acento} />
+          <ItemRueda key={i} i={i} valor={i + min} pos={pos} vertical={vertical} bloqueado={i > ultimo} acento={acento} formato={formato} />
         ))}
       </div>
     </div>
   )
 }
 
-function ItemRueda({ i, valor, pos, vertical, bloqueado, acento }) {
+function ItemRueda({ i, valor, pos, vertical, bloqueado, acento, formato }) {
   const T = TAM_ITEM[vertical ? 'y' : 'x']
   const desplaza = useTransform(pos, (p) => (vertical ? (p - i) * T : (i - p) * T))
   const distancia = useTransform(pos, (p) => Math.abs(p - i))
@@ -644,7 +686,7 @@ function ItemRueda({ i, valor, pos, vertical, bloqueado, acento }) {
       {bloqueado ? (
         <Candado className="size-9 text-zinc-400" />
       ) : (
-        <span className={`font-juego leading-none ${vertical ? 'text-5xl' : 'text-4xl'}`}>{valor}</span>
+        (formato?.(valor) ?? <span className={`font-juego leading-none ${vertical ? 'text-5xl' : 'text-4xl'}`}>{valor}</span>)
       )}
     </motion.div>
   )

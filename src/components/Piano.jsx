@@ -79,6 +79,7 @@ function useVisibleOctaves(ref, max) {
  *  - onNoteOn / onNoteOff: callbacks opcionales (útiles para ejercicios).
  *  - marcadas ([]): notas resaltadas en ámbar (p. ej. la nota de referencia).
  *  - compacto (false): teclas más bajas, para que quepa en lecciones en el celular.
+ *  - octavaInicial: octava que se ve al montarse (si no caben todas); onOctava(octava): avisa al cambiar la que se ve.
  *  - ir (nota): si no se ve (pantalla angosta, 1 octava), el teclado pasa a la octava de esa nota
  *    cada vez que cambia (p. ej. la siguiente nota de una fórmula).
  *  - tecladoArriba (false): en el piano libre, además de la fila de abajo del teclado del computador (Z…M), la de
@@ -104,6 +105,8 @@ export default function Piano({
   marcadas = [],
   compacto = false,
   ir,
+  octavaInicial,
+  onOctava,
   senalar,
   tecladoArriba = false,
   bloqueada,
@@ -114,7 +117,7 @@ export default function Piano({
   const wrapperRef = useRef(null)
   const raizRef = useRef(null)
   const visibleOctaves = useVisibleOctaves(wrapperRef, octaves)
-  const [offset, setOffset] = useState(0) // octava desplazada cuando no caben todas
+  const [offset, setOffset] = useState(() => Math.max(0, (octavaInicial ?? startOctave) - startOctave)) // octava desplazada cuando no caben todas
   const [active, setActive] = useState(() => new Set())
   const [brillo, setBrillo] = useState(() => new Set()) // teclas iluminadas por `senalar`
   // Marcadas normalizadas a sostenidos (así "Db4" resalta la tecla C#4).
@@ -149,10 +152,19 @@ export default function Piano({
     [pos, reducir],
   )
 
-  // La octava elegida (toque en la barra, `ir`, `senalar`, soltar el dedo) → la tira se recorre hasta ella.
+  // La octava elegida (toque en la barra, `ir`, `senalar`, soltar el dedo) → la tira se recorre hasta ella. Al
+  // montarse (p. ej. con `octavaInicial`, mientras se mide cuántas caben), salta sin recorrido.
+  const montado = useRef(performance.now())
   useEffect(() => {
-    if (!siguiendo.current) mover(indice, RESORTE.pantalla)
-  }, [indice, mover])
+    if (siguiendo.current) return
+    if (performance.now() - montado.current < 300) pos.set(indice)
+    else mover(indice, RESORTE.pantalla)
+  }, [indice, mover, pos])
+  const onOctavaRef = useRef(onOctava)
+  onOctavaRef.current = onOctava
+  useEffect(() => {
+    if (maxOffset > 0) onOctavaRef.current?.(startOctave + indice)
+  }, [indice, startOctave, maxOffset])
   useEffect(() => () => animacion.current?.stop(), [])
 
   // Mientras se arrastra la barra: la tira sigue al dedo (posición continua en octavas); al soltar, se ajusta.

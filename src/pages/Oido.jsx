@@ -23,14 +23,18 @@ import { parseNota } from '../theory/notas.js'
 import {
   MODOS_OIDO,
   PARTES_NIVEL,
+  VIDAS_ESCALADA,
+  VIDAS_INFINITAS,
   ajusteAbsoluto,
   claseDe,
   getJuego,
   getModoOido,
   nombreClase,
   notasInicialesRapido,
+  octavasDe,
   quitarNotaAlAzar,
   sumarNotas,
+  vidasDe,
 } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
@@ -259,8 +263,17 @@ function Entrenador({ modo }) {
   const { gesto: sentidoGesto, admin } = useOpciones()
   // Modo administrador (pedido del usuario): al sonar, la respuesta se señala (en oro, sin presionarla).
   const [sono, setSono] = useState(false)
+  // Piano de respuesta: la octava que se está viendo (se conserva entre preguntas) y la tecla que se tocó.
+  const [octavaVista, setOctavaVista] = useState(4)
+  const [pulsada, setPulsada] = useState(null)
 
   const [jugando, setJugando] = useState(false)
+  const [vidas, setVidas] = useState(null)
+  const vidasRef = useRef(null)
+  const cambiarVidas = (v) => {
+    vidasRef.current = v
+    setVidas(v)
+  }
   const [pregunta, setPregunta] = useState(null)
   const [respuesta, setRespuesta] = useState(null) // id elegido (SIN_TIEMPO si se acabó el tiempo)
   const [resultado, setResultado] = useState(null) // lo que devuelve registrarRespuesta
@@ -338,12 +351,39 @@ function Entrenador({ modo }) {
 
   const empezar = () => {
     empezarSesion()
-    if (rapido) cambiarPartida({ notas: notasInicialesRapido(multiplicador), aciertos: 0 })
+    const inicio = rapido ? notasInicialesRapido(multiplicador) : null
+    if (rapido) cambiarPartida({ notas: inicio, aciertos: 0 })
+    // Vidas de la partida (pedido del usuario). `alcanzados`: niveles a los que ya se subió en esta partida (solo
+    // la primera vez que se sube a cada uno se gana una vida). En la Escalada (Rápido con 0) las vidas son las notas
+    // que llevas por encima de las del inicio.
+    const v = vidasDe(datosModo(modo.id).ajustes, rapido)
+    const escalada = rapido && v === VIDAS_ESCALADA
+    cambiarVidas({
+      infinitas: v === VIDAS_INFINITAS,
+      escalada,
+      actual: escalada ? 0 : v,
+      max: escalada ? 0 : v,
+      inicio: inicio?.length ?? null,
+      alcanzados: [rapido ? inicio.length : datosModo(modo.id).nivel],
+    })
     setJugando(true)
     nueva()
   }
 
-  const responder = (id) => {
+  // Sin vidas: vuelve a la pantalla de arranque.
+  const terminar = () => {
+    clearTimeout(temporizador.current)
+    pararSonar.current?.()
+    releaseAll()
+    setJugando(false)
+    setPregunta(null)
+    setRespuesta(null)
+    setResultado(null)
+    setReloj(null)
+    window.scrollTo(0, 0)
+  }
+
+  const responder = (id, tecla = null) => {
     if (limpiando) return
     if (respuesta) {
       // Con el piano, la tecla ya suena sola. Con botones: tocar una opción la hace sonar para comparar
@@ -357,6 +397,7 @@ function Entrenador({ modo }) {
     }
     const bien = id === pregunta.item
     setRespuesta(id)
+    setPulsada(tecla)
     const r = registrarRespuesta(modo.id, {
       item: pregunta.item,
       bien,
@@ -373,6 +414,29 @@ function Entrenador({ modo }) {
       if (!bien) cambio = { ...cambio, ...quitarNotaAlAzar(antes.notas) }
       cambiarPartida({ notas: cambio.notas, aciertos })
       r.partida = { sumadas: cambio.sumadas, quitada: cambio.quitada }
+    }
+    // Vidas: cada fallo (también por tiempo) quita una; subir a un nivel nuevo en la partida da una (si no están
+    // llenas). En la Escalada, las vidas son las notas por encima del inicio y un fallo al volver al inicio acaba.
+    const vv = vidasRef.current
+    if (vv && !vv.infinitas) {
+      let { actual, max, alcanzados } = vv
+      let fin = false
+      if (vv.escalada) {
+        const arriba = partidaRef.current.notas.length - vv.inicio
+        actual = Math.max(0, arriba)
+        max = Math.max(max, actual)
+        fin = !bien && arriba <= 0
+      } else {
+        if (!bien) actual -= 1
+        const nuevoNivel = rapido ? (r.partida.sumadas.length ? partidaRef.current.notas.length : null) : r.subio ? r.nuevoNivel : null
+        if (nuevoNivel != null && !alcanzados.includes(nuevoNivel)) {
+          alcanzados = [...alcanzados, nuevoNivel]
+          if (actual < max) actual += 1
+        }
+        fin = actual <= 0
+      }
+      cambiarVidas({ ...vv, actual, max, alcanzados })
+      r.vidas = { antes: vv.actual, despues: actual, fin }
     }
     setResultado(r)
   }
@@ -394,6 +458,7 @@ function Entrenador({ modo }) {
   } else if (!respuesta) {
     accion = { label: 'Continuar', disabled: true, onClick: () => {}, ayuda: conPiano ? 'Toca la nota en el piano' : 'Toca tu respuesta arriba' }
   } else {
+    const fin = Boolean(resultado?.vidas?.fin)
     const bien = respuesta === pregunta.item
     const sinTiempo = respuesta === SIN_TIEMPO
     let texto = bien || sinTiempo ? pregunta.explicacion : `Elegiste ${modo.nombreItem(respuesta, datos.ajustes)}. ${pregunta.explicacion}`
@@ -408,9 +473,11 @@ function Entrenador({ modo }) {
       texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
     }
     if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
+    if (resultado?.vidas?.despues > resultado?.vidas?.antes && !vidas?.escalada) texto += ' **¡+1 vida!**'
+    if (fin) texto += vidas?.escalada ? ' **Volviste al inicio: se acabó la escalada.**' : ' **¡Se acabaron las vidas!**'
     accion = {
       label: 'Continuar',
-      onClick: nueva,
+      onClick: fin ? terminar : nueva,
       feedback: bien
         ? { tipo: 'bien', titulo: '¡Correcto!', texto }
         : { tipo: 'mal', titulo: `${sinTiempo ? 'Se acabó el tiempo. ' : ''}Era ${modo.nombreItem(pregunta.item, datos.ajustes)}.`, texto },
@@ -428,6 +495,14 @@ function Entrenador({ modo }) {
   const lleno = Boolean(resultado?.subio || resultado?.partida?.sumadas.length)
   const nivelVisto = rapido ? multiplicador : jugando && pregunta ? (resultado?.subio ? resultado.nuevoNivel : pregunta.nivel) : datos.nivel
 
+  // Color de la dificultad (la barra de aciertos lo toma; en Contrarreloj, mientras corre el tiempo, va en amarillo).
+  const colorDif = `var(--color-dificultad-${ajusteAbsoluto(datos.ajustes, 'octavas')})`
+  // Vidas en la cabecera: en el juego, las de la partida; en el arranque, las elegidas (para verlas al girar la rueda).
+  const elegidas = vidasDe(datos.ajustes, rapido)
+  const vidasVista = jugando
+    ? vidas && !vidas.infinitas && { actual: vidas.actual, max: Math.max(1, vidas.max) }
+    : elegidas !== VIDAS_INFINITAS && { actual: elegidas, max: Math.max(1, elegidas) }
+
   // Gesto del botón (pedido del usuario): en el entrenador solo pasa a la SIGUIENTE pregunta (nunca atrás) y solo
   // cuando el botón ya dice «Continuar» (respondida); mientras se borra la referencia o falta responder, no pasa.
   const navegacion = jugando
@@ -435,7 +510,7 @@ function Entrenador({ modo }) {
         invertido: sentidoGesto === 'invertido',
         puede: (dir) => dir > 0 && Boolean(respuesta) && !limpiando,
         ir: (dir) => {
-          if (dir > 0) nueva()
+          if (dir > 0) (resultado?.vidas?.fin ? terminar : nueva)()
         },
       }
     : null
@@ -451,15 +526,17 @@ function Entrenador({ modo }) {
           >
             <Atras className="size-6" />
           </Pulsable>
-          <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
+          {/* Píldora de vidrio: arriba los aciertos y, debajo, las vidas (en rojo, una parte por vida; con ∞ no sale). */}
+          <div className={`flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1.5 rounded-full px-4 py-2 ${VIDRIO}`}>
             <BarraAciertos
               key={`${modo.id}-${jugando}`}
               avance={avance}
               lleno={lleno}
               reloj={jugando ? reloj : null}
               parado={Boolean(respuesta)}
-              acento={modo.acento}
+              acento={colorDif}
             />
+            {vidasVista && <BarraVidas actual={vidasVista.actual} max={vidasVista.max} />}
           </div>
           {/* Escuchar otra vez: solo la bocina (pedido del usuario). */}
           {jugando && (
@@ -512,7 +589,17 @@ function Entrenador({ modo }) {
             <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{modo.pregunta}</h1>
 
             {conPiano ? (
-              <PianoRespuesta pregunta={pregunta} respuesta={respuesta} inactivo={limpiando} pista={admin && sono} onResponder={responder} />
+              <PianoRespuesta
+                pregunta={pregunta}
+                respuesta={respuesta}
+                pulsada={pulsada}
+                octavas={octavasDe(ajusteAbsoluto(datos.ajustes, 'octavas'))}
+                vista={octavaVista}
+                onVista={setOctavaVista}
+                inactivo={limpiando}
+                pista={admin && sono}
+                onResponder={responder}
+              />
             ) : (
               <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {pregunta.opciones.map((op) => (
@@ -567,27 +654,31 @@ function Entrenador({ modo }) {
  * que aún no se desbloquean van con candado. Al responder: la correcta en verde con ✓ y la elegida (si no era) en
  * oro con bombilla; después las teclas suenan para comparar.
  */
-function PianoRespuesta({ pregunta, respuesta, inactivo, pista, onResponder }) {
+function PianoRespuesta({ pregunta, respuesta, pulsada, octavas, vista, onVista, inactivo, pista, onResponder }) {
   const nota = pregunta.notas[0]
   const octava = parseNota(nota).octava
   const libres = new Set(pregunta.opciones.map((o) => o.id))
   const estados = {}
   if (respuesta) {
-    if (respuesta !== pregunta.item && respuesta !== SIN_TIEMPO) estados[`${respuesta}${octava}`] = 'fijate'
+    if (respuesta !== pregunta.item && pulsada) estados[pulsada] = 'fijate'
     estados[`${pregunta.item}${octava}`] = 'bien'
   }
+  // Las octavas de la dificultad, con su barra (pedido del usuario): se cambian a mano; el teclado NO va solo a la
+  // octava que sonó (solo en modo administrador, con la pista, o ya respondida, para ver la correcta).
   return (
     <Piano
-      startOctave={octava}
-      octaves={1}
+      startOctave={octavas[0]}
+      octaves={octavas.length}
+      octavaInicial={vista}
+      onOctava={onVista}
       bloqueada={(n) => !libres.has(claseDe(n))}
       inactivo={inactivo}
       estados={estados}
       // Modo administrador: al sonar, el teclado va a la nota y la resalta en oro (sin tocarla).
       marcadas={pista && !respuesta ? [nota] : []}
-      ir={pista ? nota : undefined}
+      ir={pista || respuesta ? nota : undefined}
       sinEstado
-      onNoteOn={(n) => onResponder(claseDe(n))}
+      onNoteOn={(n) => onResponder(claseDe(n), n)}
     />
   )
 }
@@ -605,14 +696,15 @@ function claseOpcion(id, correcta, respuesta) {
 
 /**
  * Barra de arriba del entrenador (pedido del usuario): se llena con los aciertos que faltan para subir de nivel.
- * En Contrarreloj tiene doble función: antes de que suene la nota se vacía, y al sonar se va llenando con el tiempo
- * (en celeste, «lo que suena ahora»; en oro el último segundo y medio). Al responder —o si se llena: fallo— primero
- * vuelve a donde estaba y luego suma (o pierde) el acierto. Al subir de nivel se llena del todo y vuelve a empezar.
+ * En Contrarreloj tiene doble función: mientras se borra la referencia sigue mostrando los aciertos y, justo antes de
+ * que suene la nota, se vacía; al sonar se va llenando con el tiempo, en amarillo (`fijate`). Al responder —o si se
+ * llena: fallo— primero vuelve a donde estaba, ahí recupera el color de la dificultad, y luego suma (o pierde) el
+ * acierto. Al subir de nivel se llena del todo y vuelve a empezar.
  */
 function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
   const w = useMotionValue(avance)
   const previo = useRef(avance)
-  const [tono, setTono] = useState('aciertos') // aciertos | tiempo | poco
+  const [tono, setTono] = useState('aciertos') // aciertos | tiempo
   const [modoBarra, setModoBarra] = useState('aciertos')
   const corriendo = Boolean(reloj) && !parado
 
@@ -627,17 +719,20 @@ function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
     const espera = (ms) => new Promise((listo) => setTimeout(listo, ms))
     if (corriendo) {
       // Se vacía y, al sonar la nota, se llena con el tiempo.
-      setModoBarra('tiempo')
       ;(async () => {
-        await ir(0, { duration: 0.25, ease: 'easeOut' })
+        // Espera a que esté por acabar el borrador de la referencia: no se vacía antes.
+        const VACIAR = 300
+        const falta = reloj.desde - VACIAR - performance.now()
+        if (falta > 0) await espera(falta)
+        if (cancelado) return
+        setModoBarra('tiempo')
+        await ir(0, { duration: VACIAR / 1000, ease: 'easeOut' })
         if (cancelado) return
         setTono('tiempo')
         const paso = () => {
           if (cancelado) return
-          const ahora = performance.now()
-          const f = Math.max(0, Math.min(1, (ahora - reloj.desde) / (reloj.hasta - reloj.desde)))
+          const f = Math.max(0, Math.min(1, (performance.now() - reloj.desde) / (reloj.hasta - reloj.desde)))
           w.set(f)
-          setTono(ahora > reloj.desde && reloj.hasta - ahora < 1500 ? 'poco' : 'tiempo')
           if (f < 1) raf = requestAnimationFrame(paso)
         }
         paso()
@@ -669,7 +764,7 @@ function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
     }
   }, [corriendo, reloj, avance, lleno, w])
 
-  const color = tono === 'poco' ? 'var(--color-fijate)' : tono === 'tiempo' ? 'var(--color-sky-500)' : acento
+  const color = tono === 'tiempo' ? 'var(--color-fijate)' : acento
   return (
     <div
       className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
@@ -684,6 +779,29 @@ function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
         className="h-full w-full origin-left rounded-full transition-colors duration-200"
         style={{ scaleX: w, backgroundColor: color }}
       />
+    </div>
+  )
+}
+
+/**
+ * Vidas de la partida (pedido del usuario): barra roja debajo de la de aciertos, dividida en una parte por vida; las
+ * que quedan van llenas y la que se pierde se apaga con un pequeño temblor (al ganar una, entra con un pop).
+ */
+function BarraVidas({ actual, max }) {
+  return (
+    <div className="flex h-2 gap-[3px]" role="img" aria-label={`${actual} de ${max} vidas`} data-vidas={actual} data-vidas-max={max}>
+      {Array.from({ length: max }, (_, i) => (
+        <motion.span
+          key={i}
+          className="h-full flex-1 rounded-full"
+          initial={false}
+          animate={{
+            backgroundColor: i < actual ? 'var(--color-vida)' : 'var(--color-zinc-200)',
+            scaleY: i < actual ? 1 : 0.7,
+          }}
+          transition={RESORTE.pulsar}
+        />
+      ))}
     </div>
   )
 }

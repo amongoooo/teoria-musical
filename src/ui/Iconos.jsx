@@ -185,6 +185,15 @@ export function Atras({ grosor = 2.4, ...props }) {
   )
 }
 
+/** Escalada (escalones que suben): el modo de Rápido en el que las vidas son las notas que subes. */
+export function Escalada(props) {
+  return (
+    <Icono {...props}>
+      <path d="M3 20h5v-5h5v-5h5V5h3" />
+    </Icono>
+  )
+}
+
 /** Inicio (casita). */
 export function Inicio(props) {
   return (
