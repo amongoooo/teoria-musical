@@ -1,4 +1,4 @@
-import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion } from 'motion/react'
+import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
@@ -69,6 +69,17 @@ const FLOTA = { factor: 0.5, max: 14 }
 // (Pedido del usuario: el doble de inclinación y la mitad de tiempo.) Los resortes son los de siempre
 // (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
 // «secos», pero duran la mitad.
+// Cuadrito del dedo (pedido del usuario): al presionar la barra aparece un cuadrito gris leve que sigue al dedo sobre
+// los puntitos, DETRÁS del vidrio de la barra (se ve difuminado; con «Opaco» la barra es sólida y va encima). Se pega con un IMÁN a la etapa en la que está el dedo (regla: 0 · 1 · 2 · 3 puntitos del centro o el
+// borde = las velocidades del joystick; sin regla: el puntito bajo el dedo); al soltar vuelve al centro con un resorte
+// que se pasa un poco (`vuelve`). Cuanto más a los costados, más se resalta (`opacidad`: de `min` a `max`).
+const CUADRITO = {
+  lado: 38,
+  iman: { type: 'spring', stiffness: 700, damping: 34, mass: 0.6 },
+  vuelve: { type: 'spring', stiffness: 260, damping: 11, mass: 0.8 },
+  opacidad: { min: 0.12, max: 0.42 }, // encima de la barra (Opaco)
+  opacidadDetras: { min: 0.3, max: 0.75 }, // detrás del vidrio: el desenfoque lo aclara
+}
 const MATRACA = {
   max: 3,
   eje: 4,
@@ -1103,6 +1114,35 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
   const g = useRef(null) // gesto sobre la barra
   const ultimoArrastre = useRef(0)
   const corre = useMotionValue(0) // x de la tira (regla)
+  // Cuadrito del dedo (ver CUADRITO): x desde el centro de la píldora, cuánto se resalta (0–1) y si se ve.
+  const cuadroX = useMotionValue(0)
+  const cuadroFuerza = useMotionValue(0)
+  const cuadroVe = useMotionValue(0)
+  const detras = useOpciones().vidrio !== 'opaco' // con desenfoque, el cuadrito va detrás del vidrio
+  const rango = detras ? CUADRITO.opacidadDetras : CUADRITO.opacidad
+  const cuadroOpacidad = useTransform(() => cuadroVe.get() * (rango.min + (rango.max - rango.min) * cuadroFuerza.get()))
+  const cuadroXDetras = useTransform(() => cuadroX.get() + golpe.get()) // detrás, sigue también el golpe de la matraca
+  const cuadroEscala = useTransform(() => 1 + 0.1 * cuadroFuerza.get())
+  /** Lleva el cuadrito a una etapa (x en px desde el centro y fuerza 0–1), con imán solo si la etapa cambió. */
+  const cuadroA = (s, x, fuerza) => {
+    if (s.etapa === x) return
+    s.etapa = x
+    if (reducir) {
+      cuadroX.jump(x)
+      cuadroFuerza.jump(fuerza)
+      return
+    }
+    animate(cuadroX, x, CUADRITO.iman)
+    animate(cuadroFuerza, fuerza, CUADRITO.iman)
+  }
+  /** Etapa del dedo en la regla: 0–3 puntitos del centro (como el joystick) o el borde. */
+  const etapaRegla = (s) => {
+    const dx = s.x - s.centro
+    const dir = Math.sign(dx)
+    if (Math.abs(dx) >= s.mitad - JOYSTICK.borde) return [dir * (s.mitad - 12 - CUADRITO.lado / 2), 1]
+    const k = Math.min(3, Math.round(Math.abs(dx) / sep))
+    return [dir * k * sep, k / 3]
+  }
   const destino = (k) => disponible / 2 - centros[limitar(k, 0, total - 1)]
   const bucle = useRef(0) // requestAnimationFrame del joystick
 
@@ -1161,6 +1201,15 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
     cancelAnimationFrame(bucle.current)
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
+    // El cuadrito vuelve al centro con un resorte que se pasa un poco y luego se apaga.
+    if (reducir) {
+      cuadroX.jump(0)
+      cuadroVe.jump(0)
+    } else {
+      animate(cuadroX, 0, CUADRITO.vuelve)
+      animate(cuadroFuerza, 0, CUADRITO.vuelve)
+      animate(cuadroVe, 0, { duration: 0.25, delay: 0.45 })
+    }
     if (!s.regla) return
     if (s.pasos > 0) {
       ultimoArrastre.current = performance.now()
@@ -1204,7 +1253,16 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
         </Pulsable>
       )}
       {/* Capa que flota con el dedo */}
-      <motion.div style={{ x: flotaX, y: flotaY }} className={regla ? 'w-full' : ''}>
+      <motion.div style={{ x: flotaX, y: flotaY }} className={`relative ${regla ? 'w-full' : ''}`}>
+        {/* Cuadrito del dedo DETRÁS de la píldora de vidrio (ver CUADRITO): el desenfoque lo difumina. */}
+        {detras && (
+          <motion.span
+            aria-hidden
+            data-cuadrito="detras"
+            className="pointer-events-none absolute left-1/2 top-1/2 rounded-xl bg-zinc-500"
+            style={{ width: CUADRITO.lado, height: CUADRITO.lado, marginLeft: -CUADRITO.lado / 2, marginTop: -CUADRITO.lado / 2, x: cuadroXDetras, opacity: cuadroOpacidad, scale: cuadroEscala }}
+          />
+        )}
         {/* Capa de la matraca (giro) */}
         <motion.div
           role="group"
@@ -1226,6 +1284,10 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             // Eje de la barra en reposo: se mide en la capa que flota (no gira; la inclinada mediría de más).
             const capa = pildora.current.parentElement.getBoundingClientRect()
             base.ejeY = capa.top + capa.height / 2 - flotaY.get()
+            base.centroPildora = capa.left + capa.width / 2 - flotaX.get()
+            base.etapa = null
+            cuadroVe.stop()
+            cuadroVe.set(1)
             if (regla) {
               const caja = vista.current.getBoundingClientRect()
               g.current = {
@@ -1245,6 +1307,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               }
               cancelAnimationFrame(bucle.current)
               bucle.current = requestAnimationFrame(latir)
+              cuadroA(g.current, ...etapaRegla(g.current))
               return
             }
             const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
@@ -1252,6 +1315,9 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               return c.left + c.width / 2
             })
             g.current = { ...base, centros: cs, punto: masCercano(cs, e.clientX) }
+            const cuadroPunto = (st) => cuadroA(st, cs[st.punto] - st.centroPildora, Math.min(1, Math.abs(cs[st.punto] - st.centroPildora) / (capa.width / 2 - 24)))
+            g.current.cuadro = cuadroPunto
+            cuadroPunto(g.current)
             onMatraca(g.current.punto, cs.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
             onIr(g.current.punto) // tocar un puntito va directo a su isla
           }}
@@ -1265,6 +1331,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               s.x = e.clientX
               s.tiron = tiron
               if (Math.abs(e.clientX - s.x0) >= zonaMuerta) s.movio = true
+              cuadroA(s, ...etapaRegla(s))
               return
             }
             // Flota: en horizontal solo fuera de los puntitos.
@@ -1276,6 +1343,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               s.punto = p
               onIr(p)
             }
+            s.cuadro?.(s)
             // Contra un extremo (medio puntito más allá del primero o del último): un golpe al chocar.
             const mitad = (s.centros[1] - s.centros[0] || sep) / 2
             const tope = e.clientX < s.centros[0] - mitad ? -1 : e.clientX > s.centros[s.centros.length - 1] + mitad ? 1 : 0
@@ -1285,6 +1353,13 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
           onPointerUp={soltar}
           onPointerCancel={soltar}
         >
+          {/* Cuadrito del dedo encima (solo con «Opaco»: la barra sólida lo taparía). */}
+          {!detras && <motion.span
+            aria-hidden
+            data-cuadrito="encima"
+            className="pointer-events-none absolute left-1/2 top-1/2 rounded-xl bg-zinc-500"
+            style={{ width: CUADRITO.lado, height: CUADRITO.lado, marginLeft: -CUADRITO.lado / 2, marginTop: -CUADRITO.lado / 2, x: cuadroX, opacity: cuadroOpacidad, scale: cuadroEscala }}
+          />}
           <div
             ref={vista}
             className={regla ? 'h-full w-full overflow-hidden' : 'contents'}
