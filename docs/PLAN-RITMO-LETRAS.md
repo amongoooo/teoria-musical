@@ -47,7 +47,20 @@ Motor en `src/letras/` (`silabas.js`, `rima.js`, `analisis.js`; pruebas `node sr
 Quedó para después: buscar rimas en la lista de 50 000 palabras (va con vocabulario) y marcar en el texto las rimas
 multisilábicas palabra por palabra (hoy solo se ve «multi N» en el verso).
 
-## Partes 3 y 4 — sin empezar
+## Parte 3 — Vocabulario: ✅ TERMINADA
+
+Lista curada en `src/letras/vocabulario/` (4 temas × 30: noche, calle, amor y desamor, dinero; `ejercicios.js`,
+`repaso.js` con cajas 1, 2, 4, 8, 16 días y 10 nuevas al día), memoria `progress/vocabulario.js` (`tiendaVocab`,
+racha propia, repaso en «Tu progreso»), pantalla `pages/Vocabulario.jsx` (`#/letras/vocabulario` panel y
+`/repaso`, `/significado`, `/sinonimos`, `/verso`), entrada desde el cuaderno, y diccionario de rimas
+(`scripts/diccionario.mjs` → `src/letras/diccionario.js`, cargado con `import()` al entrar a Letras; crédito en
+Opciones → Créditos). Pruebas: `node src/letras/vocabulario.test.mjs` y `docs/pruebas/vocabulario.mjs`.
+**Para sumar temas** (tiempo, mar, fuego, cuerpo, camino, ciudad): un archivo de 30 palabras con la misma forma y
+añadirlo a `TEMAS` en `vocabulario/index.js` (las pruebas exigen 30 por tema y que el verso lleve la palabra).
+
+## Parte 4 — Flow: sin empezar
+
+## Resumen técnico (como se pensó)
 
 Ver el plan (artifact). Resumen técnico:
 

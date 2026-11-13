@@ -47,8 +47,11 @@ function diaAnterior(f) {
 const DIA_VACIO = { segundos: 0, respuestas: 0, aciertos: 0 }
 const MODO_VACIO = { nivel: 1, nivelMax: 1, ventana: [], carga: 0, aciertos: 0, total: 0, racha: 0, mejorRacha: 0, items: {}, ajustes: {} }
 
-/** Crea la memoria de un entrenamiento guardada en `clave` de localStorage. */
-export function crearEntrenamiento(clave) {
+/**
+ * Crea la memoria de un entrenamiento guardada en `clave` de localStorage. `conservar`: campos propios (p. ej. el
+ * repaso del vocabulario, con `guardarCampos`) que «Borrar estadísticas» no borra.
+ */
+export function crearEntrenamiento(clave, { conservar = [] } = {}) {
   const VACIO = { version: 1, dias: {}, mejorRacha: 0, modos: {} }
   let cache = null
   const listeners = new Set()
@@ -228,9 +231,15 @@ export function crearEntrenamiento(clave) {
     escribir(next)
   }
 
-  /** Borra todas las estadísticas. */
+  /** Guarda campos propios del entrenamiento (fuera de días y modos). */
+  function guardarCampos(cambios) {
+    escribir({ ...leer(), ...cambios })
+  }
+
+  /** Borra todas las estadísticas (salvo los campos de `conservar`). */
   function reiniciar() {
-    escribir(VACIO)
+    const e = leer()
+    escribir({ ...VACIO, ...Object.fromEntries(conservar.filter((k) => k in e).map((k) => [k, e[k]])) })
   }
 
   return {
@@ -244,6 +253,7 @@ export function crearEntrenamiento(clave) {
     guardarAjustes,
     empezarSesion,
     registrarRespuesta,
+    guardarCampos,
     importar,
     reiniciar,
   }

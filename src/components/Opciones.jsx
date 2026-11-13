@@ -123,6 +123,19 @@ function PanelOpciones({ onCerrar }) {
       <Grupo titulo="Administrador" id="opciones-admin">
         <ModoAdmin />
       </Grupo>
+
+      <Grupo titulo="Créditos" id="opciones-creditos">
+        <Credito
+          titulo="Lista de palabras para buscar rimas"
+          href="https://github.com/hermitdave/FrequencyWords"
+          texto="FrequencyWords, de Hermit Dave (a partir de OpenSubtitles 2018). Licencia CC BY-SA 4.0: la lista adaptada de la app se comparte igual."
+        />
+        <Credito
+          titulo="Sonido del piano"
+          href="https://archive.org/details/SalamanderGrandPianoV3"
+          texto="Salamander Grand Piano, de Alexander Holm. Licencia CC BY 3.0."
+        />
+      </Grupo>
     </div>
   )
 }
@@ -209,6 +222,18 @@ function ModoAdmin() {
       </AnimatePresence>
       <p className="text-sm leading-snug text-zinc-500">Abre todas las lecciones y deja saltar entre los pasos. Pide un PIN.</p>
     </form>
+  )
+}
+
+/** Crédito de un material de otros: qué es, de quién y su licencia (con enlace). */
+function Credito({ titulo, texto, href }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="flex min-h-11 flex-col gap-1 p-4" data-credito>
+      <span className="text-base font-semibold text-zinc-900">
+        {titulo} <span aria-hidden className="text-zinc-400">↗</span>
+      </span>
+      <span className="text-sm leading-snug text-zinc-500">{texto}</span>
+    </a>
   )
 }
 

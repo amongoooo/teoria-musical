@@ -1,11 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Segmentado } from '../components/Opciones.jsx'
+import RimasDiccionario from '../components/RimasDiccionario.jsx'
+import { cargarDiccionario } from '../letras/rimasDiccionario.js'
 import { analizar, rimasEnLetra } from '../letras/analisis.js'
 import { rima } from '../letras/rima.js'
 import { borrarLetra, getLetra, guardarLetra, nuevaLetra, tituloDe, useCuaderno } from '../progress/letras.js'
+import { resumenVocab, tiendaVocab } from '../progress/vocabulario.js'
 import { navegar, rutas } from '../router.js'
-import { oscuro, tinta } from '../ui/color.js'
+import { labio, oscuro, tinta } from '../ui/color.js'
 import Hoja from '../ui/Hoja.jsx'
 import { Atras, Pluma } from '../ui/Iconos.jsx'
 import { RESORTE, SUBE, itemLista, lista } from '../ui/movimiento.js'
@@ -32,6 +35,10 @@ yo sigo de frente con toda mi gente`,
 
 /** #/letras → cuaderno; #/letras/ID → una letra (escribir / analizar). */
 export default function Letras({ id }) {
+  // La lista de ~45 000 palabras para buscar rimas se empieza a cargar al entrar a Letras (no antes).
+  useEffect(() => {
+    cargarDiccionario().catch(() => {})
+  }, [])
   if (id) return <Letra key={id} id={id} />
   return <Cuaderno />
 }
@@ -66,6 +73,10 @@ function Cuaderno() {
         )}
       </motion.section>
 
+      <motion.section variants={itemLista}>
+        <TarjetaVocabulario />
+      </motion.section>
+
       {letras.length > 0 && (
         <motion.section variants={itemLista} className="flex flex-col gap-3">
           <h2 className="font-titulo text-2xl font-bold tracking-tight">Tu cuaderno</h2>
@@ -75,6 +86,40 @@ function Cuaderno() {
         </motion.section>
       )}
     </motion.main>
+  )
+}
+
+/** Entrada al vocabulario (tarjeta del color del módulo 6): racha propia y cuántas palabras tocan hoy. */
+function TarjetaVocabulario() {
+  const estado = tiendaVocab.usar()
+  const racha = tiendaVocab.rachaActual(estado)
+  const r = resumenVocab(estado)
+  const pendientes = r.porRepasar + r.nuevasHoy
+  return (
+    <Pulsable
+      href={rutas.vocabulario()}
+      tipo="tarjeta"
+      data-vocabulario
+      className="flex min-h-20 items-center gap-4 rounded-3xl px-4 py-4 text-blanco"
+      style={{ backgroundColor: oscuro(ACENTO), boxShadow: `0 6px 0 ${labio(ACENTO)}` }}
+    >
+      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-blanco/15" aria-hidden>
+        <Pluma className="size-7" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="font-titulo text-lg font-bold leading-snug">Vocabulario</span>
+        <span className="text-sm opacity-90">
+          {pendientes ? `${pendientes} ${pendientes === 1 ? 'palabra' : 'palabras'} para hoy` : 'Todo repasado por hoy'}
+          {' · '}
+          <span className="font-juego text-base">
+            {racha} {racha === 1 ? 'día' : 'días'}
+          </span>
+        </span>
+      </span>
+      <span aria-hidden className="text-2xl opacity-70">
+        ›
+      </span>
+    </Pulsable>
   )
 }
 
@@ -219,7 +264,7 @@ function Letra({ id }) {
       </main>
 
       <Hoja abierta={Boolean(palabra)} onCerrar={() => setPalabra(null)} etiqueta="Palabra">
-        {palabra && <FichaPalabra palabra={palabra} analisis={analisis} />}
+        {palabra && <FichaPalabra key={palabra} palabra={palabra} analisis={analisis} onPalabra={setPalabra} />}
       </Hoja>
     </div>
   )
@@ -334,7 +379,7 @@ const TIPOS = {
 }
 
 /** Hoja de una palabra: sus sílabas (la tónica resaltada), cómo rima y con qué riman en esta letra. */
-function FichaPalabra({ palabra, analisis }) {
+function FichaPalabra({ palabra, analisis, onPalabra }) {
   const r = rima(palabra)
   const { consonantes, asonantes } = rimasEnLetra(analisis, palabra)
   return (
@@ -364,6 +409,7 @@ function FichaPalabra({ palabra, analisis }) {
         <Fichas titulo="Consonante" palabras={consonantes} estilo="bg-zinc-900 text-white" />
         <Fichas titulo="Asonante" palabras={asonantes} estilo="border-2 border-dashed border-zinc-300 text-zinc-700" />
       </motion.div>
+      <RimasDiccionario palabra={palabra} onPalabra={onPalabra} />
     </div>
   )
 }
