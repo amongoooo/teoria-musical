@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Barra de puntitos en regla con joystick** (pedido del usuario: con los tramos, la ruta de acordes tiene 18 paradas y los puntitos quedaban de 15 px): elegida la opción «regla que se desliza» entre tres (regla, acordeón por tramo, lupa). Puntitos de 44 px, el actual en el centro, orillas desvanecidas y el número del tramo en los huecos. El usuario pidió después que con el dedo apoyado avance como un **joystick** (1 cada 0,75 s · 2/s · 4/s según la distancia al centro; en el borde, hasta el último) y que **cada puntito recorrido haga su matraca**. Además, las **rutas van en bucle** al deslizar la página (sin tope a los lados).
+
 - 2026-11-13: **Rutas en tramos** (pedido del usuario: la ruta de acordes debe empezar por lo básico y el proyecto va a crecer; propuesta aprobada en un artefacto): con 2 tramos o más, el camino lleva un **letrero** por tramo (número, «x/y», nombre y mini barra en el color del módulo del que sale; las islas siguen en el color de la ruta) y la **barra de puntitos** deja un hueco de 8 px entre tramos. Sin grupos ni letreros si la ruta tiene un solo tramo.
 
 - 2026-11-13: **Construir un acorde** (P8, lección 4.1): casillas 1 · 3 · 5 como las de la fórmula, con la 3.ª entre cada pareja (3M / 3m) en pastillas grises (ninguna es «fíjate», así que sin oro); se toca una tecla a la vez (más seguro en el celular que tres a la vez) y vale cualquier octava. En «Escucha y construye» el botón del acorde no se señala en el teclado para no regalar la respuesta.

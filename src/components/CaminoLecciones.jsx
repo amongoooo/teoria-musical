@@ -1,5 +1,5 @@
 import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion } from 'motion/react'
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
 import { HERRAMIENTAS } from '../content/rutas.js'
@@ -28,6 +28,15 @@ const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mita
 const LETRERO = 72
 const LETRERO_ARRIBA = 86
 const HUECO_TRAMO = 8 // px entre los grupos de puntitos de cada tramo
+const HUECO_REGLA = 20 // en la regla (barra que se desliza), el hueco entre tramos lleva su número
+const BORDE_REGLA = 36 // px del desvanecido de las orillas de la regla
+/**
+ * Joystick de la regla (pedido del usuario): puntitos por segundo según a cuántos puntitos del centro está el dedo
+ * (redondeado; 0 = quieto): a 1, uno cada 0,75 s; a 2, 2 por segundo; a 3 o más, 4 por segundo. A `borde` px del
+ * borde de fuera de la barra (o más allá), hasta el último a `ritmoBorde` por segundo, puntito por puntito (cada uno
+ * con su matraca); si el dedo se apoyó ya en el borde, empieza tras `esperaBorde` ms (así un toque rápido es un toque).
+ */
+const JOYSTICK = { ritmo: [0, 1 / 0.75, 2, 4], borde: 18, ritmoBorde: 14, esperaBorde: 180 }
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
@@ -969,6 +978,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               lecciones={[{ id: 'insignia', titulo: modulo.titulo, esInsignia: true, numero: modulo.numero, nombre: nombreModulo }, ...islasMeta]}
               estados={['insignia', ...estados]}
               abierta={abierta}
+              foco={abierta ?? (actual >= 0 ? actual + 1 : 0)}
               acento={modulo.acento}
               guardar={guardar}
               onIr={irA}
@@ -995,24 +1005,125 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * Barra de puntitos (de vidrio), siempre a la vista abajo en el módulo. Tocar un puntito abre su isla; arrastrar por la barra va **directo a la isla del
  * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
  * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
+ *
+ * REGLA (pedido del usuario: con muchas paradas los puntitos quedaban diminutos): si a 44 px no caben (celular con
+ * una ruta o un módulo largo), la barra ocupa el ancho de la pantalla y los puntitos van en una **tira de 44 px por
+ * puntito que se desliza**: el de `foco` (la isla abierta o, con el camino cerrado, la actual) queda **en el centro**
+ * y las orillas se desvanecen. Entre tramos, un hueco con su número.
+ * Con el dedo apoyado, la regla es un JOYSTICK (pedido del usuario): avanza hacia donde está el dedo, más rápido cuanto
+ * más lejos del centro (ver JOYSTICK: a 1 puntito, uno cada 0,75 s; a 2, 2 por segundo; a 3, 4 por segundo) y, en el
+ * borde de la barra, recorre hasta el último (o el primero) muy deprisa. Cada puntito recorrido abre su isla y da su
+ * golpe de matraca. Tocar (soltar sin haber avanzado) va al puntito que estaba bajo el dedo.
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, tramos = [] }) {
+function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, tramos = [] }) {
   const sep = DESLIZAR.puntitos.separacion
+  const zonaMuerta = DESLIZAR.puntitos.zonaMuerta
+  const ventana = useAnchoVentana()
   // Tramos de una ruta: un hueco antes del primer puntito de cada uno (el 0 es la insignia: puntito i = parada i − 1).
-  const empiezaTramo = new Set(tramos.map((t) => t.desde + 1))
-  const huecos = empiezaTramo.size * HUECO_TRAMO
+  const numeroTramo = new Map(tramos.map((t) => [t.desde + 1, t]))
+  const total = lecciones.length
+  // ¿Caben a 44 px? (la barra deja 16 px a cada lado de la pantalla y la píldora 12 px por dentro).
+  const disponible = ventana - 32 - 24
+  const regla = ventana > 0 && total * sep + numeroTramo.size * HUECO_TRAMO > disponible
+  const hueco = regla ? HUECO_REGLA : HUECO_TRAMO
+  // Centro de cada puntito dentro de la tira (px) y su ancho total.
+  const { centros, largo } = useMemo(() => {
+    let x = 0
+    const c = []
+    for (let i = 0; i < total; i++) {
+      if (numeroTramo.has(i)) x += hueco
+      c.push(x + sep / 2)
+      x += sep
+    }
+    return { centros: c, largo: x }
+  }, [total, hueco, sep, tramos.map((t) => t.desde).join()]) // eslint-disable-line react-hooks/exhaustive-deps
   const pildora = useRef(null)
+  const vista = useRef(null) // ventana de la regla (la tira se corre dentro)
   const g = useRef(null) // gesto sobre la barra
+  const ultimoArrastre = useRef(0)
+  const corre = useMotionValue(0) // x de la tira (regla)
+  const destino = (k) => disponible / 2 - centros[limitar(k, 0, total - 1)]
+  const bucle = useRef(0) // requestAnimationFrame del joystick
+
+  // La regla sigue al foco: el puntito de la isla abierta (o la actual) siempre en el centro.
+  const yaColocada = useRef(false)
+  useLayoutEffect(() => {
+    if (!regla) return
+    const x = destino(foco)
+    if (!yaColocada.current || reducir) corre.jump(x)
+    else animate(corre, x, RESORTE.pantalla)
+    yaColocada.current = true
+  }, [regla, foco, disponible, centros]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => cancelAnimationFrame(bucle.current), [])
+
+  /** Un puntito hacia `dir` (joystick): abre su isla y da su golpe de matraca; contra el extremo, un golpe de tope. */
+  const avanzar = (s, dir) => {
+    const p = limitar(s.punto + dir, 0, total - 1)
+    if (p === s.punto) {
+      if (s.tope !== dir) onMatraca(dir < 0 ? 0 : 2, 3, { tiron: s.tiron, dir })
+      s.tope = dir
+      return false
+    }
+    s.tope = 0
+    s.punto = p
+    s.pasos++
+    onMatraca(1, 3, { tiron: s.tiron, dir }) // el puntito que cambia está en el centro: sin inclinarse por su lugar
+    onIr(p)
+    return true
+  }
+  /** Joystick: cada fotograma, según dónde está el dedo respecto al centro de la barra (ver JOYSTICK). */
+  const latir = (t) => {
+    const s = g.current
+    if (!s?.regla) return
+    const dt = Math.min(0.1, (t - (s.antes ?? t)) / 1000)
+    s.antes = t
+    const dx = s.x - s.centro
+    const dir = Math.sign(dx)
+    // En el borde, hasta el último (o el primero) muy deprisa, puntito por puntito; si el dedo empezó ahí, tras un instante.
+    const borde = Math.abs(dx) >= s.mitad - JOYSTICK.borde
+    const zona = Math.min(3, Math.round(Math.abs(dx) / sep))
+    const ritmo = borde ? (s.movio || t - s.t0 > JOYSTICK.esperaBorde ? JOYSTICK.ritmoBorde : 0) : JOYSTICK.ritmo[zona]
+    if (!ritmo || dir !== s.dir) s.acumulado = 0
+    s.dir = dir
+    s.acumulado += dt * ritmo
+    while (s.acumulado >= 1) {
+      s.acumulado -= 1
+      if (!avanzar(s, dir)) s.acumulado = 0
+    }
+    bucle.current = requestAnimationFrame(latir)
+  }
+
   const soltar = (e) => {
-    if (g.current?.id !== e.pointerId) return
+    const s = g.current
+    if (s?.id !== e.pointerId) return
     g.current = null
+    cancelAnimationFrame(bucle.current)
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
+    if (!s.regla) return
+    if (s.pasos > 0) {
+      ultimoArrastre.current = performance.now()
+      return
+    }
+    // Tocar (sin haber avanzado): va al puntito que estaba bajo el dedo.
+    const izquierda = vista.current.getBoundingClientRect().left
+    const p = masCercano(centros, e.clientX - izquierda - corre.get())
+    onMatraca(1, 3, {})
+    onIr(p)
+    if (p === foco) animate(corre, destino(p), RESORTE.pantalla)
   }
+
+  /** Cuánto jala el dedo: su distancia al eje de la barra (que flota con él), con signo (− = por encima). */
+  const tironDe = (s, e) => {
+    const dy = e.clientY - (s.ejeY + flotaY.get())
+    return Math.sign(dy) * limitar((Math.abs(dy) - MATRACA.eje) / MATRACA.rango, 0, 1)
+  }
+
   return (
     <motion.div
       data-nodo
       data-puntitos
+      data-regla={regla ? '' : undefined}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-4 pt-12"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       initial={{ y: '120%' }}
@@ -1032,49 +1143,71 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
         </Pulsable>
       )}
       {/* Capa que flota con el dedo */}
-      <motion.div style={{ x: flotaX, y: flotaY }}>
+      <motion.div style={{ x: flotaX, y: flotaY }} className={regla ? 'w-full' : ''}>
         {/* Capa de la matraca (giro) */}
         <motion.div
           role="group"
           aria-label="Lecciones del módulo"
           ref={pildora}
-          className={`pointer-events-auto relative flex h-11 select-none items-center rounded-full px-3 ${VIDRIO}`}
+          className={`pointer-events-auto relative flex h-11 select-none items-center rounded-full px-3 ${regla ? 'w-full' : ''} ${VIDRIO}`}
           style={{ touchAction: 'none', rotate: giro, x: golpe }}
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return
             e.currentTarget.setPointerCapture?.(e.pointerId)
-            const centros = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
-              const c = b.getBoundingClientRect()
-              return c.left + c.width / 2
-            })
             flotaX.stop()
             flotaY.stop()
-            g.current = {
+            const base = {
               id: e.pointerId,
               // Desde donde ya estaba (si aún volvía a su sitio), sin saltos.
               y0: e.clientY - desflotar(flotaY.get()),
-              centros,
-              punto: masCercano(centros, e.clientX),
               tope: 0, // −1 / +1 mientras el dedo está más allá del primer / último puntito
             }
             // Eje de la barra en reposo: se mide en la capa que flota (no gira; la inclinada mediría de más).
             const capa = pildora.current.parentElement.getBoundingClientRect()
-            g.current.ejeY = capa.top + capa.height / 2 - flotaY.get()
-            onMatraca(g.current.punto, centros.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
+            base.ejeY = capa.top + capa.height / 2 - flotaY.get()
+            if (regla) {
+              const caja = vista.current.getBoundingClientRect()
+              g.current = {
+                ...base,
+                regla: true,
+                x: e.clientX,
+                x0: e.clientX,
+                centro: caja.left + caja.width / 2,
+                mitad: capa.width / 2, // del centro al borde de fuera de la barra
+                t0: performance.now(),
+                punto: foco,
+                pasos: 0,
+                acumulado: 0,
+                dir: 0,
+                tiron: 0,
+                movio: false,
+              }
+              cancelAnimationFrame(bucle.current)
+              bucle.current = requestAnimationFrame(latir)
+              return
+            }
+            const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
+              const c = b.getBoundingClientRect()
+              return c.left + c.width / 2
+            })
+            g.current = { ...base, centros: cs, punto: masCercano(cs, e.clientX) }
+            onMatraca(g.current.punto, cs.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
             onIr(g.current.punto) // tocar un puntito va directo a su isla
           }}
           onPointerMove={(e) => {
             const s = g.current
             if (!s || s.id !== e.pointerId) return
-            if (!reducir) {
-              // Flota: sigue al dedo en vertical (con resistencia) y en horizontal solo fuera de los puntitos.
-              flotaY.set(flotar(e.clientY - s.y0))
-              const fuera = e.clientX - limitar(e.clientX, s.centros[0], s.centros[s.centros.length - 1])
-              flotaX.set(flotar(fuera))
+            if (!reducir) flotaY.set(flotar(e.clientY - s.y0)) // flota: sigue al dedo en vertical (con resistencia)
+            const tiron = tironDe(s, e)
+            if (s.regla) {
+              // Joystick: solo se apunta dónde está el dedo; `latir` avanza (ver JOYSTICK).
+              s.x = e.clientX
+              s.tiron = tiron
+              if (Math.abs(e.clientX - s.x0) >= zonaMuerta) s.movio = true
+              return
             }
-            // Cuánto jala el dedo: su distancia al eje de la barra (que flota con él), con signo (− = por encima).
-            const dy = e.clientY - (s.ejeY + flotaY.get())
-            const tiron = Math.sign(dy) * limitar((Math.abs(dy) - MATRACA.eje) / MATRACA.rango, 0, 1)
+            // Flota: en horizontal solo fuera de los puntitos.
+            if (!reducir) flotaX.set(flotar(e.clientX - limitar(e.clientX, s.centros[0], s.centros[s.centros.length - 1])))
             // Al pasar a otro puntito: su isla se abre (gana siempre una) y la barra da un golpe de matraca.
             const p = masCercano(s.centros, e.clientX)
             if (p !== s.punto) {
@@ -1091,47 +1224,66 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
           onPointerUp={soltar}
           onPointerCancel={soltar}
         >
-          {lecciones.map((l, i) => {
-            const hecha = estados[i] === 'hecha'
-            // Islas aún no desbloqueadas (o sin contenido): puntito gris.
-            const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
-            return (
-              <button
-                key={l.id}
-                type="button"
-                data-punto={i}
-                onClick={() => onIr(i)}
-                aria-label={
-                  l.esInsignia
-                    ? `${l.nombre}: ${l.titulo}`
-                    : l.esRetos
-                      ? 'Retos del módulo'
-                      : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`
-                }
-                aria-current={i === abierta ? 'true' : undefined}
-                className="grid h-full place-items-center"
-                data-inicio-tramo={empiezaTramo.has(i) ? '' : undefined}
-                // 44 px por puntito; si no caben (p. ej. 9 a 375 px), se estrechan para que la barra no se salga.
-                style={{
-                  width: `min(${sep}px, calc((100vw - 56px - ${huecos}px) / ${lecciones.length}))`,
-                  marginLeft: empiezaTramo.has(i) ? HUECO_TRAMO : undefined,
-                }}
-              >
-                <span
-                  ref={guardar('punto', i)}
-                  className={`block ${l.esRetos || l.esInsignia || l.parada?.tipo === 'reto' || l.parada?.tipo === 'abre' ? 'rounded-[5px]' : 'rounded-full'}`}
-                  style={{
-                    width: PUNTO,
-                    height: PUNTO,
-                    // La insignia (el módulo): cuadradito del color del módulo, siempre opaco.
-                    backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha || l.esInsignia ? oscuro(acento) : acento,
-                    opacity: cerrada || hecha || l.esInsignia ? 1 : 0.35,
-                    transform: `scale(${i === abierta ? 1 : 0.5})`,
-                  }}
-                />
-              </button>
-            )
-          })}
+          <div
+            ref={vista}
+            className={regla ? 'h-full w-full overflow-hidden' : 'contents'}
+            style={regla ? { maskImage: `linear-gradient(to right, transparent, black ${BORDE_REGLA}px, black calc(100% - ${BORDE_REGLA}px), transparent)` } : undefined}
+          >
+            <motion.div className={regla ? 'flex h-full w-max items-center' : 'contents'} style={regla ? { x: corre } : undefined}>
+              {lecciones.map((l, i) => {
+                const hecha = estados[i] === 'hecha'
+                // Islas aún no desbloqueadas (o sin contenido): puntito gris.
+                const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
+                const tramo = numeroTramo.get(i)
+                return (
+                  <Fragment key={l.id}>
+                    {tramo &&
+                      (regla ? (
+                        <span
+                          aria-hidden
+                          className="grid h-full shrink-0 place-items-center font-dato text-sm font-medium tabular-nums"
+                          style={{ width: HUECO_REGLA, color: tinta(tramo.acento) }}
+                        >
+                          {tramo.numero}
+                        </span>
+                      ) : (
+                        <span aria-hidden className="shrink-0" style={{ width: HUECO_TRAMO }} />
+                      ))}
+                    <button
+                      type="button"
+                      data-punto={i}
+                      data-inicio-tramo={tramo ? '' : undefined}
+                      onClick={() => performance.now() - ultimoArrastre.current > 400 && onIr(i)}
+                      aria-label={
+                        l.esInsignia
+                          ? `${l.nombre}: ${l.titulo}`
+                          : l.esRetos
+                            ? 'Retos del módulo'
+                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`
+                      }
+                      aria-current={i === abierta ? 'true' : undefined}
+                      className="grid h-full shrink-0 place-items-center"
+                      // 44 px por puntito; si no caben, la regla (ver arriba).
+                      style={{ width: sep }}
+                    >
+                      <span
+                        ref={guardar('punto', i)}
+                        className={`block ${l.esRetos || l.esInsignia || l.parada?.tipo === 'reto' || l.parada?.tipo === 'abre' ? 'rounded-[5px]' : 'rounded-full'}`}
+                        style={{
+                          width: PUNTO,
+                          height: PUNTO,
+                          // La insignia (el módulo): cuadradito del color del módulo, siempre opaco.
+                          backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha || l.esInsignia ? oscuro(acento) : acento,
+                          opacity: cerrada || hecha || l.esInsignia ? 1 : 0.35,
+                          transform: `scale(${i === abierta ? 1 : 0.5})`,
+                        }}
+                      />
+                    </button>
+                  </Fragment>
+                )
+              })}
+            </motion.div>
+          </div>
         </motion.div>
       </motion.div>
     </motion.div>
@@ -1811,6 +1963,17 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
       </div>
     </Hoja>
   )
+}
+
+/** Ancho de la ventana (la barra de puntitos decide si cabe o va en regla). */
+function useAnchoVentana() {
+  const [w, setW] = useState(() => (typeof window === 'undefined' ? 0 : window.innerWidth))
+  useEffect(() => {
+    const cambio = () => setW(window.innerWidth)
+    window.addEventListener('resize', cambio)
+    return () => window.removeEventListener('resize', cambio)
+  }, [])
+  return w
 }
 
 /** Alto de la ventana (para saber cuánto se puede ampliar el camino en pantallas anchas). */

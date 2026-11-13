@@ -41,7 +41,8 @@ export function moduloDeRuta(id) {
     Icono: ICONO_RUTA[id],
     lecciones: [],
     disponible: rutaDisponible(ruta),
-    vecino: (dir) => moduloDeRuta(ORDEN_RUTAS[i + dir]),
+    // Las rutas dan la vuelta (pedido del usuario): después de la última viene la primera, y al revés.
+    vecino: (dir) => moduloDeRuta(ORDEN_RUTAS[(i + dir + ORDEN_RUTAS.length) % ORDEN_RUTAS.length]),
   }
 }
 
