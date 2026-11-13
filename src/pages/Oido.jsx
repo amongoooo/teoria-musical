@@ -6,6 +6,7 @@ import Piano from '../components/Piano.jsx'
 import ArranqueOido from '../components/ArranqueOido.jsx'
 import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
+import EntradaRuta from '../components/EntradaRuta.jsx'
 import PanelEntrenamiento, { nombreNivel } from '../components/PanelEntrenamiento.jsx'
 import { ACIERTOS_PARA_SUBIR, datosModo, elegirNivel, empezarSesion, registrarRespuesta, tiendaOido, useOido } from '../progress/oido.js'
 import { useOpciones } from '../progress/opciones.js'
@@ -52,6 +53,7 @@ function Panel() {
       modos={MODOS_OIDO}
       ruta={rutas.oido}
       Icono={Oreja}
+      despues={<EntradaRuta id="acordes" />}
     />
   )
 }

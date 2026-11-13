@@ -33,6 +33,7 @@ export const INTERACCIONES = {
   P5: ['practicar', 'Medir un paso'],
   P6: ['practicar', 'Seguir la fórmula'],
   P7: ['practicar', 'Construir un intervalo'],
+  P8: ['practicar', 'Construir un acorde'],
   F1: ['practicar', 'Pad de frecuencia'],
   R1: ['practicar', 'Dibujar libre'],
   R2: ['practicar', 'Copiar un patrón'],
@@ -47,7 +48,7 @@ export const INTERACCIONES = {
   X1: ['reto', null], // la etiqueta dice solo «Reto en FL»
 }
 
-const P_TOCAR = { explorar: 'P1', extremos: 'P2', comparar: 'P3', octavas: 'P4', paso: 'P5', formula: 'P6' }
+const P_TOCAR = { explorar: 'P1', extremos: 'P2', comparar: 'P3', octavas: 'P4', paso: 'P5', formula: 'P6', acorde: 'P8' }
 const R_ROLL = { libre: 'R1', copiar: 'R2', velocity: 'R3' }
 const T_PULSO = { seguir: 'T1', tempo: 'T2', explorar: 'T3' }
 

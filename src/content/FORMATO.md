@@ -68,6 +68,10 @@ Tonalidad y círculo de quintas (lección 3.5, Tonal `Key`): `CIRCULO` (las 12 m
 `armaduraMayor('A')` → `{ cantidad: 3, signo: '♯', notas: ['F#', 'C#', 'G#'] }`, `dominante('D')` → `'A'`, `subdominante('Eb')` → `'Ab'` y
 `conArmadura(notas, 'G')` (las mismas notas con la armadura de otra mayor: cada letra toma su alteración; para «¿vecina o lejana?»).
 
+Acordes (lección 4.1, Tonal `Chord`): `theory/acordes.js`: `TRIADAS` (mayor, menor, dis, aum: terceras, cifrado, carácter),
+`triada('D4', 'menor')` → `['D4', 'F4', 'A4']`, `arpegioYAcorde(notas)` (de una en una y luego juntas, para un sonido),
+`nombreAcorde('B3', 'dis')` → «Si disminuido», `cifrado('F#4', 'menor')` → «F♯m», `TERCERA` (3 → 3m, 4 → 3M).
+
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
 sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 'snare', 'kick']`).
@@ -232,6 +236,13 @@ respuesta con su armadura.
   //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.
   //     `grados: true` → debajo de cada casilla, su grado (1 … 7 y la octava otra vez 1). Volver a tocar una
   //     nota ya tocada no es fallo: su casilla tiembla (también con la fórmula completa).
+  // objetivo: { tipo: 'acorde', rondas: [{ raiz: 'D4', tipo: 'mayor' | 'menor' | 'dis' | 'aum', titulo, mensaje, pista }] }
+  //   → construir la tríada (P8, 4.1): la fundamental viene marcada (y en verde en su casilla); se tocan la 3.ª y la 5.ª
+  //     en cualquier orden y en cualquier octava (la tecla tocada queda marcada). Casillas «1 · 3 · 5» y, encima, la 3.ª
+  //     que separa cada pareja (3M / 3m). Al completarlo suena el acorde. El fallo dice cuántos semitonos se subió y a
+  //     cuántos están la 3.ª y la 5.ª; tras 2 fallos seguidos marca las que faltan.
+  //     `guia: false` = sin las terceras encima · `cifrado: true` = pide «Dm» en lugar de «Re menor» ·
+  //     `escuchar: true` = «Escucha y construye»: suena el acorde, no se dice cuál es ni hay guía (4.2).
 }
 ```
 
