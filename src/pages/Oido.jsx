@@ -4,6 +4,7 @@ import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir, seguirNotas } from '../audio/sonido.js'
 import Piano from '../components/Piano.jsx'
 import ArranqueOido from '../components/ArranqueOido.jsx'
+import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
 import PanelEntrenamiento, { nombreNivel } from '../components/PanelEntrenamiento.jsx'
 import { ACIERTOS_PARA_SUBIR, datosModo, elegirNivel, empezarSesion, registrarRespuesta, tiendaOido, useOido } from '../progress/oido.js'
@@ -89,6 +90,9 @@ function Entrenador({ modo }) {
   const [pulsada, setPulsada] = useState(null)
 
   const [jugando, setJugando] = useState(false)
+  // Fin de la partida (pedido del usuario): al quedarse sin vidas, su pantalla con el resumen.
+  const marcador = useMarcador()
+  const [fin, setFin] = useState(null)
   const [vidas, setVidas] = useState(null)
   const [golpes, setGolpes] = useState(0)
   const vidasRef = useRef(null)
@@ -188,12 +192,14 @@ function Entrenador({ modo }) {
       inicio: inicio?.length ?? null,
       alcanzados: [rapido ? inicio.length : datosModo(modo.id).nivel],
     })
+    marcador.empezar(rapido ? inicio.length : datosModo(modo.id).nivel, rapido ? 'Notas' : 'Nivel')
     setJugando(true)
     nueva()
   }
 
-  // Sin vidas: vuelve a la pantalla de arranque.
+  // Sin vidas: la pantalla de fin de partida (desde ahí, al panel o a otra partida).
   const terminar = () => {
+    setFin(marcador.resumen())
     clearTimeout(temporizador.current)
     pararSonar.current?.()
     releaseAll()
@@ -262,6 +268,7 @@ function Entrenador({ modo }) {
       if (actual < vv.actual) setGolpes((g) => g + 1) // perder una vida: los vidrios de arriba brillan en rojo y tiemblan
       r.vidas = { antes: vv.actual, despues: actual, fin }
     }
+    marcador.apuntar(bien, rapido ? partidaRef.current.notas.length : r.nuevoNivel)
     setResultado(r)
   }
 
@@ -335,6 +342,20 @@ function Entrenador({ modo }) {
         },
       }
     : null
+
+  if (fin) {
+    return (
+      <FinPartida
+        resumen={fin}
+        titulo={modo.titulo}
+        Icono={Oreja}
+        acento={colorDif}
+        volver={rutas.oido()}
+        etiquetaVolver="Volver al entrenamiento de oído"
+        onOtra={() => setFin(null)}
+      />
+    )
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">

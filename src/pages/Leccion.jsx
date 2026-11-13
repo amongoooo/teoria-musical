@@ -340,7 +340,9 @@ export function BarraAccion({ accion, navegacion = null }) {
   // (pedido del usuario). Su color es un poco translúcido y desenfoca lo de detrás: se nota que es vidrio.
   const flotante = Boolean(accion.flotante) && !feedback && !accion.ayuda
   const { vidrio: material } = useOpciones()
-  const translucido = flotante && material !== 'opaco'
+  // Siempre translúcido (pedido del usuario: «como el de Empezar»): el botón flota debajo de la tarjeta de información,
+  // así siempre hay algo detrás que se ve. En «Opaco», sólido.
+  const translucido = material !== 'opaco'
   // Presionado (pedido del usuario): el botón se vuelve mate —color opaco, sin dejar ver lo de detrás y sin brillo—.
   const [presionado, setPresionado] = useState(false)
   const bien = feedback?.tipo === 'bien'
@@ -410,16 +412,18 @@ export function BarraAccion({ accion, navegacion = null }) {
     <div data-barra-accion className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div
         data-panel={flotante ? 'flotante' : 'panel'}
-        className={`relative mx-auto flex max-w-2xl flex-col gap-2 rounded-[1.625rem] p-2.5 ${flotante ? '' : 'pointer-events-auto'}`}
+        className="relative mx-auto flex max-w-2xl flex-col gap-2 p-2.5"
       >
-        {/* El panel sólido (superficie) va en su propia capa: aparece y se va con un fundido. */}
-        <motion.div
-          aria-hidden
-          className="absolute inset-0 rounded-[1.625rem] border border-zinc-200 bg-white shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]"
-          initial={false}
-          animate={{ opacity: flotante ? 0 : 1 }}
-          transition={{ duration: 0.2 }}
-        />
+        {/* La información (pista y retroalimentación) va en su tarjeta sólida (superficie); el botón de vidrio flota
+            debajo, aparte (pedido del usuario: translúcido como «Empezar»). */}
+        {!flotante && (
+          <motion.div
+            data-tarjeta-info
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={RESORTE.suave}
+            className="pointer-events-auto relative flex flex-col gap-2 rounded-[1.625rem] border border-zinc-200 bg-white p-2 shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]"
+          >
         {feedback && (
           <motion.div
             key={feedback.titulo + feedback.texto}
@@ -440,7 +444,9 @@ export function BarraAccion({ accion, navegacion = null }) {
             )}
           </motion.div>
         )}
-        {accion.ayuda && <p className="relative px-2 pt-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
+        {accion.ayuda && <p className="relative px-2 py-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
+          </motion.div>
+        )}
         <motion.div animate={salto} className="pointer-events-auto relative">
           {/* Zona del gesto: recibe los toques aunque el botón esté desactivado (volver atrás siempre se puede). */}
           <div
@@ -451,9 +457,7 @@ export function BarraAccion({ accion, navegacion = null }) {
             data-gesto-lado={actual.modo ? (actual.lado < 0 ? 'izquierda' : 'derecha') : undefined}
             data-gesto-puede={actual.modo ? String(actual.puede) : undefined}
             data-gesto-listo={actual.modo ? String(actual.listo) : undefined}
-            className={`relative select-none rounded-2xl transition-shadow duration-200 [-webkit-touch-callout:none] ${
-              flotante ? 'shadow-[0_8px_24px_rgb(16_18_28/0.20)] dark:shadow-[0_8px_24px_rgb(0_0_0/0.55)]' : ''
-            }`}
+            className="relative select-none rounded-2xl shadow-[0_8px_24px_rgb(16_18_28/0.20)] [-webkit-touch-callout:none] dark:shadow-[0_8px_24px_rgb(0_0_0/0.55)]"
             style={{ touchAction: 'pan-y' }}
           >
             <Pulsable

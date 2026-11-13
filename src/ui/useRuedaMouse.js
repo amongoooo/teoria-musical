@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-const PASO_PX = 50 // desplazamiento acumulado (en px) que vale un paso
-const PAUSA_MS = 140 // tras un paso, se ignora la inercia del trackpad un momento
+const PASO_PX = 40 // trackpad: desplazamiento acumulado (en px) que vale un paso
+const MUESCA_PX = 50 // un evento de este tamaño (o en líneas/páginas) es una muesca de la rueda: un paso cada una
 
 /**
  * Rueda del mouse (o trackpad) sobre un carrusel (pedido del usuario, para computadora): cada «muesca» lo mueve un
- * paso hacia donde va el scroll. `onPaso(dir)` recibe +1 / −1; con `puede(dir)` falso (p. ej. en el extremo) no se
+ * paso hacia donde va el scroll, sin pausas (5 muescas rápidas = 5 pasos; pedido del usuario: antes se perdían). En
+ * trackpad, cada 40 px acumulados = un paso. `onPaso` puede llegar varias veces antes de que la pantalla se vuelva a
+ * pintar: quien lo usa debe sumar al DESTINO, no a lo que se ve a medio camino. `onPaso(dir)` recibe +1 / −1; con `puede(dir)` falso (p. ej. en el extremo) no se
  * toma el scroll y la página se desplaza como siempre.
  *  - eje 'x' (carruseles de lado): a la derecha (o la rueda hacia abajo, si `conVertical`) = +1.
  *  - eje 'y' (ruedas verticales con los valores altos arriba): la rueda hacia abajo baja el valor (−1).
@@ -17,7 +19,6 @@ export default function useRuedaMouse(ref, { onPaso, puede, eje = 'x', conVertic
     const el = ref.current
     if (!el) return
     let acumulado = 0
-    let pausa = 0
     let ultimo = 0
     const gira = (e) => {
       const o = op.current
@@ -38,13 +39,21 @@ export default function useRuedaMouse(ref, { onPaso, puede, eje = 'x', conVertic
       const ahora = performance.now()
       if (ahora - ultimo > 250 || Math.sign(px) !== Math.sign(acumulado)) acumulado = 0
       ultimo = ahora
-      if (ahora < pausa) return
+      const dir = Math.sign(px)
+      if (e.deltaMode !== 0 || Math.abs(px) >= MUESCA_PX) {
+        acumulado = 0
+        o.onPaso(dir)
+        return
+      }
       acumulado += px
-      if (Math.abs(acumulado) < PASO_PX && e.deltaMode === 0) return
-      const dir = Math.sign(acumulado)
-      acumulado = 0
-      pausa = ahora + PAUSA_MS
-      o.onPaso(dir)
+      while (Math.abs(acumulado) >= PASO_PX) {
+        acumulado -= dir * PASO_PX
+        if (o.puede && !o.puede(dir)) {
+          acumulado = 0
+          break
+        }
+        o.onPaso(dir)
+      }
     }
     el.addEventListener('wheel', gira, { passive: false })
     return () => el.removeEventListener('wheel', gira)

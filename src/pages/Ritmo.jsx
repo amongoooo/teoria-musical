@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { golpeAhora, iniciarPista, latenciaAudio, tiempoAudio } from '../audio/engine.js'
 import ArranqueOido from '../components/ArranqueOido.jsx'
+import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
 import PanelEntrenamiento, { nombreNivel } from '../components/PanelEntrenamiento.jsx'
 import { Contador, Medidor, Pad, momentoToque } from '../components/PiezasRitmo.jsx'
@@ -66,6 +67,9 @@ function Entrenador({ modo }) {
   const conSonido = datos.ajustes.pad !== 'mudo'
 
   const [jugando, setJugando] = useState(false)
+  // Fin de la partida (pedido del usuario): al quedarse sin vidas, su pantalla con el resumen.
+  const marcador = useMarcador()
+  const [fin, setFin] = useState(null)
   const [vidas, setVidas] = useState(null)
   const vidasRef = useRef(null)
   const cambiarVidas = (v) => {
@@ -181,11 +185,13 @@ function Entrenador({ modo }) {
     tiendaRitmo.empezarSesion()
     const v = vidasDe(datos.ajustes)
     cambiarVidas({ infinitas: v === VIDAS_INFINITAS, actual: v, max: v, alcanzados: [datos.nivel] })
+    marcador.empezar(datos.nivel)
     setJugando(true)
     nueva()
   }
 
   const terminar = () => {
+    setFin(marcador.resumen())
     parar()
     setJugando(false)
     setRonda(null)
@@ -227,6 +233,7 @@ function Entrenador({ modo }) {
       if (actual < vv.actual) setGolpes((g) => g + 1)
       res.vidas = { antes: vv.actual, despues: actual, fin: actual <= 0 }
     }
+    marcador.apuntar(ev.buena, res.nuevoNivel)
     setEvaluacion({ ks, ev })
     setResultado(res)
     setFase('evaluada')
@@ -447,6 +454,20 @@ function Entrenador({ modo }) {
   if (tipo === 'entrada') contenidoPad = <span className="font-dato text-6xl font-medium tabular-nums">{Math.max(0, reloj?.tiempo ?? 0) + 1}</span>
   else if (tipo === 'demo') contenidoPad = <Oreja className="size-14" />
   const latido = sonando && k >= 0 ? k * TIEMPOS + reloj.tiempo : -1
+
+  if (fin) {
+    return (
+      <FinPartida
+        resumen={fin}
+        titulo={modo.titulo}
+        Icono={Metronomo}
+        acento={`var(--color-dificultad-${dificultad})`}
+        volver={rutas.ritmo()}
+        etiquetaVolver="Volver al entrenamiento de ritmo"
+        onOtra={() => setFin(null)}
+      />
+    )
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">
