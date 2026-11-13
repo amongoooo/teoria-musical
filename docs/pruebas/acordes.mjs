@@ -1,7 +1,7 @@
 // Prueba las lecciones 4.1 y 4.2 (acordes) y la ruta de acordes a 375 px en claro y oscuro: recorre todos los pasos
 // (sin errores en la consola), P8 «Construir un acorde» (4.1 paso 2: Do mayor con Mi y Sol; paso 4: fallo con Fa,
 // acierto con Fa♯ y La; guía 3M / 3m), «Escucha y construye» (4.2 paso 4: sin guía ni nombre), la ruta #/ruta/acordes
-// (11 paradas, 4.3 «Llega pronto»), la tarjeta de la ruta en el panel de Oído y el cuadrito de Inicio sin candado.
+// (18 paradas en 4 tramos, 4.3 «Llega pronto»), la tarjeta de la ruta en el panel de Oído y el cuadrito de Inicio sin candado.
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/acordes.mjs [carpeta-de-capturas]
 import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -108,7 +108,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'Escucha: «era Do menor»', /Do menor/.test(t4), t4)
   await foto('4.2-escucha')
 
-  // La ruta de acordes: 11 paradas; la 4.3 dice «Llega pronto» (en modo administrador se abre).
+  // La ruta de acordes: 18 paradas; la 4.3 dice «Llega pronto» (en modo administrador se abre).
   await preparar()
   await page.goto(BASE + '#/ruta/acordes')
   await page.reload()
@@ -122,7 +122,7 @@ for (const tema of ['claro', 'oscuro']) {
   await espera(1200)
   const entrada = page.locator('[data-entrada-ruta="acordes"]')
   comprobar(r, 'oído: entrada a la ruta', (await entrada.count()) === 1)
-  comprobar(r, 'oído: «0/11 paradas»', /0\/11 paradas/.test(await entrada.textContent().catch(() => '')))
+  comprobar(r, 'oído: «0/18 paradas»', /0\/18 paradas/.test(await entrada.textContent().catch(() => '')))
   await entrada.scrollIntoViewIfNeeded()
   await foto('oido-entrada-ruta')
 
