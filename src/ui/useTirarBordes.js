@@ -11,6 +11,8 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *    debajo de `limiteRecarga()` (px desde arriba de la pantalla; p. ej. el borde de abajo del título del
  *    módulo; si no se da, `DESLIZAR.pagina.recarga` × alto de la pantalla). Si empieza más arriba, no
  *    se toca: el navegador hace su «tirar para recargar» de siempre.
+ * Solo si el gesto EMPIEZA con la página ya en ese borde (pedido del usuario): si se apoya el dedo a media página
+ * y el scroll llega al borde sin soltar, no se pasa de módulo; hay que soltar y volver a tirar desde el borde.
  * Fases: zona muerta (DESLIZAR.zonaMuerta px) → resistencia fuerte hasta el 30 % de X (como mucho
  * DESLIZAR.resistencia × X) → alcanza al dedo con RESORTE.pulsar y lo sigue 1:1 (por debajo del 26 %
  * vuelve la resistencia) → pasado el 50 % de X sigue al dedo con goma y `listo` vale ±1 («Suelta para
@@ -76,6 +78,9 @@ export default function useTirarBordes({ activo, rebote: conRebote = true, umbra
         fase: 'quieto',
         sigue: false,
         pasado: false,
+        // El borde tiene que estar ya alcanzado al apoyar el dedo (no vale llegar a él con el mismo gesto).
+        abajoAlEmpezar: enFondo(),
+        arribaAlEmpezar: arriba(),
         // Tirar desde arriba solo si el dedo se apoyó en la parte baja de la pantalla.
         arribaPermitido: op.current.acepta?.(-1) !== false && t.clientY > (op.current.limiteRecarga?.() ?? window.innerHeight * DESLIZAR.pagina.recarga),
       }
@@ -91,15 +96,15 @@ export default function useTirarBordes({ activo, rebote: conRebote = true, umbra
         const dy = t.clientY - g.y0
         // Arriba del todo, bajando desde la parte baja: el gesto es nuestro desde el primer px
         // (si no, el navegador empezaría a recargar).
-        if (g.arribaPermitido && arriba() && dy > 0 && Math.abs(dy) >= Math.abs(dx) && e.cancelable) e.preventDefault()
+        if (g.arribaAlEmpezar && g.arribaPermitido && arriba() && dy > 0 && Math.abs(dy) >= Math.abs(dx) && e.cancelable) e.preventDefault()
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
         if (Math.abs(dx) > Math.abs(dy)) return (g = null) // gesto lateral: no es nuestro
         g.decidido = true
       }
       // Se «arma» en el borde: abajo del todo subiendo el dedo, o arriba del todo bajándolo.
       if (g.armado === null) {
-        if (enFondo() && t.clientY < g.ultimoY && op.current.acepta?.(1) !== false) g.dir = 1
-        else if (g.arribaPermitido && arriba() && t.clientY > g.ultimoY) g.dir = -1
+        if (g.abajoAlEmpezar && enFondo() && t.clientY < g.ultimoY && op.current.acepta?.(1) !== false) g.dir = 1
+        else if (g.arribaAlEmpezar && g.arribaPermitido && arriba() && t.clientY > g.ultimoY) g.dir = -1
         else return (g.ultimoY = t.clientY)
         g.armado = g.ultimoY
       }

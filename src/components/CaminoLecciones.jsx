@@ -23,6 +23,10 @@ const FILA = 196 // separación vertical entre islas en el celular
 const ETIQUETA = 168 // ancho máximo del título de cada isla
 const ONDA = 26 // ondulación del camino horizontal
 const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mitad)
+// Con el camino cerrado, los puntitos de las islas que se ven en pantalla se inflan un poco (pedido del usuario: que
+// la barra diga qué parte del módulo estás viendo al explorar): de 0,5 a 0,5 + VISTO_INFLA (abierta = 1).
+const VISTO_INFLA = 0.2
+const ALTO_CABECERA_CAMINO = 80 // la cabecera fija de arriba (CabeceraModulo: ALTO_CABECERA)
 // TRAMOS de una ruta (content/rutas.js): un letrero al empezar cada uno. En el celular, el camino deja LETRERO px
 // más antes de la primera isla del tramo; en pantallas anchas, una franja de LETRERO_ARRIBA px encima de los títulos.
 const LETRERO = 72
@@ -93,15 +97,17 @@ const ZOOM = { maxCerrado: 2, maxAbierta: 1.5, anchoAbierta: 760, columna: 120, 
 // Con una isla abierta, las vecinas guardan al menos `SEPARA_MIN` px entre sí (las lejanas quedan fuera, a los lados).
 const VISIBLES = 6
 const SEPARA_MIN = 120
-// Desvanecido de los lados de la tira (pedido del usuario: «más difuso»): ancho = 14 % del camino, entre 96 y 170 px,
-// con una curva suave (empieza muy transparente y se cierra despacio) en vez de una rampa recta de 48 px.
-const BORDE_TIRA = 'clamp(96px, 14%, 170px)'
-const CURVA_TIRA = [[0, 0], [0.2, 0.06], [0.4, 0.2], [0.6, 0.45], [0.8, 0.75], [1, 1]]
-const MASCARA_TIRA = (() => {
-  const izq = CURVA_TIRA.map(([f, a]) => `rgb(0 0 0 / ${a}) calc(${BORDE_TIRA} * ${f})`)
-  const der = [...CURVA_TIRA].reverse().map(([f, a]) => `rgb(0 0 0 / ${a}) calc(100% - ${BORDE_TIRA} * ${f})`)
+// Desvanecido de los lados de la tira (pedidos del usuario: «más difuso» y luego «mucho más leve, que se sienta
+// amplia»): el 8 % del ancho a cada lado (56–110 px), que casi no apaga hasta la orilla misma. Y la tira deja ese
+// mismo MARGEN a cada lado: en los extremos, la primera y la última isla quedan enteras ANTES del desvanecido; solo
+// lo que está a medio camino (hay más) asoma por él.
+const bordeTira = (anchoReal) => limitar(anchoReal * 0.08, 56, 110)
+const CURVA_TIRA = [[0, 0], [0.25, 0.35], [0.5, 0.7], [0.75, 0.92], [1, 1]]
+const mascaraTira = (b) => {
+  const izq = CURVA_TIRA.map(([f, a]) => `rgb(0 0 0 / ${a}) ${b * f}px`)
+  const der = [...CURVA_TIRA].reverse().map(([f, a]) => `rgb(0 0 0 / ${a}) calc(100% - ${b * f}px)`)
   return `linear-gradient(to right, ${izq.join(', ')}, ${der.join(', ')})`
-})()
+}
 // Desenfoque con una isla abierta (como fuera de foco), según la DISTANCIA a ella en islas: las de al
 // lado apenas (el número se sigue leyendo), las siguientes más, y así. `pasos[d]` = px de desenfoque a
 // distancia d (antes del zoom); más lejos, el último. Cada línea se desenfoca como la media de sus dos islas.
@@ -223,6 +229,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
   const resorte = reducir ? { duration: 0 } : RESORTE.pantalla
 
   const [abierta, setAbierta] = useState(null)
+  // Con el camino cerrado: la isla del centro de lo que se ve en pantalla (la regla de puntitos la centra).
+  const [vista, setVista] = useState(null)
+  const vistaRef = useRef(null)
   const abiertaRef = useRef(null) // isla abierta (destino) o null
   const base = useMotionValue(0) // índice continuo de la isla abierta, sin contar el arrastre
   const apertura = useMotionValue(0) // 0 = camino cerrado, 1 = una isla abierta
@@ -233,11 +242,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     () =>
       ancho
         ? {
-            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande, vis, cortes }),
+            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande, vis, cortes, margen: desborda ? bordeTira(anchoReal) / zoomCerrado : 0 }),
             abiertas: Array.from({ length: n + 1 }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO, cortes })),
           }
         : null,
-    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos, vis, cortes],
+    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos, vis, cortes, desborda],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
@@ -454,6 +463,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     const L = layouts
     const cont = ref.current
     if (!L || !cont) return
+    const caja = cont.getBoundingClientRect() // antes de escribir estilos (para ver qué islas están en pantalla)
     const a = apertura.get()
     const p = posicion()
     const pc = limitar(p, 0, n)
@@ -465,6 +475,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     const B = L.abiertas[j]
     const C = L.cerrado
     const pos = []
+    const vistos = [] // de 0 a 1: cuánto se ve cada isla en pantalla
     const td = despliegue.get()
     // Zoom de este fotograma: del cerrado al de isla abierta según la apertura. Las posiciones se
     // mezclan en píxeles reales y se pasan a la capa ampliada (dividiendo por z).
@@ -498,6 +509,19 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       }
       pos.push({ x, y })
       sales.push(sale)
+      // ¿Se ve esta isla? Entre la cabecera y la barra de puntitos, y (en la tira) fuera del desvanecido de los lados;
+      // con una rampa de media isla para que el puntito se infle poco a poco al entrar.
+      const sx = caja.left + x * z
+      const sy = caja.top + y * z
+      const rampa = (ISLA * z) / 2
+      const margenX = desborda ? bordeTira(anchoReal) * 0.5 : 0
+      vistos.push(
+        limitar((sy - ALTO_CABECERA_CAMINO) / rampa, 0, 1) *
+          limitar((window.innerHeight - barraAlto - sy) / rampa, 0, 1) *
+          limitar((sx - caja.left - margenX) / rampa, 0, 1) *
+          limitar((caja.right - margenX - sx) / rampa, 0, 1) *
+          (m === 0 || sale > 0.97 ? 1 : 0), // (el último puede quedar en 0,9999 por redondeo)
+      )
       const nodo = els.nodo[m]
       if (nodo) {
         nodo.style.transform = `translate3d(${x}px, ${y}px, 0)`
@@ -533,7 +557,21 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
         et.style.width = `${lerp(c.anchoEtiqueta ?? ETIQUETA, lerp(lo.anchoEtiqueta ?? ETIQUETA, hi.anchoEtiqueta ?? ETIQUETA, f), a)}px`
       }
       const punto = els.punto[m]
-      if (punto) punto.style.transform = `scale(${0.5 + 0.5 * a * cerca})`
+      if (punto) punto.style.transform = `scale(${0.5 + 0.5 * a * cerca + VISTO_INFLA * (1 - a) * vistos[m]})`
+    }
+    // Qué parte del camino se ve (solo cerrado): la media de las islas en pantalla, para la regla de puntitos.
+    if (a < 0.01) {
+      let peso = 0
+      let suma = 0
+      vistos.forEach((v, m) => {
+        peso += v
+        suma += v * m
+      })
+      const centro = peso > 0.5 ? Math.round(suma / peso) : null
+      if (centro !== null && centro !== vistaRef.current) {
+        vistaRef.current = centro
+        setVista(centro)
+      }
     }
     // Letreros de los tramos: con el camino cerrado, encima de la primera isla del tramo (celular) o como franja
     // sobre sus columnas (ancho); al abrir una isla se desvanecen, como los títulos.
@@ -615,6 +653,21 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
   const actualizarRef = useRef(actualizar)
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
+  // Al desplazar la página (o cambiar el tamaño), los puntitos siguen a las islas que se ven.
+  useEffect(() => {
+    let cuadro = 0
+    const pedir = () => {
+      cancelAnimationFrame(cuadro)
+      cuadro = requestAnimationFrame(() => actualizarRef.current())
+    }
+    window.addEventListener('scroll', pedir, { passive: true })
+    window.addEventListener('resize', pedir)
+    return () => {
+      cancelAnimationFrame(cuadro)
+      window.removeEventListener('scroll', pedir)
+      window.removeEventListener('resize', pedir)
+    }
+  }, [])
   useEffect(() => {
     const quitar = [base, apertura, despliegue, islas.progreso, correBase, tira.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
     return () => quitar.forEach((q) => q())
@@ -812,7 +865,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
           // bordes se desvanecen (así se ve que hay más a los lados).
           ...(desborda && {
             overflowX: 'clip',
-            maskImage: MASCARA_TIRA,
+            maskImage: mascaraTira(bordeTira(anchoReal)),
           }),
         }}
         {...unirHandlers(islas.handlers, tira.handlers)}
@@ -986,7 +1039,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               lecciones={[{ id: 'insignia', titulo: modulo.titulo, esInsignia: true, numero: modulo.numero, nombre: nombreModulo }, ...islasMeta]}
               estados={['insignia', ...estados]}
               abierta={abierta}
-              foco={abierta ?? (actual >= 0 ? actual + 1 : 0)}
+              foco={abierta ?? vista ?? (actual >= 0 ? actual + 1 : 0)}
               acento={modulo.acento}
               guardar={guardar}
               onIr={irA}
@@ -1391,7 +1444,7 @@ function curva(a, b, vertical) {
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
-function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO, vis = n + 1, cortes = [] }) {
+function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO, vis = n + 1, cortes = [], margen = 0 }) {
   // `cortes`: nodos con los que empieza un tramo (cada uno lleva su letrero encima).
   // Nodos: 0 = insignia, m = isla m − 1 (de 0 a n). `abierta` = nodo abierto (o null).
   const nodos = []
@@ -1426,10 +1479,11 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   const base = 52 + 16 + ISLA / 2 + ONDA + (cortes.length ? LETRERO_ARRIBA : 0)
   if (abierta === null) {
     // Una columna por nodo; con más nodos que `vis`, las columnas siguen fuera de la vista (tira que se corre).
-    const col = ancho / vis
-    nodos.push({ x: col / 2, y: base, escala: 1 })
+    // `margen` (tira): el hueco del desvanecido a cada lado; las columnas visibles caben entre los dos.
+    const col = (ancho - 2 * margen) / vis
+    nodos.push({ x: margen + col / 2, y: base, escala: 1 })
     for (let m = 1; m <= n; m++) {
-      nodos.push({ x: col * (m + 0.5), y: base + onda(m), escala: 1, etiqueta: 'arriba', anchoEtiqueta: Math.min(ETIQUETA, col - 8) })
+      nodos.push({ x: margen + col * (m + 0.5), y: base + onda(m), escala: 1, etiqueta: 'arriba', anchoEtiqueta: Math.min(ETIQUETA, col - 8) })
     }
     return { nodos, alto: base + ONDA + ISLA / 2 + 24, col }
   }

@@ -1,6 +1,6 @@
 // Prueba la ruta de ritmo (página igual a la de un módulo), el orden de Inicio y el Piano libre en tarjetita, a 375 px
 // en claro y oscuro (y con «reducir movimiento»):
-//  - Inicio: Módulos · Prácticas · Rutas · Herramientas; el cuadrito de la ruta de Ritmo dice 0/10, el de Letras 0/10 y
+//  - Inicio: Rutas · Prácticas · Herramientas · Módulos (pedido del usuario: las rutas arriba, los módulos abajo); el cuadrito de la ruta de Ritmo dice 0/10, el de Letras 0/10 y
 //    el de Acordes va con candado; el Piano abre #/piano con su teclado.
 //  - #/ruta/ritmo: cabecera fija con una barra LISA (un solo segmento), «RUTA · Ritmo», la barra de puntitos (insignia + 10 paradas) y las
 //    islas del camino; con 2.1, 2.2 y Seguir nivel 2: 3/10; tocar el puntito de «Eco · nivel 3» abre su globo con
@@ -56,7 +56,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   // 1) Inicio sin progreso.
   await preparar()
   const titulos = await page.$$eval('h2', (hs) => hs.map((h) => h.textContent.trim()))
-  comprobar(r, 'Inicio: Módulos · Prácticas · Rutas · Herramientas', titulos.join('|').includes('Módulos|Prácticas|Rutas|Herramientas'), titulos.join(' | '))
+  comprobar(r, 'Inicio: Rutas · Prácticas · Herramientas · Módulos', titulos.join('|').includes('Rutas|Prácticas|Herramientas|Módulos'), titulos.join(' | '))
   comprobar(r, 'ruta de Ritmo 0/10', (await page.textContent('[data-ruta-inicio="ritmo"]')).includes('0/10'))
   comprobar(r, 'Letras 0/10 y Acordes 0/18', (await page.textContent('[data-ruta-inicio="letras"]')).includes('0/10') && (await page.textContent('[data-ruta-inicio="acordes"]')).includes('0/18'))
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()

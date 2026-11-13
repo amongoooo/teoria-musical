@@ -7,6 +7,8 @@
 // Tipos de parada:
 //   { tipo: 'leccion', id: '2.1' }                                    → hecha si la lección está completada
 //   { tipo: 'meta', modo: 'seguir', nivel: 2, titulo, texto }        → hecha si en ese modo ya llegaste a ese nivel
+//        `dificultad` (1–5): la recomendada para ese punto del curso (pedido del usuario: todo es progresivo). Al tocar
+//        «Practicar» desde la ruta, el entrenador empieza con esa dificultad (octavas en oído, margen en ritmo).
 //   { tipo: 'meta', clave: 'letra', titulo, texto }                  → otras metas (las mide `medirMeta` de
 //   { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, … }    components/rutaModulo.js): una letra en el cuaderno,
 //                                                                         N palabras de un tema del vocabulario…
@@ -42,11 +44,11 @@ export const TRAMOS = {
     acento: 'var(--color-modulo-2)',
     paradas: [
       { tipo: 'leccion', id: '2.1' },
-      { tipo: 'meta', modo: 'seguir', nivel: 2, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
+      { tipo: 'meta', modo: 'seguir', nivel: 2, dificultad: 1, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
       { tipo: 'leccion', id: '2.2' },
-      { tipo: 'meta', modo: 'eco', nivel: 3, titulo: 'Eco · nivel 3', texto: 'Escucha un compás y repítelo: llega a las corcheas.' },
+      { tipo: 'meta', modo: 'eco', nivel: 3, dificultad: 1, titulo: 'Eco · nivel 3', texto: 'Escucha un compás y repítelo: llega a las corcheas.' },
       { tipo: 'leccion', id: '2.3' },
-      { tipo: 'meta', modo: 'seguir', nivel: 5, titulo: 'Seguir · nivel 5', texto: 'Llega al contratiempo: los golpes caen en las «y».' },
+      { tipo: 'meta', modo: 'seguir', nivel: 5, dificultad: 2, titulo: 'Seguir · nivel 5', texto: 'Llega al contratiempo: los golpes caen en las «y».' },
       { tipo: 'leccion', id: '2.4' },
       { tipo: 'abre', herramienta: 'flow', titulo: 'Flow', texto: 'Tu pad sobre el beat, sílaba por sílaba: la pestaña Flow de cada letra.' },
       { tipo: 'leccion', id: '2.5' },
@@ -96,7 +98,7 @@ export const TRAMOS = {
     paradas: [
       { tipo: 'leccion', id: '3.1' },
       { tipo: 'leccion', id: '3.2' },
-      { tipo: 'meta', modo: 'intervalos', nivel: 4, titulo: 'Intervalos · nivel 4', texto: 'Llega al nivel en el que se suman la 3.ª menor y la 4.ª: las terceras son los ladrillos de los acordes.' },
+      { tipo: 'meta', modo: 'intervalos', nivel: 4, dificultad: 1, titulo: 'Intervalos · nivel 4', texto: 'Llega al nivel en el que se suman la 3.ª menor y la 4.ª: las terceras son los ladrillos de los acordes.' },
       { tipo: 'leccion', id: '3.3' },
       { tipo: 'leccion', id: '3.4' },
       { tipo: 'leccion', id: '3.5' },
@@ -108,7 +110,7 @@ export const TRAMOS = {
     acento: 'var(--color-modulo-4)',
     paradas: [
       { tipo: 'leccion', id: '4.1' },
-      { tipo: 'meta', modo: 'acordes', nivel: 2, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
+      { tipo: 'meta', modo: 'acordes', nivel: 2, dificultad: 1, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
       { tipo: 'leccion', id: '4.2' },
     ],
   },
@@ -119,7 +121,7 @@ export const TRAMOS = {
     paradas: [
       { tipo: 'leccion', id: '4.3' },
       { tipo: 'leccion', id: '4.4' },
-      { tipo: 'meta', modo: 'acordes', nivel: 3, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
+      { tipo: 'meta', modo: 'acordes', nivel: 3, dificultad: 2, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
       { tipo: 'leccion', id: '4.5' },
       {
         tipo: 'reto',
