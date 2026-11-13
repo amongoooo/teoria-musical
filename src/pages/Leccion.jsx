@@ -10,10 +10,13 @@ import Pulso from '../components/exercises/Pulso.jsx'
 import RetoFL from '../components/exercises/RetoFL.jsx'
 import TocaEnPiano from '../components/exercises/TocaEnPiano.jsx'
 import PasoSiente from '../components/pasos/PasoSiente.jsx'
+import MarcaPalabras from '../components/exercises/MarcaPalabras.jsx'
+import FlowEjercicio from '../components/exercises/FlowEjercicio.jsx'
 import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
 import { etiquetaPaso } from '../content/actividad.js'
-import { getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { acentoLeccion, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { RUTAS } from '../content/rutas.js'
 import { useOpciones } from '../progress/opciones.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
@@ -39,6 +42,8 @@ const PASOS = {
   reto: RetoFL,
   pianoroll: PianoRollEjercicio,
   pulso: Pulso,
+  marcar: MarcaPalabras,
+  flow: FlowEjercicio,
 }
 
 /**
@@ -67,6 +72,9 @@ export default function Leccion({ id, soloReto = false }) {
  */
 function Visor({ leccion, soloReto, onRepetir }) {
   const modulo = getModulo(leccion.modulo)
+  const acento = acentoLeccion(leccion.id)
+  // A dónde se vuelve: al módulo o, si la lección vive en una ruta, a la ruta.
+  const volver = leccion.ruta ? rutas.ruta(leccion.ruta) : rutas.modulo(leccion.modulo)
   const total = leccion.pasos.length
 
   const [indice, setIndice] = useState(() => {
@@ -103,7 +111,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
 
   const siguiente = useCallback(() => {
     const { indice: i, total: t, alcanzado: a } = estado.current
-    if (soloReto) return navegar(rutas.modulo(leccion.modulo))
+    if (soloReto) return navegar(volver)
     setAccion(null)
     setHaciaAtras(false)
     window.scrollTo(0, 0)
@@ -119,13 +127,13 @@ function Visor({ leccion, soloReto, onRepetir }) {
       completarLeccion(leccion.id, suma)
       setTerminado(true)
     }
-  }, [leccion.id, leccion.modulo, soloReto])
+  }, [leccion.id, volver, soloReto])
 
   const completar = useCallback((resultado) => {
     puntos.current[estado.current.indice] = resultado
   }, [])
 
-  const salir = () => navegar(rutas.modulo(leccion.modulo))
+  const salir = () => navegar(volver)
 
   /** Saltar a otro paso (modo administrador o volver atrás con el gesto): no guarda el paso ni su puntuación. */
   const irA = useCallback((n) => {
@@ -190,7 +198,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
                 initial={false}
                 animate={{ width: `${(indice / total) * 100}%` }}
                 transition={RESORTE.suave}
-                style={{ backgroundColor: modulo?.acento ?? 'var(--color-zinc-900)' }}
+                style={{ backgroundColor: acento ?? 'var(--color-zinc-900)' }}
               />
             </div>
             <span className="w-12 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">
@@ -751,7 +759,10 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
     (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
     { aciertos: 0, total: 0 },
   )
-  const lecciones = modulo?.lecciones ?? []
+  // La siguiente lección del módulo. En una ruta no: entre lección y lección hay metas de práctica, así que el
+  // botón principal es «Volver a la ruta» (allí la isla siguiente ya está abierta).
+  const ruta = leccion.ruta ? RUTAS[leccion.ruta] : null
+  const lecciones = ruta ? [] : (modulo?.lecciones ?? [])
   const pos = lecciones.findIndex((l) => l.id === leccion.id)
   const proxima = lecciones[pos + 1]
   const proximaLista = proxima && leccionDisponible(proxima.id)
@@ -811,12 +822,12 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
           )
         )}
         <Pulsable
-          href={rutas.modulo(leccion.modulo)}
+          href={ruta ? rutas.ruta(ruta.id) : rutas.modulo(leccion.modulo)}
           className={`grid min-h-14 place-items-center rounded-2xl px-6 text-lg font-semibold ${
             proximaLista ? 'border-2 border-zinc-200 bg-white text-zinc-800' : 'bg-zinc-900 text-white'
           }`}
         >
-          Volver al módulo
+          {ruta ? 'Volver a la ruta' : 'Volver al módulo'}
         </Pulsable>
         <Pulsable
           onClick={() => {

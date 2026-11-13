@@ -2,6 +2,7 @@
 // Para añadir una lección: crea su archivo en src/content/modulo-XX/ y regístrala aquí.
 import { getOpciones } from '../progress/opciones.js'
 import { MODULOS } from './modulos.js'
+import { RUTAS } from './rutas.js'
 import leccion11 from './modulo-01/leccion-1-1.js'
 import leccion12 from './modulo-01/leccion-1-2.js'
 import leccion13 from './modulo-01/leccion-1-3.js'
@@ -16,6 +17,12 @@ import leccion32 from './modulo-03/leccion-3-2.js'
 import leccion33 from './modulo-03/leccion-3-3.js'
 import leccion34 from './modulo-03/leccion-3-4.js'
 import leccion35 from './modulo-03/leccion-3-5.js'
+// Lecciones que viven DENTRO de una ruta (no en un módulo): llevan `ruta` en lugar de `modulo`.
+import letrasL1 from './ruta-letras/leccion-L1.js'
+import letrasL2 from './ruta-letras/leccion-L2.js'
+import letrasL3 from './ruta-letras/leccion-L3.js'
+import letrasL4 from './ruta-letras/leccion-L4.js'
+import letrasL5 from './ruta-letras/leccion-L5.js'
 
 const LECCIONES = {
   [leccion11.id]: leccion11,
@@ -32,6 +39,11 @@ const LECCIONES = {
   [leccion33.id]: leccion33,
   [leccion34.id]: leccion34,
   [leccion35.id]: leccion35,
+  [letrasL1.id]: letrasL1,
+  [letrasL2.id]: letrasL2,
+  [letrasL3.id]: letrasL3,
+  [letrasL4.id]: letrasL4,
+  [letrasL5.id]: letrasL5,
 }
 
 export { MODULOS }
@@ -43,6 +55,13 @@ export function getModulo(numero) {
 /** Contenido completo de una lección (o null si aún no existe). */
 export function getLeccion(id) {
   return LECCIONES[id] ?? null
+}
+
+/** Color de una lección: el de su módulo o, si vive en una ruta, el de la ruta. */
+export function acentoLeccion(id) {
+  const l = LECCIONES[id]
+  if (l?.ruta) return RUTAS[l.ruta]?.acento
+  return getModulo(l?.modulo ?? Number(String(id).split('.')[0]))?.acento
 }
 
 export function leccionDisponible(id) {

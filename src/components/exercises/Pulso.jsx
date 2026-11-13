@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { latenciaAudio } from '../../audio/engine.js'
-import { getModulo } from '../../content/index.js'
+import { acentoLeccion } from '../../content/index.js'
 import { formaGroove } from '../../theory/bateria.js'
 import { ENTRA_DERECHA, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
@@ -68,7 +68,7 @@ function ultimoGolpe(sub, division, ciclo, patron) {
 }
 
 function useColor(leccionId) {
-  return getModulo(Number(String(leccionId).split('.')[0]))?.acento ?? 'var(--color-zinc-900)'
+  return acentoLeccion(leccionId) ?? 'var(--color-zinc-900)'
 }
 
 function BotonEmpezar({ sonando, onClick }) {

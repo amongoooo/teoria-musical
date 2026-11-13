@@ -17,7 +17,12 @@ export default {
 }
 ```
 
-En los textos se puede usar `**negrita**` y `*cursiva*`.
+En los textos se puede usar `**negrita**` y `*cursiva*` (sin anidar: `*co-ra-**zón***` no funciona).
+
+**Lecciones que viven en una RUTA** (no en un módulo; p. ej. las 5 de la ruta de letras): archivo en
+`src/content/ruta-ID/` con `ruta: 'letras'` en lugar de `modulo` e `id` corto (`'L1'`, lo que se ve en la isla);
+regístrala en `src/content/index.js` y ponla en las `paradas` de la ruta (`content/rutas.js`) con su `titulo`. Toma
+el color de la ruta, ✕ y «Volver a la ruta» llevan a `#/ruta/ID` y la ruta la abre en orden (no `estadoLeccion`).
 
 **Antes de escribir una lección**, ver `INTERACCIONES.md`: catálogo de interacciones (L1–L6, O1–O5,
 P1–P4, F1, R1–R3, T1–T4, X1) y la plantilla de orden de los pasos.
@@ -81,6 +86,34 @@ sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 
 | `reto` | `components/exercises/RetoFL.jsx` | Reto en FL Studio con "Lo hice" y reflexión |
 | `pianoroll` | `components/exercises/PianoRollEjercicio.jsx` | Mini Piano Roll táctil: dibujar, copiar, velocity |
 | `pulso` | `components/exercises/Pulso.jsx` | Ritmo en bucle: tocar al pulso, tap tempo, explorar tempos |
+| `marcar` | `components/exercises/MarcaPalabras.jsx` | Tocar palabras o sílabas en unos versos (ruta de letras) |
+| `flow` | `components/exercises/FlowEjercicio.jsx` | Acomodar las sílabas de un verso para que las tónicas caigan en el pulso |
+
+### `marcar`
+
+```js
+{
+  tipo: 'marcar',
+  rondas: [
+    { pregunta: 'Toca las que riman en **consonante** con *corazón*.', texto: 'Te escribo esta canción\ncon todo el corazón',
+      fijas: ['corazón'], correctas: ['canción'], explicacion: '…' },
+    { pregunta: 'Toca las tónicas.', unidad: 'silaba', texto: 'Camino de noche por la avenida', correctas: 'tonicas' },
+  ],
+}
+```
+
+Palabras: `correctas` = las palabras (todas sus apariciones); `fijas` se ven en gris y no se tocan; las débiles
+(*la*, *de*, *con*…) salen como texto. Sílabas: `'tonicas'` = la tónica de cada palabra que suena fuerte, o claves
+`'verso.palabra.silaba'` (desde 0). Exacto = acierto; al comprobar, faltan en oro y sobran tachadas.
+
+### `flow`
+
+```js
+{ tipo: 'flow', titulo: 'Acomoda el flow', intro: '…', verso: 'Camino de noche por la avenida', explicacion: '…' }
+```
+
+El verso empieza repartido parejo (`repartir` de `letras/flow.js`); elige uno en el que así **no** queden todas las
+tónicas en el pulso (`acentosATiempo`). Comprobar exige todas en casilla par; al fallar enseña `repartirConAcentos`.
 
 `texto` acepta además `fichas`: una lista de filas que suenan al tocarlas (nombre, texto y un dato a la derecha
 en DM Mono), p. ej. la tabla de intervalos con su canción de referencia:
@@ -95,6 +128,17 @@ y suena su escala, y el centro dice su armadura y su relativa:
 ```js
 circulo: { inicial: 'G', menores: false, armaduras: true, resaltar: ['G', 'D', 'A'] }  // ids: mayor 'D', menor 'Em' / 'F#m' / 'Bbm'
 ```
+
+`texto` y las rondas de `elegir` aceptan además `letra`: unos **versos analizados** con el motor de `src/letras/`
+(`components/LetraAnalizada.jsx`, lo mismo que la pestaña Analizar del cuaderno). Se enciende solo lo ya enseñado:
+
+```js
+letra: { texto: 'Me late fuerte el corazón\ny no le encuentro la razón', colores: true, esquema: false, silabas: false, multis: false, leyenda: false }
+```
+
+`colores` = rima consonante rellena y asonante subrayada · `esquema` = A/B a la izquierda · `silabas` = número de
+sílabas a la derecha y la sinalefa como «‿» · `multis` = «multi N» · `leyenda` = qué es cada marca.
+Comprueba siempre con el motor que el análisis dice lo que dice la lección (`analizar(texto)` en node).
 
 `texto` y las rondas de `elegir` aceptan además `roll: { …config, notas }` para mostrar un
 Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregunta.

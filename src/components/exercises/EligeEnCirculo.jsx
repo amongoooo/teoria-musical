@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { playNotes } from '../../audio/engine.js'
-import { getModulo } from '../../content/index.js'
+import { acentoLeccion } from '../../content/index.js'
 import { ENTRA_DERECHA } from '../../ui/movimiento.js'
 import useSobreBarra from '../../ui/useSobreBarra.js'
 import BotonSonido from '../BotonSonido.jsx'
@@ -29,7 +29,7 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
   const [seleccion, setSeleccion] = useState(null)
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
   const [aciertos, setAciertos] = useState(0)
-  const color = getModulo(Number(String(leccionId).split('.')[0]))?.acento
+  const color = acentoLeccion(leccionId)
   const circuloRef = useRef(null)
   useSobreBarra(circuloRef) // al comprobar, la barra crece: que no tape el círculo
 
