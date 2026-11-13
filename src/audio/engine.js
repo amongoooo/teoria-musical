@@ -119,20 +119,32 @@ function sonar(inst, nota, duracion, t, velocidad) {
 // Lo que se toca EN VIVO (teclas) usa Tone.immediate(): el reloj de audio sin margen. Tone.now() le suma
 // `lookAhead` (0,1 s) y cada tecla sonaba 100 ms tarde. Ataque y soltado van en el mismo reloj. Lo programado
 // (playNotes, playPattern, iniciarRitmo, limpiarOido) sigue con Tone.now(): ahí el margen sí hace falta.
+
+// Si el ataque y el soltado caen en la misma hora de audio (contexto suspendido —la primera tecla en iPhone—
+// o un reloj que avanza a saltos), el sintetizador cancela el ataque y la nota queda muda. Por eso se guarda
+// la hora del ataque de cada nota y se suelta como pronto MIN_NOTA segundos después.
+const MIN_NOTA = 0.03
+const ataques = new Map()
+const horaSoltar = (ataque) => Math.max(Tone.immediate(), (ataque ?? -Infinity) + MIN_NOTA)
+
 export function noteOn(note, velocity = 0.8) {
   startAudio()
-  if (NOMBRES_BATERIA.includes(note)) return golpe(note, Tone.immediate(), velocity)
-  instrument().triggerAttack(note, Tone.immediate(), velocity)
+  const t = Tone.immediate()
+  if (NOMBRES_BATERIA.includes(note)) return golpe(note, t, velocity)
+  ataques.set(note, t)
+  instrument().triggerAttack(note, t, velocity)
 }
 
 export function noteOff(note) {
   // Soltamos en ambos por si cambió el estado mientras se mantenía la nota.
-  const t = Tone.immediate()
+  const t = horaSoltar(ataques.get(note))
+  ataques.delete(note)
   if (sampler && status === 'ready') sampler.triggerRelease(note, t)
   if (synth) synth.triggerRelease(note, t)
 }
 
 export function releaseAll() {
+  ataques.clear()
   if (sampler && status === 'ready') sampler.releaseAll()
   if (synth) synth.releaseAll()
 }
@@ -326,19 +338,24 @@ export function playFrequency(hz, duracion = 1.2) {
   return duracion
 }
 
+// El pad de frecuencias también es en vivo: Tone.immediate(), como las teclas (sin los 100 ms de Tone.now()).
+let ataqueTono = null
+
 /** Empieza una onda pura sostenida (para el pad de frecuencias). */
 export function toneStart(hz) {
   startAudio()
-  getSine().triggerAttack(hz, Tone.now())
+  ataqueTono = Tone.immediate()
+  getSine().triggerAttack(hz, ataqueTono)
 }
 
 /** Cambia la frecuencia de la onda sostenida, con un deslizamiento suave. */
 export function toneSet(hz) {
-  if (sine) sine.frequency.rampTo(hz, 0.04)
+  if (sine) sine.frequency.rampTo(hz, 0.04, Tone.immediate())
 }
 
 export function toneStop() {
-  if (sine) sine.triggerRelease(Tone.now())
+  if (sine) sine.triggerRelease(horaSoltar(ataqueTono))
+  ataqueTono = null
 }
 
 // ---------------------------------------------------------------------------
