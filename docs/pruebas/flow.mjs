@@ -60,7 +60,7 @@ for (const tema of ['claro', 'oscuro']) {
   await espera(400)
   comprobar(r, 'grabando', (await flow.getAttribute('data-modo')) === 'grabando')
   await foto('3-cuenta')
-  const inicio = Date.now() + 2667 - 400 - 30
+  const inicio = Date.now() + 150 + 2667 - 400 // la pista empieza 0,15 s después del toque; el 1 llega tras la cuenta
   for (let i = 0; i < 11; i++) {
     await espera(Math.max(0, inicio + i * 167 - Date.now()))
     await page.mouse.click(x, y)

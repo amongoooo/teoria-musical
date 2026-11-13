@@ -75,20 +75,27 @@ export const mediana = (xs) => {
 }
 
 /**
- * Textura del pad (pedido del usuario: «como de cuerito», muy fina): ruido fractal de SVG convertido en puntitos
- * oscuros con transparencia. Es una imagen fija (el navegador la dibuja una vez y la repite en mosaico): no anima nada
- * ni usa modos de fusión, así que casi no cuesta.
+ * Textura de goma del pad (pedido del usuario: como los pads de un controlador de batería): ruido fino de SVG en
+ * puntitos oscuros muy suaves. Imagen fija en mosaico: no anima nada ni usa modos de fusión, casi no cuesta.
  */
 const GRANO = `url("data:image/svg+xml,${encodeURIComponent(
-  "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.62'/></filter><rect width='100%' height='100%' filter='url(#g)'/></svg>",
+  "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.4 0 0 0 -0.6'/></filter><rect width='100%' height='100%' filter='url(#g)'/></svg>",
 )}")`
 
+/** Colores fijos del pad (como el aparato: igual en claro y en oscuro). */
+const MARCO = '#17181f'
+const GOMA = 'radial-gradient(130% 115% at 50% 35%, #f1eee8 0%, #e6e2da 55%, #d5d0c6 100%)'
+const TINTA_PAD = '#2b2c34'
+
 /**
- * Botón grande para tocar al pulso. Late con cada tiempo si `latido` >= 0. Responde al apoyar el dedo (no al
- * soltarlo), para medir el momento exacto. Dentro va `texto` o, si se pasan, los `children` (la cuenta, un ícono…).
- * `atenuado`: se ve apagado pero se puede tocar (no es tu turno).
+ * Botón grande para tocar al pulso (pedido del usuario: como un pad de goma de un controlador de batería): marco
+ * oscuro y dentro el pad gris claro, mate, que **se ilumina con el color** al golpearlo (y suave en cada tiempo si
+ * `latido` >= 0). Responde al apoyar el dedo (no al soltarlo), para medir el momento exacto. Dentro va `texto` o, si se
+ * pasan, los `children` (la cuenta, un ícono…). `atenuado`: se ve apagado pero se puede tocar (no es tu turno).
  */
 export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled, atenuado, children, ref, ...props }) {
+  const [golpes, setGolpes] = useState(0)
+  const luz = `color-mix(in oklab, ${color} 55%, transparent)`
   return (
     <motion.button
       ref={ref}
@@ -97,36 +104,59 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
       onPointerDown={(e) => {
         if (disabled) return
         e.preventDefault()
+        setGolpes((g) => g + 1)
         onToque(e)
       }}
       whileTap={disabled ? undefined : { scale: 0.97 }}
       transition={RESORTE.pulsar}
-      className={`relative grid h-40 w-full place-items-center overflow-hidden rounded-3xl text-xl font-semibold text-blanco select-none transition-opacity duration-200 disabled:opacity-40 ${
-        atenuado ? 'opacity-60' : ''
-      }`}
+      className={`relative block h-40 w-full rounded-[1.75rem] p-2.5 select-none transition-opacity duration-200 disabled:opacity-40 ${atenuado ? 'opacity-60' : ''}`}
       style={{
-        backgroundColor: oscuro(color),
-        boxShadow: 'inset 0 2px 0 rgb(255 255 255 / 0.14), inset 0 -5px 0 rgb(0 0 0 / 0.14)',
+        backgroundColor: MARCO,
+        boxShadow: '0 8px 20px rgb(0 0 0 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.05)',
         touchAction: 'manipulation',
         WebkitTouchCallout: 'none',
       }}
       onContextMenu={(e) => e.preventDefault()}
+      data-pad-goma
       {...props}
     >
-      {/* Cuero: grano fino, costura punteada por dentro y un borde de luz arriba y de sombra abajo. */}
-      <span aria-hidden data-textura className="pointer-events-none absolute inset-0 opacity-35" style={{ backgroundImage: GRANO, backgroundSize: '140px 140px' }} />
-      <span aria-hidden className="pointer-events-none absolute inset-2.5 rounded-[1.15rem] border-2 border-dashed border-blanco/25" />
-      {mostrarLatido && latido >= 0 && (
-        <motion.span
-          key={latido}
-          aria-hidden
-          className="absolute size-32 rounded-full bg-white"
-          initial={{ scale: 1.15, opacity: 0.45 }}
-          animate={{ scale: 0.9, opacity: 0.08 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-        />
-      )}
-      <span className="relative">{children ?? texto}</span>
+      <span
+        className="relative grid h-full w-full place-items-center overflow-hidden rounded-[1.1rem] text-xl font-semibold"
+        style={{
+          background: GOMA,
+          color: TINTA_PAD,
+          // Borde de luz arriba, sombra abajo y un hundido suave en las orillas: goma mate.
+          boxShadow: 'inset 0 2px 1px rgb(255 255 255 / 0.75), inset 0 -4px 8px rgb(0 0 0 / 0.13), inset 0 0 14px rgb(0 0 0 / 0.06), 0 2px 0 rgb(0 0 0 / 0.45)',
+        }}
+      >
+        <span aria-hidden data-textura className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: GRANO, backgroundSize: '140px 140px' }} />
+        {/* Latido: el pad brilla un poco con el color en cada tiempo. */}
+        {mostrarLatido && latido >= 0 && (
+          <motion.span
+            key={`l${latido}`}
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ background: `radial-gradient(closest-side, ${luz}, transparent)` }}
+            initial={{ opacity: 0.55 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          />
+        )}
+        {/* Golpe: el pad se ilumina con el color, como uno retroiluminado, y se apaga enseguida. */}
+        {golpes > 0 && (
+          <motion.span
+            key={`g${golpes}`}
+            aria-hidden
+            data-luz-pad
+            className="pointer-events-none absolute inset-0"
+            style={{ background: `radial-gradient(120% 120% at 50% 45%, ${luz}, color-mix(in oklab, ${color} 30%, transparent) 70%)` }}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut', delay: 0.06 }}
+          />
+        )}
+        <span className="relative">{children ?? texto}</span>
+      </span>
     </motion.button>
   )
 }
