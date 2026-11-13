@@ -71,6 +71,11 @@ Tonalidad y círculo de quintas (lección 3.5, Tonal `Key`): `CIRCULO` (las 12 m
 Acordes (lección 4.1, Tonal `Chord`): `theory/acordes.js`: `TRIADAS` (mayor, menor, dis, aum: terceras, cifrado, carácter),
 `triada('D4', 'menor')` → `['D4', 'F4', 'A4']`, `arpegioYAcorde(notas)` (de una en una y luego juntas, para un sonido),
 `nombreAcorde('B3', 'dis')` → «Si disminuido», `cifrado('F#4', 'menor')` → «F♯m», `TERCERA` (3 → 3m, 4 → 3M).
+Acordes de la tonalidad e inversiones (lecciones 4.3 y 4.4, Tonal `Key`): `diatonicos('C4')` → las 7 tríadas
+(`{ grado, romano, raiz, tipo, notas, cifrado }`, de I a vii°; `{ menor: true }` = menor natural), `ROMANOS`
+(I ii iii IV V vi vii°) y `ROMANOS_MENOR` (i ii° III iv v VI VII), `acordeDeGrado('G3', 'vi')` → Em (E4…),
+`inversion(['C4', 'E4', 'G4'], 1)` → `['E4', 'G4', 'C5']`, `cifradoInversion('G3', 'mayor', 1)` → «G/B», `INVERSIONES` y
+`APILADO` (3 → 3m, 4 → 3M, 5 → 4J).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -243,6 +248,12 @@ respuesta con su armadura.
   //     cuántos están la 3.ª y la 5.ª; tras 2 fallos seguidos marca las que faltan.
   //     `guia: false` = sin las terceras encima · `cifrado: true` = pide «Dm» en lugar de «Re menor» ·
   //     `escuchar: true` = «Escucha y construye»: suena el acorde, no se dice cuál es ni hay guía (4.2).
+  //     `revelar: true` + `tonalidad: 'C'` = «Apila sobre Re4 con las notas de Do mayor» (4.3): no dice el tipo; la guía
+  //       y el nombre salen al completarlo. Al fallar: «nota sí, nota no» o «Fa♯ no está en Do mayor».
+  //     `romano: 'vi'` + `tonalidad: 'C4'` (en lugar de raiz/tipo; `menor: true` para i ii° III…) = «Construye el vi de
+  //       Do mayor» (4.3): no viene ninguna nota; se tocan las tres (cualquier octava). Suena la tónica de referencia.
+  //     `inversion: 1 | 2` = la tecla marcada es el BAJO (la 3.ª o la 5.ª) y las otras dos van ENCIMA de ella (4.4); las
+  //       casillas van de abajo arriba (3 · 5 · 1 o 5 · 1 · 3) con 3m / 3M / 4J entre ellas; con `cifrado`, pide «C/E».
 }
 ```
 

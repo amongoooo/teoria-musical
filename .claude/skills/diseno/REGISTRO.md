@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **P8 con `revelar`, `romano` e `inversion`** (lecciones 4.3 y 4.4, plan aprobado por el usuario): la misma fila de tres casillas sirve para descubrir el tipo (la guía sale al final con un pop), para construir un grado sin nota dada (las tres con «?») y para inversiones (casillas de abajo arriba, el bajo dado a la izquierda, números 3 · 5 · 1 y la 4.ª justa «4J» en la guía).
+
 - 2026-11-13: **Barra de puntitos en regla con joystick** (pedido del usuario: con los tramos, la ruta de acordes tiene 18 paradas y los puntitos quedaban de 15 px): elegida la opción «regla que se desliza» entre tres (regla, acordeón por tramo, lupa). Puntitos de 44 px, el actual en el centro, orillas desvanecidas y el número del tramo en los huecos. El usuario pidió después que con el dedo apoyado avance como un **joystick** (1 cada 0,75 s · 2/s · 4/s según la distancia al centro; en el borde, hasta el último) y que **cada puntito recorrido haga su matraca**. Además, las **rutas van en bucle** al deslizar la página (sin tope a los lados).
 
 - 2026-11-13: **Rutas en tramos** (pedido del usuario: la ruta de acordes debe empezar por lo básico y el proyecto va a crecer; propuesta aprobada en un artefacto): con 2 tramos o más, el camino lleva un **letrero** por tramo (número, «x/y», nombre y mini barra en el color del módulo del que sale; las islas siguen en el color de la ruta) y la **barra de puntitos** deja un hueco de 8 px entre tramos. Sin grupos ni letreros si la ruta tiene un solo tramo.
