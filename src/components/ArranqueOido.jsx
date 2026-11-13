@@ -15,7 +15,7 @@ import {
   vidasDe,
 } from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Check, Circulo8, Cronometro, Escalada, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
+import { Candado, Check, Circulo8, Cronometro, Escalada, Info, Opciones as IconoOpciones, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
@@ -57,6 +57,25 @@ export default function ArranqueOido({ modo, datos }) {
   // Solo los botones y controles cambian de color con la dificultad (la página sigue clara u oscura).
   const acento = colorDificultad(vistaDif)
 
+  // Configurar: cerrado al entrar. Si la dificultad cambia por fuera (Predeterminados), el color la sigue.
+  const [abierto, setAbierto] = useState(false)
+  const difGuardada = ajusteAbsoluto(datos.ajustes, 'octavas')
+  useEffect(() => setVistaDif(difGuardada), [difGuardada])
+  useEffect(() => setVista(rueda.valor), [rueda.valor])
+  const vidasElegidas = vidasDe(datos.ajustes, rapido)
+  const nivelPredeterminado = admin ? modo.niveles : datos.nivelMax
+  const yaPredeterminado = (rapido || datos.nivel === nivelPredeterminado) && vidasElegidas === VIDAS_INFINITAS && difGuardada === 1
+  const predeterminados = () => {
+    if (!rapido && datos.nivel !== nivelPredeterminado) elegirNivel(modo.id, nivelPredeterminado, { libre: admin })
+    guardarAjustes(modo.id, { vidas: VIDAS_INFINITAS, octavas: 1 })
+  }
+  const resumen = [
+    juego && { id: 'juego', contenido: (() => { const I = ICONO_JUEGO[juego.id] ?? Circulo8; return <I className="size-5" /> })(), etiqueta: juego.nombre },
+    { id: 'nivel', contenido: `${rapido ? '×' : 'Nv '}${rueda.valor}`, etiqueta: `Nivel ${rueda.valor}` },
+    { id: 'vidas', contenido: formatoResumenVidas(vidasElegidas), etiqueta: vidasElegidas === VIDAS_INFINITAS ? 'Vidas infinitas' : vidasElegidas === VIDAS_ESCALADA ? 'Escalada' : `${vidasElegidas} vidas` },
+    { id: 'dificultad', contenido: `Dif ${difGuardada}`, etiqueta: `Dificultad ${difGuardada}` },
+  ].filter(Boolean)
+
   return (
     <LayoutGroup>
       <motion.div variants={lista} initial="oculta" animate="visible" className="flex flex-col gap-8">
@@ -76,60 +95,89 @@ export default function ArranqueOido({ modo, datos }) {
           <Descripcion texto={modo.descripcion} info={modo.info} />
         </motion.header>
 
-        {modo.juegos && (
-          <motion.section variants={itemLista} layout="position" className="flex flex-col gap-3">
-            <Titulo>Modo de juego</Titulo>
-            <ModosJuego modo={modo} datos={datos} acento={acento} />
-          </motion.section>
-        )}
+        {/* Configurar (pedido del usuario): modo de juego, nivel, vidas y dificultad en un apartado que sale cerrado;
+            cerrado muestra un resumen. Dentro, «Predeterminados» = nivel máximo desbloqueado, vidas ∞ y dificultad 1. */}
+        <motion.section variants={itemLista} layout="position" className="flex flex-col gap-6" data-configurar={abierto ? 'abierto' : 'cerrado'}>
+          <BotonConfigurar abierto={abierto} onClick={() => setAbierto((a) => !a)} acento={acento} resumen={resumen} />
+          <AnimatePresence initial={false}>
+            {abierto && (
+              <motion.div
+                key="configurar"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ ...RESORTE.suave, opacity: { duration: 0.2 } }}
+                className="-mx-5 overflow-hidden px-5"
+              >
+                <div className="flex flex-col gap-8 pt-1 pb-3">
+            {modo.juegos && (
+              <motion.section layout="position" className="flex flex-col gap-3">
+                <Titulo>Modo de juego</Titulo>
+                <ModosJuego modo={modo} datos={datos} acento={acento} />
+              </motion.section>
+            )}
 
-        {/* Nivel · Vidas · Dificultad: tres ruedas lado a lado (las de los lados con sus puntitos por fuera). */}
-        <motion.section variants={itemLista} layout="position" className="flex items-start justify-center gap-2" data-medidores>
-          <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={puntos.encendidos} etiquetas={puntos.etiquetas} negras={puntos.negras} acento={acento}>
-            <Rueda
-              key={rapido ? 'multiplicador' : 'nivel'}
-              id="nivel"
-              nombre="nivel"
-              total={rueda.total}
-              max={rueda.max}
-              valor={rueda.valor}
-              onVista={setVista}
-              onElegir={rueda.elegir}
-              acento={acento}
-              className={ANCHO_RUEDA}
-            />
-          </Medidor>
-          {/* Vidas (pedido del usuario): 1…20 y encima ∞; en Rápido, debajo del 1, la Escalada. */}
-          <Medidor id="vidas" titulo="Vidas" acento={acento}>
-            <Rueda
-              key={rapido ? 'vidas-rapido' : 'vidas'}
-              id="vidas"
-              nombre="vidas"
-              min={minVidas}
-              total={VIDAS_INFINITAS - minVidas + 1}
-              max={VIDAS_INFINITAS - minVidas + 1}
-              valor={vidasDe(datos.ajustes, rapido)}
-              onElegir={(n) => guardarAjustes(modo.id, { vidas: n })}
-              formato={formatoVidas}
-              acento={acento}
-              className={ANCHO_RUEDA}
-            />
-          </Medidor>
-          {modo.dificultad && (
-            <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
-              <Rueda
-                id="dificultad"
-                nombre="dificultad"
-                total={dif.max}
-                max={dif.max}
-                valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
-                onVista={setVistaDif}
-                onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
-                acento={acento}
-                className={ANCHO_RUEDA}
-              />
-            </Medidor>
-          )}
+            {/* Nivel · Vidas · Dificultad: tres ruedas lado a lado (las de los lados con sus puntitos por fuera). */}
+            <motion.section layout="position" className="flex items-start justify-center gap-2" data-medidores>
+              <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={puntos.encendidos} etiquetas={puntos.etiquetas} negras={puntos.negras} acento={acento}>
+                <Rueda
+                  key={rapido ? 'multiplicador' : 'nivel'}
+                  id="nivel"
+                  nombre="nivel"
+                  total={rueda.total}
+                  max={rueda.max}
+                  valor={rueda.valor}
+                  onVista={setVista}
+                  onElegir={rueda.elegir}
+                  acento={acento}
+                  className={ANCHO_RUEDA}
+                />
+              </Medidor>
+              {/* Vidas (pedido del usuario): 1…20 y encima ∞; en Rápido, debajo del 1, la Escalada. */}
+              <Medidor id="vidas" titulo="Vidas" acento={acento}>
+                <Rueda
+                  key={rapido ? 'vidas-rapido' : 'vidas'}
+                  id="vidas"
+                  nombre="vidas"
+                  min={minVidas}
+                  total={VIDAS_INFINITAS - minVidas + 1}
+                  max={VIDAS_INFINITAS - minVidas + 1}
+                  valor={vidasDe(datos.ajustes, rapido)}
+                  onElegir={(n) => guardarAjustes(modo.id, { vidas: n })}
+                  formato={formatoVidas}
+                  acento={acento}
+                  className={ANCHO_RUEDA}
+                />
+              </Medidor>
+              {modo.dificultad && (
+                <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
+                  <Rueda
+                    id="dificultad"
+                    nombre="dificultad"
+                    total={dif.max}
+                    max={dif.max}
+                    valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
+                    onVista={setVistaDif}
+                    onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
+                    acento={acento}
+                    className={ANCHO_RUEDA}
+                  />
+                </Medidor>
+              )}
+            </motion.section>
+                  <Pulsable
+                    onClick={predeterminados}
+                    disabled={yaPredeterminado}
+                    data-predeterminados
+                    className="mx-auto min-h-12 rounded-2xl border-2 border-zinc-200 bg-white px-6 font-juego text-lg font-semibold uppercase tracking-wide text-zinc-700 transition-opacity disabled:opacity-40"
+                    style={{ boxShadow: RELIEVE }}
+                  >
+                    Predeterminados
+                  </Pulsable>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {modo.direcciones && (
@@ -191,6 +239,53 @@ function formatoVidas(v) {
   if (v === VIDAS_INFINITAS) return <span className="font-titulo text-5xl font-bold leading-none" aria-label="Infinitas">∞</span>
   if (v === VIDAS_ESCALADA) return <Escalada className="size-11" titulo="Escalada" />
   return null
+}
+
+/** Vidas en el resumen de Configurar: ♥ con el número o ∞, o los escalones de la Escalada. */
+function formatoResumenVidas(v) {
+  if (v === VIDAS_INFINITAS) return <span className="font-titulo text-lg font-bold leading-none">♥ ∞</span>
+  if (v === VIDAS_ESCALADA) return <Escalada className="size-5" />
+  return `♥ ${v}`
+}
+
+/**
+ * Botón de Configurar: tarjeta con relieve, engranaje y «CONFIGURAR»; debajo, el resumen de lo elegido en fichas del
+ * color de la dificultad. La flechita gira al abrir.
+ */
+function BotonConfigurar({ abierto, onClick, acento, resumen }) {
+  return (
+    <Pulsable
+      tipo="tarjeta"
+      onClick={onClick}
+      aria-expanded={abierto}
+      data-boton-configurar
+      className="flex w-full flex-col gap-3 rounded-3xl border-2 border-zinc-200 bg-white px-4 py-3.5"
+      style={{ boxShadow: RELIEVE }}
+    >
+      <span className="flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-xl" style={{ backgroundColor: claro(acento), color: tinta(acento) }} aria-hidden>
+          <IconoOpciones className="size-6" />
+        </span>
+        <span className="flex-1 text-left font-juego text-xl font-semibold uppercase tracking-wide text-zinc-800">Configurar</span>
+        <motion.span aria-hidden animate={{ rotate: abierto ? 90 : 0 }} transition={RESORTE.pulsar} className="text-2xl leading-none text-zinc-400">
+          ›
+        </motion.span>
+      </span>
+      <span className="flex flex-wrap gap-2">
+        {resumen.map((r) => (
+          <span
+            key={r.id}
+            aria-label={r.etiqueta}
+            data-resumen={r.id}
+            className="inline-flex min-h-8 items-center gap-1 rounded-full px-3 font-juego text-base"
+            style={{ backgroundColor: claro(acento), color: tinta(acento) }}
+          >
+            {r.contenido}
+          </span>
+        ))}
+      </span>
+    </Pulsable>
+  )
 }
 
 /** Color de cada dificultad (1 azul … 5 rojo; variables `--color-dificultad-N` de src/index.css). */

@@ -41,6 +41,7 @@ import { claro, tinta } from '../ui/color.js'
 import { Atras, Bocina, Check, Oreja } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import useTemblor from '../ui/useTemblor.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 import { BarraAccion } from './Leccion.jsx'
@@ -269,6 +270,7 @@ function Entrenador({ modo }) {
 
   const [jugando, setJugando] = useState(false)
   const [vidas, setVidas] = useState(null)
+  const [golpes, setGolpes] = useState(0)
   const vidasRef = useRef(null)
   const cambiarVidas = (v) => {
     vidasRef.current = v
@@ -413,7 +415,8 @@ function Entrenador({ modo }) {
       if (bien && aciertos % cadaAciertos === 0) cambio = { ...cambio, ...sumarNotas(antes.notas, multiplicador) }
       if (!bien) cambio = { ...cambio, ...quitarNotaAlAzar(antes.notas) }
       cambiarPartida({ notas: cambio.notas, aciertos })
-      r.partida = { sumadas: cambio.sumadas, quitada: cambio.quitada }
+      // `ronda`: se completaron los aciertos de la ronda (la barra se llena aunque ya no queden notas por sumar).
+      r.partida = { sumadas: cambio.sumadas, quitada: cambio.quitada, ronda: bien && aciertos % cadaAciertos === 0 }
     }
     // Vidas: cada fallo (también por tiempo) quita una; subir a un nivel nuevo en la partida da una (si no están
     // llenas). En la Escalada, las vidas son las notas por encima del inicio y un fallo al volver al inicio acaba.
@@ -436,6 +439,7 @@ function Entrenador({ modo }) {
         fin = actual <= 0
       }
       cambiarVidas({ ...vv, actual, max, alcanzados })
+      if (actual < vv.actual) setGolpes((g) => g + 1) // perder una vida: los vidrios de arriba brillan en rojo y tiemblan
       r.vidas = { antes: vv.actual, despues: actual, fin }
     }
     setResultado(r)
@@ -492,16 +496,13 @@ function Entrenador({ modo }) {
   else if (juego) avance = (datos.carga ?? 0) / PARTES_NIVEL
   else avance = Math.min(1, datos.ventana.filter(Boolean).length / ACIERTOS_PARA_SUBIR)
   // Al subir (o al sumar notas en Rápido) la barra se llena del todo y vuelve a empezar.
-  const lleno = Boolean(resultado?.subio || resultado?.partida?.sumadas.length)
+  const lleno = Boolean(resultado?.subio || resultado?.partida?.ronda)
   const nivelVisto = rapido ? multiplicador : jugando && pregunta ? (resultado?.subio ? resultado.nuevoNivel : pregunta.nivel) : datos.nivel
 
   // Color de la dificultad (la barra de aciertos lo toma; en Contrarreloj, mientras corre el tiempo, va en amarillo).
   const colorDif = `var(--color-dificultad-${ajusteAbsoluto(datos.ajustes, 'octavas')})`
-  // Vidas en la cabecera: en el juego, las de la partida; en el arranque, las elegidas (para verlas al girar la rueda).
-  const elegidas = vidasDe(datos.ajustes, rapido)
-  const vidasVista = jugando
-    ? vidas && !vidas.infinitas && { actual: vidas.actual, max: Math.max(1, vidas.max) }
-    : elegidas !== VIDAS_INFINITAS && { actual: elegidas, max: Math.max(1, elegidas) }
+  // Solo jugando (pedido del usuario): mientras se configura, la barra sigue igual de delgada.
+  const vidasVista = jugando && vidas && !vidas.infinitas && { actual: vidas.actual, max: Math.max(1, vidas.max) }
 
   // Gesto del botón (pedido del usuario): en el entrenador solo pasa a la SIGUIENTE pregunta (nunca atrás) y solo
   // cuando el botón ya dice «Continuar» (respondida); mientras se borra la referencia o falta responder, no pasa.
@@ -519,27 +520,32 @@ function Entrenador({ modo }) {
     <div className="flex min-h-dvh flex-col">
       <header className="pointer-events-none sticky top-0 z-10">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 pb-2">
-          <Pulsable
-            href={rutas.oido()}
-            aria-label="Volver al entrenamiento de oído"
-            className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
-          >
-            <Atras className="size-6" />
-          </Pulsable>
-          {/* Píldora de vidrio: arriba los aciertos y, debajo, las vidas (en rojo, una parte por vida; con ∞ no sale). */}
-          <div className={`flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1.5 rounded-full px-4 py-2 ${VIDRIO}`}>
-            <BarraAciertos
-              key={`${modo.id}-${jugando}`}
-              avance={avance}
-              lleno={lleno}
-              reloj={jugando ? reloj : null}
-              parado={Boolean(respuesta)}
-              acento={colorDif}
-            />
-            {vidasVista && <BarraVidas actual={vidasVista.actual} max={vidasVista.max} />}
-          </div>
+          <Golpe n={golpes}>
+            <Pulsable
+              href={rutas.oido()}
+              aria-label="Volver al entrenamiento de oído"
+              className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
+            >
+              <Atras className="size-6" />
+            </Pulsable>
+          </Golpe>
+          <Golpe n={golpes} className="min-w-0 flex-1">
+            {/* Píldora de vidrio: arriba los aciertos y, ya jugando, debajo las vidas (barra roja lisa; con ∞ no sale). */}
+            <div className={`flex min-h-11 w-full min-w-0 flex-col justify-center gap-1.5 rounded-full px-4 py-2 ${VIDRIO}`}>
+              <BarraAciertos
+                key={`${modo.id}-${jugando}`}
+                avance={avance}
+                lleno={lleno}
+                reloj={jugando ? reloj : null}
+                parado={Boolean(respuesta)}
+                acento={colorDif}
+              />
+              {vidasVista && <BarraVidas actual={vidasVista.actual} max={vidasVista.max} />}
+            </div>
+          </Golpe>
           {/* Escuchar otra vez: solo la bocina (pedido del usuario). */}
           {jugando && (
+            <Golpe n={golpes}>
             <Pulsable
               onClick={() => escuchar(pregunta.sonido)}
               disabled={limpiando}
@@ -551,6 +557,7 @@ function Entrenador({ modo }) {
             >
               <Bocina className="size-6" />
             </Pulsable>
+            </Golpe>
           )}
         </div>
       </header>
@@ -784,24 +791,56 @@ function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
 }
 
 /**
- * Vidas de la partida (pedido del usuario): barra roja debajo de la de aciertos, dividida en una parte por vida; las
- * que quedan van llenas y la que se pierde se apaga con un pequeño temblor (al ganar una, entra con un pop).
+ * Vidas de la partida (pedido del usuario): barra roja LISA debajo de la de aciertos (no en partes); se acorta o
+ * crece con un resorte. Solo sale jugando y con vidas contadas (con ∞, no).
  */
 function BarraVidas({ actual, max }) {
   return (
-    <div className="flex h-2 gap-[3px]" role="img" aria-label={`${actual} de ${max} vidas`} data-vidas={actual} data-vidas-max={max}>
-      {Array.from({ length: max }, (_, i) => (
+    <motion.div
+      className="h-2 overflow-hidden rounded-full bg-zinc-200"
+      role="img"
+      aria-label={`${actual} de ${max} vidas`}
+      data-vidas={actual}
+      data-vidas-max={max}
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 8 }}
+      transition={RESORTE.suave}
+    >
+      <motion.div
+        className="h-full w-full origin-left rounded-full bg-vida"
+        initial={false}
+        animate={{ scaleX: Math.max(0, actual) / max }}
+        transition={RESORTE.pulsar}
+      />
+    </motion.div>
+  )
+}
+
+/**
+ * Al perder una vida (pedido del usuario): el vidrio de dentro brilla levemente en rojo y tiembla (`useTemblor`, la
+ * misma animación de toda la app). `n` cuenta los golpes: cada vez que sube, brilla y tiembla.
+ */
+function Golpe({ n, className = 'shrink-0', children }) {
+  const [ref, temblar] = useTemblor()
+  const antes = useRef(n)
+  useEffect(() => {
+    if (n > antes.current) temblar()
+    antes.current = n
+  }, [n, temblar])
+  return (
+    <div ref={ref} className={`relative ${className}`} data-golpes={n}>
+      {children}
+      {n > 0 && (
         <motion.span
-          key={i}
-          className="h-full flex-1 rounded-full"
-          initial={false}
-          animate={{
-            backgroundColor: i < actual ? 'var(--color-vida)' : 'var(--color-zinc-200)',
-            scaleY: i < actual ? 1 : 0.7,
-          }}
-          transition={RESORTE.pulsar}
+          key={n}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{ backgroundColor: 'color-mix(in oklab, var(--color-vida) 14%, transparent)', boxShadow: '0 0 14px 1px color-mix(in oklab, var(--color-vida) 55%, transparent)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 0.8, times: [0, 0.2, 1] }}
         />
-      ))}
+      )}
     </div>
   )
 }
