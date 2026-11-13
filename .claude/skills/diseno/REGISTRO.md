@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Círculo de nodos** (explorador `#/circulo`, propuesta A elegida entre 3): el usuario pidió nodos sin color en vez de casillas; al elegir una tonalidad se prenden sus 7 notas y una línea las une y gira; la nota que suena prende su nodo en celeste. Teclado de una octava fija con la nota nueva en oro y la que se va con contorno punteado. Tarjetita en Inicio bloqueada (punteada, candado, tiembla) hasta terminar la 3.5.
+
 - 2026-11-13: **Círculo de quintas táctil** (lección 3.5): sectores como baldosas separadas por el color del fondo, mayores fuera con su armadura y relativas dentro; elegida en el color del módulo, resaltada en su tono suave, bien/mal con verde/oro y el centro con ✓ o bombilla. Sirve para explicar (suena la escala) y como respuesta (paso `circulo`, O7).
 
 - 2026-11-13: **Barra de abajo sin panel**: la información en su tarjeta sólida arriba y el botón de vidrio flotando siempre debajo, translúcido como «Empezar». **Fin de la partida** (oído y ritmo, sin vidas) con insignia, 4 tarjetas con relieve y «Continuar» al panel. Carruseles de Rápido / Contrarreloj con título encima y sin ícono. Rueda del mouse: una muesca = un paso, sin pausa. (pedido del usuario)

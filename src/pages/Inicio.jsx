@@ -13,6 +13,12 @@ import Pulsable from '../ui/Pulsable.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 import { tiendaVocab } from '../progress/vocabulario.js'
+import { useOpciones } from '../progress/opciones.js'
+import { ultimaTonalidad } from '../progress/circulo.js'
+import CirculoNodos, { tonalidad } from '../components/CirculoNodos.jsx'
+import { datosCasilla } from '../components/CirculoQuintas.jsx'
+import { COLOR_CIRCULO } from './Circulo.jsx'
+import useTemblor from '../ui/useTemblor.js'
 
 /**
  * Inicio con aire de videojuego (pedido del usuario; como el arranque del entrenador de oído): el logo como
@@ -22,6 +28,7 @@ import { tiendaVocab } from '../progress/vocabulario.js'
  */
 export default function Inicio() {
   const progreso = useProgreso()
+  const opciones = useOpciones()
   const disponibles = leccionesDisponibles()
   // Siguiente lección: la primera sin completar (o la última si ya hiciste todas).
   const siguiente = disponibles.find((l) => !progreso.lecciones[l.id]?.completada)
@@ -74,6 +81,11 @@ export default function Inicio() {
             </li>
           ))}
         </ol>
+      </motion.section>
+
+      <motion.section variants={itemLista} className="flex flex-col gap-4">
+        <Titulo>Círculo de quintas</Titulo>
+        <TarjetaCirculo abierta={!!progreso.lecciones[LECCION_CIRCULO]?.completada || opciones.admin} />
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
@@ -236,6 +248,73 @@ function CuadritoModulo({ modulo: m, progreso }) {
       className="flex min-h-11 flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
     >
       {contenido}
+    </Pulsable>
+  )
+}
+
+/** Lección del curso que abre el explorador del círculo (pedido del usuario: «se desbloquea al desbloquear la rueda en el curso»). */
+const LECCION_CIRCULO = '3.5'
+
+/**
+ * Entrada al explorador del círculo de quintas: tarjetita con un mini círculo de nodos (la última tonalidad vista,
+ * con sus 7 notas prendidas), «Explorar», su nombre y su armadura. Hasta terminar la 3.5 va punteada y gris, con
+ * candado, los nodos apagados y «Termina la 3.5»; al tocarla tiembla. En modo administrador siempre está abierta.
+ */
+function TarjetaCirculo({ abierta }) {
+  const [ref, temblar] = useTemblor()
+  const id = ultimaTonalidad()
+  const t = tonalidad(id)
+  const mini = (
+    <span className="relative w-20 shrink-0" aria-hidden>
+      <CirculoNodos color={COLOR_CIRCULO} seleccion={abierta ? id : null} mini />
+      {!abierta && (
+        <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-zinc-400 text-white">
+          <Candado className="size-3.5" />
+        </span>
+      )}
+    </span>
+  )
+  if (!abierta) {
+    return (
+      <div ref={ref}>
+        <Pulsable
+          tipo="tarjeta"
+          onClick={temblar}
+          data-tarjeta-circulo="bloqueada"
+          aria-label={`Círculo de quintas: se abre al terminar la lección ${LECCION_CIRCULO}`}
+          className="flex w-full items-center gap-4 rounded-3xl border-2 border-dashed border-zinc-300 p-3 pr-4 text-left"
+        >
+          {mini}
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-juego text-lg uppercase tracking-wide text-zinc-500">Explorar</span>
+            <span className="text-base font-semibold text-zinc-500">Termina la {LECCION_CIRCULO}</span>
+          </span>
+        </Pulsable>
+      </div>
+    )
+  }
+  return (
+    <Pulsable
+      href={rutas.circulo()}
+      tipo="tarjeta"
+      data-tarjeta-circulo="abierta"
+      aria-label={`Explorar el círculo de quintas: ${t.nombre}`}
+      className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
+      style={{ boxShadow: RELIEVE }}
+    >
+      {mini}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Explorar</span>
+        <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta(COLOR_CIRCULO) }}>
+          {t.nombre}
+        </span>
+        <span className="font-dato text-sm font-medium text-zinc-500">
+          {t.textoArmadura} · ↔ {datosCasilla(t.relativa).nombre}
+        </span>
+      </span>
+      <span className="text-2xl text-zinc-400" aria-hidden>
+        ›
+      </span>
     </Pulsable>
   )
 }

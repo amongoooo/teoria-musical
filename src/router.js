@@ -11,6 +11,7 @@ function parse(hash) {
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   if (partes[0] === 'ritmo') return { pagina: 'ritmo', id: partes[1] ?? null }
   if (partes[0] === 'letras' && partes[1] === 'vocabulario') return { pagina: 'vocabulario', id: partes[2] ?? null }
+  if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
@@ -34,6 +35,8 @@ export const rutas = {
   leccion: (id) => `#/leccion/${id}`,
   /** Abre la lección directamente en su reto de FL Studio (al terminar vuelve al módulo). */
   reto: (id) => `#/leccion/${id}/reto`,
+  /** Explorador del círculo de quintas. */
+  circulo: () => '#/circulo',
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
   ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),

@@ -115,3 +115,19 @@ export function conArmadura(notas, tonica) {
     return `${destino}${oct}`
   })
 }
+
+// ——— Explorador del círculo de quintas (#/circulo) ———
+
+/** Las 7 notas (sin octava) de una tonalidad: notasTonalidad('G') → ['G', 'A', 'B', 'C', 'D', 'E', 'F#']. */
+export const notasTonalidad = (tonica, menor = false) => Scale.get(`${Note.pitchClass(tonica)} ${menor ? 'minor' : 'major'}`).notes
+
+/**
+ * Qué notas cambian al pasar de una escala a otra (por sonido, no por nombre: Fa♯ = Sol♭).
+ * notasQueCambian(notas de Do, notas de Sol) → { salen: ['F'], entran: ['F#'] }. Entre vecinas del círculo,
+ * una sola: a la dominante sube el 4.º grado medio tono; a la subdominante baja el 7.º.
+ */
+export function notasQueCambian(de, a) {
+  const cromaA = a.map(Note.chroma)
+  const cromaDe = de.map(Note.chroma)
+  return { salen: de.filter((n) => !cromaA.includes(Note.chroma(n))), entran: a.filter((n) => !cromaDe.includes(Note.chroma(n))) }
+}
