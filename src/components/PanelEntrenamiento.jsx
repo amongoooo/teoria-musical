@@ -2,17 +2,19 @@ import { motion } from 'motion/react'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
-import { Check } from '../ui/Iconos.jsx'
+import { Atras, Check } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 
 /**
  * Panel de un entrenamiento (oído, ritmo): la racha, los minutos de hoy y la semana; debajo sus ejercicios y las
  * estadísticas. `tienda` es su memoria (progress/entrenamiento.js), `modos` sus ejercicios, `ruta(id)` adónde lleva
- * cada uno e `Icono` su ícono.
+ * cada uno e `Icono` su ícono. Opcional: `volver` (‹ a otro apartado en vez de la casita), `children` (va entre el
+ * día y los ejercicios), `arriba` (va antes del día: la acción principal) y, en cada modo, `resumen(datos)` en lugar del nivel y `maxItems` en sus estadísticas.
  */
-export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, nombre, tienda, modos, ruta, Icono }) {
+export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, nombre, tienda, modos, ruta, Icono, volver, etiquetaVolver, arriba, children }) {
   const estado = tienda.usar()
   const dia = tienda.datosDeHoy(estado)
   const racha = tienda.rachaActual(estado)
@@ -27,12 +29,20 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
       animate="visible"
       className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-6 sm:py-10"
     >
-      <BotonInicio />
+      {volver ? (
+        <Pulsable href={volver} aria-label={etiquetaVolver} className={`grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}>
+          <Atras className="size-6" />
+        </Pulsable>
+      ) : (
+        <BotonInicio />
+      )}
 
       <motion.header variants={itemLista} className="flex flex-col gap-2">
         <h1 className="font-titulo text-4xl font-extrabold tracking-tight sm:text-5xl">{titulo}</h1>
         <p className="text-lg text-zinc-600">{descripcion}</p>
       </motion.header>
+
+      {arriba}
 
       <motion.section variants={itemLista} className="flex flex-col gap-5 rounded-3xl border border-zinc-200 bg-white p-5">
         <div className="flex items-end justify-between gap-4">
@@ -92,6 +102,8 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
         )}
       </motion.section>
 
+      {children}
+
       <motion.section variants={itemLista} className="flex flex-col gap-3">
         <h2 className="font-titulo text-2xl font-bold tracking-tight">Ejercicios</h2>
         {modos.map((m) => {
@@ -111,8 +123,14 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
                 <span className="font-titulo text-lg font-bold leading-snug">{m.titulo}</span>
                 <span className="text-sm leading-snug text-zinc-500">{m.descripcion}</span>
                 <span className="text-sm font-semibold" style={{ color: tinta(m.acento) }}>
-                  <span className="font-juego text-base">{nombreNivel(m, d.nivel)}</span>
-                  {d.total > 0 && ` · ${porcentaje(d.aciertos, d.total)} % bien`}
+                  {m.resumen ? (
+                    m.resumen(d)
+                  ) : (
+                    <>
+                      <span className="font-juego text-base">{nombreNivel(m, d.nivel)}</span>
+                      {d.total > 0 && ` · ${porcentaje(d.aciertos, d.total)} % bien`}
+                    </>
+                  )}
                 </span>
               </span>
               <span aria-hidden className="text-2xl text-zinc-300">›</span>
@@ -158,7 +176,9 @@ function minutos(segundos) {
 
 function Estadisticas({ modo, datos, Icono }) {
   if (!datos.total) return null
-  const items = Object.entries(datos.items).sort((a, b) => porcentaje(a[1].a, a[1].t) - porcentaje(b[1].a, b[1].t))
+  const items = Object.entries(datos.items)
+    .sort((a, b) => porcentaje(a[1].a, a[1].t) - porcentaje(b[1].a, b[1].t))
+    .slice(0, modo.maxItems ?? Infinity)
   return (
     <div className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">
       <div className="flex items-baseline justify-between gap-3">
@@ -170,7 +190,7 @@ function Estadisticas({ modo, datos, Icono }) {
         </span>
       </div>
       <p className="text-sm text-zinc-500">
-        Máximo: {nombreNivel(modo, datos.nivelMax)} · Mejor serie de aciertos: {datos.mejorRacha}
+        {modo.resumen ? '' : `Máximo: ${nombreNivel(modo, datos.nivelMax)} · `}Mejor serie de aciertos: {datos.mejorRacha}
       </p>
       <ul className="flex flex-col gap-2">
         {items.map(([id, { a, t }]) => {
@@ -186,7 +206,11 @@ function Estadisticas({ modo, datos, Icono }) {
           )
         })}
       </ul>
-      {items.length > 1 && <p className="text-sm text-zinc-500">Ordenado de lo que más te cuesta a lo que mejor te sale.</p>}
+      {items.length > 1 && (
+        <p className="text-sm text-zinc-500">
+          {modo.maxItems ? 'Lo que más te cuesta.' : 'Ordenado de lo que más te cuesta a lo que mejor te sale.'}
+        </p>
+      )}
     </div>
   )
 }

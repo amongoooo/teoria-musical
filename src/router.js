@@ -1,4 +1,5 @@
-// Navegación mínima por hash (#/modulo/1, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir).
+// Navegación mínima por hash (#/modulo/1, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
+// #/letras/vocabulario/repaso).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
 
@@ -9,6 +10,7 @@ function parse(hash) {
   if (partes[0] === 'importar') return { pagina: 'importar', id: partes[1] ?? '' }
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   if (partes[0] === 'ritmo') return { pagina: 'ritmo', id: partes[1] ?? null }
+  if (partes[0] === 'letras' && partes[1] === 'vocabulario') return { pagina: 'vocabulario', id: partes[2] ?? null }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
@@ -37,6 +39,8 @@ export const rutas = {
   ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),
   /** Cuaderno de letras; con id, una letra. */
   letras: (id) => (id ? `#/letras/${id}` : '#/letras'),
+  /** Vocabulario de letras; con modo (repaso, significado, sinonimos, verso), el entrenador. */
+  vocabulario: (modo) => (modo ? `#/letras/vocabulario/${modo}` : '#/letras/vocabulario'),
 }
 
 export function navegar(href) {

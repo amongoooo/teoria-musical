@@ -26,7 +26,7 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 | Tocar cualquier pantalla, componente, ejercicio o animación | **Skill `.claude/skills/diseno/SKILL.md`** (tokens, componentes, movimiento, gestos). Su historial: `REGISTRO.md` en la misma carpeta |
 | Escribir o cambiar una lección | **`src/content/FORMATO.md`** (tipos de paso y sonidos) + **`src/content/INTERACCIONES.md`** (catálogo L1…X1 y plantilla de orden) |
 | Saber cómo se hizo algo antes (nombres, decisiones, cómo se probó) | **`docs/HISTORIAL.md`** (todas las tareas hechas, con detalle) |
-| Seguir con los entrenamientos de **ritmo y letras** (en curso) | **`docs/PLAN-RITMO-LETRAS.md`** (decisiones del usuario, qué está hecho y el siguiente paso exacto) |
+| Seguir con los entrenamientos de **ritmo y letras** (falta flow) | **`docs/PLAN-RITMO-LETRAS.md`** (decisiones del usuario, qué está hecho y el siguiente paso exacto) |
 | Ver el contenido del curso (módulos, lecciones, retos) | `src/content/modulos.js` |
 
 ## Stack
@@ -42,13 +42,13 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 
 ```
 src/
-  App.jsx, router.js    # Página según la ruta (hash): #/  #/modulo/1  #/leccion/1.1  #/leccion/1.1/reto  #/oido  #/ritmo  #/letras  #/importar/CÓDIGO
+  App.jsx, router.js    # Página según la ruta (hash): #/  #/modulo/1  #/leccion/1.1  #/leccion/1.1/reto  #/oido  #/ritmo  #/letras  #/letras/vocabulario(/repaso)  #/importar/CÓDIGO
   content/              # CONTENIDO (datos): FORMATO.md, INTERACCIONES.md
     modulos.js          # Los 10 módulos y sus lecciones (título, acento = var(--color-modulo-N), reto…)
     index.js            # Registro de lecciones (getLeccion, getModulo, estadoLeccion…) ← registrar aquí cada lección nueva
     actividad.js        # Código de interacción de cada paso (L1…X1) y su etiqueta (ícono + nombre)
     modulo-0N/leccion-N-M.js   # Hechas: 1.1–1.4, 2.1–2.5, 3.1–3.4
-  pages/                # Inicio, Modulo, Leccion (visor paso a paso + BarraAccion), Oido y Ritmo (panel + entrenador), Letras (cuaderno + análisis), Importar
+  pages/                # Inicio, Modulo, Leccion (visor paso a paso + BarraAccion), Oido y Ritmo (panel + entrenador), Letras (cuaderno + análisis), Vocabulario (panel + entrenador), Importar
   components/
     exercises/          # Un componente por tipo de paso: EscuchaElige (elegir), Emparejar (emparejar), TocaEnPiano (tocar), ExploraFrecuencia,
                         #   PianoRollEjercicio (pianoroll), Pulso (pulso), RetoFL (reto) + Rondas
@@ -62,10 +62,12 @@ src/
     PiezasRitmo.jsx     # Pad, Contador («1 e y a», con estados), Medidor antes/tarde y relojes de audio: los usan exercises/Pulso.jsx y el entrenamiento de ritmo
     Opciones.jsx, ProgramarTema.jsx, TuProgreso.jsx, CodigoQR.jsx  # Opciones (tema —con «Programar»: claro/oscuro por horas en la barra del día—, vidrio, sentido de la barra de octavas, gesto del botón, modo administrador) y progreso entre dispositivos
     BotonSonido.jsx, Rich.jsx                                    # Botón de sonido (onNotas: señala cada nota al sonar); texto con **negritas**
+    RimasDiccionario.jsx                                         # «Rimas en el diccionario» (ficha de palabra de Letras y del vocabulario)
   audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle, `iniciarPista` por compases, `golpeAhora`), bateria.js (golpes sintetizados; `tom`/`toque` = el pad de ritmo), sonido.js (reproducir() del contenido)
-  letras/               # Motor de letras (sin dependencias; pruebas: node src/letras/letras.test.mjs): silabas.js (sílabas, tónica), rima.js (sonido con seseo/yeísmo, consonante/asonante), analisis.js (sinalefa, familias, esquema, multis)
+  letras/               # Motor de letras (sin dependencias; pruebas: node src/letras/letras.test.mjs y vocabulario.test.mjs): silabas.js (sílabas, tónica), rima.js (sonido con seseo/yeísmo, consonante/asonante), analisis.js (sinalefa, familias, esquema, multis),
+                        #   vocabulario/ (4 temas × 30 palabras, ejercicios.js, repaso.js = cajas 1-2-4-8-16 días), diccionario.js (GENERADO por scripts/diccionario.mjs: ~45 000 palabras por rima, FrequencyWords CC BY-SA 4.0) + rimasDiccionario.js (import() al entrar a Letras)
   theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), escalas.js (Tonal Scale: escala mayor y menor, grados, alteraciones, relativas, melodías por grados), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador), ritmo.js (entrenamiento de ritmo: 10 niveles, patrones, `evaluar` los toques, modos Seguir y Eco)
-  progress/             # letras.js (cuaderno de letras, solo en el dispositivo), progreso.js (lecciones y retos), opciones.js (tema, vidrio, admin), admin.js (PIN del modo administrador), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar), entrenamiento.js (`crearEntrenamiento`: la memoria que comparten oído y ritmo), ritmo.js (`tiendaRitmo` y retraso del dispositivo)
+  progress/             # letras.js (cuaderno de letras, solo en el dispositivo), vocabulario.js (`tiendaVocab`: racha propia + repaso de cada palabra), progreso.js (lecciones y retos), opciones.js (tema, vidrio, admin), admin.js (PIN del modo administrador), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar), entrenamiento.js (`crearEntrenamiento`: la memoria que comparten oído y ritmo), ritmo.js (`tiendaRitmo` y retraso del dispositivo)
   pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
   ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js / useGestoBoton.js (gestos; el último, el del botón de la lección), useTemblor.js (animación «temblar»), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
                         #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js (VIDRIO, VIDRIO_PANEL), useSobreBarra.js
@@ -75,6 +77,8 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 docs/pruebas/audio/     # Scripts de Playwright que miden el audio: medir.mjs (retraso, notas colgadas, mismo instante) y pantallas.mjs (pad, paso tocar, entrenador)
 docs/pruebas/ritmo.mjs  # Playwright del entrenamiento de ritmo (toca a tiempo con window.__ritmo, solo en desarrollo)
 docs/pruebas/letras.mjs # Playwright de Letras (cuaderno, análisis, ficha) y del pad con textura
+docs/pruebas/vocabulario.mjs # Playwright del vocabulario (panel, repaso, ejercicios, rimas del diccionario, créditos)
+scripts/diccionario.mjs # Genera src/letras/diccionario.js desde es_50k.txt de FrequencyWords
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
 
@@ -91,7 +95,7 @@ docs/pruebas/letras.mjs # Playwright de Letras (cuaderno, análisis, ficha) y de
 - **Modo administrador** (Opciones → Administrador, con PIN; huella SHA-256 en `progress/admin.js`): ninguna lección bloqueada y, en una lección, la barra de pasos abre «Ir al paso» para saltar entre pasos; el gesto del botón avanza sin responder. En el entrenador de oído: todos los niveles abiertos y, al sonar, la respuesta se señala en oro (el piano va a su octava; no se presiona).
 - **Computadora**: **Enter** presiona el botón de abajo (Comprobar / Continuar / Empezar), salvo en campos de texto u hojas abiertas; la **rueda del mouse** mueve los carruseles (`ui/useRuedaMouse.js`: ruedas del arranque, barra de octavas, navegador de módulos; en el camino, solo el scroll de lado).
 - **Botones de arriba**: ✕ = salir de una lección o de una hoja; **flechita ‹** (`Atras`) = volver al apartado anterior (p. ej. del entrenador al panel de oído); casita = Inicio.
-- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (`tema`: claro | oscuro | sistema | programa, `programa`: `{ claro, oscuro }` en minutos, `reloj`: 24 | 12, `vidrio`: desenfoque | opaco, `octavas`: vista | teclas, `gesto`: pagina | invertido, `admin`: modo administrador) · `teoria-musical:oido:v1` (entrenador; ajustes por modo: `juego`, `multiplicador`, `cadaAciertos`, `segundos`, `octavas`, `vidas` (0 = Escalada, 21 = ∞), `respuesta`, `cifrado`, `direccion`).
+- **localStorage**: `teoria-musical:progreso:v1` → `{ lecciones: { '1.1': { paso, completada, aciertos, total } }, retos: { '1.1': { hecho, nota }, 'M1': { hecho } } }` · `teoria-musical:opciones:v1` (`tema`: claro | oscuro | sistema | programa, `programa`: `{ claro, oscuro }` en minutos, `reloj`: 24 | 12, `vidrio`: desenfoque | opaco, `octavas`: vista | teclas, `gesto`: pagina | invertido, `admin`: modo administrador) · `teoria-musical:oido:v1` (entrenador; ajustes por modo: `juego`, `multiplicador`, `cadaAciertos`, `segundos`, `octavas`, `vidas` (0 = Escalada, 21 = ∞), `respuesta`, `cifrado`, `direccion`). · `teoria-musical:ritmo:v1` y `teoria-musical:letras-vocab:v1` (misma forma que el de oído; el vocabulario además `repaso: { palabra: [caja, 'AAAA-MM-DD'] }`, `nuevas`, `temas`) · `teoria-musical:letras:v1` (cuaderno, solo en el dispositivo).
 - **Probar** con Playwright (ya instalado en el entorno) a **375 px en claro y oscuro**; tema con `localStorage` `teoria-musical:opciones:v1` = `{ "tema": "oscuro" }`. Los samples del piano no cargan en el entorno de pruebas (suena el sintetizador): es normal.
 
 ## Decisiones de contenido
@@ -102,7 +106,7 @@ docs/pruebas/letras.mjs # Playwright de Letras (cuaderno, análisis, ficha) y de
 
 ## Estado del proyecto
 
-**Avance: ~88 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~90 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone y en vivo sin retraso (`Tone.immediate()`).
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
@@ -114,10 +118,10 @@ docs/pruebas/letras.mjs # Playwright de Letras (cuaderno, análisis, ficha) y de
 - ✅ **Apariencia programada**: claro y oscuro a ciertas horas (sol y luna sobre la barra del día, con imán y zoom).
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
-- 🟡 **Entrenamientos de ritmo y de letras** (plan aprobado: https://claude.ai/artifact/4E4w6oNu8rJ1qvtrdJkW63; todo en `docs/PLAN-RITMO-LETRAS.md`). Orden: ritmo → analizar letras → vocabulario → flow. **✅ Ritmo terminado** (`#/ritmo`, `pages/Ritmo.jsx`): panel con racha y 5 min propios y entrenador con **Seguir** (suena el beat, tocas los golpes con aro durante 2 compases) y **Eco** (escuchas un compás y lo repites; si no tocas, vuelve a sonar), pad o barra espaciadora, contador con estados, medidor antes/tarde, puntitos por pasada, vidas, 10 niveles y dificultad = margen (±120…±40 ms); bocina = escuchar el patrón (antes de evaluar reinicia con la demo; después, repaso). **✅ Analizar letras** (`#/letras`, `pages/Letras.jsx` + motor `src/letras/`): cuaderno en el dispositivo, Escribir / Analizar, colores por familia de rima (consonante = relleno, asonante = subrayado punteado; tokens `rima-1…8`), esquema por estrofa, sílabas por verso con sinalefa (o palabra por palabra), multis y ficha de cada palabra (sílabas con la tónica, aguda/llana/esdrújula, rima y con qué rima). Pad de ritmo con textura de cuero. **Falta:** vocabulario y flow.
+- 🟡 **Entrenamientos de ritmo y de letras** (plan aprobado: https://claude.ai/artifact/4E4w6oNu8rJ1qvtrdJkW63; todo en `docs/PLAN-RITMO-LETRAS.md`). Orden: ritmo → analizar letras → vocabulario → flow. **✅ Ritmo terminado** (`#/ritmo`, `pages/Ritmo.jsx`): panel con racha y 5 min propios y entrenador con **Seguir** (suena el beat, tocas los golpes con aro durante 2 compases) y **Eco** (escuchas un compás y lo repites; si no tocas, vuelve a sonar), pad o barra espaciadora, contador con estados, medidor antes/tarde, puntitos por pasada, vidas, 10 niveles y dificultad = margen (±120…±40 ms); bocina = escuchar el patrón (antes de evaluar reinicia con la demo; después, repaso). **✅ Analizar letras** (`#/letras`, `pages/Letras.jsx` + motor `src/letras/`): cuaderno en el dispositivo, Escribir / Analizar, colores por familia de rima (consonante = relleno, asonante = subrayado punteado; tokens `rima-1…8`), esquema por estrofa, sílabas por verso con sinalefa (o palabra por palabra), multis y ficha de cada palabra (sílabas con la tónica, aguda/llana/esdrújula, rima y con qué rima). Pad de ritmo con textura de cuero. **✅ Vocabulario** (`#/letras/vocabulario`, `pages/Vocabulario.jsx`, entrada desde el cuaderno): 120 palabras curadas (noche, calle, amor y desamor, dinero) con definición, verso de ejemplo y sinónimos; **¿Qué significa?**, **Sinónimos** y **Completa el verso**; repaso espaciado (cajas de 1, 2, 4, 8, 16 días; 10 nuevas al día; temas que se encienden); racha y 5 min propios (`tiendaVocab`, también en el bloque Letras de Inicio y en «Tu progreso»). **Rimas en el diccionario** (~45 000 palabras de FrequencyWords, CC BY-SA 4.0, crédito en Opciones → Créditos) en la ficha de cada palabra. **Falta:** flow.
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
-**Siguiente tarea (¡empezar aquí!):** **vocabulario** (Parte 3 del plan). Lee `docs/PLAN-RITMO-LETRAS.md` («Partes 3 y 4» y las decisiones del usuario): lista curada en `src/letras/vocabulario/` (palabra, definición, verso de ejemplo, sinónimos, tema; primera entrega ≈ 120 palabras = 4 temas × 30: noche, calle, amor y desamor, dinero…), tres ejercicios (¿Qué significa?, Sinónimos, Completa el verso), repaso espaciado (1, 2, 4, 8, 16 días) y racha propia con `crearEntrenamiento('teoria-musical:letras-vocab:v1')`; la lista de 50 000 palabras (FrequencyWords, CC BY-SA 4.0, crédito en Opciones) limpia y cargada con `import()` para buscar rimas en la ficha de una palabra. Entrada desde el cuaderno de `#/letras`. Después **flow**. Pendiente aparte: el usuario preguntó si los botones de la barra de abajo podrían verse translúcidos como el flotante «Empezar» (hoy van sobre el panel sólido); esperar su respuesta antes de tocarlo. Lo que estaba antes en la cola sigue pendiente: lección 3.5 «Grados, tonalidad y círculo de quintas» y la prueba rápida al inicio de cada módulo.
+**Siguiente tarea (¡empezar aquí!):** **flow** (Parte 4 del plan). Lee `docs/PLAN-RITMO-LETRAS.md` («Parte 4» y el resumen técnico): un verso del cuaderno sobre las 16 casillas del compás; colocar las sílabas tocando el pad (una sílaba por toque, en vivo sobre el beat) o repartirlas solas y moverlas; usa `iniciarPista`, `Pad`/`Contador` de `components/PiezasRitmo.jsx` y el motor de sílabas (`silabasVerso` de `letras/analisis.js`, con sinalefa). Entrada desde una letra del cuaderno. Pendiente aparte: el usuario preguntó si los botones de la barra de abajo podrían verse translúcidos como el flotante «Empezar» (hoy van sobre el panel sólido); esperar su respuesta antes de tocarlo. Ideas para el vocabulario (si el usuario las pide): más temas (tiempo, mar, fuego, cuerpo, camino, ciudad: un archivo de 30 palabras y añadirlo a `TEMAS`). Lo que estaba antes en la cola sigue pendiente: lección 3.5 «Grados, tonalidad y círculo de quintas» y la prueba rápida al inicio de cada módulo.
 
 **Hecho aparte:** ✅ **piano sin retraso** (teclas, paso `tocar`, entrenador y pad de frecuencias con `Tone.immediate()`; nota mínima de 0,03 s para que no quede muda al soltar en el mismo instante; pruebas en `docs/pruebas/audio/`: `medir.mjs` y `pantallas.mjs`).
 

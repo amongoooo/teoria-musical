@@ -9,6 +9,7 @@ import Letras from './pages/Letras.jsx'
 import Modulo from './pages/Modulo.jsx'
 import Oido from './pages/Oido.jsx'
 import Ritmo from './pages/Ritmo.jsx'
+import Vocabulario from './pages/Vocabulario.jsx'
 import { RESORTE, profundidad, variantesPantalla } from './ui/movimiento.js'
 
 function Pagina({ ruta }) {
@@ -17,6 +18,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'oido') return <Oido modo={ruta.id} />
   if (ruta.pagina === 'ritmo') return <Ritmo modo={ruta.id} />
   if (ruta.pagina === 'letras') return <Letras id={ruta.id} />
+  if (ruta.pagina === 'vocabulario') return <Vocabulario modo={ruta.id} />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }

@@ -3,14 +3,17 @@
 // Código = versión + base64url( deflate-raw( JSON ) ):
 //   «1…» comprimido (CompressionStream; Chrome, Safari 16.4+, Firefox)
 //   «0…» sin comprimir (respaldo para navegadores viejos)
-// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, c: opciones }.
-// (`r` se añadió con el entrenamiento de ritmo: los códigos de antes no lo traen y se leen igual.)
+// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, l: vocabulario de letras, c: opciones }.
+// (`r` se añadió con el entrenamiento de ritmo y `l` con el vocabulario —con su `repaso`—: los códigos de antes no
+// los traen y se leen igual.)
 //
 // Al importar se COMBINA, nunca se reemplaza: por lección se queda lo más avanzado,
 // los retos y los días de práctica se unen. Importar dos veces el mismo código no cambia nada.
 import { getProgreso, importarProgreso } from './progreso.js'
 import { getOido, importarOido } from './oido.js'
 import { tiendaRitmo } from './ritmo.js'
+import { tiendaVocab } from './vocabulario.js'
+import { combinarRepaso } from '../letras/vocabulario/repaso.js'
 import { TEMAS, getOpciones, setTema } from './opciones.js'
 
 const VERSION = 1
@@ -47,6 +50,7 @@ export function datosActuales() {
     p: { lecciones: p.lecciones ?? {}, retos: p.retos ?? {} },
     o: entrenamiento(getOido()),
     r: entrenamiento(tiendaRitmo.leer()),
+    l: { ...entrenamiento(tiendaVocab.leer()), repaso: tiendaVocab.leer().repaso ?? {} },
     c: { tema: getOpciones().tema },
   }
 }
@@ -86,7 +90,7 @@ function diasDeCompactos(filas) {
 /** Crea el código de texto con todo el progreso. */
 export async function crearCodigo(datos = datosActuales()) {
   const compacto = ({ dias, ...resto }) => ({ ...resto, d: diasCompactos(dias) })
-  const paquete = { ...datos, o: compacto(datos.o), r: compacto(datos.r ?? { dias: {} }) }
+  const paquete = { ...datos, o: compacto(datos.o), r: compacto(datos.r ?? { dias: {} }), l: compacto(datos.l ?? { dias: {} }) }
   const bytes = new TextEncoder().encode(JSON.stringify(paquete))
   if (hayCompresion()) {
     try {
@@ -134,11 +138,14 @@ const num = (x, def = 0) => (Number.isFinite(x) && x >= 0 ? x : def)
 const esFecha = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)
 const esId = (k) => /^[A-Za-z0-9.]{1,12}$/.test(k)
 
-function entradas(obj, fn) {
+// Elementos de las estadísticas: también palabras del vocabulario (con tildes y ñ).
+const esItem = (k) => /^[A-Za-z0-9.áéíóúüñ]{1,24}$/.test(k)
+
+function entradas(obj, fn, valido = esId) {
   const fuera = {}
   if (!esObjeto(obj)) return fuera
   for (const [k, v] of Object.entries(obj)) {
-    if (!esId(k) || !esObjeto(v)) continue
+    if (!valido(k) || !esObjeto(v)) continue
     fuera[k] = fn(v)
   }
   return fuera
@@ -164,12 +171,24 @@ function revisarEntrenamiento(llega) {
     total: num(m.total),
     racha: num(m.racha),
     mejorRacha: num(m.mejorRacha),
-    items: entradas(m.items, (it) => ({ a: num(it.a), t: num(it.t) })),
+    items: entradas(m.items, (it) => ({ a: num(it.a), t: num(it.t) }), esItem),
     ajustes: esObjeto(m.ajustes)
       ? Object.fromEntries(Object.entries(m.ajustes).filter(([k, v]) => esId(k) && ['string', 'number', 'boolean'].includes(typeof v)))
       : {},
   }))
   return { dias, mejorRacha: num(o.mejorRacha), modos }
+}
+
+/** Repaso del vocabulario: { palabra: [caja 1…5, 'AAAA-MM-DD'] }. */
+function revisarRepaso(r) {
+  const fuera = {}
+  if (!esObjeto(r)) return fuera
+  for (const [k, v] of Object.entries(r)) {
+    if (k.length > 40 || !/^[a-záéíóúüñ ]+$/.test(k) || !Array.isArray(v)) continue
+    const [caja, f] = v
+    if (Number.isInteger(caja) && caja >= 1 && caja <= 5 && esFecha(f)) fuera[k] = [caja, f]
+  }
+  return fuera
 }
 
 function revisar(d) {
@@ -197,6 +216,7 @@ function revisar(d) {
     p: { lecciones, retos },
     o: revisarEntrenamiento(d.o),
     r: revisarEntrenamiento(d.r),
+    l: { ...revisarEntrenamiento(d.l), repaso: revisarRepaso(d.l?.repaso) },
     c: { tema },
   }
 }
@@ -289,6 +309,7 @@ export function combinar(a, b) {
     },
     o: combinarEntrenamiento(a.o, b.o),
     r: combinarEntrenamiento(a.r, b.r),
+    l: { ...combinarEntrenamiento(a.l, b.l), repaso: combinarRepaso(a.l?.repaso, b.l?.repaso) },
   }
 }
 
@@ -301,6 +322,7 @@ export function resumen(d) {
     retos: Object.values(d.p.retos).filter((r) => r.hecho).length,
     dias: Object.values(d.o.dias).filter((x) => x.respuestas > 0).length,
     diasRitmo: Object.values(d.r?.dias ?? {}).filter((x) => x.respuestas > 0).length,
+    palabras: Object.keys(d.l?.repaso ?? {}).length,
     tema: d.c?.tema ?? null,
   }
 }
@@ -311,6 +333,7 @@ export function importar(datos, { conTema = false } = {}) {
   importarProgreso({ ...getProgreso(), ...junto.p })
   importarOido({ ...getOido(), ...junto.o })
   tiendaRitmo.importar({ ...tiendaRitmo.leer(), ...junto.r })
+  tiendaVocab.importar({ ...tiendaVocab.leer(), ...junto.l })
   if (conTema && datos.c?.tema) setTema(datos.c.tema)
   return junto
 }
