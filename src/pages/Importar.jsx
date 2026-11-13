@@ -154,6 +154,7 @@ function Resumen({ titulo, r, celebrar = false }) {
     { nombre: 'Lecciones a medias', valor: r.aMedias },
     { nombre: 'Retos hechos', valor: r.retos },
     { nombre: 'Días de práctica de oído', valor: r.dias },
+    { nombre: 'Días de práctica de ritmo', valor: r.diasRitmo ?? 0 },
   ]
   return (
     <section className="flex flex-col gap-3" aria-label={titulo}>

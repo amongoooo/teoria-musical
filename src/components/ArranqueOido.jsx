@@ -1,6 +1,6 @@
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { elegirNivel, guardarAjustes } from '../progress/oido.js'
+import { tiendaOido } from '../progress/oido.js'
 import { useOpciones } from '../progress/opciones.js'
 import {
   AJUSTES_ABSOLUTO,
@@ -22,29 +22,35 @@ import useRuedaMouse from '../ui/useRuedaMouse.js'
 import Rich from './Rich.jsx'
 
 /**
- * Arranque de un ejercicio del entrenamiento de oído (pedido del usuario; intervalos, acordes y oído absoluto):
+ * Arranque de un ejercicio de un entrenamiento (pedido del usuario; nació para el de oído —intervalos, acordes y oído
+ * absoluto— y lo usa también el de ritmo: `tienda` es la memoria del entrenamiento e `Icono` su ícono):
  * título grande, ícono, descripción con la burbuja ⓘ que se despliega, modos de juego en bloques, y dos ruedas
  * verticales lado a lado —Nivel (el 1 abajo; en Rápido, el multiplicador) y Dificultad (1–5 = octavas)— con
  * puntitos al costado (los del Nivel los da `modo.puntosNivel`: las notas como un piano roll, los 12 intervalos o los
  * 3 niveles de acordes; 5 = las octavas). Los botones y controles toman el color de la dificultad (azul, verde,
  * amarillo, naranja, rojo); la página sigue clara u oscura. Al final, lo propio de cada modo: «Dirección»
  * (intervalos: subiendo, bajando, a la vez) o «Responder con» (oído absoluto).
+ * En el de ritmo la Dificultad es el margen de precisión (`modo.claveDificultad`, `modo.puntosDificultad`) y sus
+ * opciones propias van en `modo.bloques` (el pad con sonido o mudo).
  * Sin textos grises de instrucciones: se entiende por el movimiento y el color.
  */
-export default function ArranqueOido({ modo, datos }) {
+export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono = Oreja }) {
+  const { elegirNivel, guardarAjustes } = tienda
+  // Dónde se guarda la dificultad: en oído son las octavas; cada entrenamiento puede usar otra clave.
+  const claveDif = modo.claveDificultad ?? 'octavas'
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
   // Modo administrador (pedido del usuario): todos los niveles desbloqueados.
   const { admin } = useOpciones()
   // Rápido: la rueda de nivel es el multiplicador (1…10, todos disponibles); si no, el nivel de siempre.
   const rapido = Boolean(juego?.multiplicador)
   const mult = AJUSTES_ABSOLUTO.multiplicador
-  const dif = AJUSTES_ABSOLUTO.octavas
+  const dif = AJUSTES_ABSOLUTO[claveDif]
   const rueda = rapido
     ? { total: mult.max, max: mult.max, valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'), elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }) }
     : { total: modo.niveles, max: admin ? modo.niveles : datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n, { libre: admin }) }
   // Lo que se ve en cada rueda mientras se desliza (los puntitos y el color lo siguen al instante).
   const [vista, setVista] = useState(rueda.valor)
-  const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
+  const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, claveDif))
   const conPiano = datos.ajustes.respuesta !== 'botones'
   const direccion = datos.ajustes.direccion ?? 'sube'
   const minVidas = rapido ? VIDAS_ESCALADA : 1
@@ -53,13 +59,15 @@ export default function ArranqueOido({ modo, datos }) {
   // los extremos (4, 5, 3, 6, 2).
   const puntos = modo.puntosNivel(vista, { rapido })
   const octavas = new Set(octavasDe(vistaDif))
-  const encendidasOctavas = OCTAVAS_POSIBLES.map((o) => octavas.has(o))
+  const puntosDif = modo.puntosDificultad
+    ? modo.puntosDificultad(vistaDif)
+    : { encendidos: OCTAVAS_POSIBLES.map((o) => octavas.has(o)), etiquetas: OCTAVAS_POSIBLES.map((o) => `octava ${o}`) }
   // Solo los botones y controles cambian de color con la dificultad (la página sigue clara u oscura).
   const acento = colorDificultad(vistaDif)
 
   // Configurar: cerrado al entrar. Si la dificultad cambia por fuera (Predeterminados), el color la sigue.
   const [abierto, setAbierto] = useState(false)
-  const difGuardada = ajusteAbsoluto(datos.ajustes, 'octavas')
+  const difGuardada = ajusteAbsoluto(datos.ajustes, claveDif)
   useEffect(() => setVistaDif(difGuardada), [difGuardada])
   useEffect(() => setVista(rueda.valor), [rueda.valor])
   const vidasElegidas = vidasDe(datos.ajustes, rapido)
@@ -67,7 +75,7 @@ export default function ArranqueOido({ modo, datos }) {
   const yaPredeterminado = (rapido || datos.nivel === nivelPredeterminado) && vidasElegidas === VIDAS_INFINITAS && difGuardada === 1
   const predeterminados = () => {
     if (!rapido && datos.nivel !== nivelPredeterminado) elegirNivel(modo.id, nivelPredeterminado, { libre: admin })
-    guardarAjustes(modo.id, { vidas: VIDAS_INFINITAS, octavas: 1 })
+    guardarAjustes(modo.id, { vidas: VIDAS_INFINITAS, [claveDif]: 1 })
   }
   const resumen = [
     juego && { id: 'juego', contenido: (() => { const I = ICONO_JUEGO[juego.id] ?? Circulo8; return <I className="size-5" /> })(), etiqueta: juego.nombre },
@@ -90,7 +98,7 @@ export default function ArranqueOido({ modo, datos }) {
             style={{ backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }}
             aria-hidden
           >
-            <Oreja className="size-14" />
+            <Icono className="size-14" />
           </motion.span>
           <Descripcion texto={modo.descripcion} info={modo.info} />
         </motion.header>
@@ -113,13 +121,22 @@ export default function ArranqueOido({ modo, datos }) {
             {modo.juegos && (
               <motion.section layout="position" className="flex flex-col gap-3">
                 <Titulo>Modo de juego</Titulo>
-                <ModosJuego modo={modo} datos={datos} acento={acento} />
+                <ModosJuego modo={modo} datos={datos} acento={acento} guardarAjustes={guardarAjustes} />
               </motion.section>
             )}
 
             {/* Nivel · Vidas · Dificultad: tres ruedas lado a lado (las de los lados con sus puntitos por fuera). */}
             <motion.section layout="position" className="flex items-start justify-center gap-2" data-medidores>
-              <Medidor id="nivel" titulo="Nivel" lado="izquierda" encendidos={puntos.encendidos} etiquetas={puntos.etiquetas} negras={puntos.negras} acento={acento}>
+              <Medidor
+                id="nivel"
+                titulo="Nivel"
+                lado="izquierda"
+                encendidos={puntos.encendidos}
+                etiquetas={puntos.etiquetas}
+                negras={puntos.negras}
+                desdeArriba={puntos.desdeArriba}
+                acento={acento}
+              >
                 <Rueda
                   key={rapido ? 'multiplicador' : 'nivel'}
                   id="nivel"
@@ -150,15 +167,15 @@ export default function ArranqueOido({ modo, datos }) {
                 />
               </Medidor>
               {modo.dificultad && (
-                <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={encendidasOctavas} etiquetas={OCTAVAS_POSIBLES.map((o) => `octava ${o}`)} acento={acento}>
+                <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={puntosDif.encendidos} etiquetas={puntosDif.etiquetas} acento={acento}>
                   <Rueda
                     id="dificultad"
                     nombre="dificultad"
                     total={dif.max}
                     max={dif.max}
-                    valor={ajusteAbsoluto(datos.ajustes, 'octavas')}
+                    valor={ajusteAbsoluto(datos.ajustes, claveDif)}
                     onVista={setVistaDif}
-                    onElegir={(n) => guardarAjustes(modo.id, { octavas: n })}
+                    onElegir={(n) => guardarAjustes(modo.id, { [claveDif]: n })}
                     acento={acento}
                     className={ANCHO_RUEDA}
                   />
@@ -226,6 +243,35 @@ export default function ArranqueOido({ modo, datos }) {
             </div>
           </motion.section>
         )}
+
+        {/* Opciones propias del modo (ritmo: el pad con sonido o mudo), en bloques con dibujito como «Responder con». */}
+        {modo.bloques?.map((b) => {
+          const elegido = datos.ajustes[b.clave] ?? b.opciones[0].id
+          return (
+            <motion.section key={b.clave} variants={itemLista} layout="position" className="flex flex-col gap-3">
+              <Titulo id={`bloque-${b.clave}`}>{b.titulo}</Titulo>
+              <div role="radiogroup" aria-labelledby={`bloque-${b.clave}`} className="grid gap-2" style={{ gridTemplateColumns: `repeat(${b.opciones.length}, minmax(0, 1fr))` }}>
+                {b.opciones.map(({ id, nombre }) => {
+                  const Dibujo = DIBUJOS_BLOQUE[`${b.clave}:${id}`]
+                  return (
+                    <Bloque
+                      key={id}
+                      role="radio"
+                      aria-checked={elegido === id}
+                      activo={elegido === id}
+                      acento={acento}
+                      onClick={() => guardarAjustes(modo.id, { [b.clave]: id })}
+                      data-bloque={`${b.clave}:${id}`}
+                    >
+                      {Dibujo && <Dibujo className="h-11 w-18" />}
+                      <span className="font-juego text-base font-semibold leading-tight tracking-tight">{nombre}</span>
+                    </Bloque>
+                  )
+                })}
+              </div>
+            </motion.section>
+          )
+        })}
       </motion.div>
     </LayoutGroup>
   )
@@ -295,8 +341,8 @@ const colorDificultad = (n) => `var(--color-dificultad-${n})`
  * Columna de medidor: título y, debajo, la rueda con una columna de puntitos al costado (por fuera). Los puntitos
  * son lo que suena: en el Nivel, las 12 notas como un piano roll (Do abajo); en la Dificultad, las octavas 2…6.
  */
-function Medidor({ id, titulo, lado, encendidos, etiquetas, negras, acento, children }) {
-  const columna = encendidos && <Puntitos encendidos={encendidos} etiquetas={etiquetas} negras={negras} acento={acento} />
+function Medidor({ id, titulo, lado, encendidos, etiquetas, negras, desdeArriba, acento, children }) {
+  const columna = encendidos && <Puntitos encendidos={encendidos} etiquetas={etiquetas} negras={negras} desdeArriba={desdeArriba} acento={acento} />
   return (
     <div className="flex flex-col items-center gap-3">
       <h2 id={id} className="text-center font-juego text-base font-semibold uppercase tracking-wide text-zinc-800">
@@ -314,17 +360,18 @@ function Medidor({ id, titulo, lado, encendidos, etiquetas, negras, acento, chil
 /**
  * Puntitos en columna (el primero abajo): los encendidos van del color del acento y dan un pop al encenderse.
  * Con `negras` (el piano roll del Nivel; pedido del usuario), los de las teclas negras van más oscuros que los de las
- * blancas, encendidos o apagados, para distinguirlas como en un teclado.
+ * blancas, encendidos o apagados, para distinguirlas como en un teclado. En el ritmo son las casillas del compás:
+ * `desdeArriba` pone la primera arriba (el tiempo se lee hacia abajo) y `negras` oscurece las que caen en el tiempo.
  */
-function Puntitos({ encendidos, etiquetas, negras, acento }) {
+function Puntitos({ encendidos, etiquetas, negras, desdeArriba, acento }) {
   const total = encendidos.length
   const grande = total <= 6
   const cuantos = encendidos.filter(Boolean).length
   return (
     <div
-      className={`flex flex-col-reverse items-center justify-between ${grande ? 'py-6' : 'py-3'}`}
+      className={`flex ${desdeArriba ? 'flex-col' : 'flex-col-reverse'} items-center justify-between ${grande ? 'py-6' : 'py-3'}`}
       role="img"
-      aria-label={etiquetas.filter((_, i) => encendidos[i]).join(', ')}
+      aria-label={etiquetas.filter((e, i) => e && encendidos[i]).join(', ')}
       data-puntitos={total}
       data-encendidos={cuantos}
       data-patron={encendidos.map((on) => (on ? 1 : 0)).join('')}
@@ -441,7 +488,7 @@ function Descripcion({ texto, info }) {
 
 const ICONO_JUEGO = { normal: Circulo8, rapido: Rayo, contrarreloj: Cronometro }
 
-function ModosJuego({ modo, datos, acento }) {
+function ModosJuego({ modo, datos, acento, guardarAjustes }) {
   const actual = getJuego(datos.ajustes.juego)
   const [abierto, setAbierto] = useState(false)
   const n = modo.juegos.length
@@ -822,6 +869,28 @@ function DibujoDireccion({ direccion, className }) {
     </svg>
   )
 }
+
+/** El pad del entrenamiento de ritmo: con sonido (ondas a su lado) o mudo (una cruz). */
+function DibujoPadSuena({ className }) {
+  return (
+    <svg viewBox="0 0 72 44" className={className} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+      <rect x="10" y="7" width="32" height="30" rx="8" fill="currentColor" />
+      <path d="M49 15q5 7 0 14M56 9q9 13 0 26" />
+    </svg>
+  )
+}
+
+function DibujoPadMudo({ className }) {
+  return (
+    <svg viewBox="0 0 72 44" className={className} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+      <rect x="10" y="7" width="32" height="30" rx="8" />
+      <path d="M50 16l12 12M62 16L50 28" />
+    </svg>
+  )
+}
+
+/** Dibujitos de los bloques propios de un modo (`modo.bloques`), por «clave:opción». */
+const DIBUJOS_BLOQUE = { 'pad:suena': DibujoPadSuena, 'pad:mudo': DibujoPadMudo }
 
 function DibujoBotones({ className }) {
   return (
