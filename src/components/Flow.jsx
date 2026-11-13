@@ -274,7 +274,7 @@ function FlowVerso({ letra, verso }) {
           )
         ) : (
           <span className="flex items-center gap-2.5 font-juego text-2xl uppercase tracking-wide">
-            <span aria-hidden className="size-4 rounded-full bg-blanco" />
+            <span aria-hidden className="size-4 rounded-full" style={{ backgroundColor: oscuro(ACENTO) }} />
             Grabar
           </span>
         )}

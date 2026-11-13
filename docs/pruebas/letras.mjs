@@ -85,7 +85,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'guardada', (await page.locator('[data-letra]').count()) === 1)
   await foto('6-cuaderno')
 
-  // Pad de ritmo con la textura de cuero.
+  // Pad de ritmo (de goma, con su grano).
   await page.goto(BASE + '#/ritmo/seguir')
   await page.locator('[data-barra-accion] button', { hasText: 'Empezar' }).click()
   await page.waitForSelector('[data-textura]')
