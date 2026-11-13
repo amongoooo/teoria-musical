@@ -7,7 +7,7 @@ import { useOpciones } from '../progress/opciones.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Cerrar, Check, MarcaBien, Reproducir, Trofeo } from '../ui/Iconos.jsx'
+import { Candado, Cerrar, Check, Cuadritos, MarcaBien, Reproducir, Trofeo } from '../ui/Iconos.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
@@ -59,7 +59,9 @@ const MATRACA = {
   golpe: { ...RESORTE.pulsar, stiffness: RESORTE.pulsar.stiffness * 4, damping: RESORTE.pulsar.damping * 2 },
   vuelta: { ...RESORTE.suave, stiffness: RESORTE.suave.stiffness * 4, damping: RESORTE.suave.damping * 2 },
 }
-const BARRA_ALTO = 124 // alto de la zona de la barra de puntitos (con su desvanecido): la isla abierta queda por encima
+const BARRA_ALTO = 112 // alto de la zona de la barra de puntitos (con su margen): la isla abierta queda por encima
+// En una ruta, sobre la barra va el botón «Módulos y prácticas» (44 px + 8 de separación).
+const BOTON_RUTA = 52
 const ARO = 16 // el aro de avance sobresale de la bola
 const SEPARA = 30 // de la bola al globo (deja sitio al labio y al piquito)
 const ALTO_ESTIMADO = BOLA + SEPARA + 210 // alto de bola + globo hasta medirlo
@@ -69,7 +71,14 @@ const Y_ANCHO = 124 // altura del centro de la isla abierta en pantallas anchas
 // abierta, además, que quepan el globo y sus vecinas (`anchoAbierta`) y que la bola y el globo quepan
 // sobre la barra de puntitos, hasta `maxAbierta` (así el globo no queda gigante). Al abrir o cerrar,
 // el zoom pasa de uno a otro con el mismo resorte.
-const ZOOM = { maxCerrado: 1.8, maxAbierta: 1.5, anchoAbierta: 760, columna: 130, margenAlto: 96 }
+const ZOOM = { maxCerrado: 2, maxAbierta: 1.5, anchoAbierta: 760, columna: 120, margenAlto: 96 }
+// Pantallas anchas: como mucho VISIBLES nodos a la vez (pedido del usuario: «que las islas sean más grandes y se
+// muestren solo unas cuantas»); si hay más, el camino cerrado es una TIRA que se arrastra de lado (o con la rueda o
+// la barra de puntitos) columna por columna, con las reglas de los carruseles, y se desvanece en los bordes.
+// Con una isla abierta, las vecinas guardan al menos `SEPARA_MIN` px entre sí (las lejanas quedan fuera, a los lados).
+const VISIBLES = 6
+const SEPARA_MIN = 120
+const BORDE_TIRA = 48 // px del desvanecido de los lados de la tira
 // Desenfoque con una isla abierta (como fuera de foco), según la DISTANCIA a ella en islas: las de al
 // lado apenas (el número se sigue leyendo), las siguientes más, y así. `pasos[d]` = px de desenfoque a
 // distancia d (antes del zoom); más lejos, el último. Cada línea se desenfoca como la media de sus dos islas.
@@ -131,7 +140,7 @@ export function retosDelModulo(modulo, progreso) {
  *    barra de puntitos de abajo mueve p; al soltar todo se asienta con resortes.
  *  - Las posiciones se escriben directamente en el DOM (sin re-render) en cada fotograma.
  */
-export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = null }) {
+export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, ruta = null }) {
   const ref = useRef(null)
   const lienzo = useRef(null) // capa ampliada (zoom) dentro del contenedor
   const anchoReal = useAncho(ref)
@@ -161,16 +170,21 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
   const [verRetos, setVerRetos] = useState(false)
   const vertical = anchoReal < 560
   const [altos, setAltos] = useState({}) // alto real (bola + globo) de cada isla abierta, medido
+  // Columnas a la vista en pantallas anchas (ver VISIBLES); si hay más nodos, el camino cerrado se arrastra de lado.
+  const vis = vertical || !anchoReal ? n + 1 : Math.min(n + 1, VISIBLES, Math.max(3, Math.floor(anchoReal / ZOOM.columna)))
+  const maxCorre = n + 1 - vis // columnas que se puede correr la tira
+  const desborda = maxCorre > 0
+  const barraAlto = BARRA_ALTO + (ruta ? BOTON_RUTA : 0)
   // Zoom en pantallas anchas (ver ZOOM). Cada disposición se calcula en su ancho «sin ampliar» y la capa
   // `lienzo` se escala; en el celular, zoom = 1.
-  const zoomCerrado = vertical || !anchoReal ? 1 : limitar(anchoReal / (ZOOM.columna * (n + 1)), 1, ZOOM.maxCerrado)
+  const zoomCerrado = vertical || !anchoReal ? 1 : limitar(anchoReal / (ZOOM.columna * vis), 1, ZOOM.maxCerrado)
   const zoom = vertical || !anchoReal
     ? 1
     : limitar(
         Math.min(
           anchoReal / ZOOM.anchoAbierta,
-          anchoReal / (ZOOM.columna * (n + 1)),
-          (altoVentana - BARRA_ALTO - ZOOM.margenAlto) / (Math.max(ALTO_ESTIMADO, ...Object.values(altos)) + ARO * 2),
+          anchoReal / (ZOOM.columna * vis),
+          (altoVentana - barraAlto - ZOOM.margenAlto) / (Math.max(ALTO_ESTIMADO, ...Object.values(altos)) + ARO * 2),
         ),
         1,
         ZOOM.maxAbierta,
@@ -193,11 +207,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
     () =>
       ancho
         ? {
-            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande }),
+            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande, vis }),
             abiertas: Array.from({ length: n + 1 }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
           }
         : null,
-    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos],
+    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos, vis],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
@@ -241,8 +255,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
     const top = cont.getBoundingClientRect().top + window.scrollY + (L.abiertas[k].nodos[k].y - BOLA / 2 - ARO) * zoom // en la página
     const alto = ((altos[k] ?? els.grande[k]?.offsetHeight ?? ALTO_ESTIMADO) + ARO) * zoom // aro + bola + globo
     const techo = (document.querySelector('[data-pildora-cabecera]')?.getBoundingClientRect().bottom ?? 60) + 12
-    const barra = document.querySelector('[data-puntitos] [role=group]')?.getBoundingClientRect().top
-    const piso = (barra != null ? barra - flotaY.get() : window.innerHeight - BARRA_ALTO) - 12
+    // Lo más alto de la barra de abajo: la píldora de puntitos o, en una ruta, el botón que va encima.
+    const barra = document.querySelector('[data-puntitos] [data-encima-barra], [data-puntitos] [role=group]')?.getBoundingClientRect().top
+    const piso = (barra != null ? barra - (ruta ? 0 : flotaY.get()) : window.innerHeight - barraAlto) - 12
     if (top >= techo && top + alto <= piso) return 0
     return Math.max(0, top - (techo + Math.max(0, (piso - techo - alto) / 2)))
   }
@@ -281,6 +296,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
   const cerrar = ({ relleno: quitarRelleno = true } = {}) => {
     esperando.current = null
     if (quitarRelleno && relleno.current) relleno.current.style.height = '0px'
+    // En la tira (pantallas anchas), el nodo que se cierra queda a la vista (con una columna de aire si se puede).
+    const k = abiertaRef.current
+    if (k != null && desborda) {
+      const c = corridoRef.current
+      const sig = k < c + 1 ? k - 1 : k > c + vis - 2 ? k - vis + 2 : c
+      correA(limitar(sig, 0, maxCorre))
+    }
     abiertaRef.current = null
     setAbierta(null)
     animate(apertura, 0, resorte)
@@ -361,6 +383,45 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
   // Computadora: el scroll de lado (trackpad o Shift + rueda) pasa de isla; el vertical sigue siendo de la página.
   useRuedaMouse(ref, { activo: abierta !== null, conVertical: false, puede, onPaso: (dir) => irA(abiertaRef.current + dir) })
 
+  // TIRA del camino cerrado en pantallas anchas (ver VISIBLES): `corre` = columnas corridas (continuo).
+  // Arrastrar de lado la corre columna por columna con las reglas de los carruseles (useDeslizar); en los extremos
+  // el gesto es de la página (cambiar de módulo). La rueda (de lado) también la corre.
+  const corridoRef = useRef(0) // destino (entero)
+  const correBase = useMotionValue(0)
+  const [corrido, setCorrido] = useState(0)
+  const puedeTira = (dir) => abiertaRef.current === null && corridoRef.current + dir >= 0 && corridoRef.current + dir <= maxCorre
+  const correA = (c) => {
+    corridoRef.current = c
+    setCorrido(c)
+    animate(correBase, c, resorte)
+  }
+  const pasoTira = (dir) => {
+    const sig = corridoRef.current + dir
+    const desfase = correBase.get() - corridoRef.current
+    corridoRef.current = sig
+    setCorrido(sig)
+    correBase.jump(sig + desfase)
+    if (Math.abs(desfase) > 0.001) animate(correBase, sig, resorte)
+  }
+  const tira = useDeslizar({ activo: abierta === null && desborda, umbral: anchoReal / vis || 1, onPaso: pasoTira, puede: puedeTira, acepta: puedeTira })
+  useRuedaMouse(ref, { activo: abierta === null && desborda, conVertical: false, puede: puedeTira, onPaso: (dir) => correA(corridoRef.current + dir) })
+  // Al conocer el ancho (o cambiarlo): dentro de los límites y, la primera vez, con la isla actual a la vista.
+  const tiraLista = useRef(false)
+  useLayoutEffect(() => {
+    if (!anchoReal) return
+    const c = tiraLista.current ? corridoRef.current : actual + 1 - (vis - 2)
+    tiraLista.current = true
+    const sig = limitar(c, 0, Math.max(0, maxCorre))
+    corridoRef.current = sig
+    setCorrido(sig)
+    correBase.jump(sig)
+  }, [anchoReal, vis, maxCorre]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Para el swipe de página: con la tira corrida, el gesto de lado es de la tira salvo en sus extremos.
+  useEffect(
+    () => onTira?.(desborda ? { inicio: corrido <= 0, fin: corrido >= maxCorre } : null),
+    [desborda, corrido, maxCorre, onTira],
+  )
+
 
   /** Coloca cada isla, camino, título y puntito según la posición continua. */
   const actualizar = () => {
@@ -382,6 +443,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
     // Zoom de este fotograma: del cerrado al de isla abierta según la apertura. Las posiciones se
     // mezclan en píxeles reales y se pasan a la capa ampliada (dividiendo por z).
     const z = lerp(zoomCerrado, zoom, a)
+    const corre = desborda ? correBase.get() + tira.progreso.get() : 0 // columnas corridas de la tira (cerrado)
+    const dxCerrado = corre * (C.col ?? 0)
     if (lienzo.current) {
       lienzo.current.style.width = `${anchoReal / z}px`
       lienzo.current.style.transform = z !== 1 ? `scale(${z})` : ''
@@ -396,7 +459,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
       let ox = lerp(lo.x, hi.x, f) - (fuera * X) / zoom
       // En vertical, la que se va sale un poco hacia el lado del dedo y la que llega entra por el otro.
       if (vertical) ox -= (pc - m) * cerca * ancho * 0.5
-      let x = lerp(c.x * zoomCerrado, ox * zoom, a) / z
+      let x = lerp((c.x - dxCerrado) * zoomCerrado, ox * zoom, a) / z
       let y = lerp(c.y * zoomCerrado, lerp(lo.y, hi.y, f) * zoom, a) / z
       const esc = lerp(c.escala, lerp(lo.escala, hi.escala, f), a)
       // Despliegue inicial: la isla sale de la insignia (nodo 0) y llega a su sitio con un rebote.
@@ -508,9 +571,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
   actualizarRef.current = actualizar
   useLayoutEffect(() => actualizar())
   useEffect(() => {
-    const quitar = [base, apertura, despliegue, islas.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
+    const quitar = [base, apertura, despliegue, islas.progreso, correBase, tira.progreso].map((mv) => mv.on('change', () => actualizarRef.current()))
     return () => quitar.forEach((q) => q())
-  }, [base, apertura, despliegue, islas.progreso])
+  }, [base, apertura, despliegue, islas.progreso, correBase, tira.progreso])
 
   // Al entrar al módulo, las islas se despliegan desde la insignia (sin movimiento si se pide reducirlo).
   const desplegado = useRef(false)
@@ -693,7 +756,22 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
 
   return (
     <>
-      <div ref={ref} className="relative w-full select-none" style={{ height: ancho ? undefined : FILA * n, touchAction: 'pan-y' }} {...islas.handlers}>
+      <div
+        ref={ref}
+        className="relative w-full select-none"
+        data-tira={desborda ? corrido : undefined}
+        style={{
+          height: ancho ? undefined : FILA * n,
+          touchAction: 'pan-y',
+          // Tira (pantallas anchas con más nodos de los que caben): lo que se sale no ensancha la página y los
+          // bordes se desvanecen (así se ve que hay más a los lados).
+          ...(desborda && {
+            overflowX: 'clip',
+            maskImage: `linear-gradient(to right, transparent, black ${BORDE_TIRA}px, black calc(100% - ${BORDE_TIRA}px), transparent)`,
+          }),
+        }}
+        {...unirHandlers(islas.handlers, tira.handlers)}
+      >
         {ancho > 0 && (
           <div
             ref={lienzo}
@@ -868,6 +946,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
               golpe={golpe}
               reducir={reducir}
               onMatraca={matraca}
+              onVerModulos={ruta?.onVerModulos}
             />
           )}
         </AnimatePresence>,
@@ -884,7 +963,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, ruta = nu
  * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
  * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos }) {
   const sep = DESLIZAR.puntitos.separacion
   const pildora = useRef(null)
   const g = useRef(null) // gesto sobre la barra
@@ -898,13 +977,24 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
     <motion.div
       data-nodo
       data-puntitos
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pt-12"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-4 pt-12"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       initial={{ y: '120%' }}
       animate={{ y: 0 }}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
       transition={RESORTE.pantalla}
     >
+      {/* En una ruta: «Módulos y prácticas» (pedido del usuario), un círculo de vidrio como la casita y Opciones. */}
+      {onVerModulos && (
+        <Pulsable
+          data-encima-barra
+          onClick={onVerModulos}
+          aria-label="Módulos y prácticas"
+          className={`pointer-events-auto grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
+        >
+          <Cuadritos className="size-6" />
+        </Pulsable>
+      )}
       {/* Capa que flota con el dedo */}
       <motion.div style={{ x: flotaX, y: flotaY }}>
         {/* Capa de la matraca (giro) */}
@@ -912,7 +1002,7 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
           role="group"
           aria-label="Lecciones del módulo"
           ref={pildora}
-          className={`pointer-events-auto relative flex select-none items-center rounded-full px-3 ${VIDRIO}`}
+          className={`pointer-events-auto relative flex h-11 select-none items-center rounded-full px-3 ${VIDRIO}`}
           style={{ touchAction: 'none', rotate: giro, x: golpe }}
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return
@@ -983,7 +1073,7 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
                       : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`
                 }
                 aria-current={i === abierta ? 'true' : undefined}
-                className="grid h-14 place-items-center"
+                className="grid h-full place-items-center"
                 // 44 px por puntito; si no caben (p. ej. 9 a 375 px), se estrechan para que la barra no se salga.
                 style={{ width: `min(${sep}px, calc((100vw - 56px) / ${lecciones.length}))` }}
               >
@@ -1006,6 +1096,13 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
       </motion.div>
     </motion.div>
   )
+}
+
+/** Une dos juegos de handlers de puntero (cada uno decide si el gesto es suyo). */
+function unirHandlers(a, b) {
+  const r = { ...a }
+  for (const k of Object.keys(b)) r[k] = a[k] ? (e) => (a[k](e), b[k](e)) : b[k]
+  return r
 }
 
 /** Grados de la matraca para el puntito `i` de `total` jalando hacia ABAJO (`tiron` = 1): −max (orilla izquierda,
@@ -1064,7 +1161,7 @@ function curva(a, b, vertical) {
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
-function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO }) {
+function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO, vis = n + 1 }) {
   // Nodos: 0 = insignia, m = isla m − 1 (de 0 a n). `abierta` = nodo abierto (o null).
   const nodos = []
   if (!ancho) return { nodos: Array.from({ length: n + 1 }, () => ({ x: 0, y: 0, escala: 1 })), alto: 0 }
@@ -1096,12 +1193,13 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   // Horizontal
   const base = 52 + 16 + ISLA / 2 + ONDA
   if (abierta === null) {
-    const col = ancho / (n + 1)
+    // Una columna por nodo; con más nodos que `vis`, las columnas siguen fuera de la vista (tira que se corre).
+    const col = ancho / vis
     nodos.push({ x: col / 2, y: base, escala: 1 })
     for (let m = 1; m <= n; m++) {
       nodos.push({ x: col * (m + 0.5), y: base + onda(m), escala: 1, etiqueta: 'arriba', anchoEtiqueta: Math.min(ETIQUETA, col - 8) })
     }
-    return { nodos, alto: base + ONDA + ISLA / 2 + 24 }
+    return { nodos, alto: base + ONDA + ISLA / 2 + 24, col }
   }
 
   const cy = Y_ANCHO // la bola abierta y los nodos de los lados, a la misma altura
@@ -1111,9 +1209,11 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   const der = n - abierta // nodos después
   const finIzq = ancho / 2 - grande / 2 - hueco
   const iniDer = ancho / 2 + grande / 2 + hueco
-  const lado = (j, cuenta, desde, hasta) => {
-    const s = (hasta - desde) / cuenta
-    return { x: desde + s * (j + 0.5), s }
+  // Reparte los nodos de un lado; si no caben a SEPARA_MIN, guardan esa separación desde la bola hacia fuera
+  // (los lejanos quedan fuera de la vista; la tira los recorta).
+  const lado = (j, cuenta, desde, hasta, haciaFuera) => {
+    const s = Math.max((hasta - desde) / cuenta, SEPARA_MIN)
+    return haciaFuera < 0 ? { x: hasta - s * (cuenta - j - 0.5), s } : { x: desde + s * (j + 0.5), s }
   }
   // Escala de los nodos laterales según el espacio que les queda.
   const escalaDe = (s) => Math.max(0.55, Math.min(1, s / 110))
@@ -1122,7 +1222,7 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
       nodos.push({ x: ancho / 2, y: cy, escala: 1 })
       continue
     }
-    const { x, s } = m < abierta ? lado(m, izq, 0, finIzq) : lado(m - abierta - 1, der, iniDer, ancho)
+    const { x, s } = m < abierta ? lado(m, izq, 0, finIzq, -1) : lado(m - abierta - 1, der, iniDer, ancho, 1)
     const e = escalaDe(s)
     if (m === 0) nodos.push({ x, y: cy, escala: e })
     else nodos.push({ x, y: cy + onda(m) * e, escala: e, etiqueta: s >= 120 ? 'arriba' : null, anchoEtiqueta: Math.min(ETIQUETA, s - 8) })

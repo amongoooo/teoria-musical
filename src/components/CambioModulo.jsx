@@ -23,6 +23,9 @@ import { VIDRIO_PANEL } from '../ui/vidrio.js'
  * antes de soltar, no pasa nada. Cambiar de página tiene que ser a propósito. Si el vecino no existe o aún no tiene
  * lecciones, resistencia tipo goma y el indicador dice «Próximamente».
  *
+ * En pantallas anchas con más islas de las que caben (`tira` = { inicio, fin }), el camino cerrado se arrastra de lado:
+ * el gesto de lado solo cambia de módulo desde los extremos de la tira.
+ *
  * Con una isla abierta (`isla` = { inicio, fin }), solo hacia fuera desde los extremos del camino: desde la
  * primera isla (la insignia) al módulo anterior y desde la última (Retos) al siguiente; el resto de gestos
  * son del camino (que a su vez ignora esos, ver `acepta` en useDeslizar).
@@ -30,8 +33,11 @@ import { VIDRIO_PANEL } from '../ui/vidrio.js'
  * Devuelve { handlers, estilo, indicadores }: los handlers y el estilo (x / y) van en el <main> de la
  * página; los indicadores (portal) se pintan fuera, porque el <main> se transforma.
  */
-export default function useCambioModulo(modulo, { isla = null } = {}) {
+export default function useCambioModulo(modulo, { isla = null, tira = null } = {}) {
   const acepta = (dir) => !isla || (dir < 0 ? isla.inicio : isla.fin)
+  // Camino cerrado que se arrastra de lado (`tira` = { inicio, fin }, pantallas anchas): el gesto de lado es de la
+  // tira salvo hacia fuera desde sus extremos. (Tirar desde arriba o desde abajo no cambia.)
+  const aceptaLado = (dir) => acepta(dir) && (isla || !tira || (dir < 0 ? tira.inicio : tira.fin))
   const ancho = useAncho()
   const X = ancho < 560 ? Math.max(160, ancho * DESLIZAR.pagina.umbralCelular) : DESLIZAR.pagina.umbralAncho
   const XV = DESLIZAR.pagina.umbralVertical
@@ -55,7 +61,7 @@ export default function useCambioModulo(modulo, { isla = null } = {}) {
 
   const lado = useDeslizar({
     activo: true,
-    acepta,
+    acepta: aceptaLado,
     umbral: X,
     onPaso: pasar,
     puede: (dir) => !saliendo.current && puede(dir),
@@ -108,9 +114,9 @@ export default function useCambioModulo(modulo, { isla = null } = {}) {
   return { handlers, estilo: { x, y, touchAction: 'pan-y pinch-zoom' }, indicadores }
 }
 
-/** Espacio bajo el indicador de abajo: la barra de puntitos (58 px + su margen de abajo, 16 px o la zona segura) + 14 px
+/** Espacio bajo el indicador de abajo: la barra de puntitos (46 px + su margen de abajo, 16 px o la zona segura) + 14 px
  * (lo que la barra puede flotar con el dedo). */
-const SOBRE_BARRA = 'calc(max(env(safe-area-inset-bottom), 16px) + 58px + 14px)'
+const SOBRE_BARRA = 'calc(max(env(safe-area-inset-bottom), 16px) + 46px + 14px)'
 
 /** Copia de un MotionValue que deja de cambiar cuando `congelar.current` es true. */
 function useCongelado(fuente, congelar) {

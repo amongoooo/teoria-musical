@@ -38,11 +38,14 @@ export default function CabeceraModulo({ numero, ruta = null }) {
     const pasos = getLeccion(id)?.pasos.length
     return p?.paso > 0 && pasos ? p.paso / pasos : 0
   }
-  // En una ruta, un segmento por parada (las lecciones con su avance; las demás, hechas o no).
+  // En una ruta, la barra es LISA, sin secciones (pedido del usuario): paradas hechas + el avance de la actual si
+  // es una lección a medias, sobre el total. En un módulo, un segmento por lección.
+  const paradas = ruta ? deRuta.estado.paradas : []
   const valores = ruta
-    ? deRuta.estado.paradas.map((p) => (p.hecha ? 1 : p.tipo === 'leccion' ? avanceLeccion(p.id) : 0))
+    ? [paradas.reduce((t, p) => t + (p.hecha ? 1 : p.estado === 'actual' && p.tipo === 'leccion' ? avanceLeccion(p.id) : 0), 0) / Math.max(1, paradas.length)]
     : modulo.lecciones.map((l) => avanceLeccion(l.id))
-  const hechas = valores.filter((v) => v === 1).length
+  const hechas = ruta ? deRuta.estado.hechas : valores.filter((v) => v === 1).length
+  const total = ruta ? paradas.length : valores.length
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-30 pb-5" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -54,7 +57,7 @@ export default function CabeceraModulo({ numero, ruta = null }) {
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
         <div data-pildora-cabecera className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
           <motion.div animate={{ y: chico ? -8 : 0 }} transition={RESORTE.suave}>
-            <BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${valores.length} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
+            <BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${total} lecciones completadas`} />
           </motion.div>
           <AnimatePresence>
             {chico && (
