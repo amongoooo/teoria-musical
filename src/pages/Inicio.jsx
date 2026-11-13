@@ -3,19 +3,20 @@ import BotonOpciones from '../components/Opciones.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import Piano from '../components/Piano.jsx'
 import { getLeccion, leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
-import { META_SEGUNDOS, datosDeHoy, rachaActual, useOido } from '../progress/oido.js'
+import { META_SEGUNDOS } from '../progress/entrenamiento.js'
+import { tiendaOido } from '../progress/oido.js'
+import { tiendaRitmo } from '../progress/ritmo.js'
 import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
-import useTemblor from '../ui/useTemblor.js'
 import { labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Metronomo, Oreja } from '../ui/Iconos.jsx'
 
 /**
  * Inicio con aire de videojuego (pedido del usuario; como el arranque del entrenador de oído): el logo como
- * insignia, una tarjeta grande para seguir la siguiente lección, los ENTRENAMIENTOS en bloques con relieve (Oído y,
- * próximamente, Ritmo; después vendrán más), los MÓDULOS como cuadritos y el PIANO LIBRE. Títulos de sección en la
+ * insignia, una tarjeta grande para seguir la siguiente lección, los ENTRENAMIENTOS en bloques con relieve (Oído y
+ * Ritmo; después vendrán más), los MÓDULOS como cuadritos y el PIANO LIBRE. Títulos de sección en la
  * letra de juego. Sin textos grises de instrucciones.
  */
 export default function Inicio() {
@@ -56,8 +57,8 @@ export default function Inicio() {
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <Titulo>Entrenamientos</Titulo>
         <div className="grid grid-cols-2 gap-3">
-          <BloqueOido />
-          <BloqueProximo nombre="Ritmo" Icono={Metronomo} />
+          <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
+          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" />
         </div>
       </motion.section>
 
@@ -163,21 +164,23 @@ function BloqueEntrenamiento({ href, nombre, Icono, acento, children, ...props }
   )
 }
 
-/** Oído: la racha (días seguidos) y la barra de los 5 minutos de hoy (verde al cumplirlos). */
-function BloqueOido() {
-  const oido = useOido()
-  const dia = datosDeHoy(oido)
-  const racha = rachaActual(oido)
+/**
+ * Bloque de un entrenamiento con su racha (días seguidos) y la barra de los 5 minutos de hoy (verde al cumplirlos).
+ * Cada entrenamiento lleva su propia memoria (`tienda`): oído y ritmo tienen racha y minutos aparte.
+ */
+function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
+  const estado = tienda.usar()
+  const dia = tienda.datosDeHoy(estado)
+  const racha = tienda.rachaActual(estado)
   const avance = Math.min(1, dia.segundos / META_SEGUNDOS)
-  const acento = 'var(--color-modulo-1)'
   return (
     <BloqueEntrenamiento
-      href={rutas.oido()}
-      nombre="Oído"
-      Icono={Oreja}
+      href={href}
+      nombre={nombre}
+      Icono={Icono}
       acento={acento}
-      aria-label={`Entrenamiento de oído: racha de ${racha} ${racha === 1 ? 'día' : 'días'}`}
-      data-entrenamiento="oido"
+      aria-label={`${titulo}: racha de ${racha} ${racha === 1 ? 'día' : 'días'}`}
+      data-entrenamiento={id}
     >
       <span className="font-juego text-base tabular-nums" style={{ color: tinta(acento) }}>
         {racha} {racha === 1 ? 'día' : 'días'}
@@ -191,31 +194,6 @@ function BloqueOido() {
         />
       </span>
     </BloqueEntrenamiento>
-  )
-}
-
-/** Entrenamiento que aún no existe: gris, punteado y con candado; al tocarlo tiembla. */
-function BloqueProximo({ nombre, Icono }) {
-  const [ref, temblar] = useTemblor()
-  return (
-    <div ref={ref}>
-      <Pulsable
-        onClick={temblar}
-        tipo="tarjeta"
-        aria-label={`${nombre}: próximamente`}
-        data-entrenamiento={nombre.toLowerCase()}
-        className="flex h-full w-full flex-col items-center gap-2.5 rounded-3xl border-2 border-dashed border-zinc-300 bg-white/50 px-3 pt-4 pb-4 text-center text-zinc-500"
-      >
-        <span className="relative grid size-16 place-items-center rounded-2xl bg-zinc-200 text-zinc-500" aria-hidden>
-          <Icono className="size-9" />
-          <span className="absolute -right-2 -top-2 grid size-7 place-items-center rounded-full bg-zinc-500 text-white">
-            <Candado className="size-4" />
-          </span>
-        </span>
-        <span className="font-juego text-xl font-semibold uppercase tracking-wide">{nombre}</span>
-        <span className="font-juego text-base">Pronto</span>
-      </Pulsable>
-    </div>
   )
 }
 

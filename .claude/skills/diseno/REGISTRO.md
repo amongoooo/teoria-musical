@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Entrenador de ritmo** (Seguir y Eco) con el mismo esqueleto que el de oído: contador con estados (bien / casi / falta / sobra), cabezal gris en la cuenta, celeste en la demo y del acento en tu turno; historial de puntitos por pasada; pad con la cuenta, la oreja o «Toca». Inicio: el bloque Ritmo ya es real (`BloqueRacha`). (pedido del usuario) La barra de aciertos del entrenador mide `h-3` como la de las lecciones también sin vidas (antes se estiraba y no se veía el relleno).
+
 - 2026-11-13: (pedido del usuario) Arranque del entrenador con apartado **Configurar** cerrado (resumen en fichas y botón Predeterminados). La barra de vidas solo sale jugando y es **lisa**; al perder una vida, los vidrios de arriba brillan en rojo y tiemblan.
 
 - 2026-11-13: (pedido del usuario) **Inicio estilo videojuego**, pensado para crecer con más entrenamientos (Oído, Ritmo y después sound design, masterización): logo como insignia, tarjeta de «jugar» con la siguiente lección, bloques de entrenamientos con relieve (los que faltan, punteados con candado y «Pronto») y módulos con candado. Sin la frase gris de bienvenida.

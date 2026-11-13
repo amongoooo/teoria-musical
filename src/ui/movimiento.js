@@ -24,7 +24,7 @@ export const HUNDIR = { boton: 0.96, tarjeta: 0.98 }
 export function profundidad(ruta) {
   if (ruta.pagina === 'inicio') return 0
   if (ruta.pagina === 'leccion') return 2
-  if (ruta.pagina === 'oido') return ruta.id ? 2 : 1
+  if (ruta.pagina === 'oido' || ruta.pagina === 'ritmo') return ruta.id ? 2 : 1
   return 1 // módulo
 }
 
