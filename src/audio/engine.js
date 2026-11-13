@@ -116,16 +116,20 @@ function sonar(inst, nota, duracion, t, velocidad) {
   if (tonos.length) inst.triggerAttackRelease(tonos.length === 1 ? tonos[0] : tonos, duracion, t, velocidad)
 }
 
+// Lo que se toca EN VIVO (teclas) usa Tone.immediate(): el reloj de audio sin margen. Tone.now() le suma
+// `lookAhead` (0,1 s) y cada tecla sonaba 100 ms tarde. Ataque y soltado van en el mismo reloj. Lo programado
+// (playNotes, playPattern, iniciarRitmo, limpiarOido) sigue con Tone.now(): ahí el margen sí hace falta.
 export function noteOn(note, velocity = 0.8) {
   startAudio()
-  if (NOMBRES_BATERIA.includes(note)) return golpe(note, Tone.now(), velocity)
-  instrument().triggerAttack(note, Tone.now(), velocity)
+  if (NOMBRES_BATERIA.includes(note)) return golpe(note, Tone.immediate(), velocity)
+  instrument().triggerAttack(note, Tone.immediate(), velocity)
 }
 
 export function noteOff(note) {
   // Soltamos en ambos por si cambió el estado mientras se mantenía la nota.
-  if (sampler && status === 'ready') sampler.triggerRelease(note, Tone.now())
-  if (synth) synth.triggerRelease(note, Tone.now())
+  const t = Tone.immediate()
+  if (sampler && status === 'ready') sampler.triggerRelease(note, t)
+  if (synth) synth.triggerRelease(note, t)
 }
 
 export function releaseAll() {
