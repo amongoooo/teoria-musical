@@ -10,6 +10,7 @@ import Hoja from '../ui/Hoja.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
+import useRuedaMouse from '../ui/useRuedaMouse.js'
 import { VIDRIO } from '../ui/vidrio.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -66,6 +67,7 @@ function Carrusel({ actual, onCerrar }) {
     if (Math.abs(desfase) > 0.001) animate(base, a + dir, resorte)
   }
   const gesto = useDeslizar({ umbral: X, onPaso: paso, puede: (dir) => idx.current + dir >= 0 && idx.current + dir < n })
+  useRuedaMouse(ref, { puede: (dir) => idx.current + dir >= 0 && idx.current + dir < n, onPaso: (dir) => irA(idx.current + dir) })
 
   const tarjetas = useRef([])
   const anchoTarjeta = Math.min(ancho - 56, 400)

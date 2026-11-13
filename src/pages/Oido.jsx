@@ -1,4 +1,4 @@
-import { motion, useMotionValue } from 'motion/react'
+import { animate, motion, useMotionValue } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { initPiano, limpiarOido, releaseAll } from '../audio/engine.js'
 import { reproducir, seguirNotas } from '../audio/sonido.js'
@@ -7,9 +7,9 @@ import ArranqueOido from '../components/ArranqueOido.jsx'
 import {
   ACIERTOS_PARA_SUBIR,
   META_SEGUNDOS,
-  TAMANO_VENTANA,
   datosDeHoy,
   datosModo,
+  elegirNivel,
   empezarSesion,
   rachaActual,
   registrarRespuesta,
@@ -34,8 +34,8 @@ import {
 } from '../theory/oido.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
-import { Bocina, Cerrar, Check, Oreja } from '../ui/Iconos.jsx'
-import { POP, RESORTE, itemLista, lista } from '../ui/movimiento.js'
+import { Atras, Bocina, Check, Oreja } from '../ui/Iconos.jsx'
+import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
@@ -240,7 +240,6 @@ const SIN_TIEMPO = '__tiempo'
 function Entrenador({ modo }) {
   const estado = useOido()
   const datos = datosModo(modo.id, estado)
-  const dia = datosDeHoy(estado)
   // Oído absoluto: modo de juego (Normal, Rápido, Contrarreloj) y respuesta con el piano.
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
   // Modo Rápido: el nivel es un multiplicador y la partida lleva sus propias notas (ver JUEGOS_ABSOLUTO).
@@ -257,13 +256,14 @@ function Entrenador({ modo }) {
   }
   // Se elige en la portada (junto al nivel): responder con el piano o con botones.
   const conPiano = Boolean(modo.piano) && datos.ajustes.respuesta !== 'botones'
-  const { gesto: sentidoGesto } = useOpciones()
+  const { gesto: sentidoGesto, admin } = useOpciones()
+  // Modo administrador (pedido del usuario): al sonar, la respuesta se señala (en oro, sin presionarla).
+  const [sono, setSono] = useState(false)
 
   const [jugando, setJugando] = useState(false)
   const [pregunta, setPregunta] = useState(null)
   const [respuesta, setRespuesta] = useState(null) // id elegido (SIN_TIEMPO si se acabó el tiempo)
   const [resultado, setResultado] = useState(null) // lo que devuelve registrarRespuesta
-  const [sesion, setSesion] = useState({ aciertos: 0, total: 0 })
   const contador = useRef(0)
   const [limpiando, setLimpiando] = useState(false)
   const temporizador = useRef(null)
@@ -275,6 +275,12 @@ function Entrenador({ modo }) {
   const [senal, setSenal] = useState(null) // { notas, n } para la prop `senalar` del Piano
   const cancelarSenal = useRef(null)
   useEffect(() => () => cancelarSenal.current?.(), [])
+
+  // Al abrir el modo, el nivel es el más alto al que has llegado (pedido del usuario): solo elegir y empezar.
+  useEffect(() => {
+    const d = datosModo(modo.id)
+    if (d.nivel < d.nivelMax) elegirNivel(modo.id, d.nivelMax)
+  }, [modo.id])
 
   useEffect(() => {
     initPiano()
@@ -290,7 +296,10 @@ function Entrenador({ modo }) {
     pararSonar.current?.()
     setSonando(false)
     const dura = reproducir(sonido, { retraso }) ?? 1.5
-    const a = setTimeout(() => setSonando(true), retraso * 1000)
+    const a = setTimeout(() => {
+      setSonando(true)
+      setSono(true)
+    }, retraso * 1000)
     const b = setTimeout(() => setSonando(false), (retraso + dura) * 1000)
     pararSonar.current = () => {
       clearTimeout(a)
@@ -307,6 +316,7 @@ function Entrenador({ modo }) {
     setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel, ajustes) })
     setRespuesta(null)
     setResultado(null)
+    setSono(false)
     window.scrollTo(0, 0)
     clearTimeout(temporizador.current)
     // Modos sin referencia (oído absoluto): entre pregunta y pregunta suena un
@@ -365,7 +375,6 @@ function Entrenador({ modo }) {
       r.partida = { sumadas: cambio.sumadas, quitada: cambio.quitada }
     }
     setResultado(r)
-    setSesion((s) => ({ aciertos: s.aciertos + (bien ? 1 : 0), total: s.total + 1 }))
   }
 
   // Contrarreloj: si se acaba el tiempo sin responder, cuenta como fallo.
@@ -408,7 +417,16 @@ function Entrenador({ modo }) {
     }
   }
 
-  const avanceHoy = Math.min(1, dia.segundos / META_SEGUNDOS)
+  // Barra de arriba (pedido del usuario): se llena con los aciertos que faltan para subir de nivel. Oído absoluto:
+  // las partes del círculo (8); Rápido: los aciertos para sumar notas; intervalos y acordes: 8 de los últimos 10.
+  let avance
+  if (rapido) avance = ((partida?.aciertos ?? 0) % cadaAciertos) / cadaAciertos
+  else if (datos.nivel >= modo.niveles) avance = 1
+  else if (juego) avance = (datos.carga ?? 0) / PARTES_NIVEL
+  else avance = Math.min(1, datos.ventana.filter(Boolean).length / ACIERTOS_PARA_SUBIR)
+  // Al subir (o al sumar notas en Rápido) la barra se llena del todo y vuelve a empezar.
+  const lleno = Boolean(resultado?.subio || resultado?.partida?.sumadas.length)
+  const nivelVisto = rapido ? multiplicador : jugando && pregunta ? (resultado?.subio ? resultado.nuevoNivel : pregunta.nivel) : datos.nivel
 
   // Gesto del botón (pedido del usuario): en el entrenador solo pasa a la SIGUIENTE pregunta (nunca atrás) y solo
   // cuando el botón ya dice «Continuar» (respondida); mientras se borra la referencia o falta responder, no pasa.
@@ -431,18 +449,17 @@ function Entrenador({ modo }) {
             aria-label="Volver al entrenamiento de oído"
             className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
           >
-            <Cerrar className="size-6" />
+            <Atras className="size-6" />
           </Pulsable>
           <div className={`flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full pl-4 pr-3 ${VIDRIO}`}>
-            <BarraProgreso
-              valor={avanceHoy}
-              color={avanceHoy >= 1 ? 'var(--color-bien)' : modo.acento}
-              alto="h-3"
-              alAparecer={false}
-              className="flex-1"
-              aria-label={`Hoy: ${minutos(dia.segundos)} de 5 minutos`}
+            <BarraAciertos
+              key={`${modo.id}-${jugando}`}
+              avance={avance}
+              lleno={lleno}
+              reloj={jugando ? reloj : null}
+              parado={Boolean(respuesta)}
+              acento={modo.acento}
             />
-            <span className="w-20 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">{minutos(dia.segundos)}/5 min</span>
           </div>
           {/* Escuchar otra vez: solo la bocina (pedido del usuario). */}
           {jugando && (
@@ -472,59 +489,30 @@ function Entrenador({ modo }) {
             transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
             className="flex flex-col gap-5"
           >
-            {juego ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
-                  <Oreja className="size-[18px]" />
-                  {modo.titulo} · {juego.nombre}
-                  {rapido && <> · Nivel <span className="font-juego text-base">{multiplicador}</span></>}
-                </span>
-                {rapido ? (
-                  // Rápido: el círculo tiene una parte por acierto de la ronda y en el centro, las notas de la partida.
-                  <CirculoNivel
-                    partes={cadaAciertos}
-                    numero={pregunta.opciones.length}
-                    llenas={
-                      resultado?.partida?.sumadas.length ? cadaAciertos : (partida?.aciertos ?? 0) % cadaAciertos
-                    }
-                    maximo={false}
-                    subio={Boolean(resultado?.partida?.sumadas.length)}
-                    nuevo={resultado?.partida && (resultado.partida.sumadas.length || resultado.partida.quitada) ? partida.notas.length : null}
-                    acento={modo.acento}
-                  />
-                ) : (
-                  <CirculoNivel
-                    numero={modo.nombreNivel ? pregunta.nivel + 1 : pregunta.nivel}
-                    llenas={resultado ? (resultado.subio ? PARTES_NIVEL : resultado.carga) : datos.carga}
-                    maximo={datos.nivel >= modo.niveles}
-                    subio={Boolean(resultado?.subio)}
-                    nuevo={resultado?.subio ? resultado.nuevoNivel + 1 : null}
-                    acento={modo.acento}
-                  />
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between gap-3 text-sm text-zinc-500">
-                  <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: tinta(modo.acento) }}>
-                    <Oreja className="size-[18px]" />
-                    {modo.titulo} · <span className="font-juego text-base">{nombreNivel(modo, pregunta.nivel)}</span>
-                  </span>
-                  <span className="font-dato tabular-nums">
-                    {sesion.aciertos}/{sesion.total}
-                    {datos.racha > 1 && ` · ${datos.racha} seguidas`}
-                  </span>
-                </div>
-                <Ventana datos={datos} niveles={modo.niveles} acento={modo.acento} />
-              </>
-            )}
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
+                <Oreja className="size-[18px]" />
+                {modo.titulo}
+                {juego && ` · ${juego.nombre}`}
+              </span>
+              {/* Indicador del nivel (sin el círculo: el avance va en la barra de arriba). */}
+              <motion.span
+                key={nivelVisto}
+                initial={resultado?.subio ? { scale: 0.6, opacity: 0 } : false}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={RESORTE.pulsar}
+                data-nivel={nivelVisto}
+                className="font-juego text-lg font-semibold tracking-wide"
+                style={{ color: tinta(modo.acento) }}
+              >
+                Nivel {nivelVisto}
+              </motion.span>
+            </div>
 
             <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{modo.pregunta}</h1>
 
-            {reloj && <Reloj desde={reloj.desde} hasta={reloj.hasta} parado={Boolean(respuesta)} acento={modo.acento} />}
-
             {conPiano ? (
-              <PianoRespuesta pregunta={pregunta} respuesta={respuesta} inactivo={limpiando} onResponder={responder} />
+              <PianoRespuesta pregunta={pregunta} respuesta={respuesta} inactivo={limpiando} pista={admin && sono} onResponder={responder} />
             ) : (
               <div className={`grid gap-3 ${pregunta.opciones.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {pregunta.opciones.map((op) => (
@@ -534,7 +522,10 @@ function Entrenador({ modo }) {
                     disabled={limpiando}
                     // La correcta da un pequeño "salto" al revelarse.
                     animate={respuesta && op.id === pregunta.item ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                    className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition-colors duration-200 disabled:opacity-50 ${claseOpcion(op.id, pregunta.item, respuesta)}`}
+                    data-pista={admin && sono && !respuesta && op.id === pregunta.item ? true : undefined}
+                    className={`min-h-16 rounded-2xl border-2 px-2 py-3 text-center text-lg font-semibold leading-tight transition-colors duration-200 disabled:opacity-50 ${
+                      admin && sono && !respuesta && op.id === pregunta.item ? 'border-fijate bg-fijate-suave text-fijate-tinta' : claseOpcion(op.id, pregunta.item, respuesta)
+                    }`}
                   >
                     {op.label}
                   </Pulsable>
@@ -576,7 +567,7 @@ function Entrenador({ modo }) {
  * que aún no se desbloquean van con candado. Al responder: la correcta en verde con ✓ y la elegida (si no era) en
  * oro con bombilla; después las teclas suenan para comparar.
  */
-function PianoRespuesta({ pregunta, respuesta, inactivo, onResponder }) {
+function PianoRespuesta({ pregunta, respuesta, inactivo, pista, onResponder }) {
   const nota = pregunta.notas[0]
   const octava = parseNota(nota).octava
   const libres = new Set(pregunta.opciones.map((o) => o.id))
@@ -592,98 +583,12 @@ function PianoRespuesta({ pregunta, respuesta, inactivo, onResponder }) {
       bloqueada={(n) => !libres.has(claseDe(n))}
       inactivo={inactivo}
       estados={estados}
+      // Modo administrador: al sonar, el teclado va a la nota y la resalta en oro (sin tocarla).
+      marcadas={pista && !respuesta ? [nota] : []}
+      ir={pista ? nota : undefined}
       sinEstado
       onNoteOn={(n) => onResponder(claseDe(n))}
     />
-  )
-}
-
-/**
- * Indicador de nivel (pedido del usuario): un círculo en 8 partes que se llenan con los aciertos; en el centro, el
- * número de notas. Al llenarse sube de nivel (da un «pop» y cambia el número).
- */
-function CirculoNivel({ numero, llenas, maximo, subio, nuevo, acento, partes = PARTES_NIVEL }) {
-  const R = 23
-  const C = 28
-  const HUECO = 20 // grados entre partes (con las puntas redondeadas)
-  const redondas = partes <= 12
-  const arco = (i) => {
-    // Con muchas partes (Rápido: hasta 20) las puntas van rectas y el hueco se achica para que cada arco se vea.
-    const hueco = redondas ? HUECO : (360 / partes) * 0.3
-    const a0 = ((-90 + i * (360 / partes) + hueco / 2) * Math.PI) / 180
-    const a1 = ((-90 + (i + 1) * (360 / partes) - hueco / 2) * Math.PI) / 180
-    const p = (a) => `${(C + R * Math.cos(a)).toFixed(2)} ${(C + R * Math.sin(a)).toFixed(2)}`
-    return `M ${p(a0)} A ${R} ${R} 0 0 1 ${p(a1)}`
-  }
-  const total = maximo ? partes : llenas
-  const n = nuevo ?? numero
-  return (
-    <motion.div
-      data-circulo-nivel
-      data-llenas={total}
-      role="img"
-      aria-label={maximo ? `${n} notas: nivel máximo` : nuevo ? `¡Subiste a ${n} notas!` : `${n} notas · ${total} de ${partes} para la siguiente`}
-      className="relative grid size-14 shrink-0 place-items-center"
-      animate={subio ? POP : { scale: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      <svg viewBox="0 0 56 56" className="absolute inset-0 size-full" aria-hidden>
-        {Array.from({ length: partes }, (_, i) => (
-          <motion.path
-            key={i}
-            d={arco(i)}
-            fill="none"
-            strokeWidth={6}
-            strokeLinecap={redondas ? 'round' : 'butt'}
-            initial={false}
-            animate={{ stroke: i < total ? acento : 'var(--color-zinc-200)' }}
-            transition={{ duration: 0.25, delay: subio ? i * 0.03 : 0 }}
-          />
-        ))}
-      </svg>
-      <motion.span
-        key={n}
-        initial={nuevo ? { scale: 0.6, opacity: 0 } : false}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={RESORTE.pulsar}
-        className="font-juego text-xl font-semibold tabular-nums"
-        style={{ color: tinta(acento) }}
-      >
-        {n}
-      </motion.span>
-    </motion.div>
-  )
-}
-
-/** Contrarreloj: barra con el tiempo que queda para responder (se vacía; en oro el último segundo y medio). */
-function Reloj({ desde, hasta, parado, acento }) {
-  const queda = useMotionValue(1)
-  const [poco, setPoco] = useState(false)
-  const [segundos, setSegundos] = useState(Math.ceil((hasta - desde) / 1000))
-  useEffect(() => {
-    if (parado) return
-    let id
-    const paso = () => {
-      const ahora = performance.now()
-      const f = Math.max(0, Math.min(1, (hasta - ahora) / (hasta - desde)))
-      queda.set(f)
-      setPoco(hasta - ahora < 1500)
-      setSegundos(Math.max(0, Math.ceil((hasta - Math.max(ahora, desde)) / 1000)))
-      if (f > 0) id = requestAnimationFrame(paso)
-    }
-    paso()
-    return () => cancelAnimationFrame(id)
-  }, [desde, hasta, parado, queda])
-  return (
-    <div className="flex items-center gap-3" data-reloj>
-      <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200">
-        <motion.div
-          className="h-full origin-left rounded-full transition-colors duration-200"
-          style={{ scaleX: queda, backgroundColor: poco ? 'var(--color-fijate)' : acento }}
-        />
-      </div>
-      <span className={`w-10 text-right font-dato text-base font-medium tabular-nums ${poco ? 'text-fijate-tinta' : 'text-zinc-600'}`}>{segundos} s</span>
-    </div>
   )
 }
 
@@ -698,29 +603,87 @@ function claseOpcion(id, correcta, respuesta) {
   return 'border-zinc-200 bg-white text-zinc-500'
 }
 
-/** Puntos con las últimas respuestas del nivel: muestra cuánto falta para subir. */
-function Ventana({ datos, niveles, acento }) {
-  if (datos.nivel >= niveles) {
-    return <p className="text-sm text-zinc-500">¡Nivel máximo! Sigue practicando para afinar.</p>
-  }
-  const puntos = Array.from({ length: TAMANO_VENTANA }, (_, i) => datos.ventana[i])
-  const aciertos = datos.ventana.filter(Boolean).length
+/**
+ * Barra de arriba del entrenador (pedido del usuario): se llena con los aciertos que faltan para subir de nivel.
+ * En Contrarreloj tiene doble función: antes de que suene la nota se vacía, y al sonar se va llenando con el tiempo
+ * (en celeste, «lo que suena ahora»; en oro el último segundo y medio). Al responder —o si se llena: fallo— primero
+ * vuelve a donde estaba y luego suma (o pierde) el acierto. Al subir de nivel se llena del todo y vuelve a empezar.
+ */
+function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
+  const w = useMotionValue(avance)
+  const previo = useRef(avance)
+  const [tono, setTono] = useState('aciertos') // aciertos | tiempo | poco
+  const [modoBarra, setModoBarra] = useState('aciertos')
+  const corriendo = Boolean(reloj) && !parado
+
+  useEffect(() => {
+    let cancelado = false
+    let anim = null
+    let raf = 0
+    const ir = (v, t = RESORTE.suave) =>
+      new Promise((listo) => {
+        anim = animate(w, v, { ...t, onComplete: listo })
+      })
+    const espera = (ms) => new Promise((listo) => setTimeout(listo, ms))
+    if (corriendo) {
+      // Se vacía y, al sonar la nota, se llena con el tiempo.
+      setModoBarra('tiempo')
+      ;(async () => {
+        await ir(0, { duration: 0.25, ease: 'easeOut' })
+        if (cancelado) return
+        setTono('tiempo')
+        const paso = () => {
+          if (cancelado) return
+          const ahora = performance.now()
+          const f = Math.max(0, Math.min(1, (ahora - reloj.desde) / (reloj.hasta - reloj.desde)))
+          w.set(f)
+          setTono(ahora > reloj.desde && reloj.hasta - ahora < 1500 ? 'poco' : 'tiempo')
+          if (f < 1) raf = requestAnimationFrame(paso)
+        }
+        paso()
+      })()
+    } else {
+      ;(async () => {
+        // Primero vuelve a donde estaba (si el reloj la movió) y luego suma o resta el acierto.
+        if (Math.abs(w.get() - previo.current) > 0.001) {
+          await ir(previo.current, RESORTE.pantalla)
+          if (cancelado) return
+        }
+        setTono('aciertos')
+        setModoBarra('aciertos')
+        if (lleno) {
+          await ir(1)
+          if (cancelado) return
+          await espera(250)
+          if (cancelado) return
+          w.set(0)
+        }
+        await ir(avance)
+        if (!cancelado) previo.current = avance
+      })()
+    }
+    return () => {
+      cancelado = true
+      anim?.stop()
+      cancelAnimationFrame(raf)
+    }
+  }, [corriendo, reloj, avance, lleno, w])
+
+  const color = tono === 'poco' ? 'var(--color-fijate)' : tono === 'tiempo' ? 'var(--color-sky-500)' : acento
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex gap-1.5" aria-hidden>
-        {puntos.map((v, i) => (
-          <motion.span
-            key={i}
-            className="h-2 flex-1 rounded-full"
-            initial={false}
-            animate={{ backgroundColor: v === true ? acento : v === false ? 'var(--color-fijate)' : 'var(--color-zinc-200)' }}
-            transition={{ duration: 0.25 }}
-          />
-        ))}
-      </div>
-      <p className="text-sm text-zinc-500">
-        {aciertos} de los últimos {TAMANO_VENTANA} · con {ACIERTOS_PARA_SUBIR} subes de nivel
-      </p>
+    <div
+      className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
+      role="progressbar"
+      aria-label={modoBarra === 'tiempo' ? 'Tiempo para responder' : 'Aciertos para subir de nivel'}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(avance * 100)}
+      data-barra-aciertos={modoBarra}
+    >
+      <motion.div
+        className="h-full w-full origin-left rounded-full transition-colors duration-200"
+        style={{ scaleX: w, backgroundColor: color }}
+      />
     </div>
   )
 }

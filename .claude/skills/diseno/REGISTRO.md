@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: (pedido del usuario) **✕ / ‹ / casita**: la ✕ solo sale de lecciones y hojas, la flechita vuelve al apartado anterior, la casita va a Inicio. En el entrenador: sin círculo de nivel (solo «Nivel N») y la barra de arriba se llena con aciertos (Contrarreloj: también con el tiempo). Ajustes de los modos fuera del cuadro de texto. Rueda del mouse en los carruseles y Enter = botón principal en computadora.
+
 - 2026-11-12: (pedido del usuario) **Intervalos y Acordes pasan al arranque de «iniciar nivel»** (adiós a la portada con chips y textos grises): puntitos del Nivel por modo, Dificultad = octavas, y en Intervalos la dirección en bloques con dibujito de piano roll.
 
 - 2026-11-12: (pedido del usuario) **Los carruseles nunca se quedan entre dos valores** (siempre gana uno, también mientras se arrastra). Los ajustes de los modos (aciertos, segundos) pasan de − / + a **carrusel horizontal**. Puntitos del piano roll con **negras más oscuras**. **Botón presionado = mate** (opaco, sin brillo). Coral Pixels se probó en números y títulos y **se quitó** (no se entendía): vuelve Pixelify Sans (`font-juego`).

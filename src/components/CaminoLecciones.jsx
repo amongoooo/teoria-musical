@@ -11,6 +11,7 @@ import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import useDeslizar from '../ui/useDeslizar.js'
+import useRuedaMouse from '../ui/useRuedaMouse.js'
 import Hoja from '../ui/Hoja.jsx'
 import NavegadorModulos from './NavegadorModulos.jsx'
 
@@ -351,6 +352,8 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta }) {
   useEffect(() => () => clearTimeout(tiltBarra.current), [])
 
   const islas = useDeslizar({ activo: abierta !== null, umbral: X, onPaso: paso, puede, acepta, alTope: inclinar })
+  // Computadora: el scroll de lado (trackpad o Shift + rueda) pasa de isla; el vertical sigue siendo de la página.
+  useRuedaMouse(ref, { activo: abierta !== null, conVertical: false, puede, onPaso: (dir) => irA(abiertaRef.current + dir) })
 
 
   /** Coloca cada isla, camino, título y puntito según la posición continua. */

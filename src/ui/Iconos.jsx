@@ -4,7 +4,8 @@
 // no se añade uno nuevo sin quitar otro. Siempre con texto al lado (o `aria-label` en el botón).
 //  - Qué te pide el paso:  Oreja (oído) · Teclas (practicar) · Trofeo (reto en FL)
 //  - Cómo va (con su color): Check (bien, verde) · Bombilla (fíjate, oro) · Candado (bloqueado, gris)
-//  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar · Inicio · Opciones
+//  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar (salir de una lección
+//    o una hoja) · Atras (volver al apartado anterior) · Inicio (ir a la pantalla de inicio) · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
@@ -171,6 +172,15 @@ export function Cerrar({ grosor = 2.4, ...props }) {
   return (
     <Icono grosor={grosor} {...props}>
       <path d="M6 6l12 12M18 6L6 18" />
+    </Icono>
+  )
+}
+
+/** Atrás (flechita ‹): regresa al apartado anterior (la ✕ es para salir de lecciones y hojas; la casita, a Inicio). */
+export function Atras({ grosor = 2.4, ...props }) {
+  return (
+    <Icono grosor={grosor} {...props}>
+      <path d="M15 5l-7 7 7 7" />
     </Icono>
   )
 }

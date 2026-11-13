@@ -1,11 +1,13 @@
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { elegirNivel, guardarAjustes } from '../progress/oido.js'
+import { useOpciones } from '../progress/opciones.js'
 import { AJUSTES_ABSOLUTO, DIRECCIONES, OCTAVAS_POSIBLES, ajusteAbsoluto, octavasDe, getJuego, textoJuego } from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Check, Circulo8, Cronometro, Info, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import useRuedaMouse from '../ui/useRuedaMouse.js'
 import Rich from './Rich.jsx'
 
 /**
@@ -20,13 +22,15 @@ import Rich from './Rich.jsx'
  */
 export default function ArranqueOido({ modo, datos }) {
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
+  // Modo administrador (pedido del usuario): todos los niveles desbloqueados.
+  const { admin } = useOpciones()
   // Rápido: la rueda de nivel es el multiplicador (1…10, todos disponibles); si no, el nivel de siempre.
   const rapido = Boolean(juego?.multiplicador)
   const mult = AJUSTES_ABSOLUTO.multiplicador
   const dif = AJUSTES_ABSOLUTO.octavas
   const rueda = rapido
     ? { total: mult.max, max: mult.max, valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'), elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }) }
-    : { total: modo.niveles, max: datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n) }
+    : { total: modo.niveles, max: admin ? modo.niveles : datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n, { libre: admin }) }
   // Lo que se ve en cada rueda mientras se desliza (los puntitos y el color lo siguen al instante).
   const [vista, setVista] = useState(rueda.valor)
   const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, 'octavas'))
@@ -371,30 +375,43 @@ function ModosJuego({ modo, datos, acento }) {
                   <p className="text-lg font-medium leading-snug [&_strong]:font-bold [&_strong]:text-current">
                     <Rich>{textoJuego(actual.id, datos.ajustes)}</Rich>
                   </p>
-                  {/* Lo único que se ajusta de cada modo: cada cuántos aciertos (Rápido) o los segundos (Contrarreloj). */}
-                  {actual.multiplicador && (
-                    <AjusteRueda
-                      clave="cadaAciertos"
-                      valor={ajusteAbsoluto(datos.ajustes, 'cadaAciertos')}
-                      onCambiar={(v) => guardarAjustes(modo.id, { cadaAciertos: v })}
-                      unidad={<Check className="size-7" />}
-                      etiqueta="Aciertos para sumar notas"
-                      acento={acento}
-                    />
-                  )}
-                  {actual.segundos && (
-                    <AjusteRueda
-                      clave="segundos"
-                      valor={ajusteAbsoluto(datos.ajustes, 'segundos')}
-                      onCambiar={(v) => guardarAjustes(modo.id, { segundos: v })}
-                      unidad={<span className="font-juego text-2xl">s</span>}
-                      etiqueta="Segundos por nota"
-                      acento={acento}
-                    />
-                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Lo que se ajusta de cada modo (pedido del usuario: fuera del cuadro, que es solo texto, y debajo de él):
+          cada cuántos aciertos (Rápido) o los segundos (Contrarreloj). Normal no tiene. */}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {(actual.multiplicador || actual.segundos) && (
+          <motion.div
+            key={actual.id}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ ...RESORTE.suave, opacity: { duration: 0.15 } }}
+            className="pt-4"
+          >
+            {actual.multiplicador ? (
+              <AjusteRueda
+                clave="cadaAciertos"
+                valor={ajusteAbsoluto(datos.ajustes, 'cadaAciertos')}
+                onCambiar={(v) => guardarAjustes(modo.id, { cadaAciertos: v })}
+                unidad={<Check className="size-7" />}
+                etiqueta="Aciertos para sumar notas"
+                acento={acento}
+              />
+            ) : (
+              <AjusteRueda
+                clave="segundos"
+                valor={ajusteAbsoluto(datos.ajustes, 'segundos')}
+                onCambiar={(v) => guardarAjustes(modo.id, { segundos: v })}
+                unidad={<span className="font-juego text-2xl">s</span>}
+                etiqueta="Segundos por nota"
+                acento={acento}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -406,7 +423,7 @@ function ModosJuego({ modo, datos, acento }) {
 function AjusteRueda({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
   const { min, max } = AJUSTES_ABSOLUTO[clave]
   return (
-    <div className="flex w-full items-center gap-3" data-ajuste={clave}>
+    <div className="flex w-full items-center gap-3" style={{ color: tinta(acento) }} data-ajuste={clave}>
       <Rueda
         etiqueta={etiqueta}
         nombre={clave}
@@ -551,6 +568,13 @@ function Rueda({
     const base = g.objetivo ?? pos.get()
     ir(Math.round(base + (v * INERCIA_MS) / T))
   }
+
+  // Computadora: la rueda del mouse la mueve un valor hacia donde va el scroll.
+  useRuedaMouse(caja, {
+    eje,
+    puede: (dir) => actual + dir >= 0 && actual + dir <= ultimo,
+    onPaso: (dir) => ir(actual + dir),
+  })
 
   const tecla = (e) => {
     const sube = vertical ? 'ArrowUp' : 'ArrowRight'
