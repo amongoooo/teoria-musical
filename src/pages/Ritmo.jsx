@@ -23,11 +23,11 @@ import {
   objetivosDe,
 } from '../theory/ritmo.js'
 import { tinta } from '../ui/color.js'
-import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
-import CaminoRuta from '../components/CaminoRuta.jsx'
-import { estadoRuta, getRuta } from '../content/rutas.js'
-import { useProgreso } from '../progress/progreso.js'
-import { RESORTE } from '../ui/movimiento.js'
+import { Metronomo, Oreja } from '../ui/Iconos.jsx'
+import { Cuadrito } from '../components/NavegadorModulos.jsx'
+import { useRuta } from '../components/rutaModulo.js'
+import Pulsable from '../ui/Pulsable.jsx'
+import { RESORTE, itemLista } from '../ui/movimiento.js'
 import { BarraAccion } from './Leccion.jsx'
 
 /** #/ritmo → panel del día; #/ritmo/seguir y #/ritmo/eco → entrenador. */
@@ -49,22 +49,32 @@ export default function Ritmo({ modo: modoId }) {
   )
 }
 
-/** La ruta de ritmo, debajo de la práctica de hoy (opción «una puerta por habilidad» elegida por el usuario). */
+/** Entrada a la ruta de ritmo desde su práctica (la ruta tiene su propia página, igual a la de un módulo). */
 function RutaRitmo() {
-  const progreso = useProgreso()
-  const { admin } = useOpciones()
-  const ritmo = tiendaRitmo.usar()
-  const nivelMax = (modo) => tiendaRitmo.datosModo(modo, ritmo).nivelMax
-  const ruta = getRuta('ritmo')
+  const { modulo, estado } = useRuta('ritmo')
   return (
-    <CaminoRuta
-      ruta={ruta}
-      estado={estadoRuta(ruta, { progreso, nivelMax, admin })}
-      Icono={Metronomo}
-      iconosAbre={{ flow: Pluma }}
-      nivelMax={nivelMax}
-      enlaceMeta={rutas.ritmo}
-    />
+    <motion.div variants={itemLista}>
+      <Pulsable
+        href={rutas.ruta('ritmo')}
+        tipo="tarjeta"
+        data-entrada-ruta="ritmo"
+        className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
+        style={{ boxShadow: '0 5px 0 var(--color-zinc-200)' }}
+      >
+        <span className="grid size-20 shrink-0 place-items-center">
+          <Cuadrito modulo={modulo} tam={60} hecho={estado.hechas === estado.total} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Ruta de ritmo</span>
+          <span className="font-dato text-base font-medium tabular-nums" style={{ color: tinta(modulo.acento) }}>
+            {estado.hechas}/{estado.total} paradas
+          </span>
+        </span>
+        <span className="text-2xl text-zinc-400" aria-hidden>
+          ›
+        </span>
+      </Pulsable>
+    </motion.div>
   )
 }
 

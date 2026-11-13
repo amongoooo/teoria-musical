@@ -180,7 +180,7 @@ export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, c
       }}
       aria-hidden
     >
-      {modulo.numero}
+      {modulo.Icono ? <modulo.Icono style={{ width: tam * 0.5, height: tam * 0.5 }} /> : modulo.numero}
       {hecho && <MarcaBien className="absolute -right-1.5 -top-1.5 size-7" aro="var(--color-fondo)" />}
     </span>
   )

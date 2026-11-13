@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { getLeccion, getModulo } from '../content/index.js'
+import { useRuta } from './rutaModulo.js'
 import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
 import { BotonInicio } from '../ui/Volver.jsx'
@@ -23,18 +24,24 @@ const FILA = 60 // borde de abajo de la fila (pt-4 + 44 px), por si aún no se p
  *    (completada = lleno; a medias = paso / pasos).
  * La página de Módulo le deja su hueco arriba (`h-11`).
  */
-export default function CabeceraModulo({ numero }) {
-  const modulo = getModulo(numero)
+export default function CabeceraModulo({ numero, ruta = null }) {
   const progreso = useProgreso()
-  const chico = useTituloEscondido(numero)
+  const deRuta = useRuta(ruta) // también para módulos (los hooks van siempre); solo se usa con `ruta`
+  const modulo = ruta ? deRuta.modulo : getModulo(numero)
+  const chico = useTituloEscondido(ruta ?? numero)
   if (!modulo) return null
 
-  const valores = modulo.lecciones.map((l) => {
-    const p = progreso.lecciones[l.id]
+  // Avance de una lección: completada = 1, a medias = paso / pasos.
+  const avanceLeccion = (id) => {
+    const p = progreso.lecciones[id]
     if (p?.completada) return 1
-    const pasos = getLeccion(l.id)?.pasos.length
+    const pasos = getLeccion(id)?.pasos.length
     return p?.paso > 0 && pasos ? p.paso / pasos : 0
-  })
+  }
+  // En una ruta, un segmento por parada (las lecciones con su avance; las demás, hechas o no).
+  const valores = ruta
+    ? deRuta.estado.paradas.map((p) => (p.hecha ? 1 : p.tipo === 'leccion' ? avanceLeccion(p.id) : 0))
+    : modulo.lecciones.map((l) => avanceLeccion(l.id))
   const hechas = valores.filter((v) => v === 1).length
 
   return (
@@ -47,7 +54,7 @@ export default function CabeceraModulo({ numero }) {
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
         <div data-pildora-cabecera className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
           <motion.div animate={{ y: chico ? -8 : 0 }} transition={RESORTE.suave}>
-            <BarraLecciones valores={valores} color={modulo.acento} aria-label={`Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
+            <BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${valores.length} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${valores.length} lecciones completadas`} />
           </motion.div>
           <AnimatePresence>
             {chico && (

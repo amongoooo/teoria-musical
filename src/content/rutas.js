@@ -28,6 +28,9 @@ export const RUTAS = {
     nombre: 'Ritmo',
     titulo: 'Ruta de ritmo',
     acento: 'var(--color-modulo-2)',
+    descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones del módulo 2 con práctica de Seguir y Eco.',
+    modulos: [2],
+    practica: 'ritmo',
     paradas: [
       { tipo: 'leccion', id: '2.1' },
       { tipo: 'meta', modo: 'seguir', nivel: 2, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
@@ -48,7 +51,35 @@ export const RUTAS = {
   },
 }
 
+// Las que aún no tienen paradas salen como «próximamente» (con candado), como los módulos sin lecciones.
+RUTAS.letras = {
+  id: 'letras',
+  nombre: 'Letras',
+  titulo: 'Ruta de letras',
+  acento: 'var(--color-modulo-6)',
+  descripcion: 'Rima, esquemas, sílabas, multis y flow.',
+  modulos: [],
+  practica: 'letras',
+  paradas: [],
+}
+RUTAS.acordes = {
+  id: 'acordes',
+  nombre: 'Acordes',
+  titulo: 'Ruta de acordes',
+  acento: 'var(--color-modulo-4)',
+  descripcion: 'Terceras, tríadas, mayor o menor al oído, inversiones y voicings.',
+  modulos: [3, 4],
+  practica: 'oido',
+  paradas: [],
+}
+
+/** Orden de las rutas (en Inicio y al deslizar entre rutas). */
+export const ORDEN_RUTAS = ['ritmo', 'letras', 'acordes']
+
 export const getRuta = (id) => RUTAS[id]
+
+/** ¿Ya tiene paradas? */
+export const rutaDisponible = (ruta) => Boolean(ruta?.paradas.length)
 
 /** Título de una lección del curso por su id ('2.1' → 'Pulso y tempo'). */
 export function tituloLeccion(id) {
