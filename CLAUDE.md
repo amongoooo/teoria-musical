@@ -26,6 +26,7 @@ Este archivo es el **mapa**; el detalle está en estos documentos (léelos solo 
 | Tocar cualquier pantalla, componente, ejercicio o animación | **Skill `.claude/skills/diseno/SKILL.md`** (tokens, componentes, movimiento, gestos). Su historial: `REGISTRO.md` en la misma carpeta |
 | Escribir o cambiar una lección | **`src/content/FORMATO.md`** (tipos de paso y sonidos) + **`src/content/INTERACCIONES.md`** (catálogo L1…X1 y plantilla de orden) |
 | Saber cómo se hizo algo antes (nombres, decisiones, cómo se probó) | **`docs/HISTORIAL.md`** (todas las tareas hechas, con detalle) |
+| Seguir con los entrenamientos de **ritmo y letras** (en curso) | **`docs/PLAN-RITMO-LETRAS.md`** (decisiones del usuario, qué está hecho y el siguiente paso exacto) |
 | Ver el contenido del curso (módulos, lecciones, retos) | `src/content/modulos.js` |
 
 ## Stack
@@ -56,12 +57,14 @@ src/
     PianoRoll.jsx       # Mini Piano Roll táctil (dibujar, alargar, borrar, velocity, nombres app/FL)
     CaminoLecciones.jsx # Camino de islas del módulo (carrusel, isla + globo, barra de puntitos, Retos)
     CabeceraModulo.jsx, CambioModulo.jsx, NavegadorModulos.jsx   # Cabecera fija, swipe entre módulos, pestaña de módulos
-    ArranqueOido.jsx    # Arranque del entrenador de oído (pantalla de «iniciar nivel»: modos, rueda de nivel, cajita de notas)
+    ArranqueOido.jsx    # Arranque de un entrenador (pantalla de «iniciar nivel»: modos, ruedas de Nivel · Vidas · Dificultad); nació para oído y sirve a cualquiera (`tienda`, `Icono`, `modo.bloques`)
+    CabeceraEntrenador.jsx, PanelEntrenamiento.jsx   # Cabecera de vidrio del entrenador (‹, barra de aciertos + vidas, bocina) y panel del día (racha, 5 min, ejercicios, estadísticas): compartidos por oído y ritmo
+    PiezasRitmo.jsx     # Pad, Contador («1 e y a», con estados), Medidor antes/tarde y relojes de audio: los usan exercises/Pulso.jsx y el entrenamiento de ritmo
     Opciones.jsx, ProgramarTema.jsx, TuProgreso.jsx, CodigoQR.jsx  # Opciones (tema —con «Programar»: claro/oscuro por horas en la barra del día—, vidrio, sentido de la barra de octavas, gesto del botón, modo administrador) y progreso entre dispositivos
     BotonSonido.jsx, Rich.jsx                                    # Botón de sonido (onNotas: señala cada nota al sonar); texto con **negritas**
-  audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle), bateria.js (golpes sintetizados), sonido.js (reproducir() del contenido)
-  theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), escalas.js (Tonal Scale: escala mayor y menor, grados, alteraciones, relativas, melodías por grados), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador)
-  progress/             # progreso.js (lecciones y retos), opciones.js (tema, vidrio, admin), admin.js (PIN del modo administrador), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar)
+  audio/                # engine.js (Tone.js: notas, patrones, ritmo en bucle, `iniciarPista` por compases, `golpeAhora`), bateria.js (golpes sintetizados; `tom`/`toque` = el pad de ritmo), sonido.js (reproducir() del contenido)
+  theory/               # notas.js (midi, Hz, nombre en español), intervalos.js (Tonal), escalas.js (Tonal Scale: escala mayor y menor, grados, alteraciones, relativas, melodías por grados), bateria.js (GROOVES, swing, humanizar), oido.js (modos del entrenador), ritmo.js (entrenamiento de ritmo: 10 niveles, patrones, `evaluar` los toques, modos Seguir y Eco)
+  progress/             # progreso.js (lecciones y retos), opciones.js (tema, vidrio, admin), admin.js (PIN del modo administrador), oido.js (racha y niveles), sincronizar.js (código de progreso y combinar), entrenamiento.js (`crearEntrenamiento`: la memoria que comparten oído y ritmo), ritmo.js (`tiendaRitmo` y retraso del dispositivo)
   pwa/                  # App instalable y sin internet: registrar.js (registra sw.js) y sw-plantilla.js (el service worker)
   ui/                   # movimiento.js, useDeslizar.js / useTirarBordes.js / useGestoBoton.js (gestos; el último, el del botón de la lección), useTemblor.js (animación «temblar»), Hoja.jsx, Pulsable.jsx, BarraProgreso.jsx,
                         #   Volver.jsx, color.js (oscuro/tinta/claro/labio), Iconos.jsx, vidrio.js (VIDRIO, VIDRIO_PANEL), useSobreBarra.js
@@ -95,7 +98,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 
 ## Estado del proyecto
 
-**Avance: ~81 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~82 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
 - ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
@@ -107,8 +110,9 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - ✅ **Apariencia programada**: claro y oscuro a ciertas horas (sol y luna sobre la barra del día, con imán y zoom).
 - ✅ **Tu progreso** entre dispositivos sin servidor (código, link y QR que se combinan).
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
+- 🟡 **Entrenamientos de ritmo y de letras** (plan aprobado: https://claude.ai/artifact/4E4w6oNu8rJ1qvtrdJkW63; todo en `docs/PLAN-RITMO-LETRAS.md`). Orden: ritmo → analizar letras → vocabulario → flow. **Ritmo: hecha la base, falta la pantalla.** Ya en `main` y probado, sin cambiar nada de lo que se ve: memoria propia (`tiendaRitmo`), los 10 niveles y la evaluación de toques (`theory/ritmo.js`), el audio (`iniciarPista`, `golpeAhora`, sonido `tom`), las piezas compartidas (`PiezasRitmo`, `CabeceraEntrenador`, `PanelEntrenamiento`), el arranque generalizado y el ritmo dentro del código de «Tu progreso». **Falta:** `src/pages/Ritmo.jsx` (panel + entrenador Seguir/Eco), la ruta `#/ritmo` y el bloque real en Inicio (sigue en «Pronto»). Letras, vocabulario y flow: sin empezar.
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
-**Siguiente tarea:** planear y empezar el **entrenamiento de ritmo** (su bloque ya está en Inicio como «Pronto»; después vendrán sound design, masterización…); luego la lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
+**Siguiente tarea (¡empezar aquí!):** terminar el **entrenamiento de ritmo**. Lee `docs/PLAN-RITMO-LETRAS.md` (sección «Parte 1 — qué FALTA» y «Diseño ya pensado del Entrenador»): crear `src/pages/Ritmo.jsx` calcando `pages/Oido.jsx`, añadir la ruta `#/ritmo` (`router.js`, `App.jsx`, `profundidad()`), cambiar el bloque «Pronto» de Inicio por uno real, probar a 375 px en claro y oscuro, documentar (también la skill de diseño), PR y merge. Después, en orden: **analizar letras** → **vocabulario** → **flow**. Lo que estaba antes en la cola sigue pendiente: lección 3.5 «Grados, tonalidad y círculo de quintas» y la prueba rápida al inicio de cada módulo.
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.

@@ -1,12 +1,12 @@
 import { motion } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { iniciarRitmo, latenciaAudio, tiempoAudio } from '../../audio/engine.js'
+import { useEffect, useRef, useState } from 'react'
+import { latenciaAudio } from '../../audio/engine.js'
 import { getModulo } from '../../content/index.js'
 import { formaGroove } from '../../theory/bateria.js'
-import { oscuro } from '../../ui/color.js'
-import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
+import { ENTRA_DERECHA, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { Reproducir } from '../../ui/Iconos.jsx'
+import { Contador, DIVISION, Medidor, Pad, TOLERANCIA, mediana, momentoToque, useLatido, useRitmo } from '../PiezasRitmo.jsx'
 import Rondas from './Rondas.jsx'
 
 /**
@@ -35,61 +35,11 @@ export default function Pulso(props) {
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
 
-/**
- * Casillas por tiempo del contador: 'tiempos' «1 2 3 4», 'y' «1 y 2 y», 'e' «1 e y a» (semicorcheas)
- * y 'swing' «1 · y» (el tiempo en tresillo: la «y» con swing cae en la 3.ª parte).
- */
-const DIVISION = { tiempos: 1, y: 2, e: 4, swing: 3 }
-const SILABAS = { 1: [''], 2: ['', 'y'], 3: ['', '·', 'y'], 4: ['', 'e', 'y', 'a'] }
-
-const TOLERANCIA = 0.09 // segundos de margen para contar un toque «a tiempo»
-const RANGO = 0.25 // el medidor muestra ±250 ms
 const MAX_AJUSTE = 0.2 // retraso máximo del dispositivo que se compensa solo
 
 // ---------------------------------------------------------------------------
-// Utilidades compartidas
+// Utilidades (el pad, la cuenta, el medidor y los relojes están en ../PiezasRitmo.jsx)
 // ---------------------------------------------------------------------------
-
-/** Ritmo en bucle ligado al componente: se para al desmontar. */
-function useRitmo() {
-  const [ritmo, setRitmo] = useState(null)
-  const ref = useRef(null)
-  const empezar = useCallback((groove, bpm, opciones) => {
-    ref.current?.parar()
-    const { eventos, casillas, porTiempo } = formaGroove(groove, opciones)
-    const r = iniciarRitmo(eventos, { bpm, casillas, porTiempo })
-    ref.current = r
-    setRitmo(r)
-    return r
-  }, [])
-  const parar = useCallback(() => {
-    ref.current?.parar()
-    ref.current = null
-    setRitmo(null)
-  }, [])
-  useEffect(() => () => ref.current?.parar(), [])
-  return { ritmo, empezar, parar }
-}
-
-/**
- * Número de latido que se está oyendo ahora (‑1 antes de empezar).
- * `periodo` y `desfase` en tiempos: (0.5) cuenta corcheas; (4, 2) cuenta cada compás desde el tiempo 3.
- */
-function useLatido(ritmo, periodo = 1, desfase = 0) {
-  const [latido, setLatido] = useState(-1)
-  useEffect(() => {
-    if (!ritmo || !periodo) return setLatido(-1)
-    let frame = 0
-    const tic = () => {
-      const b = Math.floor((tiempoAudio() - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso) / (periodo * ritmo.pulso))
-      setLatido((prev) => (prev === b ? prev : b))
-      frame = requestAnimationFrame(tic)
-    }
-    tic()
-    return () => cancelAnimationFrame(frame)
-  }, [ritmo, periodo, desfase])
-  return latido
-}
 
 /** Golpe del patrón (en tiempos desde el inicio) más cercano a `b`; null si aún no ha empezado. */
 function golpeCercano(b, ciclo, patron) {
@@ -117,52 +67,8 @@ function ultimoGolpe(sub, division, ciclo, patron) {
   return -1
 }
 
-/** Momento del toque en el reloj de audio, descontando lo que tardó en llegar el evento. */
-function momentoToque(e) {
-  const retraso = e?.timeStamp ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0
-  return tiempoAudio() - retraso
-}
-
-const mediana = (xs) => {
-  const a = [...xs].sort((x, y) => x - y)
-  const m = Math.floor(a.length / 2)
-  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
-}
-
 function useColor(leccionId) {
   return getModulo(Number(String(leccionId).split('.')[0]))?.acento ?? 'var(--color-zinc-900)'
-}
-
-/** Botón grande para tocar al pulso. Late con cada tiempo si `latido` >= 0. */
-function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled }) {
-  return (
-    <motion.button
-      type="button"
-      disabled={disabled}
-      onPointerDown={(e) => {
-        if (disabled) return
-        e.preventDefault()
-        onToque(e)
-      }}
-      whileTap={disabled ? undefined : { scale: 0.97 }}
-      transition={RESORTE.pulsar}
-      className="relative grid h-40 w-full place-items-center overflow-hidden rounded-3xl text-xl font-semibold text-blanco select-none disabled:opacity-40"
-      style={{ backgroundColor: oscuro(color), touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {mostrarLatido && latido >= 0 && (
-        <motion.span
-          key={latido}
-          aria-hidden
-          className="absolute size-32 rounded-full bg-white"
-          initial={{ scale: 1.15, opacity: 0.45 }}
-          animate={{ scale: 0.9, opacity: 0.08 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-        />
-      )}
-      <span className="relative">{texto}</span>
-    </motion.button>
-  )
 }
 
 function BotonEmpezar({ sonando, onClick }) {
@@ -288,77 +194,6 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
         <Pad onToque={onToque} latido={latido} mostrarLatido={ronda.visual !== false} color={color} disabled={!ritmo} texto={ritmo ? ronda.boton ?? 'Toca aquí al pulso' : 'Primero, Empezar'} />
         {ajustado && <p className="text-base text-zinc-500">Ajustamos el retraso de tu teléfono o tus auriculares para medirte mejor.</p>}
       </motion.div>
-    </div>
-  )
-}
-
-/**
- * Cuenta del compás: «1 2 3 4», «1 y 2 y…» (division 2), «1 · y…» (division 3, en dos filas de 6)
- * o «1 e y a…» (division 4, en dos filas de 8).
- * Se ilumina la casilla que suena; las que hay que tocar llevan un aro del acento.
- */
-function Contador({ tiempos, division, actual, cada, desfase, patron, color }) {
-  const total = tiempos * division
-  const pos = actual >= 0 ? actual % total : -1
-  const silabas = SILABAS[division] ?? SILABAS[2]
-  const objetivo = (i) => {
-    if (patron) return patron.some((t) => Math.abs(t - i / division) < 1e-6)
-    const x = (i / division - desfase) / cada
-    return Math.abs(x - Math.round(x)) < 1e-6
-  }
-  const filas = total > 8
-  return (
-    <div className={filas ? 'grid gap-1.5' : 'flex gap-1.5'} style={filas ? { gridTemplateColumns: `repeat(${Math.ceil(total / 2)}, minmax(0, 1fr))` } : undefined} aria-hidden>
-      {Array.from({ length: total }, (_, i) => {
-        const tiempo = i % division === 0
-        const encendida = i === pos
-        const marca = objetivo(i)
-        return (
-          <span
-            key={i}
-            className={`grid h-12 min-w-0 flex-1 place-items-center rounded-2xl border-2 font-dato tabular-nums transition-colors duration-100 ${
-              tiempo ? 'text-xl font-bold' : 'text-base font-semibold'
-            } ${encendida ? 'text-blanco' : tiempo && (i === 0 || division > 1) ? 'bg-white text-zinc-900' : 'bg-white text-zinc-600'}`}
-            style={{
-              backgroundColor: encendida ? oscuro(color) : undefined,
-              borderColor: marca ? oscuro(color) : 'var(--color-zinc-200)',
-            }}
-          >
-            {tiempo ? i / division + 1 : silabas[i % division]}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
-
-/** Medidor horizontal: dónde cayó el último toque respecto al pulso. */
-function Medidor({ error }) {
-  const hay = error !== undefined
-  const bien = hay && Math.abs(error) <= TOLERANCIA
-  const pos = hay ? 50 + (Math.max(-RANGO, Math.min(RANGO, error)) / RANGO) * 50 : 50
-  const ms = hay ? Math.round(Math.abs(error) * 1000) : 0
-  const texto = !hay ? 'Aquí verás si tocas antes o después' : bien ? (ms < 30 ? '¡Justo!' : `A tiempo (${ms} ms)`) : error < 0 ? `Antes de tiempo (${ms} ms)` : `Tarde (${ms} ms)`
-  const zona = (TOLERANCIA / RANGO) * 50
-  return (
-    <div className="flex flex-col gap-2" aria-live="polite">
-      <div className="relative h-10 overflow-hidden rounded-full bg-zinc-100">
-        <div className="absolute inset-y-0 bg-bien-suave" style={{ left: `${50 - zona}%`, width: `${zona * 2}%` }} />
-        <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-bien-relleno" />
-        {hay && (
-          <motion.div
-            className={`absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-colors duration-200 ${bien ? 'bg-bien-relleno' : 'bg-fijate'}`}
-            initial={false}
-            animate={{ left: `${pos}%` }}
-            transition={RESORTE.pulsar}
-          />
-        )}
-      </div>
-      <div className="flex justify-between text-sm text-zinc-500">
-        <span>‹ Antes</span>
-        <span className={`text-base font-semibold ${!hay ? 'text-zinc-500' : bien ? 'text-bien-tinta' : 'text-fijate-tinta'}`}>{texto}</span>
-        <span>Tarde ›</span>
-      </div>
     </div>
   )
 }

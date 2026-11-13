@@ -3,12 +3,14 @@
 // Código = versión + base64url( deflate-raw( JSON ) ):
 //   «1…» comprimido (CompressionStream; Chrome, Safari 16.4+, Firefox)
 //   «0…» sin comprimir (respaldo para navegadores viejos)
-// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, c: opciones }.
+// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, c: opciones }.
+// (`r` se añadió con el entrenamiento de ritmo: los códigos de antes no lo traen y se leen igual.)
 //
 // Al importar se COMBINA, nunca se reemplaza: por lección se queda lo más avanzado,
 // los retos y los días de práctica se unen. Importar dos veces el mismo código no cambia nada.
 import { getProgreso, importarProgreso } from './progreso.js'
 import { getOido, importarOido } from './oido.js'
+import { tiendaRitmo } from './ritmo.js'
 import { TEMAS, getOpciones, setTema } from './opciones.js'
 
 const VERSION = 1
@@ -39,11 +41,12 @@ async function transformar(bytes, stream) {
 /** Lo de este dispositivo, en la forma que usa `combinar`. */
 export function datosActuales() {
   const p = getProgreso()
-  const o = getOido()
+  const entrenamiento = (e) => ({ dias: e.dias ?? {}, mejorRacha: e.mejorRacha ?? 0, modos: e.modos ?? {} })
   return {
     v: VERSION,
     p: { lecciones: p.lecciones ?? {}, retos: p.retos ?? {} },
-    o: { dias: o.dias ?? {}, mejorRacha: o.mejorRacha ?? 0, modos: o.modos ?? {} },
+    o: entrenamiento(getOido()),
+    r: entrenamiento(tiendaRitmo.leer()),
     c: { tema: getOpciones().tema },
   }
 }
@@ -82,8 +85,8 @@ function diasDeCompactos(filas) {
 
 /** Crea el código de texto con todo el progreso. */
 export async function crearCodigo(datos = datosActuales()) {
-  const { dias, ...oido } = datos.o
-  const paquete = { ...datos, o: { ...oido, d: diasCompactos(dias) } }
+  const compacto = ({ dias, ...resto }) => ({ ...resto, d: diasCompactos(dias) })
+  const paquete = { ...datos, o: compacto(datos.o), r: compacto(datos.r ?? { dias: {} }) }
   const bytes = new TextEncoder().encode(JSON.stringify(paquete))
   if (hayCompresion()) {
     try {
@@ -141,26 +144,9 @@ function entradas(obj, fn) {
   return fuera
 }
 
-function revisar(d) {
-  const p = esObjeto(d.p) ? d.p : {}
-  const o = esObjeto(d.o) ? d.o : {}
-  const lecciones = entradas(p.lecciones, (l) => {
-    const r = { paso: Math.floor(num(l.paso)) }
-    if (l.completada === true) {
-      r.completada = true
-      r.aciertos = num(l.aciertos)
-      r.total = num(l.total)
-      if (esFecha(l.fecha)) r.fecha = l.fecha
-    }
-    return r
-  })
-  const retos = entradas(p.retos, (r) => {
-    const x = {}
-    if (r.hecho === true) x.hecho = true
-    if (esFecha(r.fecha)) x.fecha = r.fecha
-    if (typeof r.nota === 'string' && r.nota.trim()) x.nota = r.nota.slice(0, 4000)
-    return x
-  })
+/** Un entrenamiento (oído o ritmo): días de práctica, mejor racha y modos. */
+function revisarEntrenamiento(llega) {
+  const o = esObjeto(llega) ? llega : {}
   const dias = {}
   const llegan = Array.isArray(o.d) ? diasDeCompactos(o.d) : o.dias
   if (esObjeto(llegan)) {
@@ -183,11 +169,34 @@ function revisar(d) {
       ? Object.fromEntries(Object.entries(m.ajustes).filter(([k, v]) => esId(k) && ['string', 'number', 'boolean'].includes(typeof v)))
       : {},
   }))
+  return { dias, mejorRacha: num(o.mejorRacha), modos }
+}
+
+function revisar(d) {
+  const p = esObjeto(d.p) ? d.p : {}
+  const lecciones = entradas(p.lecciones, (l) => {
+    const r = { paso: Math.floor(num(l.paso)) }
+    if (l.completada === true) {
+      r.completada = true
+      r.aciertos = num(l.aciertos)
+      r.total = num(l.total)
+      if (esFecha(l.fecha)) r.fecha = l.fecha
+    }
+    return r
+  })
+  const retos = entradas(p.retos, (r) => {
+    const x = {}
+    if (r.hecho === true) x.hecho = true
+    if (esFecha(r.fecha)) x.fecha = r.fecha
+    if (typeof r.nota === 'string' && r.nota.trim()) x.nota = r.nota.slice(0, 4000)
+    return x
+  })
   const tema = TEMAS.includes(d.c?.tema) ? d.c.tema : null
   return {
     v: VERSION,
     p: { lecciones, retos },
-    o: { dias, mejorRacha: num(o.mejorRacha), modos },
+    o: revisarEntrenamiento(d.o),
+    r: revisarEntrenamiento(d.r),
     c: { tema },
   }
 }
@@ -257,21 +266,29 @@ function combinarClaves(a = {}, b = {}, fn) {
   return r
 }
 
-/** Combina dos paquetes completos { p, o }. */
+const ENTRENAMIENTO_VACIO = { dias: {}, mejorRacha: 0, modos: {} }
+
+/** Un entrenamiento (oído o ritmo) de los dos lados. */
+function combinarEntrenamiento(a = ENTRENAMIENTO_VACIO, b = ENTRENAMIENTO_VACIO) {
+  return {
+    // Mismo día en los dos: el máximo de cada dato (no se suma, así importar dos veces no duplica).
+    dias: combinarClaves(a.dias, b.dias, (x, y) =>
+      x ? { segundos: Math.max(x.segundos, y.segundos), respuestas: Math.max(x.respuestas, y.respuestas), aciertos: Math.max(x.aciertos, y.aciertos) } : y,
+    ),
+    mejorRacha: Math.max(a.mejorRacha ?? 0, b.mejorRacha ?? 0),
+    modos: combinarClaves(a.modos, b.modos, combinarModo),
+  }
+}
+
+/** Combina dos paquetes completos { p, o, r }. */
 export function combinar(a, b) {
   return {
     p: {
       lecciones: combinarClaves(a.p.lecciones, b.p.lecciones, combinarLeccion),
       retos: combinarClaves(a.p.retos, b.p.retos, combinarReto),
     },
-    o: {
-      // Mismo día en los dos: el máximo de cada dato (no se suma, así importar dos veces no duplica).
-      dias: combinarClaves(a.o.dias, b.o.dias, (x, y) =>
-        x ? { segundos: Math.max(x.segundos, y.segundos), respuestas: Math.max(x.respuestas, y.respuestas), aciertos: Math.max(x.aciertos, y.aciertos) } : y,
-      ),
-      mejorRacha: Math.max(a.o.mejorRacha ?? 0, b.o.mejorRacha ?? 0),
-      modos: combinarClaves(a.o.modos, b.o.modos, combinarModo),
-    },
+    o: combinarEntrenamiento(a.o, b.o),
+    r: combinarEntrenamiento(a.r, b.r),
   }
 }
 
@@ -283,6 +300,7 @@ export function resumen(d) {
     aMedias: lecciones.filter((l) => !l.completada && l.paso > 0).length,
     retos: Object.values(d.p.retos).filter((r) => r.hecho).length,
     dias: Object.values(d.o.dias).filter((x) => x.respuestas > 0).length,
+    diasRitmo: Object.values(d.r?.dias ?? {}).filter((x) => x.respuestas > 0).length,
     tema: d.c?.tema ?? null,
   }
 }
@@ -292,6 +310,7 @@ export function importar(datos, { conTema = false } = {}) {
   const junto = combinar(datosActuales(), datos)
   importarProgreso({ ...getProgreso(), ...junto.p })
   importarOido({ ...getOido(), ...junto.o })
+  tiendaRitmo.importar({ ...tiendaRitmo.leer(), ...junto.r })
   if (conTema && datos.c?.tema) setTema(datos.c.tema)
   return junto
 }

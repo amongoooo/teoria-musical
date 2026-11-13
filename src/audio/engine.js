@@ -241,6 +241,67 @@ export function pararRitmo() {
   ritmoActual?.parar()
 }
 
+/**
+ * Toca una pista compás a compás (entrenamiento de ritmo): `porCompas(k)` devuelve los sonidos del compás k
+ * ([{ nota, t, velocity, duracion }], con `t` en tiempos desde el 1 del compás) o null para acabar. Se le pregunta
+ * poco antes de que el compás empiece, así lo que suena puede depender de lo que acaba de pasar.
+ * A diferencia de iniciarRitmo, cada sonido se programa justo antes de sonar (0,25 s): parar() corta casi al instante.
+ * Devuelve { inicio, pulso, tiempos, compas, parar } (`inicio`: tiempo de audio del primer tiempo; `compas`: segundos).
+ */
+export function iniciarPista(porCompas, { bpm = 90, tiempos = 4 } = {}) {
+  pararRitmo()
+  startAudio()
+  initPiano()
+  const pulso = 60 / bpm
+  const compas = tiempos * pulso
+  const inicio = tiempoAudio() + 0.15
+  const cola = [] // sonidos pendientes, en orden de tiempo
+  let k = 0
+  let fin = false
+  let id = 0
+  const programar = () => {
+    const limite = tiempoAudio() + 0.25
+    while (!fin && inicio + k * compas < limite) {
+      const eventos = porCompas(k)
+      if (!eventos) {
+        fin = true
+        break
+      }
+      const base = inicio + k * compas
+      // En orden de tiempo: los sintes de batería no admiten golpes programados hacia atrás.
+      ;[...eventos].sort((a, b) => a.t - b.t).forEach((e) => cola.push({ ...e, cuando: base + e.t * pulso }))
+      k += 1
+    }
+    while (cola.length && cola[0].cuando < limite) {
+      const e = cola.shift()
+      sonar(instrument(), e.nota, e.duracion ?? 0.2, e.cuando, e.velocity ?? 0.8)
+    }
+    if (fin && !cola.length) clearInterval(id)
+  }
+  programar()
+  id = setInterval(programar, 25)
+  const pista = {
+    inicio,
+    pulso,
+    tiempos,
+    compas,
+    parar: () => {
+      clearInterval(id)
+      fin = true
+      cola.length = 0
+      if (ritmoActual === pista) ritmoActual = null
+    },
+  }
+  ritmoActual = pista
+  return pista
+}
+
+/** Un golpe de batería AHORA mismo, sin el margen de programación de Tone (para el pad: tiene que sonar al tocar). */
+export function golpeAhora(nombre, velocity = 0.9) {
+  startAudio()
+  golpe(nombre, tiempoAudio(), velocity)
+}
+
 // Onda pura (seno) para demostrar frecuencias en Hz.
 let sine = null
 function getSine() {

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { useOido } from '../progress/oido.js'
+import { tiendaRitmo } from '../progress/ritmo.js'
 import { useOpciones } from '../progress/opciones.js'
 import { useProgreso } from '../progress/progreso.js'
 import { crearCodigo, leerCodigo, limpiarCodigo, linkDeCodigo } from '../progress/sincronizar.js'
@@ -43,6 +44,7 @@ async function copiar(texto) {
 export default function TuProgreso({ onCerrar }) {
   const progreso = useProgreso()
   const oido = useOido()
+  const ritmo = tiendaRitmo.usar()
   const { tema } = useOpciones()
   const [codigo, setCodigo] = useState('')
   const [aviso, setAviso] = useState(null) // { id, texto }
@@ -57,7 +59,7 @@ export default function TuProgreso({ onCerrar }) {
     return () => {
       vivo = false
     }
-  }, [progreso, oido, tema])
+  }, [progreso, oido, ritmo, tema])
   useEffect(() => () => clearTimeout(reloj.current), [])
   const refError = useRef(null)
   useEffect(() => {

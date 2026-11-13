@@ -214,6 +214,8 @@ export const AJUSTES_ABSOLUTO = {
   octavas: { defecto: 1, min: 1, max: 5 },
   // Vidas (pedido del usuario): 1…20 y, encima, ∞ (21). En Rápido, debajo del 1 está la Escalada (0).
   vidas: { defecto: 5, min: 0, max: 21 },
+  // Entrenamiento de ritmo: su rueda de Dificultad no son octavas sino el margen de precisión (theory/ritmo.js).
+  dificultad: { defecto: 1, min: 1, max: 5 },
 }
 
 export const VIDAS_INFINITAS = 21
