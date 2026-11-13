@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Engrane, botón ⓘ de novedades y tira más difusa** (pedidos del usuario): el ícono de Opciones pasa de rayos (parecía un sol) a un **engrane** de 8 dientes; en Inicio, arriba a la izquierda, un círculo de vidrio **ⓘ** abre «Novedades» (versión, qué cambió y un botón para ir a verlo; puntito de oro mientras haya algo sin abrir); y el desvanecido de los lados de la tira del camino (computadora) pasa de 48 px rectos a una curva suave de ~14 % del ancho. P8 suma `voicing: 'abierto'` (4.5).
+
 - 2026-11-13: **P8 con `revelar`, `romano` e `inversion`** (lecciones 4.3 y 4.4, plan aprobado por el usuario): la misma fila de tres casillas sirve para descubrir el tipo (la guía sale al final con un pop), para construir un grado sin nota dada (las tres con «?») y para inversiones (casillas de abajo arriba, el bajo dado a la izquierda, números 3 · 5 · 1 y la 4.ª justa «4J» en la guía).
 
 - 2026-11-13: **Barra de puntitos en regla con joystick** (pedido del usuario: con los tramos, la ruta de acordes tiene 18 paradas y los puntitos quedaban de 15 px): elegida la opción «regla que se desliza» entre tres (regla, acordeón por tramo, lupa). Puntitos de 44 px, el actual en el centro, orillas desvanecidas y el número del tramo en los huecos. El usuario pidió después que con el dedo apoyado avance como un **joystick** (1 cada 0,75 s · 2/s · 4/s según la distancia al centro; en el borde, hasta el último) y que **cada puntito recorrido haga su matraca**. Además, las **rutas van en bucle** al deslizar la página (sin tope a los lados).

@@ -97,4 +97,22 @@ export function cifradoInversion(raiz, tipo = 'mayor', n = 0) {
 }
 
 /** Nombre corto de los intervalos que se apilan en un acorde (por semitonos): 3 → '3m', 4 → '3M', 5 → '4J'. */
-export const APILADO = { 3: { corto: '3m', nombre: '3.ª menor' }, 4: { corto: '3M', nombre: '3.ª mayor' }, 5: { corto: '4J', nombre: '4.ª justa' }, 6: { corto: '4A', nombre: '4.ª aumentada' } }
+// 7, 8 y 9 (5J, 6m, 6M) son los saltos de un voicing abierto (lección 4.5): 1 · 5 · 3 una octava arriba.
+export const APILADO = {
+  3: { corto: '3m', nombre: '3.ª menor' },
+  4: { corto: '3M', nombre: '3.ª mayor' },
+  5: { corto: '4J', nombre: '4.ª justa' },
+  6: { corto: '4A', nombre: '4.ª aumentada' },
+  7: { corto: '5J', nombre: '5.ª justa' },
+  8: { corto: '6m', nombre: '6.ª menor' },
+  9: { corto: '6M', nombre: '6.ª mayor' },
+}
+
+/**
+ * Voicing abierto de una tríada en estado fundamental (lección 4.5): la 3.ª sube una octava.
+ * abierto(['C3', 'E3', 'G3']) → ['C3', 'G3', 'E4'] (de abajo arriba: fundamental, 5.ª, 3.ª = una 10.ª).
+ */
+export function abierto(notas) {
+  const [f, t, q] = notas
+  return [f, q, Note.transpose(t, '8P')]
+}

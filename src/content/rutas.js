@@ -112,7 +112,7 @@ export const TRAMOS = {
       { tipo: 'leccion', id: '4.2' },
     ],
   },
-  // La 4.5 sale «Llega pronto» hasta que exista (la ruta espera en ella).
+  // Termina con la 4.5 «Voicings» y el reto de la ruta.
   'acordes-tonalidad': {
     titulo: 'Acordes en la tonalidad',
     acento: 'var(--color-modulo-4)',

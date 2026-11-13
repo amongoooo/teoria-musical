@@ -231,8 +231,9 @@ export function Inicio(props) {
 export function Opciones(props) {
   return (
     <Icono {...props}>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
+      {/* Engrane de 8 dientes (pedido del usuario: antes eran rayos y parecía un sol). */}
+      <path d="M10.14 5.05L10.66 2.49L13.34 2.49L13.86 5.05L15.6 5.76L17.78 4.33L19.67 6.22L18.24 8.4L18.95 10.14L21.51 10.66L21.51 13.34L18.95 13.86L18.24 15.6L19.67 17.78L17.78 19.67L15.6 18.24L13.86 18.95L13.34 21.51L10.66 21.51L10.14 18.95L8.4 18.24L6.22 19.67L4.33 17.78L5.76 15.6L5.05 13.86L2.49 13.34L2.49 10.66L5.05 10.14L5.76 8.4L4.33 6.22L6.22 4.33L8.4 5.76Z" />
+      <circle cx="12" cy="12" r="3" />
     </Icono>
   )
 }

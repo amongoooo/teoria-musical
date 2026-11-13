@@ -75,7 +75,8 @@ Acordes de la tonalidad e inversiones (lecciones 4.3 y 4.4, Tonal `Key`): `diato
 (`{ grado, romano, raiz, tipo, notas, cifrado }`, de I a vii°; `{ menor: true }` = menor natural), `ROMANOS`
 (I ii iii IV V vi vii°) y `ROMANOS_MENOR` (i ii° III iv v VI VII), `acordeDeGrado('G3', 'vi')` → Em (E4…),
 `inversion(['C4', 'E4', 'G4'], 1)` → `['E4', 'G4', 'C5']`, `cifradoInversion('G3', 'mayor', 1)` → «G/B», `INVERSIONES` y
-`APILADO` (3 → 3m, 4 → 3M, 5 → 4J).
+`APILADO` (3 → 3m, 4 → 3M, 5 → 4J; 7 → 5J, 8 → 6m, 9 → 6M). Voicings (lección 4.5): `abierto(['C3', 'E3', 'G3'])` →
+`['C3', 'G3', 'E4']` (la 3.ª sube una octava); en P8, la ronda `{ raiz: 'C3', tipo: 'mayor', voicing: 'abierto' }` pide esas notas con su octava.
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -254,6 +255,9 @@ respuesta con su armadura.
   //       Do mayor» (4.3): no viene ninguna nota; se tocan las tres (cualquier octava). Suena la tónica de referencia.
   //     `inversion: 1 | 2` = la tecla marcada es el BAJO (la 3.ª o la 5.ª) y las otras dos van ENCIMA de ella (4.4); las
   //       casillas van de abajo arriba (3 · 5 · 1 o 5 · 1 · 3) con 3m / 3M / 4J entre ellas; con `cifrado`, pide «C/E».
+  //     `voicing: 'abierto'` = «Abre Do mayor desde Do3» (4.5): encima de la fundamental, la 5.ª y la 3.ª UNA OCTAVA
+  //       arriba (C3 · G3 · E4); solo vale la nota exacta (en otra octava es un fallo que lo explica); casillas
+  //       1 · 5 · 3 con 5J / 6M (o 6m). Pon el piano en 2 octavas (`startOctave` = la de la fundamental).
 }
 ```
 
