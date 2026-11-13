@@ -68,6 +68,7 @@ src/
 public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
 docs/HISTORIAL.md       # Historial detallado de todas las tareas
+docs/pruebas/audio/     # Scripts de Playwright que miden el audio (retraso de las teclas, notas colgadas)
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
 
@@ -109,6 +110,6 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - ✅ **App instalable** (manifiesto + ícono propio: teclado Do-Re-Mi-Fa con los colores de los módulos) y **sin internet** (service worker).
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
-**Siguiente tarea:** planear y empezar el **entrenamiento de ritmo** (su bloque ya está en Inicio como «Pronto»; después vendrán sound design, masterización…); luego la lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
+**Siguiente tarea:** terminar el **retraso del piano** (cambio ya en `main`: `noteOn`/`noteOff` con `Tone.immediate()`; faltan las pruebas del paso `tocar` y del piano del entrenador, el caso «soltar en el mismo instante» con el sintetizador y el pad de frecuencias: ver la última entrada de `docs/HISTORIAL.md` y `docs/pruebas/audio/`). Después, planear y empezar el **entrenamiento de ritmo** (su bloque ya está en Inicio como «Pronto»; después vendrán sound design, masterización…); luego la lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.
