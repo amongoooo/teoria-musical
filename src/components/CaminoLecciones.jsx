@@ -93,7 +93,15 @@ const ZOOM = { maxCerrado: 2, maxAbierta: 1.5, anchoAbierta: 760, columna: 120, 
 // Con una isla abierta, las vecinas guardan al menos `SEPARA_MIN` px entre sí (las lejanas quedan fuera, a los lados).
 const VISIBLES = 6
 const SEPARA_MIN = 120
-const BORDE_TIRA = 48 // px del desvanecido de los lados de la tira
+// Desvanecido de los lados de la tira (pedido del usuario: «más difuso»): ancho = 14 % del camino, entre 96 y 170 px,
+// con una curva suave (empieza muy transparente y se cierra despacio) en vez de una rampa recta de 48 px.
+const BORDE_TIRA = 'clamp(96px, 14%, 170px)'
+const CURVA_TIRA = [[0, 0], [0.2, 0.06], [0.4, 0.2], [0.6, 0.45], [0.8, 0.75], [1, 1]]
+const MASCARA_TIRA = (() => {
+  const izq = CURVA_TIRA.map(([f, a]) => `rgb(0 0 0 / ${a}) calc(${BORDE_TIRA} * ${f})`)
+  const der = [...CURVA_TIRA].reverse().map(([f, a]) => `rgb(0 0 0 / ${a}) calc(100% - ${BORDE_TIRA} * ${f})`)
+  return `linear-gradient(to right, ${izq.join(', ')}, ${der.join(', ')})`
+})()
 // Desenfoque con una isla abierta (como fuera de foco), según la DISTANCIA a ella en islas: las de al
 // lado apenas (el número se sigue leyendo), las siguientes más, y así. `pasos[d]` = px de desenfoque a
 // distancia d (antes del zoom); más lejos, el último. Cada línea se desenfoca como la media de sus dos islas.
@@ -804,7 +812,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
           // bordes se desvanecen (así se ve que hay más a los lados).
           ...(desborda && {
             overflowX: 'clip',
-            maskImage: `linear-gradient(to right, transparent, black ${BORDE_TIRA}px, black calc(100% - ${BORDE_TIRA}px), transparent)`,
+            maskImage: MASCARA_TIRA,
           }),
         }}
         {...unirHandlers(islas.handlers, tira.handlers)}

@@ -22,6 +22,7 @@ import Piano from '../Piano.jsx'
 import {
   APILADO,
   TERCERA,
+  abierto as voicingAbierto,
   TRIADAS,
   acordeDeGrado,
   arpegioYAcorde,
@@ -801,9 +802,10 @@ function acordeDeRonda(ronda) {
   const tipo = base?.tipo ?? ronda.tipo
   const inv = ronda.inversion ?? 0
   const notas = triada(raiz, tipo)
+  if (ronda.voicing === 'abierto') return { raiz, tipo, inv: 0, notas, orden: voicingAbierto(notas), partes: [0, 2, 1], dada: 0, abierto: true }
   const orden = inversion(notas, inv)
   const partes = orden.map((_, j) => (j + inv) % 3)
-  return { raiz, tipo, inv, notas, orden, partes, dada: ronda.romano ? null : 0 }
+  return { raiz, tipo, inv, notas, orden, partes, dada: ronda.romano ? null : 0, abierto: false }
 }
 
 /**
@@ -815,7 +817,12 @@ function acordeDeRonda(ronda) {
  *  - `romano: 'vi'` + `tonalidad: 'C4'`: «Construye el vi de Do mayor»: no viene ninguna nota; se tocan las tres.
  *  - `inversion: 1 | 2`: la tecla marcada es el BAJO (la 3.ª o la 5.ª) y las otras dos van encima de ella; las
  *    casillas van de abajo arriba (3 · 5 · 1 o 5 · 1 · 3) y la guía dice 3m / 3M / 4J.
- * Vale la nota en cualquier octava (en una inversión, siempre encima del bajo); la que se tocó queda marcada.
+ * Opción de la 4.5:
+ *  - `voicing: 'abierto'`: «Abre Do mayor desde Do3»: la fundamental marcada abajo, encima la 5.ª y la 3.ª UNA OCTAVA
+ *    más arriba (C3 · G3 · E4). Aquí sí cuenta la octava: la nota justa en otra octava es un fallo que lo explica.
+ *    Casillas 1 · 5 · 3 y guía 5J / 6M (o 6m).
+ * Vale la nota en cualquier octava (en una inversión, siempre encima del bajo; en el abierto, solo la exacta); la que
+ * se tocó queda marcada.
  */
 function Acorde({ paso, setAccion, siguiente, completar }) {
   const rondas = paso.objetivo.rondas
@@ -829,7 +836,7 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
   const { senal, senalar } = useSenal()
   const ronda = rondas[r]
   const acorde = useMemo(() => acordeDeRonda(ronda), [ronda])
-  const { raiz: raizAcorde, tipo, inv, notas, orden, partes, dada } = acorde
+  const { raiz: raizAcorde, tipo, inv, notas, orden, partes, dada, abierto } = acorde
   const porTocar = useMemo(() => orden.map((_, j) => j).filter((j) => j !== dada), [orden, dada])
   const listo = porTocar.every((j) => tocadas[j])
   const ultima = r === rondas.length - 1
@@ -849,10 +856,18 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
 
   const onNoteOn = useCallback(
     (nota) => {
-      const j = orden.findIndex((n) => haciaArriba(n, nota) === 0)
+      const misma = orden.findIndex((n) => haciaArriba(n, nota) === 0) // la misma nota en cualquier octava
+      // En el voicing abierto solo vale la nota exacta; la misma en otra octava es un fallo que lo explica.
+      const j = abierto ? orden.findIndex((n) => midi(n) === midi(nota)) : misma
       const encima = !inv || midi(nota) > midi(bajo)
       if (j >= 0 && (j === dada || tocadas[j])) return setSacudidas((s) => ({ ...s, [j]: (s[j] ?? 0) + 1 }))
       if (listo) return
+      if (abierto && j < 0 && misma >= 0) {
+        setIntento({ nota, ok: false, octava: misma })
+        setFallos((f) => f + 1)
+        setFallosRonda((f) => f + 1)
+        return
+      }
       if (j >= 0 && encima) {
         const nuevas = { ...tocadas, [j]: nota }
         setTocadas(nuevas)
@@ -870,7 +885,7 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
         setFallosRonda((f) => f + 1)
       }
     },
-    [orden, inv, bajo, dada, tocadas, listo, porTocar, aciertos, fallosRonda, ultima, rondas.length, completar],
+    [orden, inv, abierto, bajo, dada, tocadas, listo, porTocar, aciertos, fallosRonda, ultima, rondas.length, completar],
   )
 
   useEffect(() => {
@@ -880,10 +895,18 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
       const [abajo, arriba] = TRIADAS[tipo].terceras
       feedback = {
         tipo: 'bien',
-        titulo: ronda.titulo ?? (ronda.romano ? `¡${ronda.romano} = ${cifradoDelAcorde}!` : `¡${Mayus(inv ? cifradoDelAcorde : nombreDelAcorde)}!`),
+        titulo:
+          ronda.titulo ??
+          (ronda.romano
+            ? `¡${ronda.romano} = ${cifradoDelAcorde}!`
+            : abierto
+              ? `¡${Mayus(nombreDelAcorde)} abierto!`
+              : `¡${Mayus(inv ? cifradoDelAcorde : nombreDelAcorde)}!`),
         texto:
           ronda.mensaje ??
-          (inv
+          (abierto
+            ? `${notasEs(orden)}: la 3.ª subió una octava y dejó aire en medio.`
+            : inv
             ? `${notasEs(orden)}: ${Mayus(nombreDelAcorde)} con la ${PARTES[inv]} en el bajo.`
             : `${notasEs(notas)}: ${TERCERA[abajo].nombre} y encima ${TERCERA[arriba].nombre}.`),
       }
@@ -895,7 +918,16 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
       const pista = ronda.pista ? ` ${ronda.pista}` : ''
       let titulo = `Esa es ${tocada}.`
       let texto
-      if (inv && intento.debajo) {
+      if (abierto && intento.octava === 0) {
+        titulo = `${Mayus(tocada)} ya está abajo.`
+        texto = `En el voicing abierto la fundamental va sola en el grave, en **${nombre(simple(bajo))}**. Encima van la **5.ª** y la **3.ª**.`
+      } else if (abierto && intento.octava !== undefined) {
+        const esTercera = partes[intento.octava] === 1
+        titulo = `${Mayus(tocada)}, pero en otra octava.`
+        texto = esTercera
+          ? `${Mayus(tocada)} es la **3.ª**: en el abierto sube **una octava**, por encima de la 5.ª.`
+          : `${Mayus(tocada)} es la **5.ª**: va a una **5.ª justa** (7 semitonos) de ${nombre(simple(bajo))}, justo encima.`
+      } else if (inv && intento.debajo) {
         titulo = `${Mayus(tocada)} va encima del bajo.`
         texto = `En ${cifradoDelAcorde} la más grave es **${nombre(bajo, { octava: false })}**: toca las otras dos **a su derecha**.`
       } else if (inv) {
@@ -916,9 +948,13 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
           ? 'Escucha otra vez: la del medio decide si es mayor o menor.'
           : falta
               .map((j) =>
-                partes[j] === 1
-                  ? `la **3.ª** está a ${plural(abajo)} (${TERCERA[abajo].nombre})`
-                  : `la **5.ª**, a ${plural(abajo + arriba)} (${TERCERA[arriba].nombre} sobre la 3.ª)`,
+                abierto
+                  ? partes[j] === 1
+                    ? `la **3.ª**, a ${plural(abajo + 12)} (una octava más arriba de lo normal)`
+                    : `la **5.ª** está a ${plural(abajo + arriba)}`
+                  : partes[j] === 1
+                    ? `la **3.ª** está a ${plural(abajo)} (${TERCERA[abajo].nombre})`
+                    : `la **5.ª**, a ${plural(abajo + arriba)} (${TERCERA[arriba].nombre} sobre la 3.ª)`,
               )
               .join(' y ')
         texto = `De ${desde} a ${tocada} hay ${plural(d)} hacia arriba. ` + (escuchar ? busca : `${Mayus(busca)}.`)
@@ -936,6 +972,8 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
           ? null
           : ronda.romano
             ? `Toca las tres notas ${faltan}`
+            : abierto
+              ? `Toca la 5.ª y la 3.ª, una octava arriba ${faltan}`
             : inv
               ? `Toca las otras dos encima del bajo ${faltan}`
               : escuchar
@@ -957,7 +995,7 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
         else playNotes(a.orden[0])
       },
     })
-  }, [listo, intento, ronda, tipo, inv, notas, orden, partes, porTocar, bajo, dada, referencia, tocadas, fallos, escuchar, revelar, tonalidad, nombreDelAcorde, cifradoDelAcorde, ultima, r, rondas, setAccion, siguiente])
+  }, [listo, intento, ronda, tipo, inv, abierto, notas, orden, partes, porTocar, bajo, dada, referencia, tocadas, fallos, escuchar, revelar, tonalidad, nombreDelAcorde, cifradoDelAcorde, ultima, r, rondas, setAccion, siguiente])
 
   // Tras 2 fallos seguidos, las que faltan se marcan (en su sitio, encima del bajo).
   const pistas = fallos >= 2 && !listo ? porTocar.filter((j) => !tocadas[j]).map((j) => simple(orden[j])) : []
@@ -983,6 +1021,10 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
             <>
               Apila sobre {chipNota(bajo)}
               {tonalidad && <> con las notas de {tonalidad}</>}
+            </>
+          ) : abierto ? (
+            <>
+              Abre {subrayado(pedido, ronda.cifrado)} desde {chipNota(bajo)}
             </>
           ) : inv ? (
             <>

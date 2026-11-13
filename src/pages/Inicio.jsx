@@ -1,4 +1,5 @@
 import { motion } from 'motion/react'
+import BotonNovedades from '../components/Novedades.jsx'
 import BotonOpciones from '../components/Opciones.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import { getLeccion, leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
@@ -43,6 +44,7 @@ export default function Inicio() {
       className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-9 px-5 pt-4 pb-14 sm:pt-8"
     >
       <motion.header variants={itemLista} className="relative flex flex-col items-center gap-4 pt-10 text-center">
+        <BotonNovedades className="absolute left-0 top-0" />
         <BotonOpciones className="absolute right-0 top-0" />
         {/* Insignia del juego: el ícono de la app, entra con rebote. */}
         <motion.img

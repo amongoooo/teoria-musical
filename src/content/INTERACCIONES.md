@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5, 3.1–3.5 y 4.1–4.4) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5, 3.1–3.5 y 4.1–4.5) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -51,7 +51,7 @@ A 375 px se ve **una octava** y el teclado va a la de `desde`: en P5/P7 elige `d
 | **P5** | Medir un paso | Desde una nota marcada, toca la que está a un semitono o un tono (sube / baja); al fallar dice cuánto se movió y tras 2 fallos marca la tecla | `paso` (`desde`, `paso: 'S' \| 'T'`, `direccion`, `pista`) |
 | **P6** | Seguir la fórmula | Desde una nota dada, toca en orden las notas de una fórmula de pasos (T T S T T T S…); la fila de casillas se llena al acertar y, si vuelve a tocar una ya tocada, esa casilla tiembla | `formula` (`desde`, `pasos`, `titulo`, `mensaje`, `grados`: número de grado bajo cada casilla) |
 | **P7** | Construir un intervalo | Desde una nota marcada, toca la que forma un intervalo con nombre (3.ª mayor, 5.ª justa, tritono…); el fallo dice qué intervalo tocó y tras 2 fallos marca la tecla | `paso` con `intervalo` (`desde`, `intervalo: '3M'`, `direccion`, `pista`, `mensaje`); en la 3.4, «Encuentra la relativa» (sube una 6.ª mayor / baja una 3.ª menor); en la 3.5, con `grado: 'la dominante'` = «Encuentra el grado» y «Gira el círculo» (sube una 5.ª) |
-| **P8** | Construir un acorde | La fundamental viene marcada; toca la 3.ª y la 5.ª (en cualquier orden y octava). Casillas 1 · 3 · 5 que se llenan y, encima, la 3.ª entre cada pareja (3M / 3m); al completarlo suena el acorde. El fallo dice cuántos semitonos subió; tras 2 fallos marca las que faltan | `acorde` (`raiz`, `tipo`: mayor \| menor \| dis \| aum, `guia`, `cifrado`, `escuchar`); 4.1 «Apila terceras», «Construye mayores / menores», «Lee el cifrado»; 4.2 «Escucha y construye» (`escuchar: true`); 4.3 «Apila sobre cada grado» (`revelar`: no dice el tipo) y «Construye el grado» (`romano`: sin nota dada, las tres); 4.4 «Construye la inversión» y «Encadena» (`inversion`: la marcada es el bajo y las otras van encima) |
+| **P8** | Construir un acorde | La fundamental viene marcada; toca la 3.ª y la 5.ª (en cualquier orden y octava). Casillas 1 · 3 · 5 que se llenan y, encima, la 3.ª entre cada pareja (3M / 3m); al completarlo suena el acorde. El fallo dice cuántos semitonos subió; tras 2 fallos marca las que faltan | `acorde` (`raiz`, `tipo`: mayor \| menor \| dis \| aum, `guia`, `cifrado`, `escuchar`); 4.1 «Apila terceras», «Construye mayores / menores», «Lee el cifrado»; 4.2 «Escucha y construye» (`escuchar: true`); 4.3 «Apila sobre cada grado» (`revelar`: no dice el tipo) y «Construye el grado» (`romano`: sin nota dada, las tres); 4.4 «Construye la inversión» y «Encadena» (`inversion`: la marcada es el bajo y las otras van encima); 4.5 «Abre el acorde» (`voicing: 'abierto'`: la 5.ª encima y la 3.ª una octava arriba, octava exacta) |
 
 ## D. Sonido continuo
 
