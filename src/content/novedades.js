@@ -9,6 +9,10 @@ export const NOVEDADES = [
     fecha: '13 nov 2026',
     titulo: 'Explorar más cómodo',
     cosas: [
+      {
+        texto: 'Al deslizar el dedo por la **barra de puntitos** sale un **cuadrito** detrás del vidrio que se pega a cada velocidad y, al soltar, vuelve al centro con rebote.',
+        donde: { etiqueta: 'Ruta de acordes', href: '#/ruta/acordes' },
+      },
       { texto: 'En Inicio, las **Rutas** van arriba, luego las **Prácticas** y hasta abajo los **Módulos**.', donde: { etiqueta: 'Ir a Inicio', href: '#/' } },
       {
         texto: 'Los **puntitos** de abajo siguen a las islas que ves: se inflan un poco y, si son muchos, la barra se corre al bajar la página.',

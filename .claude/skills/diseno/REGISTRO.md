@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Cuadrito del dedo en la barra de puntitos** (pedido del usuario): gris leve, detrás del vidrio para que se vea difuminado (el usuario lo pidió así; el desenfoque ya existe y solo se mueve mientras se presiona), con imán por etapas del joystick, más resaltado hacia los costados y resorte con sobrepaso al soltar.
+
 - 2026-11-13: **Explorar más cómodo** (pedidos del usuario): Inicio en orden Rutas → Prácticas → Herramientas → Módulos; los puntitos de la barra se inflan un poco con las islas que se ven y la regla las sigue al desplazar; el tirón vertical para cambiar de módulo o ruta solo si el gesto empieza ya en el borde; en la tira de la computadora, márgenes para que la primera y la última isla queden enteras y un desvanecido mucho más leve (8 %, curva suave).
 
 - 2026-11-13: **Engrane, botón ⓘ de novedades y tira más difusa** (pedidos del usuario): el ícono de Opciones pasa de rayos (parecía un sol) a un **engrane** de 8 dientes; en Inicio, arriba a la izquierda, un círculo de vidrio **ⓘ** abre «Novedades» (versión, qué cambió y un botón para ir a verlo; puntito de oro mientras haya algo sin abrir); y el desvanecido de los lados de la tira del camino (computadora) pasa de 48 px rectos a una curva suave de ~14 % del ancho. P8 suma `voicing: 'abierto'` (4.5).
