@@ -32,6 +32,7 @@ import Rondas from './Rondas.jsx'
  *  - { tipo: 'octavas', rondas: [{ nota: 'A' }] }   → tocar esa nota en TODAS las octavas del teclado
  *  - { tipo: 'paso', rondas: [{ desde: 'E4', paso: 'S' | 'T', direccion: 'sube' | 'baja' }] }
  *    (o `intervalo: '3M'` en lugar de `paso`: construir un intervalo con nombre de Tonal)
+ *    `grado: 'la dominante'` cambia la frase a «Toca la dominante de Do4» (lección 3.5).
  *        → tocar la nota a un semitono / un tono de `desde`
  *  - { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S',…], nombre }] }
  *        → tocar en orden las notas que salen de aplicar la fórmula de pasos desde `desde`
@@ -523,7 +524,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
       label: 'Continuar',
       avanza: ultima, // el último «Continuar» pasa de paso
       disabled: !resuelta,
-      ayuda: resuelta || intento ? null : `${verbo} ${palabra} desde ${desde}`,
+      ayuda: resuelta || intento ? null : ronda.grado ? `Toca ${ronda.grado} de ${desde}` : `${verbo} ${palabra} desde ${desde}`,
       feedback,
       onClick: () => {
         if (ultima) return siguiente()
@@ -545,8 +546,9 @@ function Paso({ paso, setAccion, siguiente, completar }) {
 
       <motion.div key={r} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
         <p className="text-xl font-semibold leading-snug sm:text-2xl">
-          {verbo} <span className="underline decoration-fijate decoration-4 underline-offset-4">{palabra}</span>{' '}
-          desde <span className="rounded-md bg-fijate-claro px-1.5">{nombre(simple(ronda.desde))}</span>
+          {ronda.grado ? 'Toca' : verbo}{' '}
+          <span className="underline decoration-fijate decoration-4 underline-offset-4">{ronda.grado ?? palabra}</span>{' '}
+          {ronda.grado ? 'de' : 'desde'} <span className="rounded-md bg-fijate-claro px-1.5">{nombre(simple(ronda.desde))}</span>
         </p>
         <BotonSonido
           sonido={{ notas: [ronda.desde] }}

@@ -1,6 +1,6 @@
 // Escalas y grados (lección 3.3 en adelante), con Tonal.js `Scale`.
 // Notación científica como en el resto de la app: 'C4' = Do central, 'F#4', 'Bb3'.
-import { Note, Scale } from 'tonal'
+import { Key, Note, Scale } from 'tonal'
 import { nombre } from './notas.js'
 
 /** La fórmula de la escala mayor: T T S T T T S. */
@@ -77,5 +77,41 @@ export function escalaCambiada(tonica, { grado: g, semitonos = 1 }, opciones) {
     const num = bajando ? 8 - i : i + 1
     const deEsteGrado = num === g || (g === 1 && num === 8)
     return deEsteGrado ? Note.fromMidi(Note.midi(n) + semitonos) : n
+  })
+}
+
+// ——— Tonalidad y círculo de quintas (lección 3.5), con Tonal `Key` ———
+
+/**
+ * Las 12 tonalidades mayores del círculo de quintas, en el sentido del reloj desde Do (arriba):
+ * cada una, una 5.ª justa por encima de la anterior. Abajo se encuentran los dos lados: Fa♯ = Sol♭.
+ * El lado izquierdo se escribe con bemoles (Re♭, La♭, Mi♭, Si♭, Fa), como se usa en la práctica.
+ */
+export const CIRCULO = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F']
+
+/** Armadura de una mayor con Tonal `Key`: { cantidad: 3, signo: '♯', notas: ['F#', 'C#', 'G#'] } (en el orden en que aparecen). */
+export function armaduraMayor(tonica) {
+  const k = Key.majorKey(Note.pitchClass(tonica))
+  const cantidad = Math.abs(k.alteration)
+  const signo = k.alteration > 0 ? '♯' : k.alteration < 0 ? '♭' : ''
+  // Orden de los sostenidos (Fa Do Sol Re La Mi Si) y de los bemoles (Si Mi La Re Sol Do Fa).
+  const orden = k.alteration >= 0 ? ['F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#'] : ['Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb']
+  return { cantidad, signo, notas: orden.slice(0, cantidad) }
+}
+
+/** Dominante (5.º) y subdominante (4.º) de una mayor: las dos vecinas en el círculo. */
+export const dominante = (tonica) => grado(tonica, 5)
+export const subdominante = (tonica) => grado(tonica, 4)
+
+/**
+ * Las mismas notas «pasadas» a la armadura de otra mayor: cada letra toma la alteración que tiene en esa escala,
+ * sin moverse de su sitio. conArmadura(['C4', 'F4', 'G4'], 'G') → ['C4', 'F#4', 'G4'] (en Sol mayor solo cambia el Fa).
+ */
+export function conArmadura(notas, tonica) {
+  const escalaDestino = Scale.get(`${Note.pitchClass(tonica)} major`).notes
+  return notas.map((n) => {
+    const { letter, oct } = Note.get(n)
+    const destino = escalaDestino.find((d) => d[0] === letter)
+    return `${destino}${oct}`
   })
 }
