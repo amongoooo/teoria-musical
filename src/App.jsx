@@ -30,6 +30,16 @@ function Pagina({ ruta }) {
   return <Inicio />
 }
 
+/**
+ * Entre rutas, las rutas dan la vuelta (de la última se pasa a la primera): la de al lado hacia delante entra por la
+ * derecha y la de al lado hacia atrás por la izquierda, también al cruzar la vuelta.
+ */
+function direccionRuta(de, a) {
+  const n = ORDEN_RUTAS.length
+  const d = (ORDEN_RUTAS.indexOf(a) - ORDEN_RUTAS.indexOf(de) + n) % n
+  return d === 1 ? 1 : d === n - 1 ? -1 : ORDEN_RUTAS.indexOf(a) > ORDEN_RUTAS.indexOf(de) ? 1 : -1
+}
+
 export default function App() {
   const ruta = useRuta()
   const clave = `${ruta.pagina}:${ruta.id ?? ''}${ruta.reto ? ':reto' : ''}`
@@ -45,7 +55,7 @@ export default function App() {
     const dir = entreModulos
       ? Number(ruta.id) > Number(previa.id) ? 1 : -1
       : entreRutas
-        ? ORDEN_RUTAS.indexOf(ruta.id) > ORDEN_RUTAS.indexOf(previa.id) ? 1 : -1
+        ? direccionRuta(previa.id, ruta.id)
         : prof >= anterior.current.prof ? 1 : -1
     anterior.current = { clave, ruta, prof, dir }
   }

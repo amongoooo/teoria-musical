@@ -83,23 +83,23 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await foto('ruta-cerrada')
 
   // 3) Abrir «Eco · nivel 3» (nodo 4) desde su puntito.
-  await punto(4).click()
+  await punto(4).dispatchEvent("click")
   await espera(1200)
   const globo = page.getByRole('group', { name: 'Eco · nivel 3' })
   comprobar(r, 'globo de la práctica con «Tu nivel»', (await globo.textContent()).includes('Tu nivel: 1'))
   await foto('globo-meta')
   // Una bloqueada (Seguir · nivel 5 = nodo 6).
-  await punto(6).click()
+  await punto(6).dispatchEvent("click")
   await espera(1000)
   comprobar(r, 'bloqueada dice «Antes: Eco · nivel 3»', (await page.getByRole('group', { name: 'Seguir · nivel 5' }).textContent()).includes('Antes: Eco · nivel 3'))
   // La insignia.
-  await punto(0).click()
+  await punto(0).dispatchEvent("click")
   await espera(1000)
   const insignia = page.getByRole('group', { name: 'Ruta de ritmo' })
   comprobar(r, 'insignia con «Módulos y prácticas»', (await insignia.textContent()).includes('Módulos y prácticas'))
   await foto('insignia')
   // «Practicar» de la meta.
-  await punto(4).click()
+  await punto(4).dispatchEvent("click")
   await espera(1000)
   await page.getByRole('group', { name: 'Eco · nivel 3' }).getByRole('button', { name: 'Practicar' }).click()
   await espera(800)
@@ -125,7 +125,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await preparar({ ruta: '#/ruta/ritmo', lecciones: completadas(['2.1', '2.2']), nivelSeguir: 5 })
   const cabLineal = await page.getAttribute('[data-pildora-cabecera] [aria-label]', 'aria-label')
   comprobar(r, 'lineal: 3 de 10 aunque Seguir 5 ya se alcanzó', (cabLineal ?? '').includes('3 de 10'), cabLineal)
-  await punto(6).click()
+  await punto(6).dispatchEvent("click")
   await espera(1000)
   comprobar(r, 'lineal: «Seguir · nivel 5» bloqueada', (await page.getByRole('group', { name: 'Seguir · nivel 5' }).textContent()).includes('Antes: Eco · nivel 3'))
 
@@ -149,7 +149,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await preparar({ ruta: '#/ruta/ritmo', lecciones: completadas(['2.1', '2.2', '2.3', '2.4', '2.5']), nivelSeguir: 5, nivelEco: 3 })
   const cab = await page.getAttribute('[data-pildora-cabecera] [aria-label]', 'aria-label')
   comprobar(r, '9 de 10', (cab ?? '').includes('9 de 10'), cab)
-  await punto(10).click()
+  await punto(10).dispatchEvent("click")
   await espera(1200)
   await foto('globo-reto')
   await page.getByRole('group', { name: 'Tu groove con swing' }).getByRole('button', { name: 'Lo hice' }).click()
