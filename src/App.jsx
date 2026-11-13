@@ -2,6 +2,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useRef } from 'react'
 import CabeceraModulo from './components/CabeceraModulo.jsx'
 import Circulo from './pages/Circulo.jsx'
+import PianoLibre from './pages/PianoLibre.jsx'
 import { useRuta } from './router.js'
 import Importar from './pages/Importar.jsx'
 import Inicio from './pages/Inicio.jsx'
@@ -21,6 +22,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'letras') return <Letras id={ruta.id} />
   if (ruta.pagina === 'vocabulario') return <Vocabulario modo={ruta.id} />
   if (ruta.pagina === 'circulo') return <Circulo />
+  if (ruta.pagina === 'piano') return <PianoLibre />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }

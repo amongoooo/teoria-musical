@@ -23,7 +23,10 @@ import {
   objetivosDe,
 } from '../theory/ritmo.js'
 import { tinta } from '../ui/color.js'
-import { Metronomo, Oreja } from '../ui/Iconos.jsx'
+import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
+import CaminoRuta from '../components/CaminoRuta.jsx'
+import { estadoRuta, getRuta } from '../content/rutas.js'
+import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
 import { BarraAccion } from './Leccion.jsx'
 
@@ -41,6 +44,26 @@ export default function Ritmo({ modo: modoId }) {
       modos={MODOS_RITMO}
       ruta={rutas.ritmo}
       Icono={Metronomo}
+      despues={<RutaRitmo />}
+    />
+  )
+}
+
+/** La ruta de ritmo, debajo de la práctica de hoy (opción «una puerta por habilidad» elegida por el usuario). */
+function RutaRitmo() {
+  const progreso = useProgreso()
+  const { admin } = useOpciones()
+  const ritmo = tiendaRitmo.usar()
+  const nivelMax = (modo) => tiendaRitmo.datosModo(modo, ritmo).nivelMax
+  const ruta = getRuta('ritmo')
+  return (
+    <CaminoRuta
+      ruta={ruta}
+      estado={estadoRuta(ruta, { progreso, nivelMax, admin })}
+      Icono={Metronomo}
+      iconosAbre={{ flow: Pluma }}
+      nivelMax={nivelMax}
+      enlaceMeta={rutas.ritmo}
     />
   )
 }

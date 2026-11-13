@@ -4,7 +4,8 @@ import { desbloquearAdmin, salirAdmin } from '../progress/admin.js'
 import { setGesto, setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
 import { RESORTE, SUBE } from '../ui/movimiento.js'
-import { Bombilla, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
+import { Bombilla, Candado, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
+import useTemblor from '../ui/useTemblor.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import ProgramarTema from './ProgramarTema.jsx'
@@ -272,29 +273,42 @@ export function Segmentado({ opciones, valor, onCambiar, etiqueta, capa, foco = 
       // Con 4 opciones (Apariencia) no caben en una fila a 375 px: van en 2 × 2.
       style={{ gridTemplateColumns: `repeat(${opciones.length > 3 ? 2 : opciones.length}, minmax(0, 1fr))` }}
     >
-      {opciones.map(({ id, nombre }) => {
-        const activo = valor === id
-        return (
-          <Pulsable
-            key={id}
-            role="radio"
-            aria-checked={activo}
-            data-foco={foco && activo ? true : undefined}
-            onClick={() => onCambiar(id)}
-            className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-base font-semibold ${activo ? 'text-zinc-900' : 'text-zinc-600'}`}
-          >
-            {activo && (
-              <motion.span
-                layoutId={capa}
-                className="absolute inset-0 rounded-xl bg-white shadow-sm dark:bg-zinc-300"
-                transition={RESORTE.pulsar}
-                aria-hidden
-              />
-            )}
-            <span className="relative">{nombre}</span>
-          </Pulsable>
-        )
-      })}
+      {opciones.map((o) => (
+        <OpcionSegmentada key={o.id} opcion={o} activo={valor === o.id} onCambiar={onCambiar} capa={capa} foco={foco} />
+      ))}
+    </div>
+  )
+}
+
+/** Una opción del control segmentado. `bloqueado`: gris con candado; al tocarla tiembla y no cambia. */
+function OpcionSegmentada({ opcion: { id, nombre, bloqueado }, activo, onCambiar, capa, foco }) {
+  const [ref, temblar] = useTemblor()
+  return (
+    <div ref={ref} className="grid">
+      <Pulsable
+        role="radio"
+        aria-checked={activo}
+        aria-disabled={bloqueado || undefined}
+        data-foco={foco && activo ? true : undefined}
+        data-bloqueado={bloqueado || undefined}
+        onClick={() => (bloqueado ? temblar() : onCambiar(id))}
+        className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-base font-semibold ${
+          activo ? 'text-zinc-900' : bloqueado ? 'text-zinc-400' : 'text-zinc-600'
+        }`}
+      >
+        {activo && (
+          <motion.span
+            layoutId={capa}
+            className="absolute inset-0 rounded-xl bg-white shadow-sm dark:bg-zinc-300"
+            transition={RESORTE.pulsar}
+            aria-hidden
+          />
+        )}
+        <span className="relative flex items-center gap-1.5">
+          {bloqueado && <Candado className="size-4" />}
+          {nombre}
+        </span>
+      </Pulsable>
     </div>
   )
 }

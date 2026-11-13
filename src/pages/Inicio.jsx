@@ -1,7 +1,6 @@
 import { motion } from 'motion/react'
 import BotonOpciones from '../components/Opciones.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
-import Piano from '../components/Piano.jsx'
 import { getLeccion, leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
 import { tiendaOido } from '../progress/oido.js'
@@ -14,6 +13,7 @@ import { labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 import { tiendaVocab } from '../progress/vocabulario.js'
 import { useOpciones } from '../progress/opciones.js'
+import { HERRAMIENTAS, estadoRuta, getRuta, herramientaAbierta } from '../content/rutas.js'
 import { ultimaTonalidad } from '../progress/circulo.js'
 import CirculoNodos, { tonalidad } from '../components/CirculoNodos.jsx'
 import { datosCasilla } from '../components/CirculoQuintas.jsx'
@@ -29,6 +29,8 @@ import useTemblor from '../ui/useTemblor.js'
 export default function Inicio() {
   const progreso = useProgreso()
   const opciones = useOpciones()
+  const ritmo = tiendaRitmo.usar()
+  const rutaRitmo = estadoRuta(getRuta('ritmo'), { progreso, nivelMax: (m) => tiendaRitmo.datosModo(m, ritmo).nivelMax })
   const disponibles = leccionesDisponibles()
   // Siguiente lección: la primera sin completar (o la última si ya hiciste todas).
   const siguiente = disponibles.find((l) => !progreso.lecciones[l.id]?.completada)
@@ -63,10 +65,10 @@ export default function Inicio() {
       )}
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Entrenamientos</Titulo>
+        <Titulo>Rutas y práctica</Titulo>
         <div className="grid grid-cols-3 gap-2">
           <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
-          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" />
+          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" ruta={rutaRitmo} />
           <BloqueRacha tienda={tiendaVocab} href={rutas.letras()} id="letras" nombre="Letras" titulo="Entrenamiento de letras" Icono={Pluma} acento="var(--color-modulo-6)" />
         </div>
       </motion.section>
@@ -84,13 +86,11 @@ export default function Inicio() {
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Círculo de quintas</Titulo>
-        <TarjetaCirculo abierta={!!progreso.lecciones[LECCION_CIRCULO]?.completada || opciones.admin} />
-      </motion.section>
-
-      <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Piano libre</Titulo>
-        <Piano tecladoArriba />
+        <Titulo>Herramientas</Titulo>
+        <div className="flex flex-col gap-3">
+          <TarjetaCirculo abierta={herramientaAbierta('circulo', progreso, opciones.admin)} />
+          <TarjetaPiano />
+        </div>
       </motion.section>
     </motion.main>
   )
@@ -182,7 +182,7 @@ function BloqueEntrenamiento({ href, nombre, Icono, acento, children, ...props }
  * Bloque de un entrenamiento con su racha (días seguidos) y la barra de los 5 minutos de hoy (verde al cumplirlos).
  * Cada entrenamiento lleva su propia memoria (`tienda`): oído y ritmo tienen racha y minutos aparte.
  */
-function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
+function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento, ruta }) {
   const estado = tienda.usar()
   const dia = tienda.datosDeHoy(estado)
   const racha = tienda.rachaActual(estado)
@@ -193,7 +193,7 @@ function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
       nombre={nombre}
       Icono={Icono}
       acento={acento}
-      aria-label={`${titulo}: racha de ${racha} ${racha === 1 ? 'día' : 'días'}`}
+      aria-label={`${titulo}: racha de ${racha} ${racha === 1 ? 'día' : 'días'}${ruta ? `, ruta ${ruta.hechas} de ${ruta.total}` : ''}`}
       data-entrenamiento={id}
     >
       <span className="font-juego text-base tabular-nums" style={{ color: tinta(acento) }}>
@@ -207,6 +207,11 @@ function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
           transition={{ ...RESORTE.suave, delay: 0.35 }}
         />
       </span>
+      {ruta && (
+        <span className="font-dato text-sm font-medium tabular-nums" style={{ color: tinta(acento) }} data-ruta-inicio={id}>
+          ruta {ruta.hechas}/{ruta.total}
+        </span>
+      )}
     </BloqueEntrenamiento>
   )
 }
@@ -253,7 +258,7 @@ function CuadritoModulo({ modulo: m, progreso }) {
 }
 
 /** Lección del curso que abre el explorador del círculo (pedido del usuario: «se desbloquea al desbloquear la rueda en el curso»). */
-const LECCION_CIRCULO = '3.5'
+const LECCION_CIRCULO = HERRAMIENTAS.circulo.leccion
 
 /**
  * Entrada al explorador del círculo de quintas: tarjetita con un mini círculo de nodos (la última tonalidad vista,
@@ -286,7 +291,7 @@ function TarjetaCirculo({ abierta }) {
         >
           {mini}
           <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-juego text-lg uppercase tracking-wide text-zinc-500">Explorar</span>
+            <span className="font-juego text-lg uppercase tracking-wide text-zinc-500">Círculo de quintas</span>
             <span className="text-base font-semibold text-zinc-500">Termina la {LECCION_CIRCULO}</span>
           </span>
         </Pulsable>
@@ -304,7 +309,7 @@ function TarjetaCirculo({ abierta }) {
     >
       {mini}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Explorar</span>
+        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Círculo de quintas</span>
         <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta(COLOR_CIRCULO) }}>
           {t.nombre}
         </span>
@@ -316,5 +321,47 @@ function TarjetaCirculo({ abierta }) {
         ›
       </span>
     </Pulsable>
+  )
+}
+
+/** Tarjetita del Piano libre (Herramientas; pedido del usuario: «que el piano salga también en tarjetita como el círculo»). */
+function TarjetaPiano() {
+  return (
+    <Pulsable
+      href={rutas.piano()}
+      tipo="tarjeta"
+      data-tarjeta-piano
+      aria-label="Piano libre"
+      className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
+      style={{ boxShadow: RELIEVE }}
+    >
+      <MiniPiano />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Piano libre</span>
+        <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta('var(--color-modulo-1)') }}>
+          Toca lo que quieras
+        </span>
+      </span>
+      <span className="text-2xl text-zinc-400" aria-hidden>
+        ›
+      </span>
+    </Pulsable>
+  )
+}
+
+/** Dibujito de un teclado (5 blancas y 3 negras), siempre claro como el Piano. */
+function MiniPiano() {
+  const negras = [7.25, 17.25, 37.25] // entre Do-Re, Re-Mi y Fa-Sol
+  return (
+    <span className="tema-claro grid size-20 shrink-0 place-items-center" aria-hidden>
+      <svg viewBox="0 0 50 34" className="w-full">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <rect key={i} x={i * 10 + 0.5} y={0.5} width={9} height={33} rx={2} style={{ fill: 'var(--color-white)', stroke: 'var(--color-zinc-300)' }} />
+        ))}
+        {negras.map((x) => (
+          <rect key={x} x={x} y={0.5} width={5.5} height={20} rx={1.5} style={{ fill: 'var(--color-zinc-800)' }} />
+        ))}
+      </svg>
+    </span>
   )
 }
