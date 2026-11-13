@@ -13,6 +13,7 @@ function parse(hash) {
   if (partes[0] === 'letras' && partes[1] === 'vocabulario') return { pagina: 'vocabulario', id: partes[2] ?? null }
   if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'piano') return { pagina: 'piano' }
+  if (partes[0] === 'ruta' && partes[1]) return { pagina: 'ruta', id: partes[1] }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
@@ -40,6 +41,8 @@ export const rutas = {
   circulo: () => '#/circulo',
   /** Piano libre (antes estaba al final de Inicio). */
   piano: () => '#/piano',
+  /** Una ruta de curso (se ve igual que un módulo). */
+  ruta: (id) => `#/ruta/${id}`,
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
   ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),

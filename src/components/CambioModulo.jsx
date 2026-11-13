@@ -35,10 +35,11 @@ export default function useCambioModulo(modulo, { isla = null } = {}) {
   const ancho = useAncho()
   const X = ancho < 560 ? Math.max(160, ancho * DESLIZAR.pagina.umbralCelular) : DESLIZAR.pagina.umbralAncho
   const XV = DESLIZAR.pagina.umbralVertical
-  const vecino = (dir) => getModulo(modulo.numero + dir)
+  // Una ruta (rutaModulo.js) trae su propio `vecino` (la ruta de al lado) y `disponible`.
+  const vecino = (dir) => (modulo.vecino ? modulo.vecino(dir) : getModulo(modulo.numero + dir))
   const puede = (dir) => {
     const m = vecino(dir)
-    return Boolean(m && moduloDisponible(m))
+    return Boolean(m && (m.esRuta ? m.disponible : moduloDisponible(m)))
   }
 
   // Al pasar, lo que se ve se congela (la página se va con su transición de salida).
@@ -48,7 +49,8 @@ export default function useCambioModulo(modulo, { isla = null } = {}) {
     if (saliendo.current) return
     saliendo.current = true
     setSeVa(true)
-    navegar(rutas.modulo(modulo.numero + dir))
+    const m = vecino(dir)
+    navegar(m.esRuta ? rutas.ruta(m.id) : rutas.modulo(modulo.numero + dir))
   }
 
   const lado = useDeslizar({
@@ -183,8 +185,8 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
           {cuadrito}
           <span className="flex flex-col">
             {encabezado}
-            <span className="text-lg font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
-            <span className="text-base text-zinc-600">{disponible ? modulo.titulo : 'Próximamente'}</span>
+            <span className="text-lg font-bold leading-tight text-zinc-900">{modulo.esRuta ? `Ruta de ${modulo.titulo.toLowerCase()}` : `Módulo ${modulo.numero}`}</span>
+            <span className="text-base text-zinc-600">{disponible ? (modulo.esRuta ? modulo.descripcion : modulo.titulo) : 'Próximamente'}</span>
           </span>
         </motion.div>
       </motion.div>
@@ -200,7 +202,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
       {cuadrito}
       <span className="flex flex-col items-center gap-0.5 text-center">
         {encabezado}
-        <span className="text-base font-bold leading-tight text-zinc-900">Módulo {modulo.numero}</span>
+        <span className="text-base font-bold leading-tight text-zinc-900">{modulo.esRuta ? modulo.titulo : `Módulo ${modulo.numero}`}</span>
         {!disponible && <span className="text-sm font-semibold text-zinc-500">Próximamente</span>}
       </span>
     </motion.div>

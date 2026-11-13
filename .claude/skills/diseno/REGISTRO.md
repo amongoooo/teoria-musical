@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Rutas iguales a los módulos** (pedido del usuario): la ruta es la página de Módulo (misma cabecera, camino de islas, globos, puntitos y deslizar) con el ícono de su práctica en lugar del número y, hasta abajo, la tarjetita «Módulos y prácticas». Inicio: Módulos · Prácticas · Rutas (cuadritos) · Herramientas. Sustituye al camino propio de la ruta dentro del panel.
+
 - 2026-11-13: **Rutas de curso y nuevo Inicio** (opción 1 «una puerta por habilidad», elegida por el usuario): «Rutas y práctica» con el avance de la ruta en cada bloque, «Herramientas» con tarjetitas (Círculo y Piano libre, pedido del usuario). Camino de la ruta en el panel del entrenamiento: la forma de la isla dice el tipo de parada (círculo = lección o práctica, cuadrito = se abre algo, trofeo = reto). Opción bloqueada en el control segmentado (candado + tiembla) para el Flow hasta la 2.4.
 
 - 2026-11-13: **Círculo de nodos** (explorador `#/circulo`, propuesta A elegida entre 3): el usuario pidió nodos sin color en vez de casillas; al elegir una tonalidad se prenden sus 7 notas y una línea las une y gira; la nota que suena prende su nodo en celeste. Teclado de una octava fija con la nota nueva en oro y la que se va con contorno punteado. Tarjetita en Inicio bloqueada (punteada, candado, tiembla) hasta terminar la 3.5.

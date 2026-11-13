@@ -13,7 +13,8 @@ import { labio, oscuro, tinta } from '../ui/color.js'
 import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 import { tiendaVocab } from '../progress/vocabulario.js'
 import { useOpciones } from '../progress/opciones.js'
-import { HERRAMIENTAS, estadoRuta, getRuta, herramientaAbierta } from '../content/rutas.js'
+import { HERRAMIENTAS, ORDEN_RUTAS, herramientaAbierta } from '../content/rutas.js'
+import { useRuta } from '../components/rutaModulo.js'
 import { ultimaTonalidad } from '../progress/circulo.js'
 import CirculoNodos, { tonalidad } from '../components/CirculoNodos.jsx'
 import { datosCasilla } from '../components/CirculoQuintas.jsx'
@@ -29,8 +30,6 @@ import useTemblor from '../ui/useTemblor.js'
 export default function Inicio() {
   const progreso = useProgreso()
   const opciones = useOpciones()
-  const ritmo = tiendaRitmo.usar()
-  const rutaRitmo = estadoRuta(getRuta('ritmo'), { progreso, nivelMax: (m) => tiendaRitmo.datosModo(m, ritmo).nivelMax })
   const disponibles = leccionesDisponibles()
   // Siguiente lección: la primera sin completar (o la última si ya hiciste todas).
   const siguiente = disponibles.find((l) => !progreso.lecciones[l.id]?.completada)
@@ -65,21 +64,33 @@ export default function Inicio() {
       )}
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Rutas y práctica</Titulo>
-        <div className="grid grid-cols-3 gap-2">
-          <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
-          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" ruta={rutaRitmo} />
-          <BloqueRacha tienda={tiendaVocab} href={rutas.letras()} id="letras" nombre="Letras" titulo="Entrenamiento de letras" Icono={Pluma} acento="var(--color-modulo-6)" />
-        </div>
-      </motion.section>
-
-      <motion.section variants={itemLista} className="flex flex-col gap-4">
         <Titulo>Módulos</Titulo>
         {/* Cada módulo es un cuadrito con su número y su título; al tocarlo se despliegan sus islas. */}
         <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
           {MODULOS.map((m) => (
             <li key={m.numero}>
               <CuadritoModulo modulo={m} progreso={progreso} />
+            </li>
+          ))}
+        </ol>
+      </motion.section>
+
+      <motion.section variants={itemLista} className="flex flex-col gap-4">
+        <Titulo>Prácticas</Titulo>
+        <div className="grid grid-cols-3 gap-2">
+          <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
+          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" />
+          <BloqueRacha tienda={tiendaVocab} href={rutas.letras()} id="letras" nombre="Letras" titulo="Entrenamiento de letras" Icono={Pluma} acento="var(--color-modulo-6)" />
+        </div>
+      </motion.section>
+
+      <motion.section variants={itemLista} className="flex flex-col gap-4">
+        <Titulo>Rutas</Titulo>
+        {/* Como los módulos: un cuadrito por ruta (con su ícono); las que aún no tienen paradas, con candado. */}
+        <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
+          {ORDEN_RUTAS.map((id) => (
+            <li key={id}>
+              <CuadritoRuta id={id} />
             </li>
           ))}
         </ol>
@@ -182,7 +193,7 @@ function BloqueEntrenamiento({ href, nombre, Icono, acento, children, ...props }
  * Bloque de un entrenamiento con su racha (días seguidos) y la barra de los 5 minutos de hoy (verde al cumplirlos).
  * Cada entrenamiento lleva su propia memoria (`tienda`): oído y ritmo tienen racha y minutos aparte.
  */
-function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento, ruta }) {
+function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
   const estado = tienda.usar()
   const dia = tienda.datosDeHoy(estado)
   const racha = tienda.rachaActual(estado)
@@ -193,7 +204,7 @@ function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento, ruta }) 
       nombre={nombre}
       Icono={Icono}
       acento={acento}
-      aria-label={`${titulo}: racha de ${racha} ${racha === 1 ? 'día' : 'días'}${ruta ? `, ruta ${ruta.hechas} de ${ruta.total}` : ''}`}
+      aria-label={`${titulo}: racha de ${racha} ${racha === 1 ? 'día' : 'días'}`}
       data-entrenamiento={id}
     >
       <span className="font-juego text-base tabular-nums" style={{ color: tinta(acento) }}>
@@ -207,11 +218,6 @@ function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento, ruta }) 
           transition={{ ...RESORTE.suave, delay: 0.35 }}
         />
       </span>
-      {ruta && (
-        <span className="font-dato text-sm font-medium tabular-nums" style={{ color: tinta(acento) }} data-ruta-inicio={id}>
-          ruta {ruta.hechas}/{ruta.total}
-        </span>
-      )}
     </BloqueEntrenamiento>
   )
 }
@@ -363,5 +369,47 @@ function MiniPiano() {
         ))}
       </svg>
     </span>
+  )
+}
+
+/** Cuadrito de una ruta (como el de un módulo, con su ícono): paradas hechas / total; sin paradas aún, con candado. */
+function CuadritoRuta({ id }) {
+  const { ruta, modulo, estado } = useRuta(id)
+  const disponible = modulo.disponible
+  const contenido = (
+    <>
+      <span className="relative">
+        <Cuadrito modulo={modulo} disponible={disponible} hecho={disponible && estado.hechas === estado.total} tam={76} />
+        {!disponible && (
+          <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-zinc-400 text-white" aria-hidden>
+            <Candado className="size-3.5" />
+          </span>
+        )}
+      </span>
+      <span className={`text-base font-semibold leading-snug ${disponible ? 'text-zinc-900' : 'text-zinc-500'}`}>{ruta.nombre}</span>
+      {disponible && (
+        <span className="font-juego text-base tabular-nums" style={{ color: tinta(modulo.acento) }} data-ruta-inicio={id}>
+          {estado.hechas}/{estado.total}
+        </span>
+      )}
+    </>
+  )
+  if (!disponible) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`${ruta.titulo}. Próximamente`} data-cuadrito-ruta={id}>
+        {contenido}
+      </div>
+    )
+  }
+  return (
+    <Pulsable
+      href={rutas.ruta(id)}
+      tipo="tarjeta"
+      aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total} paradas`}
+      data-cuadrito-ruta={id}
+      className="flex min-h-11 flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
+    >
+      {contenido}
+    </Pulsable>
   )
 }

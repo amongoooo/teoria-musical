@@ -3,6 +3,8 @@ import { useRef } from 'react'
 import CabeceraModulo from './components/CabeceraModulo.jsx'
 import Circulo from './pages/Circulo.jsx'
 import PianoLibre from './pages/PianoLibre.jsx'
+import Ruta from './pages/Ruta.jsx'
+import { ORDEN_RUTAS } from './content/rutas.js'
 import { useRuta } from './router.js'
 import Importar from './pages/Importar.jsx'
 import Inicio from './pages/Inicio.jsx'
@@ -23,6 +25,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'vocabulario') return <Vocabulario modo={ruta.id} />
   if (ruta.pagina === 'circulo') return <Circulo />
   if (ruta.pagina === 'piano') return <PianoLibre />
+  if (ruta.pagina === 'ruta') return <Ruta id={ruta.id} />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }
@@ -38,7 +41,12 @@ export default function App() {
     const prof = profundidad(ruta)
     const previa = anterior.current.ruta
     const entreModulos = ruta.pagina === 'modulo' && previa.pagina === 'modulo'
-    const dir = entreModulos ? (Number(ruta.id) > Number(previa.id) ? 1 : -1) : prof >= anterior.current.prof ? 1 : -1
+    const entreRutas = ruta.pagina === 'ruta' && previa.pagina === 'ruta'
+    const dir = entreModulos
+      ? Number(ruta.id) > Number(previa.id) ? 1 : -1
+      : entreRutas
+        ? ORDEN_RUTAS.indexOf(ruta.id) > ORDEN_RUTAS.indexOf(previa.id) ? 1 : -1
+        : prof >= anterior.current.prof ? 1 : -1
     anterior.current = { clave, ruta, prof, dir }
   }
   const dir = anterior.current.dir
@@ -49,7 +57,7 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       {/* Cabecera de los módulos fuera de la transición: entre módulos se queda quieta (solo cambia la barra). */}
       <AnimatePresence initial={false} custom={dir}>
-        {ruta.pagina === 'modulo' && (
+        {(ruta.pagina === 'modulo' || ruta.pagina === 'ruta') && (
           <motion.div
             key="cabecera-modulo"
             custom={dir}
@@ -59,7 +67,7 @@ export default function App() {
             exit="sale"
             transition={{ ...RESORTE.pantalla, opacity: { duration: 0.18 } }}
           >
-            <CabeceraModulo numero={ruta.id} />
+            {ruta.pagina === 'ruta' ? <CabeceraModulo ruta={ruta.id} /> : <CabeceraModulo numero={ruta.id} />}
           </motion.div>
         )}
       </AnimatePresence>
