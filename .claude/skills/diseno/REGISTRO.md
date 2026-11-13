@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: (pedido del usuario) Arranque del entrenador con apartado **Configurar** cerrado (resumen en fichas y botón Predeterminados). La barra de vidas solo sale jugando y es **lisa**; al perder una vida, los vidrios de arriba brillan en rojo y tiemblan.
+
 - 2026-11-13: (pedido del usuario) **Inicio estilo videojuego**, pensado para crecer con más entrenamientos (Oído, Ritmo y después sound design, masterización): logo como insignia, tarjeta de «jugar» con la siguiente lección, bloques de entrenamientos con relieve (los que faltan, punteados con candado y «Pronto») y módulos con candado. Sin la frase gris de bienvenida.
 
 - 2026-11-13: (pedido del usuario) **Vidas** en el entrenador: rueda central (1–20, ∞; Escalada en Rápido) y barra roja dividida bajo la de aciertos. Contrarreloj: la barra no se vacía hasta el final del borrador y el tiempo corre en amarillo. El piano de respuesta ya no cambia de octava solo (salvo administrador).
