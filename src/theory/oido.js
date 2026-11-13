@@ -212,6 +212,18 @@ export const AJUSTES_ABSOLUTO = {
   cadaAciertos: { defecto: 8, min: 2, max: 20 },
   segundos: { defecto: 5, min: 2, max: 15 },
   octavas: { defecto: 1, min: 1, max: 5 },
+  // Vidas (pedido del usuario): 1…20 y, encima, ∞ (21). En Rápido, debajo del 1 está la Escalada (0).
+  vidas: { defecto: 5, min: 0, max: 21 },
+}
+
+export const VIDAS_INFINITAS = 21
+/** Rápido con 0 vidas: las vidas son las notas que subes desde el inicio; si vuelves al inicio, se acaba. */
+export const VIDAS_ESCALADA = 0
+
+/** Vidas elegidas para un juego (fuera de Rápido no existe la Escalada: mínimo 1). */
+export function vidasDe(ajustes, rapido = false) {
+  const v = ajusteAbsoluto(ajustes, 'vidas')
+  return rapido ? v : Math.max(1, v)
 }
 
 /** Valor de un ajuste del oído absoluto, dentro de sus límites. */

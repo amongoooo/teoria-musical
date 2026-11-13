@@ -141,6 +141,8 @@
   --color-dificultad-5-relleno: var(--color-modulo-5-relleno);
   --color-dificultad-5-tinta: var(--color-modulo-5-tinta);
   --color-dificultad-5-suave: var(--color-modulo-5-suave);
+  /* Vidas del entrenador de oído (barra roja de la cabecera). */
+  --color-vida: var(--color-modulo-5);
 }
 
 /*
