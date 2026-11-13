@@ -7,7 +7,7 @@
 //  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar (salir de una lección
 //    o una hoja) · Atras (volver al apartado anterior) · Inicio (ir a la pantalla de inicio) · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
-//  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo)
+//  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo) · Pluma (letras)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
@@ -201,6 +201,17 @@ export function Metronomo(props) {
     <Icono {...props}>
       <path d="M9 3h6l4 18H5L9 3z" />
       <path d="M8.2 15h7.6M12 15l4-9" />
+    </Icono>
+  )
+}
+
+/** Pluma: el entrenamiento de letras (analizar rimas, vocabulario, flow). */
+export function Pluma(props) {
+  return (
+    <Icono {...props}>
+      <path d="M20 4c-7 0-12 5-13 13l-2 3" />
+      <path d="M20 4c0 7-5 11-11 12" />
+      <path d="M9 13l4-4" />
     </Icono>
   )
 }

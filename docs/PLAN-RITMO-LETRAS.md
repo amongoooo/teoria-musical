@@ -39,7 +39,15 @@ Detalle en la última entrada de `docs/HISTORIAL.md`. Prueba: `docs/pruebas/ritm
 oscuro). Ideas que quedaron fuera (si el usuario las pide): modos «Leer» y «Pulso interno»; conservar la prueba de
 las funciones puras como `src/theory/ritmo.test.mjs`.
 
-## Partes 2 a 4 — sin empezar
+## Parte 2 — Analizar letras: ✅ TERMINADA
+
+Motor en `src/letras/` (`silabas.js`, `rima.js`, `analisis.js`; pruebas `node src/letras/letras.test.mjs`), pantalla
+`pages/Letras.jsx` (`#/letras` cuaderno, `#/letras/ID` Escribir / Analizar + ficha de palabra), memoria
+`progress/letras.js`, colores `rima-1…8`, ícono `Pluma` y bloque Letras en Inicio. Detalle en `docs/HISTORIAL.md`.
+Quedó para después: buscar rimas en la lista de 50 000 palabras (va con vocabulario) y marcar en el texto las rimas
+multisilábicas palabra por palabra (hoy solo se ve «multi N» en el verso).
+
+## Partes 3 y 4 — sin empezar
 
 Ver el plan (artifact). Resumen técnico:
 
