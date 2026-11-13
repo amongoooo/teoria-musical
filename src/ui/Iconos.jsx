@@ -7,6 +7,7 @@
 //  - Controles de siempre:  Reproducir · Bocina (escuchar otra vez) · Cerrar (salir de una lección
 //    o una hoja) · Atras (volver al apartado anterior) · Inicio (ir a la pantalla de inicio) · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
+//  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
@@ -190,6 +191,16 @@ export function Escalada(props) {
   return (
     <Icono {...props}>
       <path d="M3 20h5v-5h5v-5h5V5h3" />
+    </Icono>
+  )
+}
+
+/** Metrónomo: el entrenamiento de ritmo. */
+export function Metronomo(props) {
+  return (
+    <Icono {...props}>
+      <path d="M9 3h6l4 18H5L9 3z" />
+      <path d="M8.2 15h7.6M12 15l4-9" />
     </Icono>
   )
 }
