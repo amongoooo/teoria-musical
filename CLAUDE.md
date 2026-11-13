@@ -71,7 +71,7 @@ src/
 public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
 docs/HISTORIAL.md       # Historial detallado de todas las tareas
-docs/pruebas/audio/     # Scripts de Playwright que miden el audio (retraso de las teclas, notas colgadas)
+docs/pruebas/audio/     # Scripts de Playwright que miden el audio: medir.mjs (retraso, notas colgadas, mismo instante) y pantallas.mjs (pad, paso tocar, entrenador)
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
 
@@ -99,9 +99,9 @@ docs/pruebas/audio/     # Scripts de Playwright que miden el audio (retraso de l
 
 ## Estado del proyecto
 
-**Avance: ~82 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
+**Avance: ~83 %** — detalle de cada tarea en `docs/HISTORIAL.md`.
 
-- ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone.
+- ✅ **Base**: Vite + React + Tailwind, despliegue automático, motor de lecciones (visor paso a paso, progreso, desbloqueo), audio robusto en iPhone y en vivo sin retraso (`Tone.immediate()`).
 - ✅ **Módulo 1** completo (1.1–1.4): frecuencia y altura, las 12 notas y la octava, sostenidos y bemoles, leer el Piano Roll.
 - ✅ **Módulo 2** completo (2.1–2.5): pulso y tempo, compás, figuras, síncopa, swing/groove/velocity (batería sintetizada, pad de pulso, grooves).
 - 🟡 **Módulo 3** «Intervalos y escalas»: ✅ 3.1 «Tono y semitono» (Tonal.js; P5 «Medir un paso», P6 «Seguir la fórmula») · ✅ 3.2 «Los intervalos y su carácter» (canciones de referencia; O6 «Emparejar», P7 «Construir un intervalo», fichas que suenan) · ✅ 3.3 «La escala mayor» (Do, Sol, Re, Fa; grados con Tonal `Scale`; «¿mayor u otra cosa?», «¿termina en casa?», escribirla en el roll; casillas de la fórmula que tiemblan y con grados) · ✅ 3.4 «La escala menor natural y la relativa» (La, Mi, Re y Sol menor; relativa = 6.º grado con `relativaMenor`; «¿mayor o menor?», «¿la mayor o su relativa?», «Encuentra la relativa» con P7; la misma melodía en mayor, paralela y relativa con `melodia()`). Faltan 3.5–3.7.
@@ -116,6 +116,6 @@ docs/pruebas/audio/     # Scripts de Playwright que miden el audio (retraso de l
 
 **Siguiente tarea (¡empezar aquí!):** terminar el **entrenamiento de ritmo**. Lee `docs/PLAN-RITMO-LETRAS.md` (sección «Parte 1 — qué FALTA» y «Diseño ya pensado del Entrenador»): crear `src/pages/Ritmo.jsx` calcando `pages/Oido.jsx`, añadir la ruta `#/ritmo` (`router.js`, `App.jsx`, `profundidad()`), cambiar el bloque «Pronto» de Inicio por uno real, probar a 375 px en claro y oscuro, documentar (también la skill de diseño), PR y merge. Después, en orden: **analizar letras** → **vocabulario** → **flow**. Lo que estaba antes en la cola sigue pendiente: lección 3.5 «Grados, tonalidad y círculo de quintas» y la prueba rápida al inicio de cada módulo.
 
-**También pendiente (aparte, corto):** terminar el **retraso del piano** (cambio ya en `main`: `noteOn`/`noteOff` con `Tone.immediate()`; faltan las pruebas del paso `tocar` y del piano del entrenador, el caso «soltar en el mismo instante» con el sintetizador y el pad de frecuencias: ver la última entrada de `docs/HISTORIAL.md` y `docs/pruebas/audio/`). Después, planear y empezar el **entrenamiento de ritmo** (su bloque ya está en Inicio como «Pronto»; después vendrán sound design, masterización…); luego la lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
+**Hecho aparte:** ✅ **piano sin retraso** (teclas, paso `tocar`, entrenador y pad de frecuencias con `Tone.immediate()`; nota mínima de 0,03 s para que no quede muda al soltar en el mismo instante; pruebas en `docs/pruebas/audio/`: `medir.mjs` y `pantallas.mjs`).
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.
