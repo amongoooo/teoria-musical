@@ -132,5 +132,6 @@ Ver el plan (artifact). Resumen técnico:
 
 ## Aparte (no es de este plan)
 
-`noteOn`/`noteOff` de `src/audio/engine.js` usan `Tone.now()`, que suma 0,1 s de margen (`lookAhead`): las teclas del
-piano suenan ~100 ms tarde. Se arregla con `Tone.immediate()`; quedó propuesto como tarea aparte.
+Al escribir `golpeAhora` se vio que `noteOn`/`noteOff` usaban `Tone.now()` (suma 0,1 s de margen): las teclas del
+piano sonaban ~100 ms tarde. **Ya está arreglado en `main`** (PR #47, `Tone.immediate()`); le quedan unas pruebas
+pendientes, anotadas en `CLAUDE.md` («También pendiente») y en su entrada de `docs/HISTORIAL.md`.

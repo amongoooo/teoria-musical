@@ -71,6 +71,7 @@ src/
 public/                 # manifest.webmanifest (PWA) e iconos/ (ícono de la app: SVG + PNG 192/512, enmascarables y apple-touch-icon)
 .claude/skills/diseno/  # Skill de diseño (SKILL.md) + REGISTRO.md
 docs/HISTORIAL.md       # Historial detallado de todas las tareas
+docs/pruebas/audio/     # Scripts de Playwright que miden el audio (retraso de las teclas, notas colgadas)
 .github/workflows/deploy.yml  # Despliegue automático a GitHub Pages
 ```
 
@@ -114,5 +115,7 @@ docs/HISTORIAL.md       # Historial detallado de todas las tareas
 - ⬜ Módulos 4–10, prueba rápida por módulo, MIDI.
 
 **Siguiente tarea (¡empezar aquí!):** terminar el **entrenamiento de ritmo**. Lee `docs/PLAN-RITMO-LETRAS.md` (sección «Parte 1 — qué FALTA» y «Diseño ya pensado del Entrenador»): crear `src/pages/Ritmo.jsx` calcando `pages/Oido.jsx`, añadir la ruta `#/ritmo` (`router.js`, `App.jsx`, `profundidad()`), cambiar el bloque «Pronto» de Inicio por uno real, probar a 375 px en claro y oscuro, documentar (también la skill de diseño), PR y merge. Después, en orden: **analizar letras** → **vocabulario** → **flow**. Lo que estaba antes en la cola sigue pendiente: lección 3.5 «Grados, tonalidad y círculo de quintas» y la prueba rápida al inicio de cada módulo.
+
+**También pendiente (aparte, corto):** terminar el **retraso del piano** (cambio ya en `main`: `noteOn`/`noteOff` con `Tone.immediate()`; faltan las pruebas del paso `tocar` y del piano del entrenador, el caso «soltar en el mismo instante» con el sintetizador y el pad de frecuencias: ver la última entrada de `docs/HISTORIAL.md` y `docs/pruebas/audio/`). Después, planear y empezar el **entrenamiento de ritmo** (su bloque ya está en Inicio como «Pronto»; después vendrán sound design, masterización…); luego la lección 3.5 «Grados, tonalidad y círculo de quintas» (armaduras, el orden de los ♯ y ♭, tonalidades vecinas y relativas en el círculo), o la prueba rápida al inicio de cada módulo.
 
 **Al terminar cada tarea:** añade su entrada al final de `docs/HISTORIAL.md`, actualiza esta sección (avance, línea del módulo y siguiente tarea) y, si cambió el diseño, la skill y su `REGISTRO.md`.
