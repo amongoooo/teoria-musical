@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { RESORTE } from '../ui/movimiento.js'
+import useRuedaMouse from '../ui/useRuedaMouse.js'
 
 /** Píxeles que tiene que moverse el dedo para que un toque pase a ser un arrastre. */
 const ZONA_MUERTA = 6
@@ -28,6 +29,12 @@ export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir, i
   const x = useTransform(pos, (p) => `${p * 100}%`)
   const gesto = useRef(null) // { id, x0, arrastrando, ultimo }
   const tras = useRef(false) // ignora el click que llega justo después de arrastrar
+  // Computadora: la rueda del mouse mueve la píldora un segmento hacia donde va el scroll.
+  const destinoRueda = (dir) => indice + (invertida ? -dir : dir)
+  useRuedaMouse(caja, {
+    puede: (dir) => destinoRueda(dir) >= 0 && destinoRueda(dir) < n,
+    onPaso: (dir) => onCambiar(destinoRueda(dir)),
+  })
 
   // La píldora va a la octava elegida (por el dedo, un toque o la prop `ir` del Piano) con un resorte.
   const reducir = useReducedMotion()

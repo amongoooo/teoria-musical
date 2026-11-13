@@ -131,10 +131,13 @@ function guardarModo(id, cambios) {
   escribir({ ...e, modos: { ...e.modos, [id]: { ...datosModo(id, e), ...cambios } } })
 }
 
-/** Elegir nivel a mano (solo hasta el máximo alcanzado). Reinicia la ventana. */
-export function elegirNivel(id, nivel) {
+/**
+ * Elegir nivel a mano (solo hasta el máximo alcanzado; con `libre`, el modo administrador, cualquiera). Reinicia la
+ * ventana.
+ */
+export function elegirNivel(id, nivel, { libre = false } = {}) {
   const m = datosModo(id)
-  guardarModo(id, { nivel: Math.max(1, Math.min(nivel, m.nivelMax)), ventana: [], carga: 0 })
+  guardarModo(id, { nivel: Math.max(1, libre ? nivel : Math.min(nivel, m.nivelMax)), ventana: [], carga: 0 })
 }
 
 export function guardarAjustes(id, ajustes) {
