@@ -77,9 +77,13 @@ const CUADRITO = {
   lado: 38,
   iman: { type: 'spring', stiffness: 700, damping: 34, mass: 0.6 },
   vuelve: { type: 'spring', stiffness: 260, damping: 11, mass: 0.8 },
-  opacidad: { min: 0.12, max: 0.42 }, // encima de la barra (Opaco)
-  opacidadDetras: { min: 0.3, max: 0.75 }, // detrás del vidrio: el desenfoque lo aclara
+  opacidad: { min: 0.12, max: 0.32 }, // encima de la barra (Opaco)
+  opacidadDetras: { min: 0.3, max: 0.58 }, // detrás del vidrio: el desenfoque lo aclara
+  // El brillo crece EXPONENCIAL con la etapa (pedido del usuario): poco en las primeras, mucho al final.
+  curva: 2.5,
 }
+/** 0–1 → 0–1 exponencial: (e^(k·f) − 1) / (e^k − 1). */
+const brilloCuadrito = (f) => (Math.exp(CUADRITO.curva * f) - 1) / (Math.exp(CUADRITO.curva) - 1)
 const MATRACA = {
   max: 3,
   eje: 4,
@@ -1120,7 +1124,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
   const cuadroVe = useMotionValue(0)
   const detras = useOpciones().vidrio !== 'opaco' // con desenfoque, el cuadrito va detrás del vidrio
   const rango = detras ? CUADRITO.opacidadDetras : CUADRITO.opacidad
-  const cuadroOpacidad = useTransform(() => cuadroVe.get() * (rango.min + (rango.max - rango.min) * cuadroFuerza.get()))
+  const cuadroOpacidad = useTransform(() => cuadroVe.get() * (rango.min + (rango.max - rango.min) * brilloCuadrito(limitar(cuadroFuerza.get(), 0, 1))))
   const cuadroXDetras = useTransform(() => cuadroX.get() + golpe.get()) // detrás, sigue también el golpe de la matraca
   const cuadroEscala = useTransform(() => 1 + 0.1 * cuadroFuerza.get())
   /** Lleva el cuadrito a una etapa (x en px desde el centro y fuerza 0–1), con imán solo si la etapa cambió. */
