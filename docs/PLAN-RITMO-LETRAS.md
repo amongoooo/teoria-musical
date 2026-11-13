@@ -58,6 +58,13 @@ Opciones → Créditos). Pruebas: `node src/letras/vocabulario.test.mjs` y `docs
 **Para sumar temas** (tiempo, mar, fuego, cuerpo, camino, ciudad): un archivo de 30 palabras con la misma forma y
 añadirlo a `TEMAS` en `vocabulario/index.js` (las pruebas exigen 30 por tema y que el verso lleve la palabra).
 
+**Nota del usuario (pendiente):** en los ejemplos de palabras del vocabulario, **añadir si son de alguna canción y
+su artista**. Hoy los 120 versos de ejemplo son originales (escritos para la app), así que ninguno tiene canción. Cómo
+hacerlo: campo opcional `fuente: { cancion, artista }` en cada palabra de `src/letras/vocabulario/*.js` y, en la ficha
+(`FichaVocab` de `pages/Vocabulario.jsx`), una línea «— Canción · Artista» bajo el verso. Con canciones reales, por
+derechos de autor, citar solo un fragmento muy corto (o poner «aparece en *Canción*, de *Artista*» junto al verso
+propio, sin copiar la letra); los versos originales pueden llevar «verso escrito para la app».
+
 ## Parte 4 — Flow: ✅ TERMINADA
 
 Tercera pestaña «Flow» de cada letra (`components/Flow.jsx` + motor `src/letras/flow.js`, pruebas

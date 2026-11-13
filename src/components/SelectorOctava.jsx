@@ -30,10 +30,18 @@ export default function SelectorOctava({ octavas, indice, onCambiar, onSeguir, i
   const gesto = useRef(null) // { id, x0, arrastrando, ultimo }
   const tras = useRef(false) // ignora el click que llega justo después de arrastrar
   // Computadora: la rueda del mouse mueve la píldora un segmento hacia donde va el scroll.
-  const destinoRueda = (dir) => indice + (invertida ? -dir : dir)
+  // Suma al último destino pedido (varias muescas seguidas llegan antes de que cambie `indice`).
+  const objetivo = useRef(indice)
+  useEffect(() => {
+    objetivo.current = indice
+  }, [indice])
+  const destinoRueda = (dir) => objetivo.current + (invertida ? -dir : dir)
   useRuedaMouse(caja, {
     puede: (dir) => destinoRueda(dir) >= 0 && destinoRueda(dir) < n,
-    onPaso: (dir) => onCambiar(destinoRueda(dir)),
+    onPaso: (dir) => {
+      objetivo.current = destinoRueda(dir)
+      onCambiar(objetivo.current)
+    },
   })
 
   // La píldora va a la octava elegida (por el dedo, un toque o la prop `ir` del Piano) con un resorte.

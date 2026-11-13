@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Barra de abajo sin panel**: la información en su tarjeta sólida arriba y el botón de vidrio flotando siempre debajo, translúcido como «Empezar». **Fin de la partida** (oído y ritmo, sin vidas) con insignia, 4 tarjetas con relieve y «Continuar» al panel. Carruseles de Rápido / Contrarreloj con título encima y sin ícono. Rueda del mouse: una muesca = un paso, sin pausa. (pedido del usuario)
+
 - 2026-11-13: **Pad de goma** en lugar del de cuero (pedido del usuario, con una foto de un controlador de batería): marco oscuro, goma gris clara mate igual en los dos temas, se ilumina con el color al golpear.
 
 - 2026-11-13: **Flow** (pestaña de cada letra): rejilla de semicorcheas como el `Contador` (cuenta «1 e y a» en las vacías), sílabas en rosa (tónica rellena oscura, átona suave), aro celeste = suena, sílaba elegida = borde negro y sube, destinos posibles con borde punteado; pad rosa «● Grabar» que muestra la cuenta y luego la siguiente sílaba; ficha «3/3 acentos en el pulso» verde con ✓ cuando están todos. (pedido del usuario: Parte 4 del plan)

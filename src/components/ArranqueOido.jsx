@@ -15,7 +15,7 @@ import {
   vidasDe,
 } from '../theory/oido.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Check, Circulo8, Cronometro, Escalada, Info, Opciones as IconoOpciones, Oreja, Rayo } from '../ui/Iconos.jsx'
+import { Candado, Circulo8, Cronometro, Escalada, Info, Opciones as IconoOpciones, Oreja, Rayo } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
@@ -581,7 +581,6 @@ function ModosJuego({ modo, datos, acento, guardarAjustes }) {
                 clave="cadaAciertos"
                 valor={ajusteAbsoluto(datos.ajustes, 'cadaAciertos')}
                 onCambiar={(v) => guardarAjustes(modo.id, { cadaAciertos: v })}
-                unidad={<Check className="size-7" />}
                 etiqueta="Aciertos para sumar notas"
                 acento={acento}
               />
@@ -590,7 +589,6 @@ function ModosJuego({ modo, datos, acento, guardarAjustes }) {
                 clave="segundos"
                 valor={ajusteAbsoluto(datos.ajustes, 'segundos')}
                 onCambiar={(v) => guardarAjustes(modo.id, { segundos: v })}
-                unidad={<span className="font-juego text-2xl">s</span>}
                 etiqueta="Segundos por nota"
                 acento={acento}
               />
@@ -602,11 +600,17 @@ function ModosJuego({ modo, datos, acento, guardarAjustes }) {
   )
 }
 
-/** Ajuste de un modo (cada cuántos aciertos, segundos) en un carrusel horizontal, con su unidad al lado. */
-function AjusteRueda({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
+/**
+ * Ajuste de un modo (cada cuántos aciertos, segundos) en un carrusel horizontal con su título encima (pedido del
+ * usuario: título y sin ícono a la derecha), como los de Nivel · Vidas · Dificultad.
+ */
+function AjusteRueda({ clave, valor, onCambiar, etiqueta, acento }) {
   const { min, max } = AJUSTES_ABSOLUTO[clave]
   return (
-    <div className="flex w-full items-center gap-3" style={{ color: tinta(acento) }} data-ajuste={clave}>
+    <div className="flex w-full flex-col items-stretch gap-2" data-ajuste={clave}>
+      <h3 className="text-center font-juego text-base font-semibold uppercase tracking-wide text-zinc-800" data-titulo-ajuste>
+        {etiqueta}
+      </h3>
       <Rueda
         etiqueta={etiqueta}
         nombre={clave}
@@ -617,9 +621,8 @@ function AjusteRueda({ clave, valor, onCambiar, unidad, etiqueta, acento }) {
         valor={valor}
         onElegir={onCambiar}
         acento={acento}
-        className="h-16 min-w-0 flex-1"
+        className="h-16 w-full"
       />
-      <span className="shrink-0">{unidad}</span>
     </div>
   )
 }
@@ -674,7 +677,10 @@ function Rueda({
     onVista?.(k + min)
   })
 
+  // Adónde va la rueda (la rueda del mouse suma al destino, no a lo que se ve a medio camino).
+  const destinoRef = useRef(valor - min)
   const llevar = (k, resorte) => {
+    destinoRef.current = k
     anim.current?.stop()
     anim.current = animate(pos, k, resorte)
   }
@@ -756,8 +762,8 @@ function Rueda({
   // Computadora: la rueda del mouse la mueve un valor hacia donde va el scroll.
   useRuedaMouse(caja, {
     eje,
-    puede: (dir) => actual + dir >= 0 && actual + dir <= ultimo,
-    onPaso: (dir) => ir(actual + dir),
+    puede: (dir) => destinoRef.current + dir >= 0 && destinoRef.current + dir <= ultimo,
+    onPaso: (dir) => ir(destinoRef.current + dir),
   })
 
   const tecla = (e) => {
