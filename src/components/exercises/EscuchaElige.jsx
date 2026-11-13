@@ -1,13 +1,14 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { reproducir } from '../../audio/sonido.js'
-import { getModulo } from '../../content/index.js'
+import { acentoLeccion } from '../../content/index.js'
 import { frecuencia, hz, nombre } from '../../theory/notas.js'
 import { ENTRA_DERECHA, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
 import BotonSonido from '../BotonSonido.jsx'
 import PianoRoll, { conIds } from '../PianoRoll.jsx'
+import LetraAnalizada from '../LetraAnalizada.jsx'
 import Rich from '../Rich.jsx'
 import Rondas from './Rondas.jsx'
 
@@ -34,6 +35,7 @@ function mezclar(indices) {
  *  - mostrarNotas: true para enseñar nota y Hz de cada sonido al responder
  *  - explicacion: texto que se muestra al comprobar
  *  - roll: { ...config del PianoRoll, notas } para leer un Piano Roll (solo lectura)
+ *  - letra: { texto, colores, esquema, silabas, multis } para leer unos versos (LetraAnalizada)
  */
 export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar }) {
   const rondas = paso.rondas
@@ -48,7 +50,7 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
   const [aciertos, setAciertos] = useState(0)
   const [notasRoll] = useState(() => rondas.map((ronda) => (ronda.roll ? conIds(ronda.roll.notas) : null)))
-  const color = getModulo(Number(String(leccionId).split('.')[0]))?.acento
+  const color = acentoLeccion(leccionId)
 
   const ronda = rondas[r]
   const sonidos = orden[r].map((i) => ronda.sonidos[i])
@@ -101,6 +103,7 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
           <Rich>{ronda.pregunta}</Rich>
         </p>
         {ronda.roll && <PianoRoll roll={ronda.roll} notas={notasRoll[r]} color={color} />}
+        {ronda.letra && <LetraAnalizada letra={ronda.letra} />}
       </motion.div>
 
       {tarjetasSonOpciones ? (

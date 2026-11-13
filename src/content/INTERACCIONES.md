@@ -18,6 +18,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 | **L4** | Dato / nota al pie | Lee un recuadro gris («Dato:», «En producción:») | `nota` en `texto` o `siente` | Curiosidad, aclaración o truco de FL; nunca la idea principal |
 | **L5** | ¿Qué se siente? | Compara 2 tarjetas (emociones, ejemplos, sonido) | `siente` con `lados` | Unir el concepto con la emoción que produce |
 | **L6** | Resumen final | Lee «Lo que aprendiste» al terminar | `resumen` de la lección | Cierre: 3–5 frases con lo esencial |
+| **L8** | Texto + letra analizada | Lee unos versos con sus rimas en color (y, si la lección ya lo enseñó, el esquema, las sílabas con «‿» o «multi N») | `texto` + `letra` (`texto`, `colores`, `esquema`, `silabas`, `multis`, `leyenda`) | Rima consonante / asonante, esquemas, sinalefa, multis (ruta de letras) |
 | **L7** | Texto + círculo de quintas | Lee y toca tonalidades del círculo: cada una suena y el centro dice su armadura y su relativa | `texto` + `circulo` (`inicial`, `menores`, `armaduras`, `resaltar`) | El círculo de quintas, sostenidos y bemoles, relativas y vecinas (3.5) |
 
 ## B. Oído y comprensión: elegir (puntúan)
@@ -91,6 +92,16 @@ Variantes de T1 ya usadas: solo en el 1 (`cada: 4`), «1 y 2 y» (`cada: 0.5`), 
 | **X1** | Reto en FL Studio | Sigue pasos en FL, marca «Lo hice» y responde una reflexión | `reto` (`minutos`, `objetivo`, `pasos`, `consejo`, `reflexion`) |
 
 ---
+
+## H. Letras (puntúan; ruta de letras)
+
+| Código | Interacción | Qué hace el usuario | Contenido |
+|---|---|---|---|
+| **E1** | Marcar palabras | Toca en unos versos las palabras que pide la pregunta (p. ej. las que riman en consonante con *corazón*); al comprobar: bien en verde con ✓, las que faltaban en oro y las que sobraban tachadas | `marcar` con `rondas` (`texto`, `correctas: ['razón']`, `fijas`) |
+| **E2** | Marcar sílabas | Igual, tocando sílabas (cada palabra partida en sílabas): «toca las tónicas» | `marcar` con `unidad: 'silaba'` y `correctas: 'tonicas'` (o claves `'verso.palabra.silaba'`) |
+| **E3** | Acomodar el flow | Un verso repartido parejo en las 16 casillas del compás; mueve sílabas o graba con el pad hasta que las tónicas caigan en el pulso (número o «y»); al fallar enseña una solución | `flow` (`verso`, `explicacion`) |
+
+El quiz O3 también lee versos: `letra` en una ronda de `elegir` («¿Qué esquema tiene?», «¿Cuántas sílabas?»).
 
 ## Plantilla de lección
 

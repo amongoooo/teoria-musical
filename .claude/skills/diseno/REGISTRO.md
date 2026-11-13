@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Ruta de letras**: ejercicio nuevo **Marcar en la letra** (palabras o sílabas como piezas de 44 px; débiles como texto; faltan en oro, sobran tachadas), la **letra analizada** dentro de las lecciones (solo con lo ya enseñado) y el **Flow** como paso de lección (sin «Repartir»). Las lecciones que viven en una ruta toman el **color de la ruta** (barra de pasos, piezas marcadas).
+
 - 2026-11-13: **Botón de módulos sobre la barra, tira en computadora, barra más delgada y ruta lineal** (pedidos del usuario): la tarjetita «Módulos y prácticas» del final de la ruta pasa a un **círculo de vidrio `size-11`** con el ícono nuevo `Cuadritos`, **encima de la barra de puntitos** (regla del vidrio: botón de solo ícono, función de la app, flota fijo); la **barra de puntitos** mide **44 px** (`h-11`, como la píldora de la cabecera); en pantallas anchas el camino muestra **como mucho 6 nodos** y más grandes (zoom hasta 2×) y, si hay más, es una **tira** que se arrastra de lado (mismas reglas de los carruseles), con la rueda o con la barra, con los bordes desvanecidos; la **barra de la cabecera de una ruta es lisa** (sin secciones). Nota: con la cabecera (3), la barra y el botón hay 5 piezas de vidrio a la vez (la regla pide ~3).
 
 - 2026-11-13: **Rutas iguales a los módulos** (pedido del usuario): la ruta es la página de Módulo (misma cabecera, camino de islas, globos, puntitos y deslizar) con el ícono de su práctica en lugar del número y, hasta abajo, la tarjetita «Módulos y prácticas». Inicio: Módulos · Prácticas · Rutas (cuadritos) · Herramientas. Sustituye al camino propio de la ruta dentro del panel.

@@ -136,7 +136,8 @@ export async function leerCodigo(codigo) {
 const esObjeto = (x) => x !== null && typeof x === 'object' && !Array.isArray(x)
 const num = (x, def = 0) => (Number.isFinite(x) && x >= 0 ? x : def)
 const esFecha = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)
-const esId = (k) => /^[A-Za-z0-9.]{1,12}$/.test(k)
+// Ids de lecciones (1.1, L1) y de retos (M1, ruta-ritmo, ruta-letras).
+const esId = (k) => /^[A-Za-z0-9.-]{1,16}$/.test(k)
 
 // Elementos de las estadísticas: también palabras del vocabulario (con tildes y ñ).
 const esItem = (k) => /^[A-Za-z0-9.áéíóúüñ]{1,24}$/.test(k)

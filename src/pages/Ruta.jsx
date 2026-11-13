@@ -85,6 +85,7 @@ function PaginaRuta({ id }) {
             ruta={{
               estado: r.estado,
               nivelMax: r.nivelMax,
+              meta: r.meta,
               enlaceMeta: r.enlaceMeta,
               Icono: r.modulo.Icono,
               iconosAbre: ICONOS_ABRE,

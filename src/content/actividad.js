@@ -18,6 +18,7 @@ export const INTERACCIONES = {
   L3: [null, 'Texto + Piano Roll'],
   L5: [null, '¿Qué se siente?'],
   L7: [null, 'Texto + círculo de quintas'],
+  L8: [null, 'Texto + letra analizada'],
   O1: ['oido', 'Elegir entre sonidos'],
   O2: ['oido', 'Escuchar y elegir'],
   O3: ['oido', 'Quiz'],
@@ -40,6 +41,9 @@ export const INTERACCIONES = {
   T2: ['practicar', 'Tap tempo'],
   T3: ['practicar', 'Explorar tempos'],
   T4: ['practicar', 'Comparar versiones'],
+  E1: ['practicar', 'Marcar palabras'],
+  E2: ['practicar', 'Marcar sílabas'],
+  E3: ['practicar', 'Acomodar el flow'],
   X1: ['reto', null], // la etiqueta dice solo «Reto en FL»
 }
 
@@ -52,6 +56,7 @@ export function codigoPaso(paso, indice = -1) {
   switch (paso.tipo) {
     case 'texto':
       if (paso.circulo) return 'L7'
+      if (paso.letra) return 'L8'
       return paso.roll ? 'L3' : paso.sonidos?.length || paso.fichas?.filas?.length ? 'L2' : 'L1'
     case 'siente':
       return 'L5'
@@ -79,6 +84,10 @@ export function codigoPaso(paso, indice = -1) {
       // `explorar` con opciones con nombre (p. ej. cuánto swing) compara versiones, no tempos.
       if (paso.objetivo?.tipo === 'explorar' && paso.objetivo.tempos?.some((t) => t.titulo)) return 'T4'
       return T_PULSO[paso.objetivo?.tipo] ?? 'T1'
+    case 'marcar':
+      return paso.rondas?.some((r) => r.unidad === 'silaba') ? 'E2' : 'E1'
+    case 'flow':
+      return 'E3'
     case 'reto':
       return 'X1'
     default:

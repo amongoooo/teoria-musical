@@ -1606,7 +1606,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
     )
   else if (p.tipo === 'leccion')
     detalle = estado === 'empezada' ? <>Paso {lp.paso + 1} de {pasos} · {porcentaje} %</> : <>~{leccion?.minutos} min · {pasos} pasos</>
-  else if (p.tipo === 'meta') detalle = <span className="font-dato">Tu nivel: {Math.min(ruta.nivelMax(p.modo), 10)} · meta: {p.nivel}</span>
+  else if (p.tipo === 'meta') detalle = <span className="font-dato">{ruta.meta(p).detalle}</span>
   if (p.tipo === 'abre' && !p.hecha) texto = `${p.texto} Se abre al terminar la lección ${HERRAMIENTAS[p.herramienta].leccion}.`
 
   let boton = null
@@ -1621,7 +1621,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
         navegar(rutas.leccion(p.id))
       },
     }
-  } else if (p.tipo === 'meta') boton = { texto: 'Practicar', onClick: () => navegar(ruta.enlaceMeta(p.modo)) }
+  } else if (p.tipo === 'meta') boton = { texto: 'Practicar', onClick: () => ruta.meta(p).ir() }
   else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'flow') boton = { texto: 'Ir a Letras', onClick: () => navegar(rutas.letras()) }
   else if (reto) boton = { texto: p.hecha ? '¡Hecho!' : 'Lo hice', check: p.hecha, onClick: () => guardarReto(p.id, { hecho: !p.hecha }) }
 

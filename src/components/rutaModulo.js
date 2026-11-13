@@ -4,12 +4,14 @@
 // (Cuadrito). El «módulo» de una ruta lleva `esRuta`, su ícono en lugar del número y `vecino(dir)` para pasar
 // a la ruta de al lado.
 import { ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '../content/rutas.js'
+import { getPalabra, getTema } from '../letras/vocabulario/index.js'
+import { useCuaderno } from '../progress/letras.js'
 import { useOpciones } from '../progress/opciones.js'
 import { tiendaOido } from '../progress/oido.js'
 import { useProgreso } from '../progress/progreso.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
 import { tiendaVocab } from '../progress/vocabulario.js'
-import { rutas } from '../router.js'
+import { navegar, rutas } from '../router.js'
 import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 
 /** Ícono de cada ruta (el de su práctica) y de lo que se abre en ella. */
@@ -43,19 +45,56 @@ export function moduloDeRuta(id) {
   }
 }
 
+/** Letras del cuaderno que ya tienen texto (al menos dos versos): la meta «Analiza tu primera letra». */
+const letrasConTexto = (letras) => letras.filter((l) => l.texto.split('\n').filter((v) => v.trim()).length >= 2).length
+
+/** Palabras de un tema que ya están en el repaso del vocabulario (vistas al menos una vez). */
+const palabrasDelTema = (repaso, tema) => Object.keys(repaso ?? {}).filter((p) => getPalabra(p)?.tema === tema).length
+
 /** Ruta + su estado (paradas cumplidas) con lo que guarda la app; se vuelve a pintar al cambiar el progreso. */
 export function useRuta(id) {
   const progreso = useProgreso()
   const { admin } = useOpciones()
+  const { letras } = useCuaderno()
+  const vocab = tiendaVocab.usar()
   const ruta = RUTAS[id] ?? RUTAS.ritmo
   const practica = PRACTICAS[ruta.practica]
   const datos = practica.tienda.usar()
   const nivelMax = (modo) => practica.tienda.datosModo(modo, datos).nivelMax
+
+  /**
+   * Cada meta: { valor, meta, detalle (texto de «cómo vas»), ir() (el botón «Practicar») }.
+   *  - con `modo`: nivel del entrenamiento de la práctica.
+   *  - `letra`: letras con texto en el cuaderno.
+   *  - `vocab`: palabras vistas de un tema; «Practicar» deja encendido solo ese tema y abre el vocabulario.
+   */
+  const meta = (p) => {
+    if (p.clave === 'letra') {
+      const n = letrasConTexto(letras)
+      return { valor: n, meta: 1, detalle: `Letras en tu cuaderno: ${n}`, ir: () => navegar(rutas.letras()) }
+    }
+    if (p.clave === 'vocab') {
+      const n = palabrasDelTema(vocab.repaso, p.tema)
+      return {
+        valor: n,
+        meta: p.palabras,
+        detalle: `${getTema(p.tema)?.nombre}: ${Math.min(n, p.palabras)}/${p.palabras} palabras`,
+        ir: () => {
+          tiendaVocab.guardarCampos({ temas: [p.tema] })
+          navegar(rutas.vocabulario())
+        },
+      }
+    }
+    const n = nivelMax(p.modo)
+    return { valor: n, meta: p.nivel, detalle: `Tu nivel: ${Math.min(n, 10)} · meta: ${p.nivel}`, ir: () => navegar(practica.enlace(p.modo)) }
+  }
+
   return {
     ruta,
     modulo: moduloDeRuta(ruta.id),
-    estado: estadoRuta(ruta, { progreso, nivelMax, admin }),
+    estado: estadoRuta(ruta, { progreso, medirMeta: meta, admin }),
     nivelMax,
+    meta,
     enlaceMeta: practica.enlace,
     progreso,
   }

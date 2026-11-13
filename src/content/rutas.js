@@ -7,6 +7,10 @@
 // Tipos de parada:
 //   { tipo: 'leccion', id: '2.1' }                                    → hecha si la lección está completada
 //   { tipo: 'meta', modo: 'seguir', nivel: 2, titulo, texto }        → hecha si en ese modo ya llegaste a ese nivel
+//   { tipo: 'meta', clave: 'letra', titulo, texto }                  → otras metas (las mide `medirMeta` de
+//   { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, … }    components/rutaModulo.js): una letra en el cuaderno,
+//                                                                         N palabras de un tema del vocabulario…
+//   { tipo: 'leccion', id: 'L1', titulo }                             → una lección que vive EN la ruta (content/ruta-letras/)
 //   { tipo: 'abre', herramienta: 'flow', titulo, texto }             → hecha cuando se abre la herramienta (HERRAMIENTAS)
 //   { tipo: 'reto', id: 'ruta-ritmo', titulo, texto }                → hecha con «Lo hice» (progreso.retos[id])
 import { MODULOS } from './modulos.js'
@@ -57,10 +61,27 @@ RUTAS.letras = {
   nombre: 'Letras',
   titulo: 'Ruta de letras',
   acento: 'var(--color-modulo-6)',
-  descripcion: 'Rima, esquemas, sílabas, multis y flow.',
+  descripcion: 'Rima, esquemas, sílabas, multis y flow: cinco lecciones cortas con tu cuaderno y el vocabulario.',
   modulos: [],
   practica: 'letras',
-  paradas: [],
+  // Las lecciones L1–L5 viven en la ruta (content/ruta-letras/, registradas en content/index.js).
+  paradas: [
+    { tipo: 'leccion', id: 'L1', titulo: 'Rima consonante y asonante' },
+    { tipo: 'meta', clave: 'letra', titulo: 'Analiza tu primera letra', texto: 'Escribe o pega una letra en tu cuaderno y mira sus rimas en colores.' },
+    { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, titulo: 'Vocabulario · Noche', texto: 'Aprende 10 palabras del tema Noche.' },
+    { tipo: 'leccion', id: 'L2', titulo: 'Esquemas de rima' },
+    { tipo: 'leccion', id: 'L3', titulo: 'Sílabas y sinalefa' },
+    { tipo: 'meta', clave: 'vocab', tema: 'calle', palabras: 10, titulo: 'Vocabulario · Calle', texto: 'Aprende 10 palabras del tema Calle.' },
+    { tipo: 'leccion', id: 'L4', titulo: 'Multis' },
+    { tipo: 'abre', herramienta: 'flow', titulo: 'Flow', texto: 'Tus versos sobre el beat, sílaba por sílaba: la pestaña Flow de cada letra.' },
+    { tipo: 'leccion', id: 'L5', titulo: 'Acentos en el pulso' },
+    {
+      tipo: 'reto',
+      id: 'ruta-letras',
+      titulo: '8 versos con flow',
+      texto: 'Escribe 8 versos con esquema ABAB, acomódalos en el Flow con los acentos en el pulso y grábalos sobre un beat tuyo de FL Studio.',
+    },
+  ],
 }
 RUTAS.acordes = {
   id: 'acordes',
@@ -96,12 +117,17 @@ export function tituloLeccion(id) {
  * La ruta es LINEAL (pedido del usuario): una parada solo cuenta como hecha si también lo están todas las de antes.
  * Si ya llegaste a un nivel (o hiciste una lección) que la ruta pide más adelante, esa parada sale bloqueada
  * hasta cumplir las anteriores; entonces se marca sola. `cumplida` = la condición, sin mirar el orden.
- * `nivelMax(modo)` = nivel más alto alcanzado en ese modo del entrenamiento.
+ * `medirMeta(p)` → { valor, meta }: cuánto llevas de una meta (nivel más alto del modo, letras en el cuaderno,
+ * palabras del tema…) y cuánto pide. Sin él, `nivelMax(modo)` = nivel más alto alcanzado en ese modo.
  */
-export function estadoRuta(ruta, { progreso, nivelMax, admin = false }) {
+export function estadoRuta(ruta, { progreso, nivelMax, medirMeta, admin = false }) {
+  const medir = medirMeta ?? ((p) => ({ valor: nivelMax(p.modo), meta: p.nivel }))
   const cumplida = (p) => {
     if (p.tipo === 'leccion') return Boolean(progreso.lecciones[p.id]?.completada)
-    if (p.tipo === 'meta') return nivelMax(p.modo) >= p.nivel
+    if (p.tipo === 'meta') {
+      const m = medir(p)
+      return m.valor >= m.meta
+    }
     if (p.tipo === 'abre') return herramientaAbierta(p.herramienta, progreso)
     if (p.tipo === 'reto') return Boolean(progreso.retos[p.id]?.hecho)
     return false

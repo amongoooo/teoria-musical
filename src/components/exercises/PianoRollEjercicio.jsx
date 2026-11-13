@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getModulo } from '../../content/index.js'
+import { acentoLeccion } from '../../content/index.js'
 import { PERCUSION, claveNota, esPercusion } from '../../theory/bateria.js'
 import { nombre } from '../../theory/notas.js'
 import PianoRoll, { conIds, nombreFL } from '../PianoRoll.jsx'
@@ -21,7 +21,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
   const [resultado, setResultado] = useState(null) // null | { ok, texto }
   const [intentos, setIntentos] = useState(0)
   const [solucion, setSolucion] = useState(false)
-  const color = getModulo(Number(String(leccionId).split('.')[0]))?.acento
+  const color = acentoLeccion(leccionId)
 
   const cambiar = (n) => {
     setNotas(n)

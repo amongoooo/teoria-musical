@@ -37,7 +37,12 @@ export default function Flow({ letra }) {
   return (
     <div className="flex flex-col gap-5">
       <ElegirVerso versos={versos} iv={Math.min(iv, versos.length - 1)} onCambiar={setIv} />
-      <FlowVerso key={verso.texto} letra={letra} verso={verso} />
+      <FlowVerso
+        key={verso.texto}
+        verso={verso}
+        guardado={letra.flows?.[verso.texto]}
+        onGuardar={(c, bpm) => guardarLetra(letra.id, { flows: { ...(letra.flows ?? {}), [verso.texto]: { c, bpm } } })}
+      />
     </div>
   )
 }
@@ -62,13 +67,18 @@ function ElegirVerso({ versos, iv, onCambiar }) {
   )
 }
 
-function FlowVerso({ letra, verso }) {
+/**
+ * El flow de un verso (`verso` = el de `analizar()`). `guardado` = { c, bpm } con el que empieza; `onGuardar(c, bpm)`
+ * al cambiar. En una lección (paso `flow`): `inicial` (casillas con las que empieza), `conRepartir` = false (sin el
+ * botón que lo resuelve), `bloqueado` (ya comprobado: solo Escuchar) y `onCasillas(c)` para saber cómo va.
+ */
+export function FlowVerso({ verso, guardado, onGuardar = () => {}, inicial = [], conRepartir = true, bloqueado = false, onCasillas }) {
   const silabas = useMemo(() => silabasFlow(verso), [verso])
   const compases = compasesPara(silabas.length)
   const total = compases * POR_COMPAS
-  const guardado = letra.flows?.[verso.texto]
   const [bpm, setBpm] = useState(guardado?.bpm ?? 90)
-  const [casillas, setCasillas] = useState(() => (guardado?.c?.length && guardado.c.length <= silabas.length ? guardado.c : []))
+  const [casillas, setCasillas] = useState(() => (guardado?.c?.length && guardado.c.length <= silabas.length ? guardado.c : inicial))
+  useEffect(() => onCasillas?.(casillas), [casillas, onCasillas])
   const [modo, setModo] = useState('quieto') // quieto | grabando | sonando
   const [cuenta, setCuenta] = useState(null) // 1…4 mientras entra la cuenta
   const [cabezal, setCabezal] = useState(-1)
@@ -78,10 +88,9 @@ function FlowVerso({ letra, verso }) {
   const casRef = useRef(casillas)
   casRef.current = casillas
 
-  const guardar = useCallback(
-    (c, b = bpm) => guardarLetra(letra.id, { flows: { ...(letra.flows ?? {}), [verso.texto]: { c, bpm: b } } }),
-    [letra.id, letra.flows, verso.texto, bpm],
-  )
+  const guardarRef = useRef(onGuardar)
+  guardarRef.current = onGuardar
+  const guardar = useCallback((c, b = bpm) => guardarRef.current(c, b), [bpm])
 
   const parar = useCallback(() => {
     pistaRef.current?.pista.parar()
@@ -163,6 +172,7 @@ function FlowVerso({ letra, verso }) {
 
   /** Un toque del pad (o la barra espaciadora): sin grabar, empieza; grabando, coloca la siguiente sílaba. */
   const tocar = () => {
+    if (bloqueado) return
     if (modo === 'sonando') parar()
     if (modo !== 'grabando') {
       if (performance.now() - acaboRef.current < 800) return
@@ -202,7 +212,7 @@ function FlowVerso({ letra, verso }) {
 
   /** Mover: tocar una sílaba la elige; tocar una casilla libre entre sus vecinas la lleva ahí. */
   const tocarCasilla = (i, temblar) => {
-    if (modo !== 'quieto') return
+    if (modo !== 'quieto' || bloqueado) return
     const s = casillas.indexOf(i)
     if (s >= 0) return setElegida(elegida === s ? null : s)
     if (elegida == null) return
@@ -258,7 +268,7 @@ function FlowVerso({ letra, verso }) {
       <Pad
         color={ACENTO}
         onToque={tocar}
-        atenuado={modo === 'sonando'}
+        atenuado={modo === 'sonando' || bloqueado}
         data-pad-flow
         aria-label={modo === 'grabando' ? 'Toca cada sílaba' : 'Grabar el flow'}
       >
@@ -280,7 +290,7 @@ function FlowVerso({ letra, verso }) {
         )}
       </Pad>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${conRepartir ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <Pulsable
           onClick={escuchar}
           disabled={!casillas.length || modo === 'grabando'}
@@ -291,14 +301,16 @@ function FlowVerso({ letra, verso }) {
         >
           <Reproducir className="size-5" /> {modo === 'sonando' ? 'Parar' : 'Escuchar'}
         </Pulsable>
-        <Pulsable
-          onClick={repartirTodas}
-          disabled={modo === 'grabando'}
-          data-repartir
-          className="min-h-14 rounded-2xl border-2 border-zinc-200 bg-white text-lg font-semibold text-zinc-800 disabled:opacity-40"
-        >
-          Repartir
-        </Pulsable>
+        {conRepartir && (
+          <Pulsable
+            onClick={repartirTodas}
+            disabled={modo === 'grabando'}
+            data-repartir
+            className="min-h-14 rounded-2xl border-2 border-zinc-200 bg-white text-lg font-semibold text-zinc-800 disabled:opacity-40"
+          >
+            Repartir
+          </Pulsable>
+        )}
       </div>
     </div>
   )
