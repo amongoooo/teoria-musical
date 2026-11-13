@@ -1,4 +1,4 @@
-// Navegación mínima por hash (#/modulo/1, #/leccion/1.1, #/leccion/1.1/reto).
+// Navegación mínima por hash (#/modulo/1, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
 
@@ -8,6 +8,7 @@ function parse(hash) {
   if (partes[0] === 'leccion' && partes[1]) return { pagina: 'leccion', id: partes[1], reto: partes[2] === 'reto' }
   if (partes[0] === 'importar') return { pagina: 'importar', id: partes[1] ?? '' }
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
+  if (partes[0] === 'ritmo') return { pagina: 'ritmo', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
 
@@ -32,6 +33,7 @@ export const rutas = {
   reto: (id) => `#/leccion/${id}/reto`,
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
+  ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),
 }
 
 export function navegar(href) {

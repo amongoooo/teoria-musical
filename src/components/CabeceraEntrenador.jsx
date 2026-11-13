@@ -128,7 +128,7 @@ function BarraAciertos({ avance, lleno, reloj, parado, acento }) {
   const color = tono === 'tiempo' ? 'var(--color-fijate)' : acento
   return (
     <div
-      className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
+      className="h-3 w-full shrink-0 overflow-hidden rounded-full bg-zinc-200"
       role="progressbar"
       aria-label={modoBarra === 'tiempo' ? 'Tiempo para responder' : 'Aciertos para subir de nivel'}
       aria-valuemin={0}

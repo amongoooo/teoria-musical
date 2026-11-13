@@ -28,92 +28,16 @@ dentro del margen y como mucho un toque de sobra; 8 rondas buenas para subir; Le
 en rosa (Módulo 6) con ícono de pluma; colores de rima = familia nueva siempre con su letra (consonante = relleno,
 asonante = subrayado punteado); primera entrega de vocabulario ≈ 120 palabras (4 temas × 30).
 
-## Parte 1 — Ritmo: qué está HECHO (ya en `main`, sin pantalla todavía)
+## Parte 1 — Ritmo: ✅ TERMINADA
 
-Todo esto está probado (compila; prueba de humo de oído y del pad de la lección 2.1 a 375 px en claro y oscuro) y
-**no cambia nada de lo que ve el usuario**: el bloque Ritmo de Inicio sigue en «Pronto».
-
-- `src/progress/entrenamiento.js` — `crearEntrenamiento(clave)`: la memoria de un entrenamiento (racha, días, niveles
-  por modo, `registrarRespuesta`…). `progress/oido.js` es ahora una envoltura (`tiendaOido` + los mismos nombres de
-  siempre) y `progress/ritmo.js` crea `tiendaRitmo` (`teoria-musical:ritmo:v1`) y lleva el **retraso del dispositivo**
-  (`compensacionActual()`, `apuntarError(bruto, margen)`: en memoria, se ajusta cuando 6 toques caen juntos).
-- `src/theory/ritmo.js` — los 10 niveles (`NIVELES`: negras, silencios, corcheas, mezcla, contratiempo, síncopa,
-  semicorcheas, síncopa de semicorchea, swing, todo), patrones al azar, `MARGENES`/`margenDe`, `eventosCompas(tipo,
-  ronda)` (entrada | demo | toca | cierre), `objetivosDe`, `margenEfectivo`, **`evaluar(objetivos, toques, { margen,
-  compensacion, paso })`** y `explicar(ev)` (título y texto del resultado), y los modos `modoSeguir` / `modoEco`
-  (`MODOS_RITMO`, `getModoRitmo`) con la forma que espera el arranque (`puntosNivel`, `puntosDificultad`,
-  `claveDificultad: 'dificultad'`, `bloques` = pad con sonido o mudo).
-- `src/audio/bateria.js` — sonido `tom` (programado) y `toque` (el mismo, en otra voz, para el pad en vivo).
-- `src/audio/engine.js` — **`iniciarPista(porCompas, { bpm, tiempos })`** (pregunta los sonidos de cada compás poco
-  antes de que empiece y programa cada sonido 0,25 s antes: `parar()` corta casi al instante) y **`golpeAhora(nombre)`**
-  (sin los 100 ms de margen de `Tone.now()`).
-- `src/components/PiezasRitmo.jsx` — sacado de `exercises/Pulso.jsx` (que ahora lo importa): `Pad` (acepta `children`,
-  `atenuado`, `ref`), `Contador` (nuevo: `estados[i]` = bien | casi | falta | sobra, y `colorCabezal`), `Medidor`
-  (nuevo: `tolerancia`, `vacio`), `useRitmo`, `useLatido`, `momentoToque`, `mediana`, `DIVISION`, `TOLERANCIA`.
-- `src/components/CabeceraEntrenador.jsx` — la cabecera de vidrio del entrenador (‹, barra de aciertos + vidas, bocina,
-  golpe rojo), sacada de `pages/Oido.jsx`. Props: `volver`, `etiquetaVolver`, `golpes`, `barra`, `vidas`, `bocina`.
-- `src/components/PanelEntrenamiento.jsx` — el panel del día (racha, 5 min, semana, ejercicios, estadísticas), sacado
-  de `pages/Oido.jsx`. Props: `titulo`, `descripcion`, `sugerencia`, `nombre`, `tienda`, `modos`, `ruta`, `Icono`.
-- `src/components/ArranqueOido.jsx` — ahora sirve a cualquier entrenamiento: props `tienda` (por defecto la de oído) e
-  `Icono`; `modo.claveDificultad`, `modo.puntosDificultad`, `puntos.desdeArriba` y `modo.bloques` (con dibujitos en
-  `DIBUJOS_BLOQUE`). `AJUSTES_ABSOLUTO.dificultad` en `theory/oido.js`.
-- `src/progress/sincronizar.js` — el código de «Tu progreso» lleva también `r` (ritmo); los códigos viejos se leen
-  igual. `Importar.jsx` muestra «Días de práctica de ritmo».
-
-Prueba de las funciones puras (crear el archivo y correrlo con `node`): genera 300 rondas por nivel y comprueba
-`evaluar` con toques clavados, con retraso compensado, tarde, de sobra y sin tocar. Estaba en el scratchpad de la
-sesión (no en el repo); conviene rehacerla como `src/theory/ritmo.test.mjs` si se quiere conservar.
-
-## Parte 1 — Ritmo: qué FALTA (siguiente paso exacto)
-
-1. **`src/pages/Ritmo.jsx`** (no existe): `Ritmo({ modo })` → sin modo, `<PanelEntrenamiento titulo="Entrenamiento de
-   ritmo" tienda={tiendaRitmo} modos={MODOS_RITMO} ruta={rutas.ritmo} Icono={Metronomo} nombre="ritmo" …/>`; con modo,
-   el `Entrenador` (calcar la estructura de `pages/Oido.jsx`: `CabeceraEntrenador`, `ArranqueOido` con
-   `tienda={tiendaRitmo}` e `Icono={Metronomo}`, `BarraAccion`, vidas igual que el oído «Normal», al abrir el nivel es
-   el más alto alcanzado).
-2. **Ruta**: `router.js` (`#/ritmo`, `#/ritmo/seguir`, `#/ritmo/eco`, `rutas.ritmo`), `App.jsx` (`Pagina`) y
-   `profundidad()` en `ui/movimiento.js` (igual que `oido`).
-3. **Inicio**: cambiar `BloqueProximo nombre="Ritmo"` por un bloque real como `BloqueOido` (racha + barra de 5 min,
-   acento `var(--color-modulo-2)`, `tiendaRitmo`); lo más limpio es generalizar `BloqueOido` a un `BloqueRacha`.
-4. Probar, capturas, docs (añadir a la skill de diseño el entrenador de ritmo y los estados del `Contador`), PR y merge.
-
-### Diseño ya pensado del Entrenador de ritmo
-
-**Una ronda es una pista de compases** (4 tiempos) hecha con `iniciarPista`; cada compás tiene un tipo:
-
-- **Seguir**: `entrada` (un compás de clic) → `toca` × 2 (suena el fondo; se tocan los golpes con aro) → `cierre`
-  (el 1 del fondo, para acabar). Con la bocina: `entrada` → `demo` → `toca` × 2 → `cierre`.
-- **Eco**: `entrada` → (`demo` → `toca`) en bucle hasta que en un `toca` haya algún toque; entonces `cierre`. Tras 6
-  ciclos sin tocar, se para y queda en pausa (botón «Continuar» que la reinicia). Así «escuchar otra vez» es no tocar.
-- **Repaso** (bocina ya evaluada): `entrada` → `demo` → `cierre`, sin evaluar.
-- El tipo de cada compás se decide cuando la pista lo pide (≈ 0,25 s antes): guardar `tipos[k]` en un ref.
-
-**Reloj y toques**: posición = `tiempoAudio() − latenciaAudio() − pista.inicio`; compás `k = floor(rel / pista.compas)`,
-casilla = `floor(resto / (pulso / porTiempo))`. Un bucle `requestAnimationFrame` actualiza fase y cabezal. El toque
-(pad `onPointerDown` o barra espaciadora sin repetición) vale `momentoToque(e) − latenciaAudio() − pista.inicio`; suena
-con `golpeAhora('toque')` si `ajustes.pad !== 'mudo'`. Solo cuentan los toques de los compases `toca` (aceptando media
-casilla antes de que empiecen). Con cada toque emparejado, `apuntarError(bruto, margen)`; si la compensación cambia,
-se vuelve a pintar todo con ella (guardar los tiempos brutos y derivar los estados con `evaluar` al pintar).
-
-**Evaluar**: al empezar el compás siguiente al último `toca` + una gracia de `min(margen, media casilla)`. Sin ningún
-toque: Seguir → pausa (no castiga); Eco → sigue el bucle. Con toques: `evaluar(...)` →
-`tiendaRitmo.registrarRespuesta(modo.id, { item: ronda.item, bien: ev.buena, niveles: modo.niveles, carga: { acierto:
-1, fallo: 1, partes: PARTES_NIVEL } })` → vidas (fallo −1; subir a un nivel nuevo +1) → feedback con `explicar(ev)`.
-Al ocultarse la pestaña (`visibilitychange`), parar y dejar en pausa.
-
-**Pantalla jugando** (de arriba abajo, todo debe caber sobre la barra a 375 × 740): fila «Ritmo · Seguir» con
-`Metronomo` + «Nivel N» (`font-juego`); `h1` con `modo.pregunta` + «80 BPM» (`font-dato`); `Contador` (division =
-`ronda.porTiempo`, `patron` = casillas / porTiempo; en Eco el patrón se oculta hasta evaluar, salvo en modo
-administrador; cabezal celeste en `demo`, del acento en `toca`); en Seguir, `Medidor` con `tolerancia` = margen
-efectivo y `vacio=""`; historial de puntitos (Seguir: una fila por pasada, verde / oro / contorno de oro si faltó; Eco
-mientras se toca: un puntito neutro por toque); `Pad` (en `entrada` muestra la cuenta 1-2-3-4 en grande; en `demo` va
-`atenuado` con la `Oreja`; en `toca` dice «Toca»; late en cada tiempo). Al evaluar, el `Contador` muestra lo peor de
-las dos pasadas por casilla y los toques de sobra como `sobra`.
-
-**Barra de abajo**: «Empezar» (flotante) → «Continuar» desactivado con ayuda corta por fase («Entra después de la
-cuenta», «Escucha el patrón», «Tu turno: repítelo», «Toca los golpes con aro») → feedback verde u oro + «Continuar».
-El gesto del botón solo pasa a la siguiente ronda ya evaluada. Barra de vidrio de arriba: `datos.carga /
-PARTES_NIVEL`, del color de la dificultad (`var(--color-dificultad-N)`).
+Todo en `main`: la base (memoria `tiendaRitmo`, `theory/ritmo.js`, `iniciarPista`/`golpeAhora`, `PiezasRitmo`,
+`CabeceraEntrenador`, `PanelEntrenamiento`, arranque generalizado, ritmo en «Tu progreso») y la pantalla:
+**`src/pages/Ritmo.jsx`** (panel + entrenador Seguir/Eco, tal como estaba pensado: pista por compases con `tipos[k]`,
+reloj con `requestAnimationFrame`, evaluación al pasar el último `toca` + la gracia, pausa sin toques, repaso con la
+bocina, barra espaciadora, retraso del dispositivo), la ruta `#/ritmo` y el bloque real en Inicio (`BloqueRacha`).
+Detalle en la última entrada de `docs/HISTORIAL.md`. Prueba: `docs/pruebas/ritmo.mjs` (Playwright, 375 px, claro y
+oscuro). Ideas que quedaron fuera (si el usuario las pide): modos «Leer» y «Pulso interno»; conservar la prueba de
+las funciones puras como `src/theory/ritmo.test.mjs`.
 
 ## Partes 2 a 4 — sin empezar
 
