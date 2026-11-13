@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Letras**: rimas por familia con los colores `rima-1…8` (consonante = relleno suave, asonante = subrayado punteado), sinalefa «‿», «multi N», ficha de palabra con la tónica rellena de rosa (M6). Inicio con 3 entrenamientos en fila. (pedido del usuario) **Pad de cuero**: grano fino SVG fijo + costura punteada + relieve interior.
+
 - 2026-11-13: **Entrenador de ritmo** (Seguir y Eco) con el mismo esqueleto que el de oído: contador con estados (bien / casi / falta / sobra), cabezal gris en la cuenta, celeste en la demo y del acento en tu turno; historial de puntitos por pasada; pad con la cuenta, la oreja o «Toca». Inicio: el bloque Ritmo ya es real (`BloqueRacha`). (pedido del usuario) La barra de aciertos del entrenador mide `h-3` como la de las lecciones también sin vidas (antes se estiraba y no se veía el relleno).
 
 - 2026-11-13: (pedido del usuario) Arranque del entrenador con apartado **Configurar** cerrado (resumen en fichas y botón Predeterminados). La barra de vidas solo sale jugando y es **lisa**; al perder una vida, los vidrios de arriba brillan en rojo y tiemblan.

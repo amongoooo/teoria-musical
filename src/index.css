@@ -141,6 +141,33 @@
   --color-dificultad-5-relleno: var(--color-modulo-5-relleno);
   --color-dificultad-5-tinta: var(--color-modulo-5-tinta);
   --color-dificultad-5-suave: var(--color-modulo-5-suave);
+
+  /* Rimas (entrenamiento de letras): una familia = un color; consonante = relleno suave, asonante = subrayado
+     punteado. Salen de los colores de módulo (sin verde ni oro, que ya significan «bien» y «fíjate»). */
+  --color-rima-1: var(--color-modulo-1);
+  --color-rima-1-suave: var(--color-modulo-1-suave);
+  --color-rima-1-tinta: var(--color-modulo-1-tinta);
+  --color-rima-2: var(--color-modulo-2);
+  --color-rima-2-suave: var(--color-modulo-2-suave);
+  --color-rima-2-tinta: var(--color-modulo-2-tinta);
+  --color-rima-3: var(--color-modulo-3);
+  --color-rima-3-suave: var(--color-modulo-3-suave);
+  --color-rima-3-tinta: var(--color-modulo-3-tinta);
+  --color-rima-4: var(--color-modulo-4);
+  --color-rima-4-suave: var(--color-modulo-4-suave);
+  --color-rima-4-tinta: var(--color-modulo-4-tinta);
+  --color-rima-5: var(--color-modulo-5);
+  --color-rima-5-suave: var(--color-modulo-5-suave);
+  --color-rima-5-tinta: var(--color-modulo-5-tinta);
+  --color-rima-6: var(--color-modulo-6);
+  --color-rima-6-suave: var(--color-modulo-6-suave);
+  --color-rima-6-tinta: var(--color-modulo-6-tinta);
+  --color-rima-7: var(--color-modulo-7);
+  --color-rima-7-suave: var(--color-modulo-7-suave);
+  --color-rima-7-tinta: var(--color-modulo-7-tinta);
+  --color-rima-8: var(--color-modulo-9);
+  --color-rima-8-suave: var(--color-modulo-9-suave);
+  --color-rima-8-tinta: var(--color-modulo-9-tinta);
   /* Vidas del entrenador de oído (barra roja de la cabecera). */
   --color-vida: var(--color-modulo-5);
 }

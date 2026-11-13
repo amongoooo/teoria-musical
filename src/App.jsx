@@ -5,6 +5,7 @@ import { useRuta } from './router.js'
 import Importar from './pages/Importar.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Leccion from './pages/Leccion.jsx'
+import Letras from './pages/Letras.jsx'
 import Modulo from './pages/Modulo.jsx'
 import Oido from './pages/Oido.jsx'
 import Ritmo from './pages/Ritmo.jsx'
@@ -15,6 +16,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} soloReto={ruta.reto} />
   if (ruta.pagina === 'oido') return <Oido modo={ruta.id} />
   if (ruta.pagina === 'ritmo') return <Ritmo modo={ruta.id} />
+  if (ruta.pagina === 'letras') return <Letras id={ruta.id} />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }

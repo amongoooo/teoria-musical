@@ -75,6 +75,15 @@ export const mediana = (xs) => {
 }
 
 /**
+ * Textura del pad (pedido del usuario: «como de cuerito», muy fina): ruido fractal de SVG convertido en puntitos
+ * oscuros con transparencia. Es una imagen fija (el navegador la dibuja una vez y la repite en mosaico): no anima nada
+ * ni usa modos de fusión, así que casi no cuesta.
+ */
+const GRANO = `url("data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.62'/></filter><rect width='100%' height='100%' filter='url(#g)'/></svg>",
+)}")`
+
+/**
  * Botón grande para tocar al pulso. Late con cada tiempo si `latido` >= 0. Responde al apoyar el dedo (no al
  * soltarlo), para medir el momento exacto. Dentro va `texto` o, si se pasan, los `children` (la cuenta, un ícono…).
  * `atenuado`: se ve apagado pero se puede tocar (no es tu turno).
@@ -95,10 +104,18 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
       className={`relative grid h-40 w-full place-items-center overflow-hidden rounded-3xl text-xl font-semibold text-blanco select-none transition-opacity duration-200 disabled:opacity-40 ${
         atenuado ? 'opacity-60' : ''
       }`}
-      style={{ backgroundColor: oscuro(color), touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
+      style={{
+        backgroundColor: oscuro(color),
+        boxShadow: 'inset 0 2px 0 rgb(255 255 255 / 0.14), inset 0 -5px 0 rgb(0 0 0 / 0.14)',
+        touchAction: 'manipulation',
+        WebkitTouchCallout: 'none',
+      }}
       onContextMenu={(e) => e.preventDefault()}
       {...props}
     >
+      {/* Cuero: grano fino, costura punteada por dentro y un borde de luz arriba y de sombra abajo. */}
+      <span aria-hidden data-textura className="pointer-events-none absolute inset-0 opacity-35" style={{ backgroundImage: GRANO, backgroundSize: '140px 140px' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-2.5 rounded-[1.15rem] border-2 border-dashed border-blanco/25" />
       {mostrarLatido && latido >= 0 && (
         <motion.span
           key={latido}

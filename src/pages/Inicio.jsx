@@ -11,7 +11,8 @@ import { rutas } from '../router.js'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Metronomo, Oreja } from '../ui/Iconos.jsx'
+import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
+import { useCuaderno } from '../progress/letras.js'
 
 /**
  * Inicio con aire de videojuego (pedido del usuario; como el arranque del entrenador de oído): el logo como
@@ -56,9 +57,10 @@ export default function Inicio() {
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <Titulo>Entrenamientos</Titulo>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
           <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" />
+          <BloqueLetras />
         </div>
       </motion.section>
 
@@ -192,6 +194,19 @@ function BloqueRacha({ tienda, href, id, nombre, titulo, Icono, acento }) {
           animate={{ width: `${avance * 100}%`, backgroundColor: avance >= 1 ? 'var(--color-bien)' : acento }}
           transition={{ ...RESORTE.suave, delay: 0.35 }}
         />
+      </span>
+    </BloqueEntrenamiento>
+  )
+}
+
+/** Letras (M6): el cuaderno de letras; su dato es cuántas tienes. */
+function BloqueLetras() {
+  const { letras } = useCuaderno()
+  const acento = 'var(--color-modulo-6)'
+  return (
+    <BloqueEntrenamiento href={rutas.letras()} nombre="Letras" Icono={Pluma} acento={acento} aria-label={`Letras: ${letras.length} en tu cuaderno`} data-entrenamiento="letras">
+      <span className="font-juego text-base tabular-nums" style={{ color: tinta(acento) }}>
+        {letras.length} {letras.length === 1 ? 'letra' : 'letras'}
       </span>
     </BloqueEntrenamiento>
   )

@@ -9,6 +9,7 @@ function parse(hash) {
   if (partes[0] === 'importar') return { pagina: 'importar', id: partes[1] ?? '' }
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   if (partes[0] === 'ritmo') return { pagina: 'ritmo', id: partes[1] ?? null }
+  if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
 
@@ -34,6 +35,8 @@ export const rutas = {
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
   ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),
+  /** Cuaderno de letras; con id, una letra. */
+  letras: (id) => (id ? `#/letras/${id}` : '#/letras'),
 }
 
 export function navegar(href) {
