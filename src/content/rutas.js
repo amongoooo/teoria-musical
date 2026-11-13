@@ -13,6 +13,15 @@
 //   { tipo: 'leccion', id: 'L1', titulo }                             → una lección que vive EN la ruta (content/ruta-letras/)
 //   { tipo: 'abre', herramienta: 'flow', titulo, texto }             → hecha cuando se abre la herramienta (HERRAMIENTAS)
 //   { tipo: 'reto', id: 'ruta-ritmo', titulo, texto }                → hecha con «Lo hice» (progreso.retos[id])
+//
+// TRAMOS (pedido del usuario: «es un proyecto que escalará mucho»; propuesta aprobada:
+// https://claude.ai/artifact/UXqLcj3Ee1MfzLQYuKvkk3): las paradas no van sueltas en la ruta, sino en TRAMOS
+// (paquetes cortos de lecciones y prácticas con su título y el color del módulo del que salen). Un tramo se
+// escribe UNA vez y lo reutilizan varias rutas: módulos (el curso) → tramos → rutas (caminos por habilidad).
+// Cada ruta lista sus `tramos` en orden; `paradas` se arma sola (cada parada sabe su `tramo`). Con 2 tramos o
+// más, el camino pone un letrero al empezar cada tramo y la barra de puntitos los agrupa.
+// Las metas de un tramo miden el entrenamiento de la `practica` de la ruta: un tramo con metas de oído va en
+// rutas de oído.
 import { MODULOS } from './modulos.js'
 
 /** Herramientas que se abren con una lección del curso (el modo administrador las abre todas). */
@@ -26,15 +35,11 @@ export function herramientaAbierta(id, progreso, admin = false) {
   return admin || Boolean(progreso.lecciones[HERRAMIENTAS[id].leccion]?.completada)
 }
 
-export const RUTAS = {
-  ritmo: {
-    id: 'ritmo',
-    nombre: 'Ritmo',
-    titulo: 'Ruta de ritmo',
+/** Los tramos: un paquete de paradas con su título y su color (el del módulo del que salen). */
+export const TRAMOS = {
+  'pulso-groove': {
+    titulo: 'Pulso y groove',
     acento: 'var(--color-modulo-2)',
-    descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones del módulo 2 con práctica de Seguir y Eco.',
-    modulos: [2],
-    practica: 'ritmo',
     paradas: [
       { tipo: 'leccion', id: '2.1' },
       { tipo: 'meta', modo: 'seguir', nivel: 2, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
@@ -53,63 +58,115 @@ export const RUTAS = {
       },
     ],
   },
+  // Las lecciones L1–L5 viven en la ruta de letras (content/ruta-letras/, registradas en content/index.js).
+  'rima-flow': {
+    titulo: 'Rima y flow',
+    acento: 'var(--color-modulo-6)',
+    paradas: [
+      { tipo: 'leccion', id: 'L1', titulo: 'Rima consonante y asonante' },
+      { tipo: 'meta', clave: 'letra', titulo: 'Analiza tu primera letra', texto: 'Escribe o pega una letra en tu cuaderno y mira sus rimas en colores.' },
+      { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, titulo: 'Vocabulario · Noche', texto: 'Aprende 10 palabras del tema Noche.' },
+      { tipo: 'leccion', id: 'L2', titulo: 'Esquemas de rima' },
+      { tipo: 'leccion', id: 'L3', titulo: 'Sílabas y sinalefa' },
+      { tipo: 'meta', clave: 'vocab', tema: 'calle', palabras: 10, titulo: 'Vocabulario · Calle', texto: 'Aprende 10 palabras del tema Calle.' },
+      { tipo: 'leccion', id: 'L4', titulo: 'Multis' },
+      { tipo: 'abre', herramienta: 'flow', titulo: 'Flow', texto: 'Tus versos sobre el beat, sílaba por sílaba: la pestaña Flow de cada letra.' },
+      { tipo: 'leccion', id: 'L5', titulo: 'Acentos en el pulso' },
+      {
+        tipo: 'reto',
+        id: 'ruta-letras',
+        titulo: '8 versos con flow',
+        texto: 'Escribe 8 versos con esquema ABAB, acomódalos en el Flow con los acentos en el pulso y grábalos sobre un beat tuyo de FL Studio.',
+      },
+    ],
+  },
+  // La base de casi todo lo que suena: dónde están las notas (la 1.1, frecuencia y altura, no hace falta aquí).
+  'notas-teclado': {
+    titulo: 'Notas y teclado',
+    acento: 'var(--color-modulo-1)',
+    paradas: [
+      { tipo: 'leccion', id: '1.2' },
+      { tipo: 'leccion', id: '1.3' },
+      { tipo: 'leccion', id: '1.4' },
+    ],
+  },
+  'intervalos-escalas': {
+    titulo: 'Intervalos y escalas',
+    acento: 'var(--color-modulo-3)',
+    paradas: [
+      { tipo: 'leccion', id: '3.1' },
+      { tipo: 'leccion', id: '3.2' },
+      { tipo: 'meta', modo: 'intervalos', nivel: 4, titulo: 'Intervalos · nivel 4', texto: 'Llega al nivel en el que se suman la 3.ª menor y la 4.ª: las terceras son los ladrillos de los acordes.' },
+      { tipo: 'leccion', id: '3.3' },
+      { tipo: 'leccion', id: '3.4' },
+      { tipo: 'leccion', id: '3.5' },
+      { tipo: 'abre', herramienta: 'circulo', titulo: 'Círculo de quintas', texto: 'Las tonalidades y sus vecinas, de donde salen los acordes de cada tonalidad.' },
+    ],
+  },
+  triadas: {
+    titulo: 'Tríadas',
+    acento: 'var(--color-modulo-4)',
+    paradas: [
+      { tipo: 'leccion', id: '4.1' },
+      { tipo: 'meta', modo: 'acordes', nivel: 2, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
+      { tipo: 'leccion', id: '4.2' },
+    ],
+  },
+  // Las lecciones 4.3–4.5 salen «Llega pronto» hasta que existan (la ruta espera en ellas).
+  'acordes-tonalidad': {
+    titulo: 'Acordes en la tonalidad',
+    acento: 'var(--color-modulo-4)',
+    paradas: [
+      { tipo: 'leccion', id: '4.3' },
+      { tipo: 'leccion', id: '4.4' },
+      { tipo: 'meta', modo: 'acordes', nivel: 3, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
+      { tipo: 'leccion', id: '4.5' },
+      {
+        tipo: 'reto',
+        id: 'ruta-acordes',
+        titulo: 'Tu progresión I–V–vi–IV',
+        texto: 'En FL Studio, escribe I–V–vi–IV en la tonalidad que quieras (C – G – Am – F en Do), con inversiones que se muevan poco y el bajo en la fundamental.',
+      },
+    ],
+  },
 }
 
-// Las que aún no tienen paradas salen como «próximamente» (con candado), como los módulos sin lecciones.
-RUTAS.letras = {
-  id: 'letras',
-  nombre: 'Letras',
-  titulo: 'Ruta de letras',
-  acento: 'var(--color-modulo-6)',
-  descripcion: 'Rima, esquemas, sílabas, multis y flow: cinco lecciones cortas con tu cuaderno y el vocabulario.',
-  modulos: [],
-  practica: 'letras',
-  // Las lecciones L1–L5 viven en la ruta (content/ruta-letras/, registradas en content/index.js).
-  paradas: [
-    { tipo: 'leccion', id: 'L1', titulo: 'Rima consonante y asonante' },
-    { tipo: 'meta', clave: 'letra', titulo: 'Analiza tu primera letra', texto: 'Escribe o pega una letra en tu cuaderno y mira sus rimas en colores.' },
-    { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, titulo: 'Vocabulario · Noche', texto: 'Aprende 10 palabras del tema Noche.' },
-    { tipo: 'leccion', id: 'L2', titulo: 'Esquemas de rima' },
-    { tipo: 'leccion', id: 'L3', titulo: 'Sílabas y sinalefa' },
-    { tipo: 'meta', clave: 'vocab', tema: 'calle', palabras: 10, titulo: 'Vocabulario · Calle', texto: 'Aprende 10 palabras del tema Calle.' },
-    { tipo: 'leccion', id: 'L4', titulo: 'Multis' },
-    { tipo: 'abre', herramienta: 'flow', titulo: 'Flow', texto: 'Tus versos sobre el beat, sílaba por sílaba: la pestaña Flow de cada letra.' },
-    { tipo: 'leccion', id: 'L5', titulo: 'Acentos en el pulso' },
-    {
-      tipo: 'reto',
-      id: 'ruta-letras',
-      titulo: '8 versos con flow',
-      texto: 'Escribe 8 versos con esquema ABAB, acomódalos en el Flow con los acentos en el pulso y grábalos sobre un beat tuyo de FL Studio.',
-    },
-  ],
+export const RUTAS = {
+  ritmo: {
+    id: 'ritmo',
+    nombre: 'Ritmo',
+    titulo: 'Ruta de ritmo',
+    acento: 'var(--color-modulo-2)',
+    descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones del módulo 2 con práctica de Seguir y Eco.',
+    modulos: [2],
+    practica: 'ritmo',
+    tramos: ['pulso-groove'],
+  },
+  letras: {
+    id: 'letras',
+    nombre: 'Letras',
+    titulo: 'Ruta de letras',
+    acento: 'var(--color-modulo-6)',
+    descripcion: 'Rima, esquemas, sílabas, multis y flow: cinco lecciones cortas con tu cuaderno y el vocabulario.',
+    modulos: [],
+    practica: 'letras',
+    tramos: ['rima-flow'],
+  },
+  acordes: {
+    id: 'acordes',
+    nombre: 'Acordes',
+    titulo: 'Ruta de acordes',
+    acento: 'var(--color-modulo-4)',
+    descripcion: 'Notas, intervalos y escalas, tríadas, acordes de la tonalidad, inversiones y voicings.',
+    modulos: [1, 3, 4],
+    practica: 'oido',
+    tramos: ['notas-teclado', 'intervalos-escalas', 'triadas', 'acordes-tonalidad'],
+  },
 }
-RUTAS.acordes = {
-  id: 'acordes',
-  nombre: 'Acordes',
-  titulo: 'Ruta de acordes',
-  acento: 'var(--color-modulo-4)',
-  descripcion: 'Terceras, tríadas, mayor o menor al oído, acordes de la tonalidad, inversiones y voicings.',
-  modulos: [3, 4],
-  practica: 'oido',
-  // Las lecciones 4.3–4.5 salen «próximamente» hasta que existan (la ruta espera en ellas).
-  paradas: [
-    { tipo: 'leccion', id: '3.2' },
-    { tipo: 'meta', modo: 'intervalos', nivel: 4, titulo: 'Intervalos · nivel 4', texto: 'Llega al nivel en el que se suman la 3.ª menor y la 4.ª: las terceras son los ladrillos de los acordes.' },
-    { tipo: 'leccion', id: '4.1' },
-    { tipo: 'meta', modo: 'acordes', nivel: 2, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
-    { tipo: 'leccion', id: '4.2' },
-    { tipo: 'abre', herramienta: 'circulo', titulo: 'Círculo de quintas', texto: 'Las tonalidades y sus vecinas, de donde salen los acordes de cada tonalidad.' },
-    { tipo: 'leccion', id: '4.3' },
-    { tipo: 'leccion', id: '4.4' },
-    { tipo: 'meta', modo: 'acordes', nivel: 3, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
-    { tipo: 'leccion', id: '4.5' },
-    {
-      tipo: 'reto',
-      id: 'ruta-acordes',
-      titulo: 'Tu progresión I–V–vi–IV',
-      texto: 'En FL Studio, escribe I–V–vi–IV en la tonalidad que quieras (C – G – Am – F en Do), con inversiones que se muevan poco y el bajo en la fundamental.',
-    },
-  ],
+
+// Las paradas de cada ruta, en orden, con el tramo al que pertenecen.
+for (const ruta of Object.values(RUTAS)) {
+  ruta.paradas = ruta.tramos.flatMap((tramo) => TRAMOS[tramo].paradas.map((p) => ({ ...p, tramo })))
 }
 
 /** Orden de las rutas (en Inicio y al deslizar entre rutas). */
@@ -158,5 +215,19 @@ export function estadoRuta(ruta, { progreso, nivelMax, medirMeta, admin = false 
     return { ...p, i, hecha, cumplida: ok, titulo: p.titulo ?? tituloLeccion(p.id) }
   })
   for (const p of paradas) p.estado = p.hecha ? 'hecha' : p.i === actual ? 'actual' : admin ? 'abierta' : 'bloqueada'
-  return { paradas, hechas: paradas.filter((p) => p.hecha).length, total: paradas.length, actual }
+  // Cada tramo: dónde empieza y acaba (índices de parada) y cuántas lleva hechas.
+  const tramos = ruta.tramos.map((id, t) => {
+    const suyas = paradas.filter((p) => p.tramo === id)
+    return {
+      id,
+      numero: t + 1,
+      titulo: TRAMOS[id].titulo,
+      acento: TRAMOS[id].acento,
+      desde: suyas[0].i,
+      hasta: suyas[suyas.length - 1].i,
+      hechas: suyas.filter((p) => p.hecha).length,
+      total: suyas.length,
+    }
+  })
+  return { paradas, tramos, hechas: paradas.filter((p) => p.hecha).length, total: paradas.length, actual }
 }

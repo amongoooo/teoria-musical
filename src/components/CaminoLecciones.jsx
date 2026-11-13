@@ -13,6 +13,7 @@ import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import useDeslizar from '../ui/useDeslizar.js'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
+import BarraProgreso from '../ui/BarraProgreso.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import NavegadorModulos from './NavegadorModulos.jsx'
 
@@ -22,6 +23,11 @@ const FILA = 196 // separación vertical entre islas en el celular
 const ETIQUETA = 168 // ancho máximo del título de cada isla
 const ONDA = 26 // ondulación del camino horizontal
 const PUNTO = 16 // diámetro del puntito de la isla actual (los demás, la mitad)
+// TRAMOS de una ruta (content/rutas.js): un letrero al empezar cada uno. En el celular, el camino deja LETRERO px
+// más antes de la primera isla del tramo; en pantallas anchas, una franja de LETRERO_ARRIBA px encima de los títulos.
+const LETRERO = 72
+const LETRERO_ARRIBA = 86
+const HUECO_TRAMO = 8 // px entre los grupos de puntitos de cada tramo
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
@@ -154,6 +160,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
   // isla `i` es el nodo i + 1. Así la insignia tiene su puntito y desde ella se pasa al módulo anterior.
   const islasMeta = ruta ? lecciones : [...lecciones, { id: 'retos', titulo: 'Retos', esRetos: true }]
   const n = islasMeta.length // islas sin la insignia; los nodos van de 0 a n
+  // Tramos de la ruta (con 2 o más): letrero al empezar cada uno y puntitos agrupados.
+  const tramos = ruta && ruta.estado.tramos?.length > 1 ? ruta.estado.tramos : []
+  const cortes = useMemo(() => tramos.map((t) => t.desde + 1), [tramos.map((t) => t.desde).join()]) // eslint-disable-line react-hooks/exhaustive-deps
   const retos = ruta ? [] : retosDelModulo(modulo, progreso)
   const retosHechos = retos.filter((r) => r.hecho).length
   const moduloCompleto = !ruta && lecciones.every((l) => progreso.lecciones[l.id]?.completada)
@@ -207,15 +216,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     () =>
       ancho
         ? {
-            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande, vis }),
-            abiertas: Array.from({ length: n + 1 }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO })),
+            cerrado: calcular({ ancho: anchoReal / zoomCerrado, vertical, n, abierta: null, grande, vis, cortes }),
+            abiertas: Array.from({ length: n + 1 }, (_, j) => calcular({ ancho, vertical, n, abierta: j, grande, alto: altos[j] ?? ALTO_ESTIMADO, cortes })),
           }
         : null,
-    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos, vis],
+    [ancho, anchoReal, zoomCerrado, vertical, n, grande, altos, vis, cortes],
   )
 
   // Elementos que se mueven a mano en cada fotograma.
-  const els = useRef({ nodo: [], chica: [], difuso: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], linea: [], filtro: [], punto: [] }).current
+  const els = useRef({ nodo: [], chica: [], difuso: [], grande: [], inclina: [], etiqueta: [], gris: [], color: [], linea: [], filtro: [], punto: [], letrero: [] }).current
   const uid = useId().replace(/:/g, '')
   const finDespliegue = DESPLIEGUE.espera + (n - 1) * DESPLIEGUE.entre + DESPLIEGUE.dura
   const guardar = (tipo, i) => (el) => (els[tipo][i] = el)
@@ -450,6 +459,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       lienzo.current.style.transform = z !== 1 ? `scale(${z})` : ''
     }
     const difuso = [] // px de desenfoque de cada nodo (para las líneas)
+    const sales = [] // cuánto ha salido cada nodo en el despliegue inicial (0 a 1)
     for (let m = 0; m <= n; m++) {
       const lo = A.nodos[m]
       const hi = B.nodos[m]
@@ -470,6 +480,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
         y = lerp(pos[0].y, y, dsp)
       }
       pos.push({ x, y })
+      sales.push(sale)
       const nodo = els.nodo[m]
       if (nodo) {
         nodo.style.transform = `translate3d(${x}px, ${y}px, 0)`
@@ -507,6 +518,23 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       const punto = els.punto[m]
       if (punto) punto.style.transform = `scale(${0.5 + 0.5 * a * cerca})`
     }
+    // Letreros de los tramos: con el camino cerrado, encima de la primera isla del tramo (celular) o como franja
+    // sobre sus columnas (ancho); al abrir una isla se desvanecen, como los títulos.
+    tramos.forEach((t, k) => {
+      const el = els.letrero[k]
+      if (!el) return
+      const m = t.desde + 1
+      const visible = opacidadTitulo(a) * limitar(sales[m] * 2 - 1, 0, 1)
+      el.style.opacity = String(visible)
+      el.style.visibility = visible > 0.01 ? 'visible' : 'hidden'
+      if (vertical) {
+        el.style.transform = `translate3d(${anchoReal / z / 2}px, ${pos[m].y - ISLA / 2 - 16}px, 0) translate(-50%, -100%)`
+      } else {
+        const col = C.col ?? 0
+        el.style.width = `${(t.hasta - t.desde + 1) * col - 12}px`
+        el.style.transform = `translate3d(${pos[m].x - col / 2 + 6}px, 6px, 0)`
+      }
+    })
     const alto = lerp(C.alto * zoomCerrado, lerp(A.alto, B.alto, f) * zoom, a) // px reales
     cont.style.height = `${alto}px`
     if (lienzo.current) lienzo.current.style.height = `${alto / z}px`
@@ -837,6 +865,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               </div>
             </div>
 
+            {tramos.map((t, k) => (
+              <Letrero key={t.id} tramo={t} total={tramos.length} vertical={vertical} ref={guardar('letrero', k)} />
+            ))}
+
             {islasMeta.map((l, i) => {
               const estado = estados[i]
               const p = progreso.lecciones[l.id]
@@ -947,6 +979,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               reducir={reducir}
               onMatraca={matraca}
               onVerModulos={ruta?.onVerModulos}
+              tramos={tramos}
             />
           )}
         </AnimatePresence>,
@@ -963,8 +996,11 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * puntito más cercano al dedo** (siempre gana una: nunca se quedan dos islas a medio abrir), con el
  * resorte de pantalla. Además flota con el dedo y hace de matraca (ver FLOTA y MATRACA).
  */
-function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos }) {
+function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, tramos = [] }) {
   const sep = DESLIZAR.puntitos.separacion
+  // Tramos de una ruta: un hueco antes del primer puntito de cada uno (el 0 es la insignia: puntito i = parada i − 1).
+  const empiezaTramo = new Set(tramos.map((t) => t.desde + 1))
+  const huecos = empiezaTramo.size * HUECO_TRAMO
   const pildora = useRef(null)
   const g = useRef(null) // gesto sobre la barra
   const soltar = (e) => {
@@ -1074,8 +1110,12 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
                 }
                 aria-current={i === abierta ? 'true' : undefined}
                 className="grid h-full place-items-center"
+                data-inicio-tramo={empiezaTramo.has(i) ? '' : undefined}
                 // 44 px por puntito; si no caben (p. ej. 9 a 375 px), se estrechan para que la barra no se salga.
-                style={{ width: `min(${sep}px, calc((100vw - 56px) / ${lecciones.length}))` }}
+                style={{
+                  width: `min(${sep}px, calc((100vw - 56px - ${huecos}px) / ${lecciones.length}))`,
+                  marginLeft: empiezaTramo.has(i) ? HUECO_TRAMO : undefined,
+                }}
               >
                 <span
                   ref={guardar('punto', i)}
@@ -1095,6 +1135,36 @@ function BarraPuntitos({ lecciones, estados, abierta, acento, guardar, onIr, flo
         </motion.div>
       </motion.div>
     </motion.div>
+  )
+}
+
+/**
+ * Letrero de un TRAMO de la ruta (al empezar sus islas): «TRAMO 2 · 3/7», su nombre (con ✓ si está hecho) y una
+ * mini barra con lo hecho, en el color del módulo del que sale el tramo. Lo coloca `actualizar()` del camino;
+ * sobre `bg-fondo` para que el camino pase por detrás, como los títulos de las islas.
+ */
+function Letrero({ tramo: t, total, vertical, ref }) {
+  const hecho = t.hechas === t.total
+  return (
+    <div ref={ref} data-letrero={t.id} className="pointer-events-none absolute left-0 top-0" style={{ opacity: 0, visibility: 'hidden' }}>
+      <div
+        className={`flex flex-col gap-1 rounded-2xl bg-fondo px-3 py-1.5 ${vertical ? 'items-center text-center' : ''}`}
+        style={vertical ? { minWidth: 176 } : undefined}
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(t.acento) }}>
+          Tramo {t.numero}
+          <span className="sr-only">de {total}:</span>
+          <span className="font-dato font-medium normal-case tracking-normal text-zinc-500 tabular-nums">
+            {t.hechas}/{t.total}
+          </span>
+        </span>
+        <span className="flex max-w-full items-center gap-1.5 font-titulo text-xl font-bold leading-tight tracking-tight">
+          {hecho && <MarcaBien className="size-5 shrink-0" />}
+          <span className="truncate">{t.titulo}</span>
+        </span>
+        <BarraProgreso valor={t.hechas / t.total} color={t.acento} alto="h-1.5" className="w-full" aria-hidden />
+      </div>
+    </div>
   )
 }
 
@@ -1161,7 +1231,8 @@ function curva(a, b, vertical) {
 }
 
 /** Posiciones de la insignia (nodo 0) y de cada isla, con o sin una isla abierta. */
-function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO, vis = n + 1 }) {
+function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALTO_ESTIMADO, vis = n + 1, cortes = [] }) {
+  // `cortes`: nodos con los que empieza un tramo (cada uno lleva su letrero encima).
   // Nodos: 0 = insignia, m = isla m − 1 (de 0 a n). `abierta` = nodo abierto (o null).
   const nodos = []
   if (!ancho) return { nodos: Array.from({ length: n + 1 }, () => ({ x: 0, y: 0, escala: 1 })), alto: 0 }
@@ -1170,7 +1241,8 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   if (vertical) {
     const amplitud = Math.max(0, Math.min(72, ancho / 2 - ETIQUETA / 2 - 4))
     const y0 = INSIGNIA + 8 + 56 + ISLA / 2
-    const yBase = (m) => (m === 0 ? INSIGNIA / 2 + 8 : y0 + (m - 1) * FILA)
+    const letreros = (m) => cortes.filter((c) => c <= m).length * LETRERO
+    const yBase = (m) => (m === 0 ? INSIGNIA / 2 + 8 : y0 + (m - 1) * FILA + letreros(m))
     const xBase = (m) => (m === 0 ? ancho / 2 : ancho / 2 + amplitud * Math.round(Math.sin((m * Math.PI) / 2)))
     if (abierta === null) {
       for (let m = 0; m <= n; m++) nodos.push({ x: xBase(m), y: yBase(m), escala: 1, ...(m > 0 ? { etiqueta: 'abajo', anchoEtiqueta: ETIQUETA } : {}) })
@@ -1191,7 +1263,7 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
   }
 
   // Horizontal
-  const base = 52 + 16 + ISLA / 2 + ONDA
+  const base = 52 + 16 + ISLA / 2 + ONDA + (cortes.length ? LETRERO_ARRIBA : 0)
   if (abierta === null) {
     // Una columna por nodo; con más nodos que `vis`, las columnas siguen fuera de la vista (tira que se corre).
     const col = ancho / vis

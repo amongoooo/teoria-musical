@@ -58,7 +58,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   const titulos = await page.$$eval('h2', (hs) => hs.map((h) => h.textContent.trim()))
   comprobar(r, 'Inicio: Módulos · Prácticas · Rutas · Herramientas', titulos.join('|').includes('Módulos|Prácticas|Rutas|Herramientas'), titulos.join(' | '))
   comprobar(r, 'ruta de Ritmo 0/10', (await page.textContent('[data-ruta-inicio="ritmo"]')).includes('0/10'))
-  comprobar(r, 'Letras 0/10 y Acordes 0/11', (await page.textContent('[data-ruta-inicio="letras"]')).includes('0/10') && (await page.textContent('[data-ruta-inicio="acordes"]')).includes('0/11'))
+  comprobar(r, 'Letras 0/10 y Acordes 0/18', (await page.textContent('[data-ruta-inicio="letras"]')).includes('0/10') && (await page.textContent('[data-ruta-inicio="acordes"]')).includes('0/18'))
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await espera(300)
   await foto('inicio-rutas')
