@@ -59,6 +59,9 @@ con octava; `{ bajando: true }`), `escalaCambiada('C4', { grado: 3, semitonos: -
 Menor natural y relativas (lección 3.4): `MENOR` (T S T T S T T), `escalaMenor('E4')`, `relativaMenor('G')` → `'E'` (6.º grado),
 `relativaMayor('D')` → `'F'` (3.er grado de la menor), `melodia('C4', [5, 6, 7, 8, 5, 3, 2, 1], 'minor')` (una melodía por grados:
 la misma forma en mayor, en su paralela menor o en la relativa). `grado`, `alteraciones`, `armadura` y `nombresEscala` aceptan `tipo: 'minor'`.
+Tonalidad y círculo de quintas (lección 3.5, Tonal `Key`): `CIRCULO` (las 12 mayores en el sentido del reloj desde Do: C G D A E B F# Db Ab Eb Bb F),
+`armaduraMayor('A')` → `{ cantidad: 3, signo: '♯', notas: ['F#', 'C#', 'G#'] }`, `dominante('D')` → `'A'`, `subdominante('Eb')` → `'Ab'` y
+`conArmadura(notas, 'G')` (las mismas notas con la armadura de otra mayor: cada letra toma su alteración; para «¿vecina o lejana?»).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -72,6 +75,7 @@ sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 
 | `siente` | `components/pasos/PasoSiente.jsx` | Tarjeta "¿Qué se siente?": `lados: [{ etiqueta, emociones, ejemplos, sonido }]`, `nota` |
 | `elegir` | `components/exercises/EscuchaElige.jsx` | Escucha y elige / quiz, por rondas |
 | `emparejar` | `components/exercises/Emparejar.jsx` | Emparejar varios sonidos con su nombre a la vez, por rondas |
+| `circulo` | `components/exercises/EligeEnCirculo.jsx` | Responder tocando una tonalidad del círculo de quintas, por rondas |
 | `tocar` | `components/exercises/TocaEnPiano.jsx` | Responder tocando el piano |
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
 | `reto` | `components/exercises/RetoFL.jsx` | Reto en FL Studio con "Lo hice" y reflexión |
@@ -83,6 +87,13 @@ en DM Mono), p. ej. la tabla de intervalos con su canción de referencia:
 
 ```js
 fichas: { nombre: 'Intervalo', dato: 'Semitonos', filas: [{ nombre: '3.ª mayor', texto: '«When the Saints»', dato: 4, sonido: { notas: ['C4', 'E4'] } }] }
+```
+
+`texto` acepta además `circulo`: el **círculo de quintas** táctil (`components/CirculoQuintas.jsx`); tocar una tonalidad la elige
+y suena su escala, y el centro dice su armadura y su relativa:
+
+```js
+circulo: { inicial: 'G', menores: false, armaduras: true, resaltar: ['G', 'D', 'A'] }  // ids: mayor 'D', menor 'Em' / 'F#m' / 'Bbm'
 ```
 
 `texto` y las rondas de `elegir` aceptan además `roll: { …config, notas }` para mostrar un
@@ -130,6 +141,29 @@ Cada sonido es una fila (A, B…) con su botón de escuchar y un hueco; abajo, l
 hueco activo (el que se acaba de escuchar o el primero vacío); tocar un hueco lleno lo devuelve. Al comprobar, cada
 fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Puntúa una pareja por acierto.
 
+### `circulo`
+
+```js
+{
+  tipo: 'circulo',
+  rondas: [
+    {
+      pregunta: '¿Qué tonalidad mayor tiene **2 sostenidos**?',
+      correcta: 'D',             // mayor 'D' o menor 'Em' (tónica + 'm')
+      anillo: 'mayor',           // qué anillo responde: 'mayor' | 'menor' | 'ambos' (por defecto, el de la respuesta)
+      armaduras: false,          // «2♯» bajo cada mayor (por defecto no: suele ser la pregunta)
+      menores: false,            // anillo de dentro (por defecto, si la respuesta o el anillo son menores)
+      resaltar: ['G'],           // casillas en el tono suave del módulo (p. ej. de dónde se parte)
+      sonidos: [],               // opcional: botones de sonido encima
+      explicacion: '…',
+    },
+  ],
+}
+```
+
+Tocar una casilla la elige (y suena su tónica); al comprobar, la correcta en verde, la elegida en oro y el centro dice la
+respuesta con su armadura.
+
 ### `tocar`
 
 ```js
@@ -148,6 +182,7 @@ fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Pun
   //   Con `intervalo` (nombre de Tonal: '2m','2M','3m','3M','4P','4A' = tritono,'5P','6m','6M','7m','7M','8P') en lugar
   //   de `paso` → construir ese intervalo (P7): { desde: 'D4', intervalo: '3M', direccion: 'sube', pista, mensaje }.
   //   Nombres y semitonos: INTERVALOS / nombreIntervalo / notaIntervalo de theory/intervalos.js.
+  //   `grado: 'la dominante'` (con `intervalo`) cambia la frase a «Toca la dominante de Do4» (3.5: grados con nombre).
   // objetivo: { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S','T','T','T','S'], titulo, mensaje }] }
   //   → tocar en orden las notas de la fórmula (T = tono, S = semitono) desde `desde` (que ya viene marcada).
   //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.
