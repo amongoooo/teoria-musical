@@ -13,7 +13,7 @@ import { esVocal, limpiar } from './silabas.js'
 export const COLORES_RIMA = 8
 
 /** Palabras cortas que casi siempre suenan débiles: no se colorean salvo al final del verso. */
-const DEBILES = new Set(
+export const DEBILES = new Set(
   'a al de del el la las lo los le les un una unos unas y e o u ni que en con por para se me te nos os mi mis tu tus su sus es son ya no si sin como pero mas muy tan qué cómo'.split(
     ' ',
   ),

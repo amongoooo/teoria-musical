@@ -2,6 +2,8 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-13: **Flow** (pestaña de cada letra): rejilla de semicorcheas como el `Contador` (cuenta «1 e y a» en las vacías), sílabas en rosa (tónica rellena oscura, átona suave), aro celeste = suena, sílaba elegida = borde negro y sube, destinos posibles con borde punteado; pad rosa «● Grabar» que muestra la cuenta y luego la siguiente sílaba; ficha «3/3 acentos en el pulso» verde con ✓ cuando están todos. (pedido del usuario: Parte 4 del plan)
+
 - 2026-11-13: **Vocabulario de letras**: tarjeta «Repaso de hoy» rosa (M6) con labio y botón blanco en `font-juego` arriba del panel; temas como tarjetas que se encienden (borde negro + ✓ negro); en el entrenador, la palabra grande en rosa, chip «Nueva» en oro con bombilla o 5 puntitos de caja, verso con hueco punteado que se llena en rosa, ficha tras responder. «Rimas en el diccionario» con las mismas píldoras que «En esta letra riman». Opciones → Créditos (filas que enlazan con ↗). (pedido del usuario: Parte 3 del plan)
 
 - 2026-11-13: **Letras**: rimas por familia con los colores `rima-1…8` (consonante = relleno suave, asonante = subrayado punteado), sinalefa «‿», «multi N», ficha de palabra con la tónica rellena de rosa (M6). Inicio con 3 entrenamientos en fila. (pedido del usuario) **Pad de cuero**: grano fino SVG fijo + costura punteada + relieve interior.

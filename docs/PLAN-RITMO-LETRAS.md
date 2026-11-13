@@ -58,7 +58,16 @@ Opciones → Créditos). Pruebas: `node src/letras/vocabulario.test.mjs` y `docs
 **Para sumar temas** (tiempo, mar, fuego, cuerpo, camino, ciudad): un archivo de 30 palabras con la misma forma y
 añadirlo a `TEMAS` en `vocabulario/index.js` (las pruebas exigen 30 por tema y que el verso lleve la palabra).
 
-## Parte 4 — Flow: sin empezar
+## Parte 4 — Flow: ✅ TERMINADA
+
+Tercera pestaña «Flow» de cada letra (`components/Flow.jsx` + motor `src/letras/flow.js`, pruebas
+`node src/letras/flow.test.mjs` y `docs/pruebas/flow.mjs`): elegir verso, tempo 75/90/105, rejilla de 16 casillas
+(32 si no caben), grabar tocando el pad sobre el beat (una sílaba por toque), Repartir (tónicas en el pulso), mover
+sílabas, Escuchar, «acentos en el pulso» y guardado en la letra (`flows`). Ideas para después (si el usuario las pide):
+varios beats (trap a medio tiempo, boom bap), voz que diga las sílabas (síntesis), flow de una estrofa entera
+seguida, y conectar con el entrenamiento de ritmo (evaluar si repites tu flow a tiempo).
+
+**Plan «Ritmo y Letras» completo.**
 
 ## Resumen técnico (como se pensó)
 

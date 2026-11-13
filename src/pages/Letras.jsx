@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import Flow from '../components/Flow.jsx'
 import { Segmentado } from '../components/Opciones.jsx'
 import RimasDiccionario from '../components/RimasDiccionario.jsx'
 import { cargarDiccionario } from '../letras/rimasDiccionario.js'
@@ -205,6 +206,7 @@ function Letra({ id }) {
           opciones={[
             { id: 'escribir', nombre: 'Escribir' },
             { id: 'analizar', nombre: 'Analizar' },
+            { id: 'flow', nombre: 'Flow' },
           ]}
           valor={vista}
           onCambiar={setVista}
@@ -222,6 +224,16 @@ function Letra({ id }) {
                 data-texto-letra
                 className="min-h-[55vh] w-full resize-y rounded-3xl border border-zinc-200 bg-white p-4 text-lg leading-relaxed text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
               />
+            </motion.div>
+          ) : vista === 'flow' ? (
+            <motion.div key="flow" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+              {analisis.estrofas.length ? (
+                <Flow letra={letra} />
+              ) : (
+                <Pulsable onClick={() => setVista('escribir')} className="min-h-14 w-full rounded-2xl border-2 border-dashed border-zinc-300 px-5 text-base font-semibold text-zinc-500">
+                  Aún no hay letra: escríbela o pégala
+                </Pulsable>
+              )}
             </motion.div>
           ) : (
             <motion.div key="analizar" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="flex flex-col gap-5">
