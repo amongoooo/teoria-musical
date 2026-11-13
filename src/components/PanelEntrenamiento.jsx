@@ -14,7 +14,7 @@ import { BotonInicio } from '../ui/Volver.jsx'
  * cada uno e `Icono` su ícono. Opcional: `volver` (‹ a otro apartado en vez de la casita), `children` (va entre el
  * día y los ejercicios), `arriba` (va antes del día: la acción principal) y, en cada modo, `resumen(datos)` en lugar del nivel y `maxItems` en sus estadísticas.
  */
-export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, nombre, tienda, modos, ruta, Icono, volver, etiquetaVolver, arriba, children }) {
+export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, nombre, tienda, modos, ruta, Icono, volver, etiquetaVolver, arriba, despues, children }) {
   const estado = tienda.usar()
   const dia = tienda.datosDeHoy(estado)
   const racha = tienda.rachaActual(estado)
@@ -138,6 +138,8 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
           )
         })}
       </motion.section>
+
+      {despues}
 
       {hayDatos && (
         <motion.section variants={itemLista} className="flex flex-col gap-4">

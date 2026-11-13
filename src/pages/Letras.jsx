@@ -9,6 +9,9 @@ import { rima } from '../letras/rima.js'
 import { borrarLetra, getLetra, guardarLetra, nuevaLetra, tituloDe, useCuaderno } from '../progress/letras.js'
 import { resumenVocab, tiendaVocab } from '../progress/vocabulario.js'
 import { navegar, rutas } from '../router.js'
+import { herramientaAbierta } from '../content/rutas.js'
+import { useOpciones } from '../progress/opciones.js'
+import { useProgreso } from '../progress/progreso.js'
 import { labio, oscuro, tinta } from '../ui/color.js'
 import Hoja from '../ui/Hoja.jsx'
 import { Atras, Pluma } from '../ui/Iconos.jsx'
@@ -164,6 +167,8 @@ function Letra({ id }) {
   const letra = getLetra(id)
   const [vista, setVista] = useState(() => (letra?.texto.trim() ? 'analizar' : 'escribir'))
   const [porPalabra, setPorPalabra] = useState(false)
+  // El Flow se abre con la lección 2.4 (parada de la ruta de ritmo); antes, su pestaña va con candado y tiembla.
+  const flowAbierto = herramientaAbierta('flow', useProgreso(), useOpciones().admin)
   const [palabra, setPalabra] = useState(null)
   const analisis = useMemo(() => (letra ? analizar(letra.texto, { porPalabra }) : null), [letra, porPalabra])
 
@@ -206,7 +211,7 @@ function Letra({ id }) {
           opciones={[
             { id: 'escribir', nombre: 'Escribir' },
             { id: 'analizar', nombre: 'Analizar' },
-            { id: 'flow', nombre: 'Flow' },
+            { id: 'flow', nombre: 'Flow', bloqueado: !flowAbierto },
           ]}
           valor={vista}
           onCambiar={setVista}

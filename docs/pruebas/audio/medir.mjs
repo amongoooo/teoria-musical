@@ -6,7 +6,7 @@ const resultados = {}
 for (const samples of ['no', 'si']) {
   const nombre = samples === 'si' ? 'sampler' : 'sintetizador'
   const r = (resultados[nombre] = {})
-  const { browser, page, cdp, errores, avisos } = await abrir({ samples })
+  const { browser, page, cdp, errores, avisos } = await abrir({ samples, ruta: '#/piano' })
   await page.locator('[data-note="C4"]').first().waitFor()
   const do4 = await tecla(page, 'C4')
   const mi4 = await tecla(page, 'E4')

@@ -27,6 +27,8 @@ for (const tema of ['claro', 'oscuro']) {
     sessionStorage.setItem('iniciado', '1')
     localStorage.clear()
     localStorage.setItem('teoria-musical:opciones:v1', JSON.stringify({ tema }))
+    // El Flow se abre con la lección 2.4 (ruta de ritmo).
+    localStorage.setItem('teoria-musical:progreso:v1', JSON.stringify({ lecciones: { 2.4: { paso: 0, completada: true } }, retos: {} }))
   }, tema)
 
   await page.goto(BASE + '#/letras')
