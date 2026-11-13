@@ -65,13 +65,14 @@ export default function Inicio() {
         </motion.div>
       )}
 
+      {/* Orden (pedido del usuario): Rutas arriba, luego Prácticas, Herramientas y, hasta abajo, los Módulos. */}
       <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Módulos</Titulo>
-        {/* Cada módulo es un cuadrito con su número y su título; al tocarlo se despliegan sus islas. */}
+        <Titulo>Rutas</Titulo>
+        {/* Como los módulos: un cuadrito por ruta (con su ícono); las que aún no tienen paradas, con candado. */}
         <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
-          {MODULOS.map((m) => (
-            <li key={m.numero}>
-              <CuadritoModulo modulo={m} progreso={progreso} />
+          {ORDEN_RUTAS.map((id) => (
+            <li key={id}>
+              <CuadritoRuta id={id} />
             </li>
           ))}
         </ol>
@@ -87,23 +88,23 @@ export default function Inicio() {
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-4">
-        <Titulo>Rutas</Titulo>
-        {/* Como los módulos: un cuadrito por ruta (con su ícono); las que aún no tienen paradas, con candado. */}
-        <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
-          {ORDEN_RUTAS.map((id) => (
-            <li key={id}>
-              <CuadritoRuta id={id} />
-            </li>
-          ))}
-        </ol>
-      </motion.section>
-
-      <motion.section variants={itemLista} className="flex flex-col gap-4">
         <Titulo>Herramientas</Titulo>
         <div className="flex flex-col gap-3">
           <TarjetaCirculo abierta={herramientaAbierta('circulo', progreso, opciones.admin)} />
           <TarjetaPiano />
         </div>
+      </motion.section>
+
+      <motion.section variants={itemLista} className="flex flex-col gap-4">
+        <Titulo>Módulos</Titulo>
+        {/* Cada módulo es un cuadrito con su número y su título; al tocarlo se despliegan sus islas. */}
+        <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
+          {MODULOS.map((m) => (
+            <li key={m.numero}>
+              <CuadritoModulo modulo={m} progreso={progreso} />
+            </li>
+          ))}
+        </ol>
       </motion.section>
     </motion.main>
   )

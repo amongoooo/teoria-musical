@@ -1,7 +1,8 @@
 // Prueba la barra de puntitos en REGLA (cuando a 44 px no caben: celular con una ruta o un módulo largo) y la
 // rutas en BUCLE (sin tope a los lados: a la izquierda siempre la siguiente, a la derecha siempre la anterior).
 //  - 375 px, #/ruta/acordes con el módulo 1 hecho: `data-regla`, la barra a lo ancho, cada puntito de 44 px, el de la
-//    isla actual (3.1) en el centro, 4 números de tramo en los huecos.
+//    centro de lo que se ve en pantalla en el centro (pedido del usuario: con el camino cerrado, la barra sigue a las
+//    islas que se ven y sus puntitos se inflan un poco), 4 números de tramo en los huecos.
 //  - Tocar un puntito abre su isla y la regla lo lleva al centro. Joystick: dedo a 1 / 2 / 3 puntitos del centro → avanza
 //    1 cada 0,75 s / 2 por s / 4 por s; en el borde, hasta el último (o el primero); en el centro, quieto.
 //  - #/modulo/1 (6 puntitos) y la computadora (1280 px) sin regla.
@@ -58,17 +59,33 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'regla a lo ancho (343 px)', Math.abs(b.width - 343) < 2, String(b.width))
   const anchos = await page.$$eval('[data-punto]', (ps) => ps.map((p) => Math.round(p.getBoundingClientRect().width)))
   comprobar(r, 'puntitos de 44 px', anchos.every((a) => a === 44), anchos.join(','))
-  comprobar(r, 'la actual (3.1, puntito 4) en el centro', (await alCentro(4)) < 3, String(await alCentro(4)))
+  // Con el camino cerrado, el puntito del centro es uno de los que se ven (inflados).
+  const escalas = await page.$$eval('[data-punto] span', (ps) => ps.map((p) => +((p.style.transform.match(/scale\(([\d.]+)/) || [])[1] ?? 0)))
+  const distancias = []
+  for (let i = 0; i < escalas.length; i++) distancias.push(await alCentro(i))
+  const enMedio = distancias.indexOf(Math.min(...distancias))
+  comprobar(r, 'el del centro es de una isla que se ve', distancias[enMedio] < 3 && escalas[enMedio] > 0.55, `${enMedio}: ${escalas.join(' ')}`)
+  comprobar(r, 'se ven (inflados) 1–4 puntitos', escalas.filter((e) => e > 0.55).length >= 1 && escalas.filter((e) => e > 0.55).length <= 4, escalas.join(' '))
+  // Al bajar la página, la regla se corre: el del centro cambia.
+  await page.mouse.wheel(0, 900)
+  await espera(1200)
+  const distancias2 = []
+  for (let i = 0; i < escalas.length; i++) distancias2.push(await alCentro(i))
+  const enMedio2 = distancias2.indexOf(Math.min(...distancias2))
+  comprobar(r, 'al bajar, la regla sigue a lo que se ve', enMedio2 > enMedio, `${enMedio} → ${enMedio2}`)
+  await page.mouse.wheel(0, -900)
+  await espera(1200)
   const numeros = await page.$$eval('[data-regla] [aria-hidden].font-dato', (ns) => ns.map((n) => n.textContent).join(''))
   comprobar(r, 'números de tramo 1 2 3 4', numeros === '1234', numeros)
   await foto('regla-cerrada')
 
-  // Tocar el puntito 5 (a la derecha del centro): abre su isla y la regla lo centra.
-  const p5 = await page.locator('[data-punto="5"]').boundingBox()
+  // Tocar el puntito a la derecha del centro: abre su isla y la regla lo centra.
+  const otro = enMedio + 1
+  const p5 = await page.locator(`[data-punto="${otro}"]`).boundingBox()
   await page.touchscreen.tap(p5.x + p5.width / 2, p5.y + p5.height / 2)
   await espera(1400)
-  comprobar(r, 'tocar abre el puntito 5', (await actual()) === '5', await actual())
-  comprobar(r, 'tocar lo lleva al centro', (await alCentro(5)) < 3, String(await alCentro(5)))
+  comprobar(r, 'tocar abre el puntito de al lado', (await actual()) === String(otro), await actual())
+  comprobar(r, 'tocar lo lleva al centro', (await alCentro(otro)) < 3, String(await alCentro(otro)))
   await foto('regla-tocar')
 
   // JOYSTICK: con el dedo apoyado a N puntitos del centro, avanza solo (a 1: uno cada 0,75 s; a 2: 2/s; a 3: 4/s).

@@ -20,8 +20,9 @@ export const ICONOS_ABRE = { flow: Pluma }
 
 /** La memoria del entrenamiento de cada práctica y a dónde lleva cada modo. */
 export const PRACTICAS = {
-  ritmo: { tienda: tiendaRitmo, enlace: rutas.ritmo, nombre: 'Ritmo' },
-  oido: { tienda: tiendaOido, enlace: rutas.oido, nombre: 'Oído' },
+  // `claveDif`: dónde guarda cada entrenamiento su Dificultad (ritmo: el margen; oído: las octavas).
+  ritmo: { tienda: tiendaRitmo, enlace: rutas.ritmo, nombre: 'Ritmo', claveDif: 'dificultad' },
+  oido: { tienda: tiendaOido, enlace: rutas.oido, nombre: 'Oído', claveDif: 'octavas' },
   letras: { tienda: tiendaVocab, enlace: () => rutas.letras(), nombre: 'Letras' },
 }
 
@@ -87,7 +88,17 @@ export function useRuta(id) {
       }
     }
     const n = nivelMax(p.modo)
-    return { valor: n, meta: p.nivel, detalle: `Tu nivel: ${Math.min(n, 10)} · meta: ${p.nivel}`, ir: () => navegar(practica.enlace(p.modo)) }
+    // «Practicar» desde la ruta (pedido del usuario): el entrenador empieza con la dificultad recomendada de esa parada.
+    const dificultad = p.dificultad ?? 1
+    return {
+      valor: n,
+      meta: p.nivel,
+      detalle: `Tu nivel: ${Math.min(n, 10)} · meta: ${p.nivel} · dificultad ${dificultad}`,
+      ir: () => {
+        if (practica.claveDif) practica.tienda.guardarAjustes(p.modo, { [practica.claveDif]: dificultad })
+        navegar(practica.enlace(p.modo))
+      },
+    }
   }
 
   return {

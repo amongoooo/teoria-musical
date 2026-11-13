@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-13-explorar',
+    fecha: '13 nov 2026',
+    titulo: 'Explorar más cómodo',
+    cosas: [
+      { texto: 'En Inicio, las **Rutas** van arriba, luego las **Prácticas** y hasta abajo los **Módulos**.', donde: { etiqueta: 'Ir a Inicio', href: '#/' } },
+      {
+        texto: 'Los **puntitos** de abajo siguen a las islas que ves: se inflan un poco y, si son muchos, la barra se corre al bajar la página.',
+        donde: { etiqueta: 'Ruta de acordes', href: '#/ruta/acordes' },
+      },
+      {
+        texto: '«**Practicar**» desde una ruta abre el entrenamiento con la **dificultad recomendada** para ese punto del curso.',
+        donde: { etiqueta: 'Ruta de ritmo', href: '#/ruta/ritmo' },
+      },
+      { texto: 'Para pasar de módulo o de ruta tirando de la página, empieza el gesto **ya en el borde** (arriba o abajo del todo).' },
+      { texto: 'En la computadora, la primera y la última isla quedan **enteras** y los lados se desvanecen **más leve**.', donde: { etiqueta: 'Ruta de letras', href: '#/ruta/letras' } },
+    ],
+  },
+  {
     id: '2026-11-13-voicings',
     fecha: '13 nov 2026',
     titulo: 'Voicings y novedades',
