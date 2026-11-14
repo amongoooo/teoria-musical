@@ -9,6 +9,13 @@ export const MAYOR = ['T', 'T', 'S', 'T', 'T', 'T', 'S']
 /** La fórmula de la escala menor natural: T S T T S T T (la mayor empezada en su 6.º grado). */
 export const MENOR = ['T', 'S', 'T', 'T', 'S', 'T', 'T']
 
+/** Las pentatónicas (lección 3.6): la mayor sin el 4.º ni el 7.º, y la menor natural sin el 2.º ni el 6.º. */
+export const PENTA_MAYOR = ['T', 'T', 'T½', 'T', 'T½']
+export const PENTA_MENOR = ['T½', 'T', 'T', 'T½', 'T']
+/** Los grados de cada pentatónica (respecto a la mayor o a la menor de su tónica), con la octava al final. */
+export const GRADOS_PENTA_MAYOR = ['1', '2', '3', '5', '6', '1']
+export const GRADOS_PENTA_MENOR = ['1', '♭3', '4', '5', '♭7', '1']
+
 /** Nombre de cada grado de la escala (1.º → 7.º). */
 export const GRADOS = ['Tónica', 'Supertónica', 'Mediante', 'Subdominante', 'Dominante', 'Superdominante', 'Sensible']
 
@@ -16,17 +23,21 @@ export const GRADOS = ['Tónica', 'Supertónica', 'Mediante', 'Subdominante', 'D
 export const ordinal = (n) => `${n}.º`
 
 /**
- * Las 8 notas de una escala (de la tónica a su octava), con octava: escalaMayor('G3') → ['G3', 'A3', …, 'F#4', 'G4'].
- * `tipo` = nombre de Tonal ('major', 'minor'…). Con `bajando`, de la octava a la tónica.
+ * Las notas de una escala de la tónica a su octava, con octava: escalaMayor('G3') → ['G3', 'A3', …, 'F#4', 'G4'].
+ * `tipo` = nombre de Tonal ('major', 'minor', 'major pentatonic'…): 8 notas en las de 7, 6 en las pentatónicas.
+ * Con `bajando`, de la octava a la tónica.
  */
 export function escala(tonica, tipo = 'major', { bajando = false } = {}) {
   const grado = Scale.degrees(`${tonica} ${tipo}`)
-  const notas = [1, 2, 3, 4, 5, 6, 7, 8].map(grado)
+  const largo = Scale.get(`${Note.pitchClass(tonica)} ${tipo}`).notes.length
+  const notas = Array.from({ length: largo + 1 }, (_, i) => grado(i + 1))
   return bajando ? notas.reverse() : notas
 }
 
 export const escalaMayor = (tonica, opciones) => escala(tonica, 'major', opciones)
 export const escalaMenor = (tonica, opciones) => escala(tonica, 'minor', opciones)
+export const pentaMayor = (tonica, opciones) => escala(tonica, 'major pentatonic', opciones)
+export const pentaMenor = (tonica, opciones) => escala(tonica, 'minor pentatonic', opciones)
 
 /** Tónica de la relativa menor de una mayor (su 6.º grado), sin octava: relativaMenor('G') → 'E'. */
 export const relativaMenor = (tonica) => grado(tonica, 6)
@@ -63,7 +74,7 @@ export function armadura(tonica, tipo = 'major') {
 /** La escala en español, sin octava: 'Re · Mi · Fa♯ · …' (sin repetir la octava si `octava` es false). */
 export function nombresEscala(tonica, { tipo = 'major', octava = false, separador = ' · ' } = {}) {
   const notas = escala(`${Note.pitchClass(tonica)}4`, tipo)
-  return (octava ? notas : notas.slice(0, 7)).map((n) => nombre(n, { octava: false })).join(separador)
+  return (octava ? notas : notas.slice(0, -1)).map((n) => nombre(n, { octava: false })).join(separador)
 }
 
 /**

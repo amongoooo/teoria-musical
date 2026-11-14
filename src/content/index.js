@@ -17,6 +17,7 @@ import leccion32 from './modulo-03/leccion-3-2.js'
 import leccion33 from './modulo-03/leccion-3-3.js'
 import leccion34 from './modulo-03/leccion-3-4.js'
 import leccion35 from './modulo-03/leccion-3-5.js'
+import leccion36 from './modulo-03/leccion-3-6.js'
 import leccion41 from './modulo-04/leccion-4-1.js'
 import leccion42 from './modulo-04/leccion-4-2.js'
 import leccion43 from './modulo-04/leccion-4-3.js'
@@ -44,6 +45,7 @@ const LECCIONES = {
   [leccion33.id]: leccion33,
   [leccion34.id]: leccion34,
   [leccion35.id]: leccion35,
+  [leccion36.id]: leccion36,
   [leccion41.id]: leccion41,
   [leccion42.id]: leccion42,
   [leccion43.id]: leccion43,

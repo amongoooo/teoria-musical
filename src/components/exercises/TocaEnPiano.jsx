@@ -460,7 +460,9 @@ function Octavas({ paso, setAccion, siguiente, completar }) {
 
 /** Nombre corto para el Piano y para nombre(): sin dobles alteraciones ni Mi♯ (Tonal). */
 const simple = (n) => Note.simplify(n)
-const PALABRA_PASO = { S: 'un semitono', T: 'un tono' }
+const PALABRA_PASO = { S: 'un semitono', T: 'un tono', 'T½': 'un tono y medio' }
+/** Cómo se ve cada paso en el teclado. */
+const TECLAS_PASO = { S: 'es la tecla de al lado', T: 'salta una tecla', 'T½': 'salta dos teclas' }
 const plural = (n) => `${n} semitono${n === 1 ? '' : 's'}`
 
 /** Lo que pide la ronda, en palabras: «un tono», «una 3.ª mayor». */
@@ -651,7 +653,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         tipo: 'mal',
         titulo: `Esa es ${tocada}.`,
         texto:
-          `Desde ${nombre(simple(anterior), { octava: false })}, ${PALABRA_PASO[p]} ${p === 'S' ? 'es la tecla de al lado' : 'salta una tecla'}` +
+          `Desde ${nombre(simple(anterior), { octava: false })}, ${PALABRA_PASO[p]} ${TECLAS_PASO[p]}` +
           (d > 0 ? `; tocaste ${nombreDistancia(d)} hacia arriba.` : '; la fórmula sube: ve hacia la derecha.') +
           (fallos >= 2 ? ' Te marco la tecla.' : ''),
       }
@@ -707,7 +709,8 @@ function Formula({ paso, setAccion, siguiente, completar }) {
  * ahora con borde negro, las pendientes con «?») y, encima, el paso (T / S) entre cada pareja.
  * `senal` (de useSenal): al «Escuchar lo que tocaste», la casilla de la nota que suena lleva aro celeste.
  * `sacudidas` ({ índice: veces }): al volver a tocar una nota ya tocada, su casilla tiembla.
- * `grados`: debajo, el número de grado de cada nota (1 … 7 y la octava otra vez 1).
+ * `grados`: debajo, el número de grado de cada nota (1 … 7 y la octava otra vez 1), o una lista propia
+ *   (pentatónicas, 3.6: ['1', '♭3', '4', '5', '♭7', '1']).
  */
 function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = false }) {
   const columnas = { gridTemplateColumns: `repeat(${notas.length}, minmax(0, 1fr))` }
@@ -719,7 +722,7 @@ function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = fal
             {i > 0 && (
               <span
                 className={`absolute left-0 top-0 -translate-x-1/2 -ml-[3px] grid h-6 min-w-6 place-items-center rounded-full font-dato text-sm font-medium ${
-                  pasos[i - 1] === 'S' ? 'bg-fijate-suave text-fijate-tinta' : 'bg-zinc-100 text-zinc-700'
+                  pasos[i - 1] === 'T' ? 'bg-zinc-100 text-zinc-700' : 'bg-fijate-suave text-fijate-tinta'
                 }`}
               >
                 {pasos[i - 1]}
@@ -746,7 +749,7 @@ function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = fal
         <div className="grid gap-1.5" style={columnas} aria-label="Grados de la escala">
           {notas.map((_, i) => (
             <span key={i} className="text-center font-dato text-sm font-medium tabular-nums text-zinc-500">
-              {(i % 7) + 1}
+              {Array.isArray(grados) ? grados[i] : (i % 7) + 1}
             </span>
           ))}
         </div>
