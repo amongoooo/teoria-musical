@@ -136,6 +136,7 @@ export const TRAMOS = {
 export const RUTAS = {
   ritmo: {
     id: 'ritmo',
+    area: 'ritmo', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
     nombre: 'Ritmo',
     titulo: 'Ruta de ritmo',
     acento: 'var(--color-ritmo)',
@@ -146,6 +147,7 @@ export const RUTAS = {
   },
   letras: {
     id: 'letras',
+    area: 'letras', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
     nombre: 'Letras',
     titulo: 'Ruta de letras',
     acento: 'var(--color-letras)',
@@ -156,6 +158,7 @@ export const RUTAS = {
   },
   acordes: {
     id: 'acordes',
+    area: 'armonia', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
     nombre: 'Acordes',
     titulo: 'Ruta de acordes',
     acento: 'var(--color-armonia)',

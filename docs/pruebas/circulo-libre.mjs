@@ -28,7 +28,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   page.on('pageerror', (e) => errores.push(String(e)))
 
   const preparar = async (progreso) => {
-    await page.goto(BASE)
+    await page.goto(BASE + '#/herramientas')
     await page.evaluate(
       ([tema, progreso]) => {
         localStorage.clear()

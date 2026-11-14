@@ -20,7 +20,7 @@ import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/in
 import { RUTAS } from '../content/rutas.js'
 import { getOpciones, useOpciones } from '../progress/opciones.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, getProgreso, guardarPaso } from '../progress/progreso.js'
-import { navegar, rutas } from '../router.js'
+import { navegar, origenDeLeccion, rutas } from '../router.js'
 import { claro, oscuro, tinta } from '../ui/color.js'
 import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
@@ -76,7 +76,8 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   const modulo = getModulo(leccion.modulo)
   const acento = acentoLeccion(leccion.id)
   // A dónde se vuelve: al módulo o, si la lección vive en una ruta, a la ruta.
-  const volver = leccion.ruta ? rutas.ruta(leccion.ruta) : rutas.modulo(leccion.modulo)
+  // (Abierta desde la Biblioteca, vuelve a la Biblioteca.)
+  const volver = (!guiada && origenDeLeccion(leccion.id)) || (leccion.ruta ? rutas.ruta(leccion.ruta) : rutas.modulo(leccion.modulo))
   const total = leccion.pasos.length
 
   const [indice, setIndice] = useState(() => {

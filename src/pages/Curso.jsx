@@ -186,7 +186,7 @@ function TarjetaAvance({ estado, porcentaje }) {
 const tipoPaso = (p) => `${AREAS[p.area].nombre} · ${{ leccion: 'Lección', meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL' }[p.tipo]}`
 
 /** El siguiente paso del curso, del color de su ruta, con el botón de su tipo (Empezar / Continuar / Practicar…). */
-function SigueAqui({ curso }) {
+export function SigueAqui({ curso }) {
   const p = curso.estado.actual
   if (!p) {
     const ultimo = curso.estado.bloques[curso.estado.bloques.length - 1]
