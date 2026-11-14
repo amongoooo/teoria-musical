@@ -3,7 +3,12 @@
 // (CaminoLecciones), la cabecera (CabeceraModulo), el deslizar entre páginas (useCambioModulo) y los cuadritos
 // (Cuadrito). El «módulo» de una ruta lleva `esRuta`, su ícono en lugar del número y `vecino(dir)` para pasar
 // a la ruta de al lado.
-import { ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '../content/rutas.js'
+import { useMotionValue } from 'motion/react'
+import { useRef, useState } from 'react'
+import { getModulo } from '../content/index.js'
+import { HERRAMIENTAS, ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '../content/rutas.js'
+import { MODOS_OIDO } from '../theory/oido.js'
+import { MODOS_RITMO } from '../theory/ritmo.js'
 import { getPalabra, getTema } from '../letras/vocabulario/index.js'
 import { useCuaderno } from '../progress/letras.js'
 import { useOpciones } from '../progress/opciones.js'
@@ -12,6 +17,7 @@ import { useProgreso } from '../progress/progreso.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
 import { tiendaVocab } from '../progress/vocabulario.js'
 import { navegar, rutas } from '../router.js'
+import { nombreNivel } from './PanelEntrenamiento.jsx'
 import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 
 /** Ícono de cada ruta (el de su práctica) y de lo que se abre en ella. */
@@ -121,5 +127,89 @@ export function useRuta(id) {
     meta,
     enlaceMeta: practica.enlace,
     progreso,
+  }
+}
+
+/** Modos de cada práctica (los ejercicios que salen en «Módulos y prácticas»). Letras: el cuaderno y el vocabulario. */
+const MODOS = { oido: MODOS_OIDO, ritmo: MODOS_RITMO, letras: [{ id: 'cuaderno' }, { id: 'vocabulario' }] }
+const ICONO_PRACTICA = { oido: Oreja, ritmo: Metronomo, letras: Pluma }
+const ACENTO_PRACTICA = { oido: 'var(--color-modulo-1)', ritmo: 'var(--color-modulo-2)', letras: 'var(--color-modulo-6)' }
+
+/** Módulo de una parada (lección numerada o lo que abre una lección), o null. */
+function moduloDeParada(p) {
+  const id = p.tipo === 'leccion' ? p.id : p.tipo === 'abre' ? HERRAMIENTAS[p.herramienta]?.leccion : null
+  return id && /^\d+\./.test(id) ? Number(id.split('.')[0]) : null
+}
+
+/** Práctica y ejercicio de una meta: ['oido', 'intervalos'], ['letras', 'vocabulario']… */
+function ejercicioDeMeta(p, practica) {
+  if (p.clave === 'letra') return ['letras', 'cuaderno']
+  if (p.clave === 'vocab') return ['letras', 'vocabulario']
+  return p.modo ? [practica, p.modo] : null
+}
+
+/**
+ * Lo que sale en el carrusel «Módulos y prácticas» de una ruta o de un bloque (CarruselModulos): los MÓDULOS que usan
+ * sus paradas (en orden) y sus PRÁCTICAS (las de sus metas y, en una ruta, después el resto de ejercicios de su práctica).
+ * `practicaDe(p)` = la práctica que mide cada meta; `practicaRuta` = la de la ruta (o null en un bloque).
+ */
+export function useModulosYPracticas(paradas, practicaDe, practicaRuta = null) {
+  const progreso = useProgreso()
+  const { letras } = useCuaderno()
+  const datos = { oido: tiendaOido.usar(), ritmo: tiendaRitmo.usar(), letras: tiendaVocab.usar() }
+
+  const numeros = [...new Set(paradas.map(moduloDeParada).filter(Boolean))].sort((a, b) => a - b)
+  const modulos = numeros.map(getModulo).filter(Boolean).map((m) => {
+    const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
+    const total = m.lecciones.length
+    return { id: `modulo-${m.numero}`, titulo: m.titulo, etiqueta: `Módulo ${m.numero}`, acento: m.acento, numero: m.numero, dato: `${hechas}/${total}`, avance: total ? hechas / total : 0, hecho: total > 0 && hechas === total, href: rutas.modulo(m.numero) }
+  })
+
+  const claves = []
+  for (const p of paradas) {
+    if (p.tipo !== 'meta') continue
+    const e = ejercicioDeMeta(p, practicaDe(p))
+    if (e && !claves.some(([a, b]) => a === e[0] && b === e[1])) claves.push(e)
+  }
+  if (practicaRuta) for (const m of MODOS[practicaRuta] ?? []) if (!claves.some(([a, b]) => a === practicaRuta && b === m.id)) claves.push([practicaRuta, m.id])
+  const practicas = claves.map(([pid, id]) => {
+    const base = { id: `${pid}-${id}`, Icono: ICONO_PRACTICA[pid], etiqueta: `Práctica · ${PRACTICAS[pid].nombre}` }
+    if (id === 'cuaderno') return { ...base, titulo: 'Tus letras', acento: ACENTO_PRACTICA.letras, dato: `${letras.length} ${letras.length === 1 ? 'letra' : 'letras'}`, href: rutas.letras() }
+    if (id === 'vocabulario') {
+      const n = Object.keys(datos.letras.repaso ?? {}).length
+      return { ...base, titulo: 'Vocabulario', acento: ACENTO_PRACTICA.letras, dato: `${n} ${n === 1 ? 'palabra' : 'palabras'}`, href: rutas.vocabulario() }
+    }
+    const modo = (MODOS[pid] ?? []).find((m) => m.id === id)
+    if (!modo) return null
+    const d = PRACTICAS[pid].tienda.datosModo(id, datos[pid])
+    return { ...base, titulo: modo.titulo, acento: modo.acento ?? ACENTO_PRACTICA[pid], dato: nombreNivel(modo, d.nivel), href: PRACTICAS[pid].enlace(id) }
+  }).filter(Boolean)
+
+  return [
+    { id: 'modulos', titulo: 'Módulos', items: modulos },
+    { id: 'practicas', titulo: 'Prácticas', items: practicas },
+  ]
+}
+
+/**
+ * Estado del carrusel «Módulos y prácticas» de una página de ruta o de bloque (lo que va en `ruta.carrusel` de
+ * CaminoLecciones): `abierto` (las islas se cambian por el carrusel), tocar el botón lo abre o lo cierra, y el gesto de
+ * subir el botón (`subir`, `listo`) abre la tarjeta del centro (`api.current.elegir()`).
+ */
+export function useCarruselModulos(filas) {
+  const [abierto, setAbierto] = useState(false)
+  const subir = useMotionValue(0)
+  const listo = useMotionValue(0)
+  const api = useRef(null)
+  return {
+    abierto,
+    filas,
+    subir,
+    listo,
+    api,
+    onTocar: () => setAbierto((a) => !a),
+    onAbrir: () => setAbierto(true),
+    onCerrar: () => setAbierto(false),
+    onElegir: () => api.current?.elegir(),
   }
 }

@@ -5,8 +5,8 @@
 //  - #/ruta/ritmo: cabecera fija con una barra LISA (un solo segmento), «RUTA · Ritmo», la barra de puntitos (insignia + 10 paradas) y las
 //    islas del camino; con 2.1, 2.2 y Seguir nivel 2: 3/10; tocar el puntito de «Eco · nivel 3» abre su globo con
 //    «Tu nivel» y «Practicar» (lleva a #/ritmo/eco); una bloqueada dice «Antes: …»; la insignia abierta tiene
-//    «Módulos y prácticas»; el botón de vidrio sobre la barra de puntitos (ya no hay tarjetita al final) abre la hoja
-//    con el Módulo 2 y Seguir / Eco. Ruta LINEAL: con Seguir nivel 5 pero sin Eco 3, «Seguir · nivel 5» sigue bloqueada.
+//    «Módulos y prácticas»; el botón de vidrio sobre la barra de puntitos (ya no hay tarjetita al final) cambia las islas
+//    por el carrusel con el Módulo 2 y Seguir / Eco (más en carrusel-modulos.mjs). Ruta LINEAL: con Seguir nivel 5 pero sin Eco 3, «Seguir · nivel 5» sigue bloqueada.
 //  - Flow con candado sin la 2.4 (no cambia al tocarlo); con todo el módulo 2: 9/10, «Lo hice» en el reto → 10/10.
 //  - El panel de #/ritmo lleva a la ruta. Sin errores en la consola.
 //  - Computadora: como mucho 6 nodos a la vista; la tira se arrastra de lado y con la rueda.
@@ -118,11 +118,11 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   comprobar(r, 'barra de puntitos de 44 px', Math.round(barra.height) === 44, String(barra.height))
   await foto('boton-modulos')
   await page.locator('[data-encima-barra]').click()
-  await page.waitForSelector('[data-hoja-modulos]')
+  await page.waitForSelector('[data-carrusel-modulos]')
   await espera(600)
-  const hoja = await page.textContent('[data-hoja-modulos]')
-  comprobar(r, 'hoja: Módulo 2 y Seguir / Eco', hoja.includes('Ritmo y groove') && (await page.locator('[data-practica="seguir"]').count()) === 1 && (await page.locator('[data-practica="eco"]').count()) === 1, hoja)
-  await foto('hoja-modulos')
+  const hoja = await page.textContent('[data-carrusel-modulos]')
+  comprobar(r, 'carrusel: Módulo 2 y Seguir / Eco', hoja.includes('Ritmo y groove') && (await page.locator('[data-tarjeta-modulo="ritmo-seguir"]').count()) === 1 && (await page.locator('[data-tarjeta-modulo="ritmo-eco"]').count()) === 1, hoja)
+  await foto('carrusel-modulos')
 
   // 4b) Ruta lineal: Seguir nivel 5 alcanzado, pero sin Eco 3 → «Seguir · nivel 5» bloqueada y 3/10.
   await preparar({ ruta: '#/ruta/ritmo', lecciones: completadas(['2.1', '2.2']), nivelSeguir: 5 })

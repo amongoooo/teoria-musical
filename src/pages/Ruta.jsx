@@ -2,28 +2,22 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import CaminoLecciones from '../components/CaminoLecciones.jsx'
 import useCambioModulo from '../components/CambioModulo.jsx'
-import { Cuadrito } from '../components/NavegadorModulos.jsx'
-import { nombreNivel } from '../components/PanelEntrenamiento.jsx'
-import { ICONOS_ABRE, PRACTICAS, useRuta } from '../components/rutaModulo.js'
-import { getModulo } from '../content/index.js'
+import { ICONOS_ABRE, useCarruselModulos, useModulosYPracticas, useRuta } from '../components/rutaModulo.js'
 import { RUTAS, rutaDisponible } from '../content/rutas.js'
-import { MODOS_OIDO } from '../theory/oido.js'
-import { MODOS_RITMO } from '../theory/ritmo.js'
 import { rutas } from '../router.js'
-import { claro, tinta } from '../ui/color.js'
-import Hoja from '../ui/Hoja.jsx'
+import { tinta } from '../ui/color.js'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 
-/** Modos de cada práctica (para la hoja «Módulos y prácticas»). */
-const MODOS = { ritmo: MODOS_RITMO, oido: MODOS_OIDO, letras: [] }
+/** Con el carrusel de módulos a la vista, la página no cambia de ruta con gestos (el carrusel se queda los swipes). */
+const SIN_CAMBIO = { inicio: false, fin: false }
 
 /**
  * Página de una RUTA (#/ruta/ritmo). Pedido del usuario: «que las rutas salgan igual a los módulos, mismas
  * animaciones y visualmente iguales»: es la página de Módulo con la ruta presentada como un módulo
  * (`rutaModulo.js`): misma cabecera fija, mismo camino de islas con globos, barra de puntitos, desenfoque y
- * deslizar entre rutas. La diferencia: sobre la barra de puntitos, un botón de vidrio (solo ícono) que abre la hoja
- * «Módulos y prácticas» (los módulos de la ruta y los ejercicios de su práctica).
+ * deslizar entre rutas. La diferencia: sobre la barra de puntitos, un botón de vidrio (solo ícono) que cambia las islas
+ * por el carrusel «Módulos y prácticas» (los módulos que usa la ruta y los ejercicios de su práctica; CarruselModulos).
  */
 export default function Ruta({ id }) {
   if (!rutaDisponible(RUTAS[id])) {
@@ -42,11 +36,10 @@ export default function Ruta({ id }) {
 function PaginaRuta({ id }) {
   const r = useRuta(id)
   const [isla, setIsla] = useState(null)
-  const [verModulos, setVerModulos] = useState(false)
   const [tira, setTira] = useState(null) // pantallas anchas: camino cerrado que se arrastra de lado ({ inicio, fin })
-  const cambio = useCambioModulo(r.modulo, { isla, tira })
-  const modulos = r.ruta.modulos.map(getModulo).filter(Boolean)
-  const modos = MODOS[r.ruta.practica] ?? []
+  const filas = useModulosYPracticas(r.ruta.paradas, () => r.ruta.practica, r.ruta.practica)
+  const carrusel = useCarruselModulos(filas)
+  const cambio = useCambioModulo(r.modulo, { isla: carrusel.abierto ? SIN_CAMBIO : isla, tira })
 
   return (
     <>
@@ -89,90 +82,15 @@ function PaginaRuta({ id }) {
               enlaceMeta: r.enlaceMeta,
               Icono: r.modulo.Icono,
               iconosAbre: ICONOS_ABRE,
-              onVerModulos: () => setVerModulos(true),
+              onVerModulos: carrusel.onTocar,
+              onInsigniaVer: carrusel.onAbrir,
+              carrusel,
             }}
           />
         </motion.section>
 
       </motion.main>
       {cambio.indicadores}
-      <HojaModulos abierta={verModulos} onCerrar={() => setVerModulos(false)} r={r} modulos={modulos} modos={modos} />
     </>
-  )
-}
-
-/** Hoja con los módulos del curso de los que sale la ruta y los ejercicios de su práctica (con tu nivel). */
-function HojaModulos({ abierta, onCerrar, r, modulos, modos }) {
-  const practica = PRACTICAS[r.ruta.practica]
-  const datos = practica.tienda.usar()
-  const Icono = r.modulo.Icono
-  return (
-    <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta="Módulos y prácticas">
-      <div className="flex flex-col gap-5" data-hoja-modulos>
-        <h2 className="font-titulo text-2xl font-bold tracking-tight">Módulos y prácticas</h2>
-        {modulos.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Módulos</h3>
-            {modulos.map((m) => {
-              const hechas = m.lecciones.filter((l) => r.progreso.lecciones[l.id]?.completada).length
-              return (
-                <Pulsable
-                  key={m.numero}
-                  data-foco
-                  href={rutas.modulo(m.numero)}
-                  tipo="tarjeta"
-                  className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-3"
-                >
-                  <Cuadrito modulo={m} tam={52} hecho={hechas === m.lecciones.length} />
-                  <span className="flex flex-1 flex-col gap-0.5">
-                    <span className="font-titulo text-lg font-bold leading-snug">{m.titulo}</span>
-                    <span className="font-juego text-base tabular-nums" style={{ color: tinta(m.acento) }}>
-                      {hechas}/{m.lecciones.length}
-                    </span>
-                  </span>
-                  <span aria-hidden className="text-2xl text-zinc-300">
-                    ›
-                  </span>
-                </Pulsable>
-              )
-            })}
-          </section>
-        )}
-        <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Prácticas</h3>
-          {modos.map((m) => {
-            const d = practica.tienda.datosModo(m.id, datos)
-            return (
-              <Pulsable
-                key={m.id}
-                href={practica.enlace(m.id)}
-                tipo="tarjeta"
-                data-practica={m.id}
-                className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-3"
-              >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl" style={{ backgroundColor: claro(m.acento), color: tinta(m.acento) }} aria-hidden>
-                  {Icono && <Icono className="size-7" />}
-                </span>
-                <span className="flex flex-1 flex-col gap-0.5">
-                  <span className="font-titulo text-lg font-bold leading-snug">{m.titulo}</span>
-                  <span className="font-juego text-base" style={{ color: tinta(m.acento) }}>
-                    {nombreNivel(m, d.nivel)}
-                  </span>
-                </span>
-                <span aria-hidden className="text-2xl text-zinc-300">
-                  ›
-                </span>
-              </Pulsable>
-            )
-          })}
-          <Pulsable
-            href={practica.enlace()}
-            className="flex min-h-12 items-center justify-center rounded-2xl border-2 border-zinc-300 text-base font-semibold text-zinc-800"
-          >
-            Práctica de hoy · {practica.nombre}
-          </Pulsable>
-        </section>
-      </div>
-    </Hoja>
   )
 }

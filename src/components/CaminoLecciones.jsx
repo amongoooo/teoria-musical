@@ -1,4 +1,4 @@
-import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion } from 'motion/react'
+import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
@@ -11,10 +11,11 @@ import { Candado, Cerrar, Check, Cuadritos, MarcaBien, Reproducir, Saltar, Trofe
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
-import useDeslizar from '../ui/useDeslizar.js'
+import useDeslizar, { goma as gomaDeslizar, resistencia as resistenciaDeslizar } from '../ui/useDeslizar.js'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import Hoja from '../ui/Hoja.jsx'
+import CarruselModulos from './CarruselModulos.jsx'
 import NavegadorModulos from './NavegadorModulos.jsx'
 import { pruebaDeModulo, pruebaDeRuta } from './yaLoSabes.js'
 
@@ -239,6 +240,13 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
   const base = useMotionValue(0) // índice continuo de la isla abierta, sin contar el arrastre
   const apertura = useMotionValue(0) // 0 = camino cerrado, 1 = una isla abierta
   const despliegue = useMotionValue(0) // segundos desde que empezó el despliegue inicial
+
+  // «Módulos y prácticas» (ruta o bloque; `ruta.carrusel`): con el carrusel a la vista, las islas se desvanecen y,
+  // ya invisibles, el camino se pliega (no ocupa sitio); al volver, se despliega y aparece otra vez.
+  const carrusel = ruta?.carrusel ?? null
+  const oculto = Boolean(carrusel?.abierto)
+  const [plegado, setPlegado] = useState(false)
+  const [altoCarrusel, setAltoCarrusel] = useState(0)
 
   // Disposición del camino cerrado y con cada isla abierta.
   const layouts = useMemo(
@@ -685,6 +693,26 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     else animate(despliegue, finDespliegue, { duration: finDespliegue, ease: 'linear' })
   }, [ancho, reducir, despliegue, finDespliegue])
 
+  // Al abrir el carrusel: se cierra la isla abierta y la página sube arriba del todo (el carrusel va bajo el título).
+  useEffect(() => {
+    if (!oculto) {
+      setPlegado(false)
+      return
+    }
+    if (abiertaRef.current !== null) cerrarRef.current()
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reducir ? 'auto' : 'smooth' })
+  }, [oculto]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Un puntito tocado con el carrusel a la vista: vuelven las islas y se abre esa (cuando el camino ya se ve).
+  const pendiente = useRef({ i: null, t: null })
+  useEffect(() => () => clearTimeout(pendiente.current.t), [])
+  const irDesdeBarra = (i) => {
+    if (!oculto) return irA(i)
+    carrusel.onCerrar()
+    pendiente.current.i = i
+    clearTimeout(pendiente.current.t)
+    pendiente.current.t = setTimeout(() => irARef.current(pendiente.current.i), 280)
+  }
+
   // Escape, tocar fuera de las islas y de la barra o tocar la isla abierta la cierra (vista completa);
   // flechas: anterior / siguiente. (Tras un arrastre, useDeslizar anula ese «click», así que deslizar no cierra.)
   const abiertaSiNo = abierta !== null
@@ -857,6 +885,16 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
 
   return (
     <>
+      <div className="relative" style={{ minHeight: oculto ? altoCarrusel : undefined }}>
+      <motion.div
+        data-camino-oculto={oculto ? '' : undefined}
+        aria-hidden={oculto || undefined}
+        initial={false}
+        animate={{ opacity: oculto ? 0 : 1 }}
+        transition={{ duration: oculto ? 0.16 : 0.24 }}
+        onAnimationComplete={() => oculto && setPlegado(true)}
+        style={plegado ? { height: 0, overflow: 'hidden', pointerEvents: 'none' } : oculto ? { pointerEvents: 'none' } : undefined}
+      >
       <div
         ref={ref}
         className="relative w-full select-none"
@@ -931,7 +969,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                     totalRetos={retos.length}
                     onCerrar={cerrar}
                     onIr={irA}
-                    onVerModulos={ruta ? ruta.onVerModulos : () => setVerModulos(true)}
+                    onVerModulos={ruta ? (ruta.onInsigniaVer ?? ruta.onVerModulos) : () => setVerModulos(true)}
                     total={n + 1}
                   />
                 </div>
@@ -1039,6 +1077,23 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
         )}
       </div>
 
+      </motion.div>
+      <AnimatePresence>
+        {oculto && (
+          <motion.div
+            key="carrusel"
+            className="absolute inset-x-0 top-0"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24, transition: { duration: 0.16 } }}
+            transition={RESORTE.suave}
+          >
+            <CarruselModulos filas={carrusel.filas} subir={carrusel.subir} listo={carrusel.listo} api={carrusel.api} onCerrar={carrusel.onCerrar} onAlto={setAltoCarrusel} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
+
       {/* Relleno para poder subir la página al abrir una isla del final (ver abrir()). */}
       <div ref={relleno} aria-hidden style={{ height: 0 }} />
 
@@ -1054,7 +1109,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               foco={abierta ?? vista ?? (actual >= 0 ? actual + 1 : 0)}
               acento={modulo.acento}
               guardar={guardar}
-              onIr={irA}
+              onIr={irDesdeBarra}
               flotaX={flotaX}
               flotaY={flotaY}
               giro={giro}
@@ -1062,8 +1117,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               reducir={reducir}
               onMatraca={matraca}
               onVerModulos={ruta?.onVerModulos}
-              textoVerModulos={ruta?.textoVerModulos}
+              textoVerModulos={ruta?.carrusel ? 'Módulos y prácticas' : ruta?.textoVerModulos}
               tramos={tramos}
+              carrusel={ruta?.carrusel}
             />
           )}
         </AnimatePresence>,
@@ -1088,7 +1144,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * centro abre su isla y da su golpe de matraca; al soltar, con inercia, la tira se acomoda con un puntito en el centro
  * (ver REGLA). Tocar (soltar sin haber movido) va al puntito que estaba bajo el dedo.
  */
-function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, textoVerModulos = 'Módulos y prácticas', tramos = [] }) {
+function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, textoVerModulos = 'Módulos y prácticas', tramos = [], carrusel = null }) {
   const sep = DESLIZAR.puntitos.separacion
   const zonaMuerta = DESLIZAR.puntitos.zonaMuerta
   const ventana = useAnchoVentana()
@@ -1217,16 +1273,21 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
       transition={RESORTE.pantalla}
     >
-      {/* En una ruta: «Módulos y prácticas» (pedido del usuario), un círculo de vidrio como la casita y Opciones. */}
-      {onVerModulos && (
-        <Pulsable
-          data-encima-barra
-          onClick={onVerModulos}
-          aria-label={textoVerModulos}
-          className={`pointer-events-auto grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
-        >
-          <Cuadritos className="size-6" />
-        </Pulsable>
+      {/* En una ruta o un bloque: «Módulos y prácticas» (pedido del usuario), un círculo de vidrio como la casita y
+          Opciones. Al tocarlo se resalta y las islas dejan paso al carrusel de módulos y prácticas (ver BotonModulos). */}
+      {carrusel ? (
+        <BotonModulos carrusel={carrusel} acento={acento} reducir={reducir} etiqueta={textoVerModulos} />
+      ) : (
+        onVerModulos && (
+          <Pulsable
+            data-encima-barra
+            onClick={onVerModulos}
+            aria-label={textoVerModulos}
+            className={`pointer-events-auto grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
+          >
+            <Cuadritos className="size-6" />
+          </Pulsable>
+        )
       )}
       {/* Capa que flota con el dedo */}
       <motion.div style={{ x: flotaX, y: flotaY }} className={`relative ${regla ? 'w-full' : ''}`}>
@@ -1379,6 +1440,114 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
  * mini barra con lo hecho, en el color del módulo del que sale el tramo. Lo coloca `actualizar()` del camino;
  * sobre `bg-fondo` para que el camino pase por detrás, como los títulos de las islas.
  */
+/** Gesto «elegir» del botón de módulos: X = px que hay que subirlo (soltar pasado el 50 % abre la tarjeta del centro). */
+const SUBE_BOTON = 112
+
+/**
+ * Botón de «Módulos y prácticas» (ruta o bloque; pedido del usuario): un círculo de vidrio sobre la barra de puntitos.
+ * Tocarlo lo RESALTA (relleno del color, con un pop) y las islas dejan paso al carrusel; tocarlo otra vez vuelve a las
+ * islas. Con el carrusel a la vista, **deslizarlo hacia arriba** abre la tarjeta del centro, con las reglas de los
+ * swipes (zona muerta, resistencia fuerte hasta el 30 %, alcanza al dedo y lo sigue 1:1, «suelta para ir» pasado el
+ * 50 %, goma más allá): `carrusel.subir` = px que sube; `carrusel.listo` = 1 si soltar ahora la abre.
+ */
+function BotonModulos({ carrusel, acento, reducir, etiqueta }) {
+  const { abierto, onTocar, onElegir, subir, listo } = carrusel
+  const y = useTransform(subir, (v) => -v)
+  const g = useRef(null)
+  const arrastro = useRef(false)
+  const [estaListo, setListo] = useState(false) // «suelta para ir»: el ícono rebota y se queda grande
+  const zm = DESLIZAR.zonaMuerta
+  const X = SUBE_BOTON
+  // Dónde va el botón con el dedo `r` px más arriba de donde se apoyó.
+  const destino = (r, sigue) => {
+    if (r <= zm) return 0
+    if (!sigue) return resistenciaDeslizar(r, zm, X)
+    return r <= X ? r : X + gomaDeslizar(r - X, 0, X)
+  }
+  const mover = (s, v, conResorte) => {
+    if (reducir) return subir.set(v)
+    if (conResorte || s.anim) {
+      s.anim = animate(subir, v, { ...RESORTE.pulsar, onComplete: () => (s.anim = null) })
+    } else subir.set(v)
+  }
+  useEffect(() => listo.on('change', (v) => setListo(v === 1)), [listo])
+
+  return (
+    <Pulsable
+      data-encima-barra
+      data-modulos-abierto={abierto ? '' : undefined}
+      aria-label={etiqueta}
+      aria-pressed={abierto}
+      onClick={() => {
+        if (arrastro.current) return (arrastro.current = false)
+        onTocar()
+      }}
+      onPointerDown={(e) => {
+        arrastro.current = false
+        if (!abierto || (e.pointerType === 'mouse' && e.button !== 0)) return
+        subir.stop()
+        g.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, decidido: false, sigue: false, anim: null }
+      }}
+      onPointerMove={(e) => {
+        const s = g.current
+        if (!s || s.id !== e.pointerId) return
+        const r = s.y0 - e.clientY // hacia arriba = positivo
+        if (!s.decidido) {
+          const dx = e.clientX - s.x0
+          if (Math.abs(dx) < 6 && Math.abs(r) < 6) return
+          if (Math.abs(dx) > Math.abs(r) || r < 0) return (g.current = null) // solo hacia arriba
+          s.decidido = true
+          try {
+            e.currentTarget.setPointerCapture?.(e.pointerId)
+          } catch {
+            // (sin captura)
+          }
+        }
+        if (r > zm) arrastro.current = true
+        // Alcanza al dedo al pasar el 30 % (con resorte) y vuelve la resistencia si baja del 26 %.
+        const antes = s.sigue
+        if (!s.sigue && r >= X * DESLIZAR.inicio) s.sigue = true
+        else if (s.sigue && r < X * DESLIZAR.sigueSale) s.sigue = false
+        mover(s, destino(r, s.sigue), antes !== s.sigue)
+        const l = r >= X * DESLIZAR.iman ? 1 : 0
+        if (listo.get() !== l) listo.set(l)
+      }}
+      onPointerUp={(e) => {
+        const s = g.current
+        if (!s || s.id !== e.pointerId) return
+        g.current = null
+        const va = listo.get() === 1
+        listo.set(0)
+        animate(subir, 0, reducir ? { duration: 0 } : RESORTE.pantalla)
+        if (va) onElegir()
+      }}
+      onPointerCancel={() => {
+        g.current = null
+        listo.set(0)
+        animate(subir, 0, RESORTE.pantalla)
+      }}
+      className={`pointer-events-auto grid size-11 place-items-center rounded-full transition-colors duration-200 ${abierto ? 'text-blanco' : `text-zinc-700 ${VIDRIO}`}`}
+      style={{
+        y,
+        touchAction: 'none',
+        backgroundColor: abierto ? oscuro(acento) : undefined,
+        boxShadow: abierto ? `0 0 0 4px ${claro(acento)}, 0 6px 16px rgb(0 0 0 / 0.18)` : undefined,
+      }}
+    >
+      {/* Al resaltarse, el ícono da un pop; en «suelta para ir», rebota y se queda un poco más grande. */}
+      <motion.span
+        key={String(abierto)}
+        className="grid place-items-center"
+        initial={reducir || !abierto ? false : { scale: 0.6 }}
+        animate={{ scale: estaListo ? 1.22 : 1 }}
+        transition={RESORTE.rebote}
+      >
+        <Cuadritos className="size-6" />
+      </motion.span>
+    </Pulsable>
+  )
+}
+
 function Letrero({ tramo: t, total, vertical, ref }) {
   const hecho = t.hechas === t.total
   return (

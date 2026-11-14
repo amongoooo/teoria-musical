@@ -5,7 +5,7 @@ import CaminoLecciones from '../components/CaminoLecciones.jsx'
 import useCambioModulo from '../components/CambioModulo.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import { ACENTO_CURSO, ICONO_AREA, accionPaso, moduloDeBloque, rutaDeBloque, useCurso } from '../components/cursoModulo.js'
-import { useRuta } from '../components/rutaModulo.js'
+import { useCarruselModulos, useModulosYPracticas, useRuta } from '../components/rutaModulo.js'
 import { AREAS, ORDEN_AREAS, getBloque } from '../content/curso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
@@ -55,8 +55,13 @@ function PaginaBloque({ numero }) {
   const modulo = moduloDeBloque(numero)
   const [isla, setIsla] = useState(null)
   const [tira, setTira] = useState(null)
-  const cambio = useCambioModulo(modulo, { isla, tira })
-  const ruta = rutaDeBloque(curso, numero, () => navegar(rutas.curso()))
+  const bloque = curso.estado.bloques.find((x) => x.numero === numero)
+  // «Módulos y prácticas» del bloque (botón de vidrio sobre la barra de puntitos): los módulos que usan sus pasos y
+  // las prácticas de sus metas.
+  const filas = useModulosYPracticas(bloque.paradas, (p) => AREAS[p.area].practica)
+  const carrusel = useCarruselModulos(filas)
+  const cambio = useCambioModulo(modulo, { isla: carrusel.abierto ? { inicio: false, fin: false } : isla, tira })
+  const ruta = { ...rutaDeBloque(curso, numero, () => navegar(rutas.curso())), onVerModulos: carrusel.onTocar, onInsigniaVer: () => navegar(rutas.curso()), carrusel }
   const b = ruta.bloque
   return (
     <>

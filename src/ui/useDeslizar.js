@@ -52,6 +52,7 @@ import { DESLIZAR, RESORTE } from './movimiento.js'
  *    +1 = arrastrar a la derecha es «siguiente» (barra de puntitos).
  *  - zonaMuerta, rapido (gesto rápido), eje, cadena, continuo (ver arriba); veloz: [entra, sale] del modo rápido.
  *  - alEmpezar(e): se llama al apoyar el dedo (antes de decidir el gesto).
+ *  - vertical: el gesto va de arriba abajo (sentido −1 = arrastrar hacia arriba es «siguiente»); los de lado se ignoran.
  *  - origen(e): clientX desde el que se mide el gesto (barra de puntitos: centro del puntito más
  *    cercano, así cada imán cae justo a mitad de camino entre puntitos = el más cercano al dedo).
  */
@@ -59,7 +60,7 @@ export default function useDeslizar(opciones) {
   const progreso = useMotionValue(0)
   const listo = useMotionValue(0) // soltarParaPasar: ±1 si al soltar ahora pasaría (0 si no)
   const op = useRef(opciones)
-  op.current = { sentido: -1, zonaMuerta: DESLIZAR.zonaMuerta, rapido: true, eje: true, cadena: false, continuo: true, activo: true, soltarParaPasar: false, ...opciones }
+  op.current = { sentido: -1, zonaMuerta: DESLIZAR.zonaMuerta, rapido: true, eje: true, cadena: false, continuo: true, activo: true, soltarParaPasar: false, vertical: false, ...opciones }
   const g = useRef(null)
   const ultimoMovido = useRef(false)
   // Lo que se ve = dedo + rv. `dedo` es donde el gesto quiere el contenido (sigue al dedo al instante,
@@ -254,7 +255,10 @@ export default function useDeslizar(opciones) {
     s.ms = ms
   }
 
-  const posicion = (e) => (op.current.sentido < 0 ? -e.clientX : e.clientX)
+  // `vertical`: el mismo gesto en el otro eje (clientY en lugar de clientX; `eje` ignora entonces los de lado).
+  const coord = (e) => (op.current.vertical ? e.clientY : e.clientX)
+  const otra = (e) => (op.current.vertical ? e.clientX : e.clientY)
+  const posicion = (e) => (op.current.sentido < 0 ? -coord(e) : coord(e))
 
   const onPointerDown = (e) => {
     ultimoMovido.current = false
@@ -267,8 +271,8 @@ export default function useDeslizar(opciones) {
     if (v.current.resto !== 0) asentar()
     // `origen`: punto de referencia (p. ej. el centro del puntito); si no, donde se apoyó el dedo.
     const o = op.current.origen?.(e)
-    const d0 = o == null ? posicion(e) : posicion({ clientX: o })
-    g.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, d0, dp: posicion(e) - d0, libre: false, d: 0, F: 0, off: 0, llegada: 0, k: 0, sigue: 0, fase: 'quieto', auto: null, desde: null, ms: null, decidido: !op.current.eje, movido: false, veloz: false, revisar: null, muestras: [{ t: performance.now(), d: 0 }] }
+    const d0 = o == null ? posicion(e) : posicion({ clientX: o, clientY: o })
+    g.current = { id: e.pointerId, x0: coord(e), y0: otra(e), d0, dp: posicion(e) - d0, libre: false, d: 0, F: 0, off: 0, llegada: 0, k: 0, sigue: 0, fase: 'quieto', auto: null, desde: null, ms: null, decidido: !op.current.eje, movido: false, veloz: false, revisar: null, muestras: [{ t: performance.now(), d: 0 }] }
     if (!op.current.eje) e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
@@ -276,8 +280,8 @@ export default function useDeslizar(opciones) {
     const s = g.current
     if (!s || s.id !== e.pointerId) return
     if (!s.decidido) {
-      const dx = e.clientX - s.x0
-      const dy = e.clientY - s.y0
+      const dx = coord(e) - s.x0
+      const dy = otra(e) - s.y0
       if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
       if (Math.abs(dy) > Math.abs(dx)) {
         g.current = null // gesto vertical: es scroll

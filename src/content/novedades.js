@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-carrusel-modulos',
+    fecha: '14 nov 2026',
+    titulo: 'Módulos y prácticas',
+    cosas: [
+      {
+        texto: 'En las **rutas** y los **bloques del curso**, el botón de cuadritos sobre la barra de puntitos ahora **se resalta** y cambia las islas por los **módulos** y las **prácticas** en tarjetas grandes.',
+        donde: { etiqueta: 'Abrir la ruta de acordes', href: '#/ruta/acordes' },
+      },
+      {
+        texto: 'Desliza **de lado** para pasar de tarjeta y **arriba o abajo** para cambiar entre módulos y prácticas. Toca la del centro o **sube el botón** para abrirla; tócalo otra vez para volver a las islas.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-curso-completo',
     fecha: '14 nov 2026',
     titulo: 'Curso completo',
