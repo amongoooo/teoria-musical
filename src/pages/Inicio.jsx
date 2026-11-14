@@ -21,6 +21,7 @@ import CirculoNodos, { tonalidad } from '../components/CirculoNodos.jsx'
 import { datosCasilla } from '../components/CirculoQuintas.jsx'
 import { COLOR_CIRCULO } from './Circulo.jsx'
 import useTemblor from '../ui/useTemblor.js'
+import { HojaModulo, HojaRuta, pendientesModulo, rutaConPrueba, useEntrada } from '../components/HojaEntrada.jsx'
 
 /**
  * Inicio con aire de videojuego (pedido del usuario; como el arranque del entrenador de oído): el logo como
@@ -254,15 +255,26 @@ function CuadritoModulo({ modulo: m, progreso }) {
       </div>
     )
   }
+  return <EntradaModulo modulo={m} progreso={progreso} hechas={hechas} contenido={contenido} />
+}
+
+/** Cuadrito de un módulo abierto: si la prueba rápida puede saltar algo, al tocarlo sube su hoja (HojaEntrada). */
+function EntradaModulo({ modulo: m, progreso, hechas, contenido }) {
+  const entrada = useEntrada(pendientesModulo(m.numero, progreso).length > 0)
   return (
-    <Pulsable
-      href={rutas.modulo(m.numero)}
-      tipo="tarjeta"
-      aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
-      className="flex min-h-11 flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
-    >
-      {contenido}
-    </Pulsable>
+    <>
+      <Pulsable
+        href={rutas.modulo(m.numero)}
+        onClick={entrada.tocar}
+        tipo="tarjeta"
+        data-cuadrito-modulo={m.numero}
+        aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
+        className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
+      >
+        {contenido}
+      </Pulsable>
+      <HojaModulo abierta={entrada.abierta} onCerrar={entrada.cerrar} modulo={m} />
+    </>
   )
 }
 
@@ -377,7 +389,8 @@ function MiniPiano() {
 
 /** Cuadrito de una ruta (como el de un módulo, con su ícono): paradas hechas / total; sin paradas aún, con candado. */
 function CuadritoRuta({ id }) {
-  const { ruta, modulo, estado } = useRuta(id)
+  const { ruta, modulo, estado, progreso } = useRuta(id)
+  const entrada = useEntrada(rutaConPrueba(id, estado.tramos, progreso))
   const disponible = modulo.disponible
   const contenido = (
     <>
@@ -405,14 +418,18 @@ function CuadritoRuta({ id }) {
     )
   }
   return (
-    <Pulsable
-      href={rutas.ruta(id)}
-      tipo="tarjeta"
-      aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total} paradas`}
-      data-cuadrito-ruta={id}
-      className="flex min-h-11 flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
-    >
-      {contenido}
-    </Pulsable>
+    <>
+      <Pulsable
+        href={rutas.ruta(id)}
+        onClick={entrada.tocar}
+        tipo="tarjeta"
+        aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total} paradas`}
+        data-cuadrito-ruta={id}
+        className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
+      >
+        {contenido}
+      </Pulsable>
+      <HojaRuta abierta={entrada.abierta} onCerrar={entrada.cerrar} id={id} />
+    </>
   )
 }

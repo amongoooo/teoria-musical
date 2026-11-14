@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-14: (pedido del usuario) **Prueba rápida «¿Ya lo sabes?» sin botón aparte**: sale en una **hoja** al tocar el cuadrito del módulo o de la ruta (entrar = botón sólido del color; prueba = botón de vidrio con el ícono nuevo `Saltar`); en la prueba, segmentos verde/oro por pregunta y «No lo sé» punteado; las lecciones saltadas llevan `MarcaBien` en **contorno** (`saltada`).
 - 2026-11-14: (pedido del usuario) **El botón de la barra de acción sigue siendo de vidrio al presionarlo** (Continuar, Comprobar, Atrás): ya no se vuelve mate; solo se hunde.
 - 2026-11-13: **Cuadrito del dedo más tenue y con brillo exponencial** (pedido del usuario): máximo 0,58 detrás del vidrio (antes 0,75) y 0,32 encima; el brillo crece exponencial con la etapa.
 

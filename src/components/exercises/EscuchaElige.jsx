@@ -36,8 +36,9 @@ function mezclar(indices) {
  *  - explicacion: texto que se muestra al comprobar
  *  - roll: { ...config del PianoRoll, notas } para leer un Piano Roll (solo lectura)
  *  - letra: { texto, colores, esquema, silabas, multis } para leer unos versos (LetraAnalizada)
+ * `noLoSe` (prueba rápida): botón punteado «No lo sé» bajo las opciones; cuenta como fallo y enseña la respuesta.
  */
-export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar }) {
+export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar, noLoSe = false }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [orden] = useState(() =>
@@ -77,7 +78,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
     }
 
     const explicacion = ronda.explicacion
-    const respuesta = tarjetasSonOpciones ? `Sonido ${LETRAS[correcta]}` : ronda.opciones[correcta]
+    // El título del aviso es texto plano: sin los ** y * de las negritas y cursivas de la opción.
+    const respuesta = tarjetasSonOpciones ? `Sonido ${LETRAS[correcta]}` : ronda.opciones[correcta].replace(/\*/g, '')
     setAccion({
       label: 'Continuar',
       avanza: ultima, // el último «Continuar» pasa de paso
@@ -93,6 +95,12 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
       },
     })
   }, [respondida, resultado, seleccion, correcta, aciertos, ultima, r, ronda, rondas.length, tarjetasSonOpciones, setAccion, siguiente, completar])
+
+  const noSe = () => {
+    setSeleccion(null)
+    setResultado('mal')
+    if (ultima) completar({ aciertos, total: rondas.length })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -149,7 +157,21 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
           </div>
         </>
       )}
+      {noLoSe && !respondida && <BotonNoLoSe onClick={noSe} />}
     </div>
+  )
+}
+
+/** «No lo sé» (prueba rápida): punteado y gris, debajo de las respuestas; mejor que adivinar. */
+export function BotonNoLoSe({ onClick }) {
+  return (
+    <Pulsable
+      onClick={onClick}
+      data-no-lo-se
+      className="min-h-12 rounded-2xl border-2 border-dashed border-zinc-300 px-5 text-base font-semibold text-zinc-500"
+    >
+      No lo sé
+    </Pulsable>
   )
 }
 

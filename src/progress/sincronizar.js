@@ -201,6 +201,7 @@ function revisar(d) {
       r.aciertos = num(l.aciertos)
       r.total = num(l.total)
       if (esFecha(l.fecha)) r.fecha = l.fecha
+      if (l.saltada === true) r.saltada = true
     }
     return r
   })
@@ -242,6 +243,9 @@ export function combinarLeccion(a, b) {
     r.total = mejor.total ?? 0
     const fecha = mayorFecha(a.completada && a.fecha, b.completada && b.fecha)
     if (fecha) r.fecha = fecha
+    // Saltada con la prueba rápida solo si ningún dispositivo la hizo de verdad.
+    if ((!a.completada || a.saltada) && (!b.completada || b.saltada)) r.saltada = true
+    else delete r.saltada
   }
   return r
 }

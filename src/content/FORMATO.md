@@ -88,6 +88,15 @@ Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes 
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
 sirven en `notas`, en los patrones y como filas del Piano Roll (`filas: ['hat', 'snare', 'kick']`).
 
+## Preguntas de la prueba rápida («¿Ya lo sabes?»)
+
+Cada lección lleva **3 preguntas** en el banco de su módulo: `src/content/pruebas/modulo-N.js` (las de la ruta de
+letras, en `pruebas/letras.js`), con la forma `{ '3.3': [ronda, ronda, ronda] }`. Cada una es una **ronda de
+`elegir`** (O1–O4: `pregunta`, `sonidos`, `opciones`, `correcta`, `roll`, `letra`, `explicacion`…) o de `circulo`
+con `tipo: 'circulo'`. La prueba (`pruebas/index.js` → `armarPreguntas`) toma **una al azar** de cada lección
+pendiente; si una lección no tiene banco, no entra en la prueba. Reglas: al nivel del **final** de la lección, con
+3+ opciones (o dos sonidos parecidos) y `explicacion` corta. `docs/pruebas/prueba-rapida.mjs` comprueba el banco.
+
 ## Tipos de paso
 
 | tipo | Componente | Para qué |

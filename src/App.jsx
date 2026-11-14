@@ -12,6 +12,7 @@ import Leccion from './pages/Leccion.jsx'
 import Letras from './pages/Letras.jsx'
 import Modulo from './pages/Modulo.jsx'
 import Oido from './pages/Oido.jsx'
+import Prueba from './pages/Prueba.jsx'
 import Ritmo from './pages/Ritmo.jsx'
 import Vocabulario from './pages/Vocabulario.jsx'
 import { RESORTE, profundidad, variantesPantalla } from './ui/movimiento.js'
@@ -26,6 +27,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'circulo') return <Circulo />
   if (ruta.pagina === 'piano') return <PianoLibre />
   if (ruta.pagina === 'ruta') return <Ruta id={ruta.id} />
+  if (ruta.pagina === 'prueba') return <Prueba id={ruta.id} />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   return <Inicio />
 }
