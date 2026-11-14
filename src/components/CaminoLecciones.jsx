@@ -35,12 +35,12 @@ const HUECO_TRAMO = 8 // px entre los grupos de puntitos de cada tramo
 const HUECO_REGLA = 20 // en la regla (barra que se desliza), el hueco entre tramos lleva su número
 const BORDE_REGLA = 36 // px del desvanecido de las orillas de la regla
 /**
- * Joystick de la regla (pedido del usuario): puntitos por segundo según a cuántos puntitos del centro está el dedo
- * (redondeado; 0 = quieto): a 1, uno cada 0,75 s; a 2, 2 por segundo; a 3 o más, 4 por segundo. A `borde` px del
- * borde de fuera de la barra (o más allá), hasta el último a `ritmoBorde` por segundo, puntito por puntito (cada uno
- * con su matraca); si el dedo se apoyó ya en el borde, empieza tras `esperaBorde` ms (así un toque rápido es un toque).
+ * Arrastre de la regla (pedido del usuario, en lugar del joystick): la tira de puntitos sigue al dedo 1:1, en el
+ * sentido del arrastre. Al soltar se asienta con un puntito en el centro: el más cercano a donde la llevaría la
+ * inercia (velocidad del dedo × `inercia` ms, medida en los últimos `muestra` ms). Pasado el primero o el último,
+ * goma (`goma` = fracción de lo que se jala de más que se mueve).
  */
-const JOYSTICK = { ritmo: [0, 1 / 0.75, 2, 4], borde: 18, ritmoBorde: 14, esperaBorde: 180 }
+const REGLA = { inercia: 160, muestra: 90, goma: 0.3 }
 // Isla abierta = «isla + bocadillo»: la isla crece hasta BOLA (con su aro de avance) y debajo
 // cuelga un globo con la información. El centro de la bola queda en el punto del camino.
 const BOLA = 112 // diámetro de la isla abierta
@@ -70,8 +70,8 @@ const FLOTA = { factor: 0.5, max: 14 }
 // (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
 // «secos», pero duran la mitad.
 // Cuadrito del dedo (pedido del usuario): al presionar la barra aparece un cuadrito gris leve que sigue al dedo sobre
-// los puntitos, DETRÁS del vidrio de la barra (se ve difuminado; con «Opaco» la barra es sólida y va encima). Se pega con un IMÁN a la etapa en la que está el dedo (regla: 0 · 1 · 2 · 3 puntitos del centro o el
-// borde = las velocidades del joystick; sin regla: el puntito bajo el dedo); al soltar vuelve al centro con un resorte
+// los puntitos, DETRÁS del vidrio de la barra (se ve difuminado; con «Opaco» la barra es sólida y va encima). Se pega con un IMÁN al puntito bajo el dedo
+// (en la regla se queda en el centro: el puntito del medio es el elegido); al soltar vuelve al centro con un resorte
 // que se pasa un poco (`vuelve`). Cuanto más a los costados, más se resalta (`opacidad`: de `min` a `max`).
 const CUADRITO = {
   lado: 38,
@@ -1088,10 +1088,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * una ruta o un módulo largo), la barra ocupa el ancho de la pantalla y los puntitos van en una **tira de 44 px por
  * puntito que se desliza**: el de `foco` (la isla abierta o, con el camino cerrado, la actual) queda **en el centro**
  * y las orillas se desvanecen. Entre tramos, un hueco con su número.
- * Con el dedo apoyado, la regla es un JOYSTICK (pedido del usuario): avanza hacia donde está el dedo, más rápido cuanto
- * más lejos del centro (ver JOYSTICK: a 1 puntito, uno cada 0,75 s; a 2, 2 por segundo; a 3, 4 por segundo) y, en el
- * borde de la barra, recorre hasta el último (o el primero) muy deprisa. Cada puntito recorrido abre su isla y da su
- * golpe de matraca. Tocar (soltar sin haber avanzado) va al puntito que estaba bajo el dedo.
+ * Deslizar sobre la regla (pedido del usuario) arrastra la tira en el sentido del dedo: cada puntito que pasa por el
+ * centro abre su isla y da su golpe de matraca; al soltar, con inercia, la tira se acomoda con un puntito en el centro
+ * (ver REGLA). Tocar (soltar sin haber movido) va al puntito que estaba bajo el dedo.
  */
 function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, tramos = [] }) {
   const sep = DESLIZAR.puntitos.separacion
@@ -1141,70 +1140,59 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
     animate(cuadroX, x, CUADRITO.iman)
     animate(cuadroFuerza, fuerza, CUADRITO.iman)
   }
-  /** Etapa del dedo en la regla: 0–3 puntitos del centro (como el joystick) o el borde. */
-  const etapaRegla = (s) => {
-    const dx = s.x - s.centro
-    const dir = Math.sign(dx)
-    if (Math.abs(dx) >= s.mitad - JOYSTICK.borde) return [dir * (s.mitad - 12 - CUADRITO.lado / 2), 1]
-    const k = Math.min(3, Math.round(Math.abs(dx) / sep))
-    return [dir * k * sep, k / 3]
-  }
   const destino = (k) => disponible / 2 - centros[limitar(k, 0, total - 1)]
-  const bucle = useRef(0) // requestAnimationFrame del joystick
+  /** Puntito que queda en el centro con la tira en `x`. */
+  const enCentro = (x) => masCercano(centros, disponible / 2 - x)
+  /** x de la tira con el dedo `dx` px desde donde empezó: 1:1 y, pasado el primero o el último, goma. */
+  const arrastrada = (s, dx) => {
+    const x = s.corre0 + dx
+    const max = destino(0)
+    const min = destino(total - 1)
+    return x > max ? max + (x - max) * REGLA.goma : x < min ? min + (x - min) * REGLA.goma : x
+  }
 
   // La regla sigue al foco: el puntito de la isla abierta (o la actual) siempre en el centro.
   const yaColocada = useRef(false)
   useLayoutEffect(() => {
-    if (!regla) return
+    if (!regla || g.current?.movio) return // mientras se arrastra, la tira es del dedo
     const x = destino(foco)
     if (!yaColocada.current || reducir) corre.jump(x)
     else animate(corre, x, RESORTE.pantalla)
     yaColocada.current = true
   }, [regla, foco, disponible, centros]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => cancelAnimationFrame(bucle.current), [])
 
-  /** Un puntito hacia `dir` (joystick): abre su isla y da su golpe de matraca; contra el extremo, un golpe de tope. */
-  const avanzar = (s, dir) => {
-    const p = limitar(s.punto + dir, 0, total - 1)
-    if (p === s.punto) {
-      if (s.tope !== dir) onMatraca(dir < 0 ? 0 : 2, 3, { tiron: s.tiron, dir })
-      s.tope = dir
-      return false
+  /** Arrastre de la regla: la tira sigue al dedo; el puntito que llega al centro abre su isla y da su matraca. */
+  const arrastrar = (s, e, tiron) => {
+    const ahora = performance.now()
+    s.muestras.push([ahora, e.clientX])
+    while (s.muestras.length > 2 && ahora - s.muestras[0][0] > REGLA.muestra) s.muestras.shift()
+    let dx = e.clientX - s.x0
+    if (!s.movio) {
+      if (Math.abs(dx) < zonaMuerta) return
+      s.movio = true
+      s.x0 += Math.sign(dx) * zonaMuerta // arranca desde aquí, sin salto
+      dx = e.clientX - s.x0
+      corre.stop()
+      s.corre0 = corre.get()
     }
-    s.tope = 0
-    s.punto = p
-    s.pasos++
-    onMatraca(1, 3, { tiron: s.tiron, dir }) // el puntito que cambia está en el centro: sin inclinarse por su lugar
-    onIr(p)
-    return true
-  }
-  /** Joystick: cada fotograma, según dónde está el dedo respecto al centro de la barra (ver JOYSTICK). */
-  const latir = (t) => {
-    const s = g.current
-    if (!s?.regla) return
-    const dt = Math.min(0.1, (t - (s.antes ?? t)) / 1000)
-    s.antes = t
-    const dx = s.x - s.centro
-    const dir = Math.sign(dx)
-    // En el borde, hasta el último (o el primero) muy deprisa, puntito por puntito; si el dedo empezó ahí, tras un instante.
-    const borde = Math.abs(dx) >= s.mitad - JOYSTICK.borde
-    const zona = Math.min(3, Math.round(Math.abs(dx) / sep))
-    const ritmo = borde ? (s.movio || t - s.t0 > JOYSTICK.esperaBorde ? JOYSTICK.ritmoBorde : 0) : JOYSTICK.ritmo[zona]
-    if (!ritmo || dir !== s.dir) s.acumulado = 0
-    s.dir = dir
-    s.acumulado += dt * ritmo
-    while (s.acumulado >= 1) {
-      s.acumulado -= 1
-      if (!avanzar(s, dir)) s.acumulado = 0
+    const x = arrastrada(s, dx)
+    corre.set(x)
+    const p = enCentro(x)
+    if (p !== s.punto) {
+      onMatraca(1, 3, { tiron, dir: Math.sign(p - s.punto) }) // cambia en el centro: sin inclinarse por su lugar
+      s.punto = p
+      onIr(p)
     }
-    bucle.current = requestAnimationFrame(latir)
+    // Contra un extremo (goma): un golpe de tope al llegar.
+    const tope = x > destino(0) + 1 ? -1 : x < destino(total - 1) - 1 ? 1 : 0
+    if (tope && tope !== s.tope) onMatraca(tope < 0 ? 0 : 2, 3, { tiron, dir: tope })
+    s.tope = tope
   }
 
   const soltar = (e) => {
     const s = g.current
     if (s?.id !== e.pointerId) return
     g.current = null
-    cancelAnimationFrame(bucle.current)
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
     // El cuadrito vuelve al centro con un resorte que se pasa un poco y luego se apaga.
@@ -1217,11 +1205,24 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
       animate(cuadroVe, 0, { duration: 0.25, delay: 0.45 })
     }
     if (!s.regla) return
-    if (s.pasos > 0) {
+    if (s.movio) {
+      // Se asienta con un puntito en el centro: el más cercano a donde la llevaría la inercia.
       ultimoArrastre.current = performance.now()
+      const [t0, x0] = s.muestras[0]
+      const [t1, x1] = s.muestras[s.muestras.length - 1]
+      const quieto = performance.now() - t1 > 80
+      const v = !quieto && t1 - t0 > 10 ? (x1 - x0) / (t1 - t0) : 0 // px/ms
+      const k = enCentro(corre.get() + v * REGLA.inercia)
+      animate(corre, destino(k), reducir ? { duration: 0 } : { ...RESORTE.pantalla, velocity: v * 1000 })
+      if (k !== s.punto) {
+        onMatraca(1, 3, { dir: Math.sign(k - s.punto) })
+        onIr(k)
+      }
       return
     }
-    // Tocar (sin haber avanzado): va al puntito que estaba bajo el dedo (medido donde se ve, no calculado).
+    // Tocar (sin haber movido): va al puntito que estaba bajo el dedo (medido donde se ve, no calculado). El «click»
+    // que llega después no cuenta: la tira ya se movió (sin animación, al instante) y caería en otro puntito.
+    ultimoArrastre.current = performance.now()
     const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
       const c = b.getBoundingClientRect()
       return c.left + c.width / 2
@@ -1281,7 +1282,11 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
           style={{ touchAction: 'none', rotate: giro, x: golpe }}
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return
-            e.currentTarget.setPointerCapture?.(e.pointerId)
+            try {
+              e.currentTarget.setPointerCapture?.(e.pointerId)
+            } catch {
+              // (un puntero que ya no existe: sin captura)
+            }
             flotaX.stop()
             flotaY.stop()
             const base = {
@@ -1298,25 +1303,16 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             cuadroVe.stop()
             cuadroVe.set(1)
             if (regla) {
-              const caja = vista.current.getBoundingClientRect()
               g.current = {
                 ...base,
                 regla: true,
-                x: e.clientX,
                 x0: e.clientX,
-                centro: caja.left + caja.width / 2,
-                mitad: capa.width / 2, // del centro al borde de fuera de la barra
-                t0: performance.now(),
-                punto: foco,
-                pasos: 0,
-                acumulado: 0,
-                dir: 0,
-                tiron: 0,
+                corre0: corre.get(),
+                punto: enCentro(corre.get()),
+                muestras: [[performance.now(), e.clientX]],
                 movio: false,
               }
-              cancelAnimationFrame(bucle.current)
-              bucle.current = requestAnimationFrame(latir)
-              cuadroA(g.current, ...etapaRegla(g.current))
+              cuadroA(g.current, 0, 0.35) // en el centro: el puntito del medio es el elegido
               return
             }
             const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
@@ -1336,11 +1332,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             if (!reducir) flotaY.set(flotar(e.clientY - s.y0)) // flota: sigue al dedo en vertical (con resistencia)
             const tiron = tironDe(s, e)
             if (s.regla) {
-              // Joystick: solo se apunta dónde está el dedo; `latir` avanza (ver JOYSTICK).
-              s.x = e.clientX
-              s.tiron = tiron
-              if (Math.abs(e.clientX - s.x0) >= zonaMuerta) s.movio = true
-              cuadroA(s, ...etapaRegla(s))
+              arrastrar(s, e, tiron)
               return
             }
             // Flota: en horizontal solo fuera de los puntitos.

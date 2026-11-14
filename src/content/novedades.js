@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-regla-arrastre',
+    fecha: '14 nov 2026',
+    titulo: 'Barra de puntitos que se arrastra',
+    cosas: [
+      {
+        texto: 'En el celular, **desliza la barra de puntitos** de una ruta: los puntitos **siguen a tu dedo** y, al soltar, siempre queda **uno en medio** (si la lanzas, sigue un poco más).',
+        donde: { etiqueta: 'Probarla en la ruta de acordes', href: '#/ruta/acordes' },
+      },
+      {
+        texto: 'Arreglo: **tocar un puntito** abre siempre ese puntito.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-ya-lo-sabes',
     fecha: '14 nov 2026',
     titulo: '¿Ya lo sabes?',
