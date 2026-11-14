@@ -1,4 +1,4 @@
-// Navegación mínima por hash (#/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
+// Navegación mínima por hash (#/, #/aprender, #/aprender/biblioteca, #/practicar, #/herramientas, #/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
 // #/letras/vocabulario/repaso).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
@@ -17,6 +17,10 @@ function parse(hash) {
   if (partes[0] === 'curso') return { pagina: 'curso', id: partes[1] === 'bloque' && partes[2] ? partes[2] : null }
   if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
+  // Las 4 pestañas (fase 3 del rediseño): Inicio · Aprender [Rutas | Biblioteca] · Practicar · Herramientas.
+  if (partes[0] === 'aprender') return { pagina: 'aprender', id: partes[1] === 'biblioteca' ? 'biblioteca' : null }
+  if (partes[0] === 'practicar') return { pagina: 'practicar' }
+  if (partes[0] === 'herramientas') return { pagina: 'herramientas' }
   return { pagina: 'inicio' }
 }
 
@@ -24,7 +28,10 @@ export function useRuta() {
   const [ruta, setRuta] = useState(() => parse(window.location.hash))
   useEffect(() => {
     const onChange = () => {
-      setRuta(parse(window.location.hash))
+      const nueva = parse(window.location.hash)
+      // El origen de una lección solo vale mientras se va de la Biblioteca a ella (o a sus prerrequisitos).
+      if (nueva.pagina !== 'leccion' && nueva.pagina !== 'aprender' && nueva.pagina !== 'prueba') origenLeccion = null
+      setRuta(nueva)
       window.scrollTo(0, 0)
     }
     window.addEventListener('hashchange', onChange)
@@ -35,6 +42,10 @@ export function useRuta() {
 
 export const rutas = {
   inicio: () => '#/',
+  /** Pestaña Aprender: Rutas (sin vista) o Biblioteca (las lecciones del catálogo por área y nivel). */
+  aprender: (vista) => (vista === 'biblioteca' ? '#/aprender/biblioteca' : '#/aprender'),
+  practicar: () => '#/practicar',
+  herramientas: () => '#/herramientas',
   modulo: (numero) => `#/modulo/${numero}`,
   leccion: (id) => `#/leccion/${id}`,
   /** La lección abierta desde una ruta o el Curso completo: el orden ya lo marca el camino, así que no avisa
@@ -65,3 +76,13 @@ export const rutas = {
 export function navegar(href) {
   window.location.hash = href.replace(/^#/, '')
 }
+
+/**
+ * De dónde se abrió una lección (pestaña Aprender › Biblioteca): su ✕ vuelve ahí en lugar de a su módulo o ruta.
+ * Solo mientras la app esté abierta; se olvida al abrir otra lección desde otro lugar.
+ */
+let origenLeccion = null
+export const marcarOrigenLeccion = (id, href) => {
+  origenLeccion = { id, href }
+}
+export const origenDeLeccion = (id) => (origenLeccion?.id === id ? origenLeccion.href : null)

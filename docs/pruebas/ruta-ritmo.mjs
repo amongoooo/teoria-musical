@@ -53,16 +53,22 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   const avance = () => page.getAttribute('[role="progressbar"], [data-pildora-cabecera] [aria-label]', 'aria-label')
   const punto = (i) => page.locator(`[data-punto="${i}"]`)
 
-  // 1) Inicio sin progreso.
+  // 1) Aprender › Rutas sin progreso: una fila por área (Ritmo, Melodía, Armonía, Letras, Producción).
   await preparar()
-  const titulos = await page.$$eval('h2', (hs) => hs.map((h) => h.textContent.trim()))
-  comprobar(r, 'Inicio: Rutas · Prácticas · Herramientas · Módulos', titulos.join('|').includes('Rutas|Prácticas|Herramientas|Módulos'), titulos.join(' | '))
+  const pestanas = await page.$$eval('[data-pestana]', (bs) => bs.map((b) => b.textContent.trim()))
+  comprobar(r, 'barra: Inicio · Aprender · Practicar · Herramientas', pestanas.join('|') === 'Inicio|Aprender|Practicar|Herramientas', pestanas.join(' | '))
+  await page.locator('[data-pestana="aprender"]').click()
+  await page.waitForSelector('[data-area-rutas]')
+  await espera(800)
+  const areas = await page.$$eval('[data-area-rutas]', (ss) => ss.map((s) => s.dataset.areaRutas))
+  comprobar(r, 'Aprender › Rutas: una fila por área', areas.join('|') === 'ritmo|melodia|armonia|letras|produccion', areas.join(' | '))
   comprobar(r, 'ruta de Ritmo 0/10', (await page.textContent('[data-ruta-inicio="ritmo"]')).includes('0/10'))
   comprobar(r, 'Letras 0/10 y Acordes 0/18', (await page.textContent('[data-ruta-inicio="letras"]')).includes('0/10') && (await page.textContent('[data-ruta-inicio="acordes"]')).includes('0/18'))
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await espera(300)
   await foto('inicio-rutas')
-  await page.locator('[data-tarjeta-piano]').scrollIntoViewIfNeeded()
+  await page.goto(BASE + '#/herramientas')
+  await espera(800)
   await page.locator('[data-tarjeta-piano]').click()
   await page.waitForSelector('[data-piano-libre]')
   await espera(400)
@@ -70,6 +76,8 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
 
   // 2) Desde Inicio a la ruta: página igual a la de un módulo.
   await preparar({ lecciones: completadas(['2.1', '2.2']), nivelSeguir: 2 })
+  await page.goto(BASE + '#/aprender')
+  await espera(800)
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await page.locator('[data-cuadrito-ruta="ritmo"]').click()
   // Con lecciones por saltar sube la hoja de la ruta (prueba rápida «¿Ya lo sabes?»): «Seguir» entra.

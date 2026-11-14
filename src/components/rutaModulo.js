@@ -17,6 +17,7 @@ import { useProgreso } from '../progress/progreso.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
 import { tiendaVocab } from '../progress/vocabulario.js'
 import { navegar, rutas } from '../router.js'
+import { guiarMeta } from '../progress/metaGuiada.js'
 import { nombreNivel } from './PanelEntrenamiento.jsx'
 import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 
@@ -88,6 +89,8 @@ export function useMedirMetas() {
         detalle: `${getTema(p.tema)?.nombre}: ${Math.min(n, p.palabras)}/${p.palabras} palabras`,
         ir: () => {
           tiendaVocab.guardarCampos({ temas: [p.tema] })
+          // Al aprender las palabras que pide, «¡Meta cumplida!» y de vuelta a la ruta o al bloque (progress/metaGuiada.js).
+          if (n < p.palabras) guiarMeta(p, 'letras', window.location.hash || rutas.inicio())
           navegar(rutas.vocabulario())
         },
       }
@@ -102,6 +105,8 @@ export function useMedirMetas() {
       detalle: `Tu nivel: ${Math.min(n, 10)} · meta: ${p.nivel} · dificultad ${dificultad}`,
       ir: () => {
         if (practica.claveDif) practica.tienda.guardarAjustes(p.modo, { [practica.claveDif]: dificultad })
+        // Al llegar al nivel que pide, «¡Meta cumplida!» y de vuelta a la ruta o al bloque (progress/metaGuiada.js).
+        if (n < p.nivel) guiarMeta(p, practicaId, window.location.hash || rutas.inicio())
         navegar(practica.enlace(p.modo))
       },
     }

@@ -5,6 +5,28 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-cuatro-pestanas',
+    fecha: '14 nov 2026',
+    titulo: 'Cuatro pestañas',
+    cosas: [
+      {
+        texto: 'Abajo hay una **barra con cuatro pestañas**: **Inicio**, **Aprender**, **Practicar** y **Herramientas**. Desliza el dedo por ella para pasar de una a otra; dentro de una ruta o un módulo se vuelve la **barra de puntitos**.',
+      },
+      {
+        texto: '**Inicio** ahora es corto: «Sigue aquí», tu racha y minutos de **hoy** y el Curso completo.',
+        donde: { etiqueta: 'Ir a Inicio', href: '#/' },
+      },
+      {
+        texto: 'En **Aprender › Biblioteca** están **todas las lecciones** por área y nivel. Si a una le falta algo, lo dice en oro: «Antes: 3.2».',
+        donde: { etiqueta: 'Abrir la Biblioteca', href: '#/aprender/biblioteca' },
+      },
+      {
+        texto: 'Al practicar desde una **ruta** o un **bloque**, cuando cumples la meta (el nivel o las palabras que pide) sale **«¡Meta cumplida!»** y vuelves al camino.',
+        donde: { etiqueta: 'Abrir la ruta de ritmo', href: '#/ruta/ritmo' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-ver-lo-que-suena',
     fecha: '14 nov 2026',
     titulo: 'Ve lo que suena',

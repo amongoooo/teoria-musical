@@ -98,8 +98,10 @@ for (const tema of ['claro', 'oscuro']) {
     return page.locator(`[role="group"][aria-label^="${etiqueta}"]`).first()
   }
 
-  // ——— Módulo 3 desde Inicio: entra directo y la prueba está en la insignia ———
+  // ——— Módulo 3 desde Aprender › Biblioteca: entra directo y la prueba está en la insignia ———
   await preparar()
+  await page.goto(BASE + '#/aprender/biblioteca')
+  await espera(800)
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
   comprobar(r, 'el cuadrito entra directo al módulo', page.url().includes('#/modulo/3') && (await hoja().count()) === 0, page.url())
@@ -175,9 +177,11 @@ for (const tema of ['claro', 'oscuro']) {
   await foto('6-globo-saltada')
 
   // De vuelta en Inicio: el Círculo se abrió (3.5 saltada) y la insignia ofrece 3 preguntas con «Última vez».
-  await page.goto(BASE + '#/')
+  await page.goto(BASE + '#/herramientas')
   await espera(800)
   comprobar(r, 'Círculo abierto', (await page.locator('[data-tarjeta-circulo="abierta"]').count()) === 1)
+  await page.goto(BASE + '#/aprender/biblioteca')
+  await espera(800)
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
   const globoIns2 = await (await insignia('Módulo 3')).textContent()
@@ -185,6 +189,8 @@ for (const tema of ['claro', 'oscuro']) {
 
   // ——— Un módulo completo: entra directo y su insignia ya no ofrece la prueba ———
   await preparar({ 1.1: { completada: true }, 1.2: { completada: true }, 1.3: { completada: true }, 1.4: { completada: true } })
+  await page.goto(BASE + '#/aprender/biblioteca')
+  await espera(800)
   await page.locator('[data-cuadrito-modulo="1"]').click()
   await espera(1500)
   comprobar(r, 'módulo completo entra directo', page.url().includes('#/modulo/1') && (await hoja().count()) === 0, page.url())
@@ -193,6 +199,8 @@ for (const tema of ['claro', 'oscuro']) {
 
   // ——— Ruta de acordes: entra directo; la insignia ofrece la prueba del tramo en el que vas ———
   await preparar()
+  await page.goto(BASE + '#/aprender')
+  await espera(800)
   await page.locator('[data-cuadrito-ruta="acordes"]').click()
   await espera(1500)
   comprobar(r, 'el cuadrito de la ruta entra directo', page.url().includes('#/ruta/acordes') && (await hoja().count()) === 0, page.url())

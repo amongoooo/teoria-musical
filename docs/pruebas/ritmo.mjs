@@ -72,8 +72,8 @@ for (const tema of ['claro', 'oscuro']) {
     { tema, ritmo: RITMO },
   )
 
-  // Inicio: el bloque Ritmo ya es real (lleva al panel).
-  await page.goto(BASE + '#/')
+  // Practicar: el bloque Ritmo lleva al panel.
+  await page.goto(BASE + '#/practicar')
   const bloque = page.locator('[data-entrenamiento="ritmo"]')
   await bloque.waitFor()
   await bloque.scrollIntoViewIfNeeded()

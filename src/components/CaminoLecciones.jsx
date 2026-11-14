@@ -11,6 +11,7 @@ import { Candado, Cerrar, Check, Cuadritos, MarcaBien, Reproducir, Saltar, Trofe
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
+import { entradaBarra } from '../ui/barraAbajo.js'
 import useDeslizar, { goma as gomaDeslizar, resistencia as resistenciaDeslizar } from '../ui/useDeslizar.js'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
@@ -67,11 +68,11 @@ const MITAD_CIERRA = { margen: 8, dedo: 10, quieto: 150 }
 //    donde va el dedo): sobre el eje o en el puntito central, solo golpe lateral. Sin dedo que jale (flechas
 //    del teclado, deslizar las islas, tocar otra isla), solo el golpe lateral. Todo vuelve a 0 a los `vuelve` ms.
 //    Contra un extremo, golpe del puntito de la orilla.
-const FLOTA = { factor: 0.5, max: 14 }
+export const FLOTA = { factor: 0.5, max: 14 }
 // (Pedido del usuario: el doble de inclinación y la mitad de tiempo.) Los resortes son los de siempre
 // (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
 // «secos», pero duran la mitad.
-const MATRACA = {
+export const MATRACA = {
   max: 3,
   eje: 4,
   rango: 22,
@@ -1154,6 +1155,8 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
   const sep = DESLIZAR.puntitos.separacion
   const zonaMuerta = DESLIZAR.puntitos.zonaMuerta
   const ventana = useAnchoVentana()
+  // Si venimos de las pestañas, la barra aparece en su sitio (la píldora «se vuelve» de puntitos; ui/barraAbajo.js).
+  const [entrada] = useState(() => entradaBarra('[data-pestanas]'))
   // Tramos de una ruta: un hueco antes del primer puntito de cada uno (el 0 es la insignia: puntito i = parada i − 1).
   const numeroTramo = new Map(tramos.map((t) => [t.desde + 1, t]))
   const total = lecciones.length
@@ -1276,8 +1279,8 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
       data-regla={regla ? '' : undefined}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-4 pt-12"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-      initial={{ y: '120%' }}
-      animate={{ y: 0 }}
+      initial={entrada}
+      animate={{ y: 0, opacity: 1, scale: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
       transition={RESORTE.pantalla}
     >
@@ -1631,7 +1634,7 @@ export function gradosMatraca(i, total) {
 }
 
 /** Desplazamiento de la barra que flota: sigue al dedo cada vez más duro, sin pasar de FLOTA.max. */
-function flotar(d) {
+export function flotar(d) {
   const e = Math.abs(d) * FLOTA.factor
   return Math.sign(d) * (e / (1 + e / FLOTA.max))
 }
