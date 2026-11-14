@@ -2,9 +2,12 @@
 // Notación científica como en el resto de la app: 'C4' = Do central, 'F#4', 'Bb3'.
 import { Interval, Note } from 'tonal'
 
-/** Un paso de la fórmula: 'S' = semitono (2.ª menor), 'T' = tono (2.ª mayor). */
-const INTERVALO = { S: '2m', T: '2M' }
-export const SEMITONOS_PASO = { S: 1, T: 2 }
+/**
+ * Un paso de la fórmula: 'S' = semitono (2.ª menor), 'T' = tono (2.ª mayor),
+ * 'T½' = tono y medio (3.ª menor, 3 semitonos: el salto de las pentatónicas, 3.6; avanza dos letras: Mi → Sol).
+ */
+const INTERVALO = { S: '2m', T: '2M', 'T½': '3m' }
+export const SEMITONOS_PASO = { S: 1, T: 2, 'T½': 3 }
 
 /**
  * Nota a un semitono o un tono de `nota`, hacia arriba (`dir` = 1) o hacia abajo (-1).

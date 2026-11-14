@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-pentatonicas',
+    fecha: '14 nov 2026',
+    titulo: 'Pentatónicas',
+    cosas: [
+      {
+        texto: 'Lección **3.6 «Pentatónicas»**: cinco notas que nunca chocan, las teclas negras, la pentatónica menor y un riff en el Piano Roll.',
+        donde: { etiqueta: 'Abrir la 3.6', href: '#/leccion/3.6' },
+      },
+      {
+        texto: 'En la fórmula aparece el salto **T½** (tono y medio): **salta dos teclas**, en oro como la S.',
+        donde: { etiqueta: 'Ver el paso', href: '#/leccion/3.6' },
+      },
+    ],
+  },
+  {
     id: '2026-11-13-explorar',
     fecha: '13 nov 2026',
     titulo: 'Explorar más cómodo',

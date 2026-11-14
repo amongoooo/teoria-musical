@@ -67,6 +67,9 @@ la misma forma en mayor, en su paralela menor o en la relativa). `grado`, `alter
 Tonalidad y círculo de quintas (lección 3.5, Tonal `Key`): `CIRCULO` (las 12 mayores en el sentido del reloj desde Do: C G D A E B F# Db Ab Eb Bb F),
 `armaduraMayor('A')` → `{ cantidad: 3, signo: '♯', notas: ['F#', 'C#', 'G#'] }`, `dominante('D')` → `'A'`, `subdominante('Eb')` → `'Ab'` y
 `conArmadura(notas, 'G')` (las mismas notas con la armadura de otra mayor: cada letra toma su alteración; para «¿vecina o lejana?»).
+Pentatónicas (lección 3.6): `PENTA_MAYOR` (T T T½ T T½), `PENTA_MENOR` (T½ T T T½ T), `GRADOS_PENTA_MAYOR` (1 2 3 5 6 1) y
+`GRADOS_PENTA_MENOR` (1 ♭3 4 5 ♭7 1), `pentaMayor('C4')` / `pentaMenor('A3')` (6 notas con la octava; `escala()` usa el largo real
+de la escala) y `nombresEscala('A', { tipo: 'minor pentatonic' })` → «La · Do · Re · Mi · Sol». `alteraciones` acepta esos `tipo`.
 
 Acordes (lección 4.1, Tonal `Chord`): `theory/acordes.js`: `TRIADAS` (mayor, menor, dis, aum: terceras, cifrado, carácter),
 `triada('D4', 'menor')` → `['D4', 'F4', 'A4']`, `arpegioYAcorde(notas)` (de una en una y luego juntas, para un sonido),
@@ -240,7 +243,9 @@ respuesta con su armadura.
   // objetivo: { tipo: 'formula', rondas: [{ desde: 'C4', pasos: ['T','T','S','T','T','T','S'], titulo, mensaje }] }
   //   → tocar en orden las notas de la fórmula (T = tono, S = semitono) desde `desde` (que ya viene marcada).
   //     Encima, una fila de casillas con los pasos; el teclado pasa solo a la octava de la siguiente nota.
-  //     `grados: true` → debajo de cada casilla, su grado (1 … 7 y la octava otra vez 1). Volver a tocar una
+  //     Pasos: 'T', 'S' y 'T½' (tono y medio = 3 semitonos, el salto de las pentatónicas, 3.6; casilla en oro como la S).
+  //     `grados: true` → debajo de cada casilla, su grado (1 … 7 y la octava otra vez 1); o una lista propia
+  //     (`grados: ['1', '♭3', '4', '5', '♭7', '1']`, pentatónicas). Volver a tocar una
   //     nota ya tocada no es fallo: su casilla tiembla (también con la fórmula completa).
   // objetivo: { tipo: 'acorde', rondas: [{ raiz: 'D4', tipo: 'mayor' | 'menor' | 'dis' | 'aum', titulo, mensaje, pista }] }
   //   → construir la tríada (P8, 4.1): la fundamental viene marcada (y en verde en su casilla); se tocan la 3.ª y la 5.ª
