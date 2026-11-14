@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-14: (pedido del usuario) **«Módulos y prácticas» en carrusel**: en rutas y bloques, el botón de cuadritos sobre la barra de puntitos se **resalta** (relleno del color) y cambia las islas por dos carruseles de tarjetas grandes (módulos usados / prácticas); arriba-abajo cambia de fila; tocar la del centro o **subir el botón** la abre; tocar el botón otra vez vuelve a las islas. Reemplaza a la hoja «Módulos y prácticas».
 - 2026-11-14: (pedido del usuario) **Curso completo**: en Inicio, un botón blanco con relieve y un **anillo en tres colores** (Armonía M4, Ritmo M2, Letras M6) en lugar de la tarjeta de «Continuar»; página `#/curso` con barra **apilada**, «Sigue aquí» del color del paso, carrusel de bloques y «Tus rutas»; cada bloque se abre como camino de islas con **cada isla del color de su ruta** y el color nuevo **neutro** para lo que es de las tres (insignia del bloque y reto final). Islas **opcionales**: gris claro con borde punteado, sin candado, ficha «Opcional»; con ✓ si se hacen, sin contar.
 - 2026-11-14: (pedido del usuario) **Los cuadritos entran directo** y **«¿Ya lo sabes?» va en el globo de la insignia** en lugar de «Ir a…»; ya no hay hoja de entrada. **Sin cuadrito del dedo** en la barra de puntitos.
 
