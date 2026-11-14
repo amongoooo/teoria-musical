@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-antes-te-conviene',
+    fecha: '14 nov 2026',
+    titulo: 'Antes te conviene',
+    cosas: [
+      {
+        texto: 'Si abres una lección y te falta algo que necesita, primero sale **«Antes te conviene»** con la lección que falta. Puedes ir a ella, probar **«¿Ya lo sabes?»** o seguir de todos modos.',
+        donde: { etiqueta: 'Probarlo en la 4.3', href: '#/leccion/4.3' },
+      },
+      {
+        texto: 'En las rutas y en el Curso completo no sale: allí el camino ya va en orden.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-colores-por-area',
     fecha: '14 nov 2026',
     titulo: 'Colores por área y respuestas que se mueven',
