@@ -2,6 +2,7 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-14: (pedido del usuario) **El botón de la barra de acción sigue siendo de vidrio al presionarlo** (Continuar, Comprobar, Atrás): ya no se vuelve mate; solo se hunde.
 - 2026-11-13: **Cuadrito del dedo más tenue y con brillo exponencial** (pedido del usuario): máximo 0,58 detrás del vidrio (antes 0,75) y 0,32 encima; el brillo crece exponencial con la etapa.
 
 - 2026-11-13: **Cuadrito del dedo en la barra de puntitos** (pedido del usuario): gris leve, detrás del vidrio para que se vea difuminado (el usuario lo pidió así; el desenfoque ya existe y solo se mueve mientras se presiona), con imán por etapas del joystick, más resaltado hacia los costados y resorte con sobrepaso al soltar.

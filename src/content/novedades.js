@@ -5,6 +5,17 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-boton-vidrio',
+    fecha: '14 nov 2026',
+    titulo: 'Botón de vidrio',
+    cosas: [
+      {
+        texto: 'El botón de abajo (**Continuar**, **Comprobar**, **Atrás**) **sigue siendo de vidrio** mientras lo presionas: ya no se vuelve opaco.',
+        donde: { etiqueta: 'Probarlo en la 3.7', href: '#/leccion/3.7' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-menores',
     fecha: '14 nov 2026',
     titulo: 'Menor armónica y melódica',
