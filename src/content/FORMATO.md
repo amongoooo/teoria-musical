@@ -70,6 +70,9 @@ Tonalidad y círculo de quintas (lección 3.5, Tonal `Key`): `CIRCULO` (las 12 m
 Pentatónicas (lección 3.6): `PENTA_MAYOR` (T T T½ T T½), `PENTA_MENOR` (T½ T T T½ T), `GRADOS_PENTA_MAYOR` (1 2 3 5 6 1) y
 `GRADOS_PENTA_MENOR` (1 ♭3 4 5 ♭7 1), `pentaMayor('C4')` / `pentaMenor('A3')` (6 notas con la octava; `escala()` usa el largo real
 de la escala) y `nombresEscala('A', { tipo: 'minor pentatonic' })` → «La · Do · Re · Mi · Sol». `alteraciones` acepta esos `tipo`.
+Menores armónica y melódica (lección 3.7): `MENOR_ARMONICA` (T S T T S T½ S), `MENOR_MELODICA` (T S T T T T S), `GRADOS_ARMONICA` / `GRADOS_MELODICA`,
+`escalaArmonica('A3')`, `escalaMelodica('A3')`, `melodicaClasica('A3')` (sube melódica y baja natural); `grado`, `melodia` y `nombresEscala`
+aceptan `tipo: 'harmonic minor'` y `'melodic minor'`. En `formula()` (P6), el T½ de una escala de 7 pasos se escribe como 2.ª aumentada (Fa → Sol♯).
 
 Acordes (lección 4.1, Tonal `Chord`): `theory/acordes.js`: `TRIADAS` (mayor, menor, dis, aum: terceras, cifrado, carácter),
 `triada('D4', 'menor')` → `['D4', 'F4', 'A4']`, `arpegioYAcorde(notas)` (de una en una y luego juntas, para un sonido),
