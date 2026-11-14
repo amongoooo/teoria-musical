@@ -57,10 +57,8 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
   const totalParejas = rondas.reduce((s, x) => s + x.parejas.length, 0)
 
   const escuchar = (fila) => {
-    const dur = reproducir(ronda.parejas[filas[fila]].sonido)
     setSonando(fila)
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => setSonando(null), dur * 1000)
+    reproducir(ronda.parejas[filas[fila]].sonido, { alParar: () => setSonando((f) => (f === fila ? null : f)) })
     if (!respondida) {
       setActiva(fila)
       verBanco()

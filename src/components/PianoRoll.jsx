@@ -53,7 +53,14 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
 
   const reproducir = () => {
     cancelAnimationFrame(reloj.current)
-    const total = playPattern(notas, { paso })
+    // Exclusivo: si otro sonido lo corta, el cabezal se va.
+    const total = playPattern(notas, {
+      paso,
+      alParar: () => {
+        cancelAnimationFrame(reloj.current)
+        setCabezal(null)
+      },
+    })
     const t0 = performance.now() + 50
     const fin = Math.max(total, columnas * paso)
     const tic = () => {

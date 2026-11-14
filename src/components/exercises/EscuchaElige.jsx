@@ -197,14 +197,10 @@ function claseEstado(estado, seleccionada) {
 /** Tarjeta que suena al tocarla y a la vez sirve como respuesta. */
 function TarjetaSonido({ letra, sonido, seleccionada, estado, detalle, onClick }) {
   const [sonando, setSonando] = useState(false)
-  const timer = useRef(null)
-  useEffect(() => () => clearTimeout(timer.current), [])
 
   const tocar = () => {
-    const dur = reproducir(sonido)
     setSonando(true)
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => setSonando(false), dur * 1000)
+    reproducir(sonido, { alParar: () => setSonando(false) })
     onClick()
   }
 

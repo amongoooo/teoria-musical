@@ -179,23 +179,76 @@ export function playNotes(notes, { modo = 'secuencia', duracion = 0.9, intervalo
 /** Copia de los eventos ordenada por `inicio` (con swing o humanizados pueden venir desordenados). */
 const ordenar = (eventos) => [...eventos].sort((a, b) => a.inicio - b.inicio)
 
+// ---------------------------------------------------------------------------
+// Reproducción EXCLUSIVA (pedido del usuario: «si se presiona otra cosa para escuchar se pausará la que esté sonando»)
+// ---------------------------------------------------------------------------
+
+// Lo programado se manda al motor de audio poco a poco (ANTICIPO s antes de su hora) para poder cortarlo: al parar se
+// cancela lo que falta y se sueltan las notas. Quien lo pidió se entera con `alParar` (para apagar su botón).
+const ANTICIPO = 0.25
+let sesion = null
+
+/** Para lo que esté sonando con `programar` (o `playPattern` / `reproducir`) y avisa a quien lo pidió. */
+export function pararProgramado() {
+  sesion?.parar()
+}
+
 /**
- * Toca un patrón de Piano Roll: [{ nota, inicio, duracion, velocity }] con
- * `inicio` y `duracion` en casillas. `paso` = segundos por casilla.
- * Devuelve la duración total en segundos.
+ * Programa una lista de sonidos como UNA reproducción y para la anterior. eventos: [{ t, nota, duracion, velocidad }]
+ * con `t` en segundos desde ahora (`nota` puede ser una lista = a la vez, o un golpe como 'snare').
+ *  - alSonar(evento, i): justo cuando SE OYE cada evento (con la latencia de salida), para encender lo que suena.
+ *  - alParar(): al terminar o al cortarla otra reproducción.
+ * Devuelve { duracion, parar }.
  */
-export function playPattern(notas, { paso = 0.3 } = {}) {
+export function programar(eventos, { alSonar, alParar } = {}) {
+  pararProgramado()
   startAudio()
   initPiano()
-  const inst = instrument()
   const t0 = Tone.now() + 0.05
-  let fin = 0
+  const timers = []
+  const lista = [...eventos].sort((a, b) => a.t - b.t)
+  const latencia = Math.max(0, t0 - tiempoAudio()) + latenciaAudio()
   // En orden de tiempo: los sintes de batería son monofónicos y no admiten golpes programados hacia atrás.
-  ordenar(notas).forEach(({ nota, inicio, duracion = 1, velocity = 0.8 }) => {
-    sonar(inst, nota, Math.max(0.1, duracion * paso * 0.95), t0 + inicio * paso, velocity)
-    fin = Math.max(fin, inicio + duracion)
+  lista.forEach((e, i) => {
+    const mandar = () => sonar(instrument(), e.nota, e.duracion, t0 + e.t, e.velocidad)
+    if (e.t < ANTICIPO) mandar()
+    else timers.push(setTimeout(mandar, (e.t - ANTICIPO) * 1000))
+    if (alSonar) timers.push(setTimeout(() => alSonar(e, i), (e.t + latencia) * 1000))
   })
-  return fin * paso
+  const duracion = lista.reduce((m, e) => Math.max(m, e.t + e.duracion), 0)
+  const yo = {
+    parar: () => {
+      timers.forEach(clearTimeout)
+      if (sesion === yo) sesion = null
+      releaseAll()
+      alParar?.()
+    },
+  }
+  timers.push(
+    setTimeout(() => {
+      if (sesion === yo) sesion = null
+      alParar?.()
+    }, (duracion + latencia) * 1000),
+  )
+  sesion = yo
+  return { duracion, parar: yo.parar }
+}
+
+/**
+ * Toca un patrón de Piano Roll: [{ nota, inicio, duracion, velocity }] con `inicio` y `duracion` en casillas.
+ * `paso` = segundos por casilla. Es exclusivo (para lo que sonaba); `alSonar` / `alParar` como en `programar`
+ * (alSonar recibe el evento del patrón). Devuelve la duración total en segundos.
+ */
+export function playPattern(notas, { paso = 0.3, alSonar, alParar } = {}) {
+  const eventos = ordenar(notas).map((n) => ({
+    ...n,
+    t: n.inicio * paso,
+    duracion: Math.max(0.1, (n.duracion ?? 1) * paso * 0.95),
+    velocidad: n.velocity ?? 0.8,
+  }))
+  const { duracion } = programar(eventos, { alSonar, alParar })
+  const fin = notas.reduce((m, n) => Math.max(m, n.inicio + (n.duracion ?? 1)), 0)
+  return Math.max(duracion, fin * paso)
 }
 
 // ---------------------------------------------------------------------------

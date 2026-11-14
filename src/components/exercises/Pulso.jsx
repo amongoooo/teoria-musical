@@ -159,14 +159,14 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
       })
       return
     }
-    const media = Math.round((toques.reduce((a, x) => a + Math.abs(x), 0) / toques.length) * 1000)
     setAccion({
       label: 'Continuar',
       avanza: ultima, // el último «Continuar» pasa de paso
       feedback: {
         tipo: 'bien',
         titulo: '¡Tienes pulso!',
-        texto: `En tus últimos toques te desviaste de media **${media} ms**. ${ronda.mensaje ?? ''}`.trim(),
+        // La desviación media ya no va aquí: es el cuadrito dentro de la barra (pedido del usuario).
+        texto: ronda.mensaje ?? 'Tus toques caen en el pulso.',
       },
       onClick: () => {
         if (ultima) return siguiente()
@@ -178,6 +178,11 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
   }, [hecho, ritmo, buenos, meta, toques, ronda, ultima, r, setAccion, siguiente])
 
   const ultimo = toques[toques.length - 1]
+  // Desviación media de los últimos toques (s): el cuadrito de la barra, desde el 2.º toque.
+  const media = toques.length >= 2 ? toques.reduce((a, x) => a + Math.abs(x), 0) / toques.length : null
+  // La barra mide medio periodo a cada lado: así el puntito que barre cruza el centro en cada pulso (no en las rondas
+  // «sin ayuda visual»).
+  const rango = patron ? undefined : (cada * 60) / ronda.bpm / 2
 
   return (
     <div className="flex flex-col gap-4">
@@ -189,7 +194,7 @@ function Seguir({ paso, leccionId, setAccion, siguiente }) {
         </div>
         {!hecho && <BotonEmpezar sonando={Boolean(ritmo)} onClick={() => (ritmo ? parar() : empezar(ronda.groove ?? 'click', ronda.bpm, ronda))} />}
         {ronda.contar && <Contador tiempos={ciclo} division={division} actual={ritmo ? sub : -1} cada={cada} desfase={desfase} patron={patron} color={color} />}
-        <Medidor error={ultimo} />
+        <Medidor error={ultimo} media={media} rango={rango} ritmo={patron || ronda.visual === false ? null : ritmo} periodo={cada} desfase={desfase} />
         <Puntos total={meta} hechos={buenos} />
         <Pad onToque={onToque} latido={latido} mostrarLatido={ronda.visual !== false} color={color} disabled={!ritmo} texto={ritmo ? ronda.boton ?? 'Toca aquí al pulso' : 'Primero, Empezar'} />
         {ajustado && <p className="text-base text-zinc-500">Ajustamos el retraso de tu teléfono o tus auriculares para medirte mejor.</p>}

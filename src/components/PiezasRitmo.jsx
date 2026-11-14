@@ -92,9 +92,16 @@ const TINTA_PAD = '#2b2c34'
  * oscuro y dentro el pad gris claro, mate, que **se ilumina con el color** al golpearlo (y suave en cada tiempo si
  * `latido` >= 0). Responde al apoyar el dedo (no al soltarlo), para medir el momento exacto. Dentro va `texto` o, si se
  * pasan, los `children` (la cuenta, un ícono…). `atenuado`: se ve apagado pero se puede tocar (no es tu turno).
+ * `chico`: el pad mini de los sonidos de las lecciones (BotonSonido con `ver`). `destello` = { n, fuerza }: cada vez que
+ * cambia `n`, se ilumina solo (cuando SUENA su golpe), con la intensidad `fuerza` (la velocity, 0–1).
  */
-export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled, atenuado, children, ref, ...props }) {
+export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled, atenuado, chico = false, destello, children, ref, ...props }) {
   const [golpes, setGolpes] = useState(0)
+  const [fuerza, setFuerza] = useState(1)
+  const luces = golpes + (destello?.n ?? 0)
+  useEffect(() => {
+    if (destello?.n) setFuerza(Math.max(0.35, destello.fuerza ?? 1))
+  }, [destello])
   const luz = `color-mix(in oklab, ${color} 55%, transparent)`
   return (
     <motion.button
@@ -105,11 +112,12 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
         if (disabled) return
         e.preventDefault()
         setGolpes((g) => g + 1)
+        setFuerza(1)
         onToque(e)
       }}
       whileTap={disabled ? undefined : { scale: 0.97 }}
       transition={RESORTE.pulsar}
-      className={`relative block h-40 w-full rounded-[1.75rem] p-2.5 select-none transition-opacity duration-200 disabled:opacity-40 ${atenuado ? 'opacity-60' : ''}`}
+      className={`relative block w-full select-none ${chico ? 'h-20 rounded-[1.25rem] p-1.5' : 'h-40 rounded-[1.75rem] p-2.5'} transition-opacity duration-200 disabled:opacity-40 ${atenuado ? 'opacity-60' : ''}`}
       style={{
         backgroundColor: MARCO,
         boxShadow: '0 8px 20px rgb(0 0 0 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.05)',
@@ -121,7 +129,7 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
       {...props}
     >
       <span
-        className="relative grid h-full w-full place-items-center overflow-hidden rounded-[1.1rem] text-xl font-semibold"
+        className={`relative grid h-full w-full place-items-center overflow-hidden font-semibold ${chico ? 'rounded-[0.85rem] text-base' : 'rounded-[1.1rem] text-xl'}`}
         style={{
           background: GOMA,
           color: TINTA_PAD,
@@ -143,16 +151,16 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
           />
         )}
         {/* Golpe: el pad se ilumina con el color, como uno retroiluminado, y se apaga enseguida. */}
-        {golpes > 0 && (
+        {luces > 0 && (
           <motion.span
-            key={`g${golpes}`}
+            key={`g${luces}`}
             aria-hidden
             data-luz-pad
             className="pointer-events-none absolute inset-0"
             style={{ background: `radial-gradient(120% 120% at 50% 45%, ${luz}, color-mix(in oklab, ${color} 30%, transparent) 70%)` }}
-            initial={{ opacity: 1 }}
+            initial={{ opacity: fuerza }}
             animate={{ opacity: 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut', delay: 0.06 }}
+            transition={{ duration: chico ? 0.3 : 0.45, ease: 'easeOut', delay: 0.06 }}
           />
         )}
         <span className="relative">{children ?? texto}</span>
@@ -240,15 +248,19 @@ export function Contador({ tiempos, division, actual, cada, desfase, patron, col
 
 /**
  * Medidor horizontal: dónde cayó el último toque respecto al pulso. `tolerancia`: el margen que cuenta como «a
- * tiempo» (la zona verde); `vacio`: el texto antes del primer toque.
+ * tiempo» (la zona verde); `vacio`: el texto antes del primer toque; `rango`: los segundos de cada mitad (±).
+ * Con `ritmo` (pedido del usuario) un **puntito celeste barre** la barra y cruza la línea del centro justo en cada pulso
+ * (`periodo` y `desfase` en tiempos, como useLatido): es el tiempo que pasa. Con `media` (desviación media, en s) sale un
+ * **cuadrito** centrado en la línea cuyo ancho es esa desviación (sin texto).
  */
-export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás si tocas antes o después' }) {
+export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás si tocas antes o después', rango = RANGO, ritmo = null, periodo = 1, desfase = 0, media = null }) {
   const hay = error !== undefined && error !== null
   const bien = hay && Math.abs(error) <= tolerancia
-  const pos = hay ? 50 + (Math.max(-RANGO, Math.min(RANGO, error)) / RANGO) * 50 : 50
+  const pos = hay ? 50 + (Math.max(-rango, Math.min(rango, error)) / rango) * 50 : 50
   const ms = hay ? Math.round(Math.abs(error) * 1000) : 0
   const texto = !hay ? vacio : bien ? (ms < 30 ? '¡Justo!' : `A tiempo (${ms} ms)`) : error < 0 ? `Antes de tiempo (${ms} ms)` : `Tarde (${ms} ms)`
-  const zona = (Math.min(tolerancia, RANGO) / RANGO) * 50
+  const zona = (Math.min(tolerancia, rango) / rango) * 50
+  const ancho = media === null ? 0 : (Math.min(media, rango) / rango) * 50
   return (
     <div className="flex flex-col gap-2" aria-live="polite" data-medidor={hay ? Math.round(error * 1000) : undefined}>
       <div className="relative h-10 overflow-hidden rounded-full bg-zinc-100">
@@ -258,7 +270,19 @@ export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás 
           animate={{ left: `${50 - zona}%`, width: `${zona * 2}%` }}
           transition={RESORTE.suave}
         />
+        {/* Desviación media: un cuadrito centrado en el pulso, tan ancho como lo que te desvías. */}
+        {media !== null && (
+          <motion.div
+            data-media={Math.round(media * 1000)}
+            aria-label={`Desviación media: ${Math.round(media * 1000)} ms`}
+            className={`absolute inset-y-1.5 rounded-md border-2 ${media <= tolerancia ? 'border-bien-relleno bg-bien/30' : 'border-fijate bg-fijate/30'}`}
+            initial={{ left: '50%', width: '0%', opacity: 0 }}
+            animate={{ left: `${50 - Math.max(ancho, 1)}%`, width: `${Math.max(ancho, 1) * 2}%`, opacity: 1 }}
+            transition={RESORTE.suave}
+          />
+        )}
         <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-bien-relleno" />
+        {ritmo && <Barrido ritmo={ritmo} periodo={periodo} desfase={desfase} rango={rango} />}
         {hay && (
           <motion.div
             className={`absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-colors duration-200 ${bien ? 'bg-bien-relleno' : 'bg-fijate'}`}
@@ -268,11 +292,37 @@ export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás 
           />
         )}
       </div>
-      <div className="flex justify-between text-sm text-zinc-500">
-        <span>‹ Antes</span>
-        <span className={`text-base font-semibold ${!hay ? 'text-zinc-500' : bien ? 'text-bien-tinta' : 'text-fijate-tinta'}`}>{texto}</span>
-        <span>Tarde ›</span>
+      <div className="flex items-start justify-between gap-2 text-sm text-zinc-500">
+        <span className="shrink-0 whitespace-nowrap pt-0.5">‹ Antes</span>
+        <span className={`min-w-0 text-center text-base font-semibold ${!hay ? 'text-zinc-500' : bien ? 'text-bien-tinta' : 'text-fijate-tinta'}`}>{texto}</span>
+        <span className="shrink-0 whitespace-nowrap pt-0.5">Tarde ›</span>
       </div>
     </div>
   )
+}
+
+/**
+ * El tiempo que pasa: un puntito celeste que corre de izquierda a derecha y cruza el centro justo en cada pulso (en el
+ * reloj de audio, con la latencia de salida). Fuera de `rango` se esconde; cerca de los bordes se desvanece.
+ */
+function Barrido({ ritmo, periodo, desfase, rango }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    let frame = 0
+    const tic = () => {
+      const el = ref.current
+      if (el) {
+        const per = periodo * ritmo.pulso
+        const rel = tiempoAudio() - latenciaAudio() - ritmo.inicio - desfase * ritmo.pulso
+        const d = rel - Math.round(rel / per) * per // segundos respecto al pulso más cercano
+        const x = d / rango
+        el.style.left = `${50 + Math.max(-1, Math.min(1, x)) * 50}%`
+        el.style.opacity = Math.abs(x) > 1 ? '0' : String(Math.min(1, (1 - Math.abs(x)) * 4))
+      }
+      frame = requestAnimationFrame(tic)
+    }
+    tic()
+    return () => cancelAnimationFrame(frame)
+  }, [ritmo, periodo, desfase, rango])
+  return <div ref={ref} aria-hidden data-barrido className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500" style={{ left: '0%', opacity: 0 }} />
 }
