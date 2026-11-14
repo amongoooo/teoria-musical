@@ -1221,9 +1221,12 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
       ultimoArrastre.current = performance.now()
       return
     }
-    // Tocar (sin haber avanzado): va al puntito que estaba bajo el dedo.
-    const izquierda = vista.current.getBoundingClientRect().left
-    const p = masCercano(centros, e.clientX - izquierda - corre.get())
+    // Tocar (sin haber avanzado): va al puntito que estaba bajo el dedo (medido donde se ve, no calculado).
+    const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
+      const c = b.getBoundingClientRect()
+      return c.left + c.width / 2
+    })
+    const p = masCercano(cs, e.clientX)
     onMatraca(1, 3, {})
     onIr(p)
     if (p === foco) animate(corre, destino(p), RESORTE.pantalla)
@@ -1369,7 +1372,9 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
           <div
             ref={vista}
             className={regla ? 'h-full w-full overflow-hidden' : 'contents'}
-            style={regla ? { maskImage: `linear-gradient(to right, transparent, black ${BORDE_REGLA}px, black calc(100% - ${BORDE_REGLA}px), transparent)` } : undefined}
+            // `clip` (no solo `hidden`): la tira la mueve `corre`; si el navegador la desplazara (al enfocar un
+            // puntito con el teclado o con scrollIntoView), lo que se ve dejaría de cuadrar con `corre`.
+            style={regla ? { overflow: 'clip', maskImage: `linear-gradient(to right, transparent, black ${BORDE_REGLA}px, black calc(100% - ${BORDE_REGLA}px), transparent)` } : undefined}
           >
             <motion.div className={regla ? 'flex h-full w-max items-center' : 'contents'} style={regla ? { x: corre } : undefined}>
               {lecciones.map((l, i) => {
