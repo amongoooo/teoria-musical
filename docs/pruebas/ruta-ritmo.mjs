@@ -55,8 +55,9 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
 
   // 1) Aprender › Rutas sin progreso: una fila por área (Ritmo, Melodía, Armonía, Letras, Producción).
   await preparar()
-  const pestanas = await page.$$eval('[data-pestana]', (bs) => bs.map((b) => b.textContent.trim()))
-  comprobar(r, 'barra: Inicio · Aprender · Practicar · Herramientas', pestanas.join('|') === 'Inicio|Aprender|Practicar|Herramientas', pestanas.join(' | '))
+  const pestanas = await page.$$eval('[data-pestana]', (bs) => bs.map((b) => b.dataset.pestana))
+  comprobar(r, 'barra: Herramientas · Practicar · Inicio · Aprender · Configuración', pestanas.join('|') === 'herramientas|practicar|inicio|aprender|configuracion', pestanas.join(' | '))
+  comprobar(r, 'barra: solo la elegida muestra su nombre', (await page.locator('[data-pestana="inicio"]').textContent()).trim() === 'Inicio' && (await page.locator('[data-pestana="aprender"]').textContent()).trim() === '')
   await page.locator('[data-pestana="aprender"]').click()
   await page.waitForSelector('[data-area-rutas]')
   await espera(800)

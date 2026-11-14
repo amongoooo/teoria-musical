@@ -1,4 +1,4 @@
-// Navegación mínima por hash (#/, #/aprender, #/aprender/biblioteca, #/practicar, #/herramientas, #/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
+// Navegación mínima por hash (#/, #/aprender, #/aprender/biblioteca, #/practicar, #/herramientas, #/configuracion, #/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
 // #/letras/vocabulario/repaso).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
@@ -21,6 +21,7 @@ function parse(hash) {
   if (partes[0] === 'aprender') return { pagina: 'aprender', id: partes[1] === 'biblioteca' ? 'biblioteca' : null }
   if (partes[0] === 'practicar') return { pagina: 'practicar' }
   if (partes[0] === 'herramientas') return { pagina: 'herramientas' }
+  if (partes[0] === 'configuracion') return { pagina: 'configuracion' }
   return { pagina: 'inicio' }
 }
 
@@ -46,6 +47,8 @@ export const rutas = {
   aprender: (vista) => (vista === 'biblioteca' ? '#/aprender/biblioteca' : '#/aprender'),
   practicar: () => '#/practicar',
   herramientas: () => '#/herramientas',
+  /** Pestaña Configuración: las Opciones como página. */
+  configuracion: () => '#/configuracion',
   modulo: (numero) => `#/modulo/${numero}`,
   leccion: (id) => `#/leccion/${id}`,
   /** La lección abierta desde una ruta o el Curso completo: el orden ya lo marca el camino, así que no avisa

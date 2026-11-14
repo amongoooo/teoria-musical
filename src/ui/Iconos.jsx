@@ -8,6 +8,8 @@
 //    o una hoja) · Atras (volver al apartado anterior) · Inicio (ir a la pantalla de inicio) · Opciones
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
 //  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo) · Pluma (letras)
+//  - Barra de pestañas (pedido del usuario): Lapiz (Herramientas) · Pesas (Practicar) · Inicio · Libro (Aprender)
+//    · Opciones (Configuración)
 //  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos)
 //  - Prueba rápida «¿Ya lo sabes?»: Saltar (doble flecha: saltar lo que ya dominas)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
@@ -224,6 +226,38 @@ export function Inicio(props) {
     <Icono {...props}>
       <path d="M4 11l8-7 8 7" />
       <path d="M6.5 9v11h11V9" />
+    </Icono>
+  )
+}
+
+/** Herramientas (barra de pestañas): un lápiz. */
+export function Lapiz(props) {
+  return (
+    <Icono {...props}>
+      <path d="M15.5 4.5l4 4L8 20H4v-4L15.5 4.5z" />
+      <path d="M13 7l4 4" />
+    </Icono>
+  )
+}
+
+/** Practicar (barra de pestañas): unas pesas (mancuerna). */
+export function Pesas(props) {
+  return (
+    <Icono {...props}>
+      <path d="M8 12h8" />
+      <rect x="5" y="7" width="3" height="10" rx="1" />
+      <rect x="16" y="7" width="3" height="10" rx="1" />
+      <path d="M2.5 10v4M21.5 10v4" />
+    </Icono>
+  )
+}
+
+/** Aprender (barra de pestañas): un libro abierto. */
+export function Libro(props) {
+  return (
+    <Icono {...props}>
+      <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z" />
+      <path d="M12 6.5v13" />
     </Icono>
   )
 }

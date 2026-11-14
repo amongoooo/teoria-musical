@@ -113,9 +113,8 @@ for (const tema of ['claro', 'oscuro']) {
   await page.waitForSelector('[data-ficha="coche"]')
   comprobar(r, 'navegaRima', true)
 
-  // Créditos en Opciones
-  await page.goto(BASE + '#/')
-  await page.click('[aria-label="Opciones"]')
+  // Créditos en Configuración (la pestaña de la tuerquita)
+  await page.goto(BASE + '#/configuracion')
   await page.waitForSelector('[data-credito]')
   await page.locator('[data-credito]').first().scrollIntoViewIfNeeded()
   await espera(600)
