@@ -3,23 +3,19 @@ import { rutas } from '../router.js'
 import { tinta } from '../ui/color.js'
 import { itemLista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
-import { HojaRuta, rutaConPrueba, useEntrada } from './HojaEntrada.jsx'
 import { Cuadrito } from './NavegadorModulos.jsx'
 import { useRuta } from './rutaModulo.js'
 
 /**
  * Entrada a una ruta desde su práctica (#/ritmo, cuaderno de #/letras): su cuadrito, el nombre y «3/10 paradas».
- * Como el cuadrito de Inicio: si la prueba rápida puede saltar algo, al tocarla sube la hoja de la ruta.
+ * Como el cuadrito de Inicio, entra directo a la ruta («¿Ya lo sabes?» va en el globo de su insignia).
  */
 export default function EntradaRuta({ id }) {
-  const { ruta, modulo, estado, progreso } = useRuta(id)
-  const entrada = useEntrada(rutaConPrueba(id, estado.tramos, progreso))
+  const { ruta, modulo, estado } = useRuta(id)
   return (
     <motion.div variants={itemLista}>
-      <HojaRuta abierta={entrada.abierta} onCerrar={entrada.cerrar} id={id} />
       <Pulsable
         href={rutas.ruta(id)}
-        onClick={entrada.tocar}
         tipo="tarjeta"
         data-entrada-ruta={id}
         className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"

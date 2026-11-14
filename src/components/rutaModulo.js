@@ -35,6 +35,10 @@ export function moduloDeRuta(id) {
     esRuta: true,
     id,
     numero: i + 1,
+    href: rutas.ruta(id),
+    // Cómo se nombra al asomar al deslizar (CambioModulo) y en la insignia del camino.
+    nombre: `Ruta de ${ruta.nombre.toLowerCase()}`,
+    subtitulo: ruta.descripcion,
     etiqueta: 'Ruta',
     titulo: ruta.nombre,
     descripcion: ruta.descripcion,
@@ -53,24 +57,19 @@ const letrasConTexto = (letras) => letras.filter((l) => l.texto.split('\n').filt
 /** Palabras de un tema que ya están en el repaso del vocabulario (vistas al menos una vez). */
 const palabrasDelTema = (repaso, tema) => Object.keys(repaso ?? {}).filter((p) => getPalabra(p)?.tema === tema).length
 
-/** Ruta + su estado (paradas cumplidas) con lo que guarda la app; se vuelve a pintar al cambiar el progreso. */
-export function useRuta(id) {
-  const progreso = useProgreso()
-  const { admin } = useOpciones()
+/**
+ * Medidor de las metas de cualquier práctica (rutas y Curso completo): `meta(p, practica)` →
+ * { valor, meta, detalle (texto de «cómo vas»), ir() (el botón «Practicar») }.
+ *  - con `modo`: nivel del entrenamiento de la práctica.
+ *  - `letra`: letras con texto en el cuaderno.
+ *  - `vocab`: palabras vistas de un tema; «Practicar» deja encendido solo ese tema y abre el vocabulario.
+ */
+export function useMedirMetas() {
   const { letras } = useCuaderno()
   const vocab = tiendaVocab.usar()
-  const ruta = RUTAS[id] ?? RUTAS.ritmo
-  const practica = PRACTICAS[ruta.practica]
-  const datos = practica.tienda.usar()
-  const nivelMax = (modo) => practica.tienda.datosModo(modo, datos).nivelMax
-
-  /**
-   * Cada meta: { valor, meta, detalle (texto de «cómo vas»), ir() (el botón «Practicar») }.
-   *  - con `modo`: nivel del entrenamiento de la práctica.
-   *  - `letra`: letras con texto en el cuaderno.
-   *  - `vocab`: palabras vistas de un tema; «Practicar» deja encendido solo ese tema y abre el vocabulario.
-   */
-  const meta = (p) => {
+  const datos = { ritmo: tiendaRitmo.usar(), oido: tiendaOido.usar(), letras: vocab }
+  const nivelMax = (practicaId, modo) => PRACTICAS[practicaId].tienda.datosModo(modo, datos[practicaId]).nivelMax
+  const meta = (p, practicaId) => {
     if (p.clave === 'letra') {
       const n = letrasConTexto(letras)
       return { valor: n, meta: 1, detalle: `Letras en tu cuaderno: ${n}`, ir: () => navegar(rutas.letras()) }
@@ -87,7 +86,8 @@ export function useRuta(id) {
         },
       }
     }
-    const n = nivelMax(p.modo)
+    const practica = PRACTICAS[practicaId]
+    const n = nivelMax(practicaId, p.modo)
     // «Practicar» desde la ruta (pedido del usuario): el entrenador empieza con la dificultad recomendada de esa parada.
     const dificultad = p.dificultad ?? 1
     return {
@@ -100,6 +100,18 @@ export function useRuta(id) {
       },
     }
   }
+  return { meta, nivelMax }
+}
+
+/** Ruta + su estado (paradas cumplidas) con lo que guarda la app; se vuelve a pintar al cambiar el progreso. */
+export function useRuta(id) {
+  const progreso = useProgreso()
+  const { admin } = useOpciones()
+  const medidor = useMedirMetas()
+  const ruta = RUTAS[id] ?? RUTAS.ritmo
+  const practica = PRACTICAS[ruta.practica]
+  const nivelMax = (modo) => medidor.nivelMax(ruta.practica, modo)
+  const meta = (p) => medidor.meta(p, ruta.practica)
 
   return {
     ruta,

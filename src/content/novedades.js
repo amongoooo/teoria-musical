@@ -5,6 +5,28 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-curso-completo',
+    fecha: '14 nov 2026',
+    titulo: 'Curso completo',
+    cosas: [
+      {
+        texto: 'Nuevo en Inicio: **Curso completo**, las tres rutas a la par en **bloques** (40 pasos). Un anillo de tres colores dice cuánto llevas.',
+        donde: { etiqueta: 'Abrir el curso', href: '#/curso' },
+      },
+      {
+        texto: 'Cada bloque se abre como un **camino de islas**, cada isla del color de su ruta. La **3.6** y la **3.7** van como **opcionales**.',
+        donde: { etiqueta: 'Ver el bloque 1', href: '#/curso/bloque/1' },
+      },
+      {
+        texto: 'Los cuadritos de los **módulos** y las **rutas** entran directo. **«¿Ya lo sabes?»** ahora está en el globo de la **insignia** (el primer cuadro del camino).',
+        donde: { etiqueta: 'Probar con el módulo 3', href: '#/modulo/3' },
+      },
+      {
+        texto: 'Ya no sale el **cuadrito gris** bajo la barra de puntitos al deslizarla.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-regla-arrastre',
     fecha: '14 nov 2026',
     titulo: 'Barra de puntitos que se arrastra',

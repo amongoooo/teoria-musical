@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import BotonNovedades from '../components/Novedades.jsx'
 import BotonOpciones from '../components/Opciones.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
-import { getLeccion, leccionesDisponibles, MODULOS, moduloDisponible } from '../content/index.js'
+import { MODULOS, moduloDisponible } from '../content/index.js'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
 import { tiendaOido } from '../progress/oido.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
@@ -21,21 +21,18 @@ import CirculoNodos, { tonalidad } from '../components/CirculoNodos.jsx'
 import { datosCasilla } from '../components/CirculoQuintas.jsx'
 import { COLOR_CIRCULO } from './Circulo.jsx'
 import useTemblor from '../ui/useTemblor.js'
-import { HojaModulo, HojaRuta, pendientesModulo, rutaConPrueba, useEntrada } from '../components/HojaEntrada.jsx'
+import { useCurso } from '../components/cursoModulo.js'
+import { AREAS, ORDEN_AREAS } from '../content/curso.js'
 
 /**
  * Inicio con aire de videojuego (pedido del usuario; como el arranque del entrenador de oído): el logo como
- * insignia, una tarjeta grande para seguir la siguiente lección, los ENTRENAMIENTOS en bloques con relieve (Oído y
+ * insignia, el botón del CURSO COMPLETO (anillo en tres colores; el siguiente paso vive dentro del curso), los ENTRENAMIENTOS en bloques con relieve (Oído y
  * Ritmo; después vendrán más), los MÓDULOS como cuadritos y el PIANO LIBRE. Títulos de sección en la
  * letra de juego. Sin textos grises de instrucciones.
  */
 export default function Inicio() {
   const progreso = useProgreso()
   const opciones = useOpciones()
-  const disponibles = leccionesDisponibles()
-  // Siguiente lección: la primera sin completar (o la última si ya hiciste todas).
-  const siguiente = disponibles.find((l) => !progreso.lecciones[l.id]?.completada)
-  const destacada = siguiente ?? disponibles[disponibles.length - 1]
 
   return (
     <motion.main
@@ -60,11 +57,10 @@ export default function Inicio() {
         <h1 className="font-titulo text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-6xl">Teoría Musical</h1>
       </motion.header>
 
-      {destacada && (
-        <motion.div variants={itemLista}>
-          <TarjetaSiguiente leccion={destacada} progreso={progreso.lecciones[destacada.id]} todoHecho={!siguiente} />
-        </motion.div>
-      )}
+      {/* En el lugar de la antigua tarjeta de «Continuar» (pedido del usuario): el Curso completo. */}
+      <motion.div variants={itemLista}>
+        <BotonCurso />
+      </motion.div>
 
       {/* Orden (pedido del usuario): Rutas arriba, luego Prácticas, Herramientas y, hasta abajo, los Módulos. */}
       <motion.section variants={itemLista} className="flex flex-col gap-4">
@@ -119,49 +115,78 @@ function Titulo({ children }) {
 /** Relieve sólido bajo bloques y tarjetas (como el labio de las islas). */
 const RELIEVE = '0 5px 0 var(--color-zinc-200)'
 
+/** Anillo del curso: lo hecho de cada área, una detrás de otra en su color (y el reto de las tres en neutro). */
+function AnilloCurso({ areas, total, tam = 84, grosor = 10 }) {
+  const r = (100 - grosor) / 2
+  const c = 2 * Math.PI * r
+  let desde = 0
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: tam, height: tam }} className="-rotate-90" aria-hidden>
+      <circle cx="50" cy="50" r={r} fill="none" style={{ stroke: 'var(--color-zinc-100)' }} strokeWidth={grosor} />
+      {[...ORDEN_AREAS, 'tres'].map((a, k) => {
+        const largo = total ? (areas[a].hechas / total) * c : 0
+        const arco = (
+          <motion.circle
+            key={a}
+            data-arco-curso={a}
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            style={{ stroke: AREAS[a].acento }}
+            strokeWidth={grosor}
+            initial={{ strokeDasharray: `0 ${c}` }}
+            animate={{ strokeDasharray: `${Math.max(0, largo - (largo > 2 ? 1.5 : 0))} ${c}` }}
+            strokeDashoffset={-desde}
+            transition={{ ...RESORTE.suave, delay: 0.25 + k * 0.1 }}
+          />
+        )
+        desde += largo
+        return arco
+      })}
+    </svg>
+  )
+}
+
 /**
- * La siguiente lección, como el botón grande de «jugar»: tarjeta del color de su módulo con labio, el número del
- * módulo en un cuadrito, el título, la barra de pasos y un botón blanco con relieve. Toda la tarjeta se toca.
+ * El botón CURSO COMPLETO (pedido del usuario; en el lugar de la tarjeta de «Continuar»): tarjeta blanca con relieve,
+ * el anillo con el % en los tres colores (Armonía M4, Ritmo M2, Letras M6), «11 de 40 · 3 rutas», la leyenda de las
+ * tres áreas y ›. Sin franja «Sigue…»: el siguiente paso vive solo dentro del curso.
  */
-function TarjetaSiguiente({ leccion, progreso, todoHecho }) {
-  const acento = leccion.modulo.acento
-  const total = getLeccion(leccion.id)?.pasos.length ?? 1
-  const paso = progreso?.completada ? total : (progreso?.paso ?? 0)
-  const texto = todoHecho ? 'Repasar' : paso > 0 ? 'Continuar' : 'Empezar'
+function BotonCurso() {
+  const { estado } = useCurso()
+  const porcentaje = Math.round((estado.hechas / estado.total) * 100)
   return (
     <Pulsable
-      href={rutas.leccion(leccion.id)}
+      href={rutas.curso()}
       tipo="tarjeta"
-      aria-label={`${texto}: lección ${leccion.id}, ${leccion.titulo}`}
-      data-siguiente={leccion.id}
-      className="flex flex-col gap-4 rounded-[1.75rem] p-5 text-blanco"
-      style={{ backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }}
+      data-boton-curso
+      aria-label={`Curso completo: ${porcentaje} %, ${estado.hechas} de ${estado.total}`}
+      className="flex w-full items-center gap-3.5 rounded-[1.75rem] border-2 border-zinc-200 bg-white p-4 pr-3 text-left"
+      style={{ boxShadow: RELIEVE }}
     >
-      <div className="flex items-center gap-4">
-        <span
-          className="grid size-16 shrink-0 place-items-center rounded-2xl bg-blanco/15 font-titulo text-4xl font-bold"
-          aria-hidden
-        >
-          {leccion.modulo.numero}
+      <span className="relative grid size-19 shrink-0 place-items-center">
+        <span className="absolute inset-0">
+          <AnilloCurso areas={estado.areas} total={estado.total} tam={76} />
         </span>
-        <span className="flex min-w-0 flex-col gap-1 text-left">
-          <span className="font-juego text-base uppercase tracking-wide text-blanco/85">Lección {leccion.id}</span>
-          <span className="font-titulo text-2xl font-bold leading-tight">{leccion.titulo}</span>
-        </span>
-      </div>
-      <span className="h-2.5 overflow-hidden rounded-full bg-blanco/25" aria-hidden>
-        <motion.span
-          className="block h-full rounded-full bg-blanco"
-          initial={{ width: 0 }}
-          animate={{ width: `${(paso / total) * 100}%` }}
-          transition={{ ...RESORTE.suave, delay: 0.3 }}
-        />
+        <span className="relative font-titulo text-xl font-extrabold tabular-nums">{porcentaje}%</span>
       </span>
-      <span
-        className="grid min-h-14 place-items-center rounded-2xl bg-blanco font-juego text-2xl font-semibold uppercase tracking-wide"
-        style={{ color: tinta(acento), boxShadow: '0 5px 0 rgb(0 0 0 / 0.22)' }}
-      >
-        {texto}
+      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="whitespace-nowrap font-juego text-xl font-semibold uppercase leading-tight tracking-wide text-zinc-900">Curso completo</span>
+        <span className="font-dato text-sm font-medium tabular-nums text-zinc-500">
+          {estado.hechas} de {estado.total} · 3 rutas
+        </span>
+        <span className="flex flex-wrap gap-x-2.5 gap-y-1">
+          {ORDEN_AREAS.map((a) => (
+            <span key={a} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(AREAS[a].acento) }}>
+              <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: AREAS[a].acento }} aria-hidden />
+              {AREAS[a].nombre}
+            </span>
+          ))}
+        </span>
+      </span>
+      <span className="text-3xl font-semibold text-zinc-400" aria-hidden>
+        ›
       </span>
     </Pulsable>
   )
@@ -255,26 +280,17 @@ function CuadritoModulo({ modulo: m, progreso }) {
       </div>
     )
   }
-  return <EntradaModulo modulo={m} progreso={progreso} hechas={hechas} contenido={contenido} />
-}
-
-/** Cuadrito de un módulo abierto: si la prueba rápida puede saltar algo, al tocarlo sube su hoja (HojaEntrada). */
-function EntradaModulo({ modulo: m, progreso, hechas, contenido }) {
-  const entrada = useEntrada(pendientesModulo(m.numero, progreso).length > 0)
+  // Entra directo al módulo (pedido del usuario): «¿Ya lo sabes?» va en el globo de su insignia.
   return (
-    <>
-      <Pulsable
-        href={rutas.modulo(m.numero)}
-        onClick={entrada.tocar}
-        tipo="tarjeta"
-        data-cuadrito-modulo={m.numero}
-        aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
-        className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
-      >
-        {contenido}
-      </Pulsable>
-      <HojaModulo abierta={entrada.abierta} onCerrar={entrada.cerrar} modulo={m} />
-    </>
+    <Pulsable
+      href={rutas.modulo(m.numero)}
+      tipo="tarjeta"
+      data-cuadrito-modulo={m.numero}
+      aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
+      className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
+    >
+      {contenido}
+    </Pulsable>
   )
 }
 
@@ -389,8 +405,7 @@ function MiniPiano() {
 
 /** Cuadrito de una ruta (como el de un módulo, con su ícono): paradas hechas / total; sin paradas aún, con candado. */
 function CuadritoRuta({ id }) {
-  const { ruta, modulo, estado, progreso } = useRuta(id)
-  const entrada = useEntrada(rutaConPrueba(id, estado.tramos, progreso))
+  const { ruta, modulo, estado } = useRuta(id)
   const disponible = modulo.disponible
   const contenido = (
     <>
@@ -417,19 +432,16 @@ function CuadritoRuta({ id }) {
       </div>
     )
   }
+  // Entra directo a la ruta (pedido del usuario): «¿Ya lo sabes?» va en el globo de su insignia.
   return (
-    <>
-      <Pulsable
-        href={rutas.ruta(id)}
-        onClick={entrada.tocar}
-        tipo="tarjeta"
-        aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total} paradas`}
-        data-cuadrito-ruta={id}
-        className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
-      >
-        {contenido}
-      </Pulsable>
-      <HojaRuta abierta={entrada.abierta} onCerrar={entrada.cerrar} id={id} />
-    </>
+    <Pulsable
+      href={rutas.ruta(id)}
+      tipo="tarjeta"
+      aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total} paradas`}
+      data-cuadrito-ruta={id}
+      className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
+    >
+      {contenido}
+    </Pulsable>
   )
 }
