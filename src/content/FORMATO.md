@@ -45,6 +45,10 @@ Donde se pida un sonido:
 { groove: [{ nota: 'click', inicio: 0, velocity: 1 }, …], tiempos: 3, porTiempo: 2 }  // patrón propio
 ```
 
+En los pasos `texto` y `siente`, cada sonido sale con **lo que suena** a la vista (`components/VerSonido.jsx`): un groove
+trae su metrónomo (`bpm`) y un pad por instrumento; las notas, un teclado que las enciende; una frecuencia, su onda. En las
+preguntas no. Solo suena uno a la vez.
+
 Grooves (`GROOVES` de `theory/bateria.js`; `formaGroove()` da su compás y resolución):
 `click`, `basico`, `bombo` (4/4) · `click3`, `vals`, `valsPiano` (3/4) · `marchaPiano` (4/4 al piano) ·
 `trap` (medio tiempo, caja en el 3) y `trapNormal` (caja en 2 y 4), ambos en semicorcheas ·

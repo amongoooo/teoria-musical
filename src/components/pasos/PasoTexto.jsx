@@ -31,9 +31,9 @@ export default function PasoTexto({ paso, leccionId }) {
       {paso.fichas && <Fichas fichas={paso.fichas} />}
 
       {paso.sonidos?.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           {paso.sonidos.map((s, i) => (
-            <BotonSonido key={i} sonido={s} />
+            <BotonSonido key={i} sonido={s} ver color={color} />
           ))}
         </div>
       )}

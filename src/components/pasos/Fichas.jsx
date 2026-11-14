@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { reproducir } from '../../audio/sonido.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
@@ -11,14 +11,10 @@ import Rich from '../Rich.jsx'
  */
 export default function Fichas({ fichas }) {
   const [sonando, setSonando] = useState(null)
-  const timer = useRef(null)
-  useEffect(() => () => clearTimeout(timer.current), [])
 
   const tocar = (i, sonido) => {
-    const dur = reproducir(sonido)
     setSonando(i)
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => setSonando(null), dur * 1000)
+    reproducir(sonido, { alParar: () => setSonando((x) => (x === i ? null : x)) })
   }
 
   return (

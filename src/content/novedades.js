@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-ver-lo-que-suena',
+    fecha: '14 nov 2026',
+    titulo: 'Ve lo que suena',
+    cosas: [
+      {
+        texto: 'En las explicaciones, cada sonido trae **lo que suena**: un **metrónomo** y **pads** que se iluminan en cada golpe (como «caja en 2 y 4»), un **teclado** que enciende cada nota o la **onda** de una frecuencia. Tócalos para oírlos sueltos.',
+        donde: { etiqueta: 'Verlo en la 2.2', href: '#/leccion/2.2' },
+      },
+      {
+        texto: 'Ahora suena **un sonido a la vez**: si tocas otro, el que sonaba se para.',
+      },
+      {
+        texto: 'En «Toca al pulso», un **puntito barre la barra** y cruza el centro en cada pulso, y tu **desviación media** es el cuadrito dentro de la barra.',
+        donde: { etiqueta: 'Probarlo en la 2.1', href: '#/leccion/2.1' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-antes-te-conviene',
     fecha: '14 nov 2026',
     titulo: 'Antes te conviene',
