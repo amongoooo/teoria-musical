@@ -1,42 +1,44 @@
-import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import { navegar, rutas } from '../router.js'
 import { entradaBarra } from '../ui/barraAbajo.js'
+import { Inicio, Lapiz, Libro, Opciones, Pesas } from '../ui/Iconos.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import { MATRACA, flotar, gradosMatraca } from './CaminoLecciones.jsx'
 
 /**
- * BARRA DE PESTAÑAS (fase 3 del rediseño; pedido del usuario: «hecha a partir de la barra de puntitos de las islas»;
- * maqueta aprobada: https://claude.ai/artifact/6EWwNQ4puh3mtiT1T8Pfne, variante «Nombres»).
- * La misma píldora de vidrio que la barra de puntitos, abajo y en el mismo sitio, con las 4 pestañas: Inicio ·
- * Aprender · Practicar · Herramientas, cada una con su nombre y un puntito encima (el de la elegida se alarga).
- *  - La elegida lleva detrás la MARCA: una píldora de superficie que se desliza con resorte.
- *  - ARRASTRAR por la barra cambia de pestaña EN VIVO (como arrastrar por los puntitos abre cada isla): la marca sigue al
- *    dedo con imán (35 % hacia el dedo, 65 % al centro de la pestaña) e inflada; al cruzar a otra pestaña, golpe de
- *    MATRACA (el de la barra de puntitos: inclinación según su lugar × el tirón del dedo, y golpe lateral); la barra
- *    FLOTA con el dedo (flotar()) y al soltar todo vuelve con resorte.
+ * BARRA DE PESTAÑAS (fase 3 del rediseño, hecha a partir de la barra de puntitos; cambio pedido por el usuario:
+ * «mejor que sí sean íconos y al seleccionarlos se despliega su texto y su botón se hace más grande»).
+ * La misma píldora de vidrio que la barra de puntitos, abajo y en el mismo sitio, con 5 pestañas de izquierda a
+ * derecha: Herramientas (lápiz) · Practicar (pesas) · Inicio (casita) · Aprender (libro) · Configuración (engrane).
+ *  - Las demás: solo su ícono en un círculo de 44 px, en gris.
+ *  - La elegida CRECE (más alta y ancha), despliega su NOMBRE junto al ícono y lleva detrás la MARCA (píldora de
+ *    superficie que pasa de una a otra con resorte: `layoutId`).
+ *  - ARRASTRAR por la barra cambia de pestaña EN VIVO (como arrastrar por los puntitos abre cada isla): la marca se
+ *    corre un poco hacia el dedo (imán); al cruzar a otra pestaña, golpe de MATRACA (el de la barra de puntitos) y la
+ *    barra FLOTA con el dedo; al soltar todo vuelve con resorte.
  *  - TOCAR va directo; tocar la pestaña en la que ya estás sube al principio.
- *  - Dentro de un camino (módulo, ruta, bloque) la píldora «se vuelve» la barra de puntitos: esta se desvanece en su
- *    sitio y aquella aparece ahí (ui/barraAbajo.js). En lecciones, entrenadores y pruebas no hay barra.
+ *  - Dentro de un camino (módulo, ruta, bloque) la píldora «se vuelve» la barra de puntitos (ui/barraAbajo.js). En
+ *    lecciones, entrenadores y pruebas no hay barra.
  *  - Teclado: flechas ← → entre pestañas (tablist con foco itinerante).
  */
 export const PESTANAS = [
-  { id: 'inicio', nombre: 'Inicio' },
-  { id: 'aprender', nombre: 'Aprender' },
-  { id: 'practicar', nombre: 'Practicar' },
-  { id: 'herramientas', nombre: 'Herramientas' },
+  { id: 'herramientas', nombre: 'Herramientas', Icono: Lapiz },
+  { id: 'practicar', nombre: 'Practicar', Icono: Pesas },
+  { id: 'inicio', nombre: 'Inicio', Icono: Inicio },
+  { id: 'aprender', nombre: 'Aprender', Icono: Libro },
+  { id: 'configuracion', nombre: 'Configuración', Icono: Opciones },
 ]
 export const indicePestana = (pagina) => PESTANAS.findIndex((p) => p.id === pagina)
 
 /** Aprender recuerda su última vista (Rutas o Biblioteca) mientras la app esté abierta. */
 let vistaAprender = null
-const enlace = (id) =>
-  id === 'inicio' ? rutas.inicio() : id === 'aprender' ? rutas.aprender(vistaAprender) : id === 'practicar' ? rutas.practicar() : rutas.herramientas()
+const enlace = (id) => (id === 'inicio' ? rutas.inicio() : id === 'aprender' ? rutas.aprender(vistaAprender) : `#/${id}`)
 
-/** Cuánto se infla la marca mientras el dedo la arrastra (px de más a lo ancho) y cuánto la jala el dedo (imán). */
-const INFLA = 10
+/** Cuánto se corre la marca hacia el dedo (imán) y hasta dónde. */
 const IMAN = 0.35
+const IMAN_MAX = 14
 
 export default function BarraPestanas({ ruta }) {
   const reducir = useReducedMotion()
@@ -45,53 +47,22 @@ export default function BarraPestanas({ ruta }) {
   const [foco, setFoco] = useState(indiceRuta)
   const focoRef = useRef(foco)
   const arrastre = useRef(null)
-  const pista = useRef(null)
   const botones = useRef([])
 
-  const x = useMotionValue(0)
-  const ancho = useMotionValue(0)
+  const iman = useMotionValue(0)
   const flotaX = useMotionValue(0)
   const flotaY = useMotionValue(0)
   const giro = useMotionValue(0)
   const golpe = useMotionValue(0)
-  const listo = useRef(false)
-
-  // La pestaña la manda la ruta (salvo mientras el dedo arrastra: ahí manda el dedo).
-  useEffect(() => {
-    if (!arrastre.current) cambiarFoco(indiceRuta)
-  }, [indiceRuta]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const cambiarFoco = (i) => {
     focoRef.current = i
     setFoco(i)
   }
-  const medida = (i) => {
-    const b = botones.current[i]
-    return b ? { x: b.offsetLeft, w: b.offsetWidth, c: b.offsetLeft + b.offsetWidth / 2 } : { x: 0, w: 0, c: 0 }
-  }
-  /** Lleva la marca a la pestaña `i` (con resorte; la primera vez, sin animar). */
-  const asentar = (i, transicion = RESORTE.pulsar) => {
-    const m = medida(i)
-    if (!listo.current || reducir) {
-      x.set(m.x)
-      ancho.set(m.w)
-      listo.current = m.w > 0
-      return
-    }
-    animate(x, m.x, transicion)
-    animate(ancho, m.w, transicion)
-  }
-  useLayoutEffect(() => {
-    if (!arrastre.current) asentar(foco)
-  }, [foco]) // eslint-disable-line react-hooks/exhaustive-deps
-  // Las medidas cambian al cargar la letra o al girar el teléfono.
+  // La pestaña la manda la ruta (salvo mientras el dedo arrastra: ahí manda el dedo).
   useEffect(() => {
-    const el = pista.current
-    const ro = new ResizeObserver(() => !arrastre.current && asentar(focoRef.current, { duration: 0 }))
-    ro.observe(el)
-    document.fonts?.ready.then(() => asentar(focoRef.current, { duration: 0 }))
-    return () => ro.disconnect()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!arrastre.current) cambiarFoco(indiceRuta)
+  }, [indiceRuta])
 
   const tiempoMatraca = useRef(null)
   useEffect(() => () => clearTimeout(tiempoMatraca.current), [])
@@ -118,11 +89,14 @@ export default function BarraPestanas({ ruta }) {
     navegar(enlace(PESTANAS[i].id))
   }
 
-  const masCercana = (clientX) => {
-    const izq = pista.current.getBoundingClientRect().left
+  const centro = (i) => {
+    const c = botones.current[i]?.getBoundingClientRect()
+    return c ? c.left + c.width / 2 : 0
+  }
+  const masCercana = (x) => {
     let mejor = 0
     PESTANAS.forEach((_, i) => {
-      if (Math.abs(medida(i).c + izq - clientX) < Math.abs(medida(mejor).c + izq - clientX)) mejor = i
+      if (Math.abs(centro(i) - x) < Math.abs(centro(mejor) - x)) mejor = i
     })
     return mejor
   }
@@ -135,7 +109,7 @@ export default function BarraPestanas({ ruta }) {
       // (puntero que ya no existe)
     }
     const caja = e.currentTarget.getBoundingClientRect()
-    arrastre.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, eje: caja.top + caja.height / 2, movio: false, izq: pista.current.getBoundingClientRect().left }
+    arrastre.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, eje: caja.top + caja.height / 2, movio: false }
   }
   const onPointerMove = (e) => {
     const s = arrastre.current
@@ -150,21 +124,14 @@ export default function BarraPestanas({ ruta }) {
     }
     const i = masCercana(e.clientX)
     if (i !== focoRef.current) {
-      const ejeY = s.eje + flotaY.get()
-      const d = e.clientY - ejeY
+      const d = e.clientY - (s.eje + flotaY.get())
       const tiron = Math.sign(d) * Math.min(1, Math.max(0, (Math.abs(d) - MATRACA.eje) / MATRACA.rango))
       matraca(i, Math.sign(i - focoRef.current), tiron)
       cambiarFoco(i)
       navegar(enlace(PESTANAS[i].id))
     }
-    // Imán: la marca va un poco hacia el dedo, pero la jala el centro de su pestaña; mientras tanto, inflada.
-    const m = medida(focoRef.current)
-    const centro = m.c + (e.clientX - s.izq - m.c) * IMAN
-    const w = m.w + INFLA
-    // Sin salirse de la píldora (2 px de aire en las orillas).
-    const tope = pista.current.clientWidth - w - 2
-    animate(x, Math.min(tope, Math.max(2, centro - w / 2)), RESORTE.pulsar)
-    animate(ancho, w, RESORTE.pulsar)
+    // Imán: la marca se corre un poco hacia el dedo, sin dejar su pestaña.
+    if (!reducir) iman.set(Math.max(-IMAN_MAX, Math.min(IMAN_MAX, (e.clientX - centro(focoRef.current)) * IMAN)))
   }
   const soltar = (e) => {
     const s = arrastre.current
@@ -172,13 +139,12 @@ export default function BarraPestanas({ ruta }) {
     arrastre.current = null
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
+    animate(iman, 0, RESORTE.rebote)
     if (!s.movio && e.type === 'pointerup') {
       const i = masCercana(e.clientX)
       if (i !== focoRef.current) matraca(i, Math.sign(i - focoRef.current))
       ir(i)
     }
-    // Al soltar, la marca se acomoda en su pestaña con un pequeño sobrepaso.
-    asentar(focoRef.current, RESORTE.rebote)
   }
 
   const onKeyDown = (e) => {
@@ -189,17 +155,18 @@ export default function BarraPestanas({ ruta }) {
     if (i === focoRef.current) return
     matraca(i, paso)
     ir(i)
-    botones.current[i]?.focus()
+    requestAnimationFrame(() => botones.current[i]?.focus())
   }
 
   // Si la barra de puntitos sigue en pantalla (venimos de un camino), aparece en su sitio; si no, sube desde abajo.
   const [entrada] = useState(() => entradaBarra('[data-puntitos]'))
+  const transicion = reducir ? { duration: 0 } : RESORTE.pulsar
 
   return (
     <motion.nav
       aria-label="Secciones"
       data-pestanas
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       initial={entrada}
       animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -210,10 +177,9 @@ export default function BarraPestanas({ ruta }) {
       <motion.div style={{ x: flotaX, y: flotaY }} className="w-full max-w-md">
         {/* Capa de la matraca (giro y golpe lateral) */}
         <motion.div
-          ref={pista}
           role="tablist"
           aria-label="Secciones"
-          className={`pointer-events-auto relative flex h-14 w-full select-none items-center justify-between rounded-full px-1.5 ${VIDRIO}`}
+          className={`pointer-events-auto relative flex h-15 w-full select-none items-center justify-between rounded-full px-1.5 ${VIDRIO}`}
           style={{ touchAction: 'none', rotate: giro, x: golpe }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -221,39 +187,55 @@ export default function BarraPestanas({ ruta }) {
           onPointerCancel={soltar}
           onKeyDown={onKeyDown}
         >
-          <motion.span
-            aria-hidden
-            data-marca-pestana
-            className="absolute top-1 bottom-1 left-0 rounded-full bg-white shadow-[0_1px_4px_rgb(16_18_28/0.16)]"
-            style={{ x, width: ancho }}
-          />
-          {PESTANAS.map((p, i) => {
-            const activa = i === foco
-            return (
-              <button
-                key={p.id}
-                ref={(el) => (botones.current[i] = el)}
-                type="button"
-                role="tab"
-                aria-selected={activa}
-                tabIndex={activa ? 0 : -1}
-                data-pestana={p.id}
-                // Con el dedo o el ratón lo resuelve la píldora (pointerup); este clic es el del teclado o el lector.
-                onClick={(e) => e.detail === 0 && ir(i)}
-                className={`relative z-10 flex h-12 shrink-0 flex-col items-center justify-center gap-1 rounded-full px-3 text-sm font-bold whitespace-nowrap transition-colors duration-200 ${
-                  activa ? 'text-zinc-900' : 'text-zinc-500'
-                }`}
-              >
-                <motion.span
-                  aria-hidden
-                  className="block h-1.5 rounded-full"
-                  animate={{ width: activa ? 16 : 6, backgroundColor: activa ? 'var(--color-zinc-900)' : 'var(--color-zinc-300)' }}
-                  transition={RESORTE.rebote}
-                />
-                {p.nombre}
-              </button>
-            )
-          })}
+          <LayoutGroup id="pestanas">
+            {PESTANAS.map((p, i) => {
+              const activa = i === foco
+              const Icono = p.Icono
+              return (
+                <motion.button
+                  key={p.id}
+                  ref={(el) => (botones.current[i] = el)}
+                  layout
+                  transition={transicion}
+                  type="button"
+                  role="tab"
+                  aria-selected={activa}
+                  aria-label={p.nombre}
+                  tabIndex={activa ? 0 : -1}
+                  data-pestana={p.id}
+                  // Con el dedo o el ratón lo resuelve la píldora (pointerup); este clic es el del teclado o el lector.
+                  onClick={(e) => e.detail === 0 && ir(i)}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
+                    activa ? 'h-12 gap-1 px-3 text-zinc-900' : 'size-11 text-zinc-500'
+                  }`}
+                >
+                  {activa && (
+                    <motion.span layoutId="marca-pestana" transition={transicion} className="absolute inset-0" aria-hidden>
+                      <motion.span data-marca-pestana className="absolute inset-0 rounded-full bg-white shadow-[0_1px_5px_rgb(16_18_28/0.18)]" style={{ x: iman }} />
+                    </motion.span>
+                  )}
+                  <motion.span layout="position" transition={transicion} className="relative grid place-items-center">
+                    <Icono className={activa ? 'size-6.5' : 'size-6'} grosor={activa ? 2.2 : 2} />
+                  </motion.span>
+                  <AnimatePresence initial={false}>
+                    {activa && (
+                      <motion.span
+                        key="nombre"
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={transicion}
+                        className="relative overflow-hidden text-sm font-bold whitespace-nowrap"
+                        aria-hidden
+                      >
+                        {p.nombre}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              )
+            })}
+          </LayoutGroup>
         </motion.div>
       </motion.div>
     </motion.nav>

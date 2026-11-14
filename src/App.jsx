@@ -6,6 +6,7 @@ import MetaCumplida, { acentoPractica } from './components/MetaCumplida.jsx'
 import { useMedirMetas } from './components/rutaModulo.js'
 import { marcarCumplida, soltarMeta, useMetaGuiada } from './progress/metaGuiada.js'
 import Aprender from './pages/Aprender.jsx'
+import Configuracion from './pages/Configuracion.jsx'
 import Herramientas from './pages/Herramientas.jsx'
 import Practicar from './pages/Practicar.jsx'
 import Circulo from './pages/Circulo.jsx'
@@ -41,6 +42,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'aprender') return <Aprender vista={ruta.id} />
   if (ruta.pagina === 'practicar') return <Practicar />
   if (ruta.pagina === 'herramientas') return <Herramientas />
+  if (ruta.pagina === 'configuracion') return <Configuracion />
   return <Inicio />
 }
 
@@ -147,7 +149,7 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
       {guia && enPractica && !guia.cumplida && <VigilaMeta guia={guia} />}
-      {/* Las 4 pestañas (fase 3 del rediseño): fuera de la transición, se quedan quietas al cambiar de pestaña. */}
+      {/* Las pestañas (fase 3 del rediseño): fuera de la transición, se quedan quietas al cambiar de pestaña. */}
       <AnimatePresence initial={false}>{indicePestana(ruta.pagina) >= 0 && <BarraPestanas key="pestanas" ruta={ruta} />}</AnimatePresence>
     </MotionConfig>
   )

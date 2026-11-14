@@ -22,7 +22,7 @@ export const HUNDIR = { boton: 0.96, tarjeta: 0.98 }
 
 /** Profundidad de cada ruta: sirve para saber si se avanza (entra por la derecha) o se vuelve. */
 export function profundidad(ruta) {
-  if (['inicio', 'aprender', 'practicar', 'herramientas'].includes(ruta.pagina)) return 0 // las 4 pestañas
+  if (['inicio', 'aprender', 'practicar', 'herramientas', 'configuracion'].includes(ruta.pagina)) return 0 // las 4 pestañas
   if (ruta.pagina === 'leccion' || ruta.pagina === 'prueba') return 2
   if (ruta.pagina === 'oido' || ruta.pagina === 'ritmo' || ruta.pagina === 'letras') return ruta.id ? 2 : 1
   if (ruta.pagina === 'vocabulario') return ruta.id ? 3 : 2

@@ -120,10 +120,9 @@ for (const tema of ['claro', 'oscuro']) {
   await page.goto(BASE + '#/')
   await espera(1000)
   comprobar(r, 'ⓘ: el puntito se apagó', (await page.locator('[data-punto-novedad]').count()) === 0)
-  await page.locator('[aria-label="Opciones"]').first().click()
-  await espera(700)
-  await foto('hoja-opciones')
-  await page.keyboard.press('Escape')
+  await page.locator('[data-pestana="configuracion"]').click()
+  await espera(900)
+  await foto('pestana-configuracion')
 
   // ——— Ruta de acordes: la 4.5 ya no dice «Llega pronto» ———
   await preparar()

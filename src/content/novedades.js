@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-barra-iconos',
+    fecha: '14 nov 2026',
+    titulo: 'La barra con íconos',
+    cosas: [
+      {
+        texto: 'La barra de abajo ahora tiene **íconos**: **Herramientas** (lápiz), **Practicar** (pesas), **Inicio** (casita), **Aprender** (libro) y **Configuración** (tuerquita). La que eliges **crece y muestra su nombre**.',
+      },
+      {
+        texto: 'Las **opciones** (apariencia, vidrio, tu progreso…) están ahora en la pestaña **Configuración**.',
+        donde: { etiqueta: 'Abrir Configuración', href: '#/configuracion' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-cuatro-pestanas',
     fecha: '14 nov 2026',
     titulo: 'Cuatro pestañas',

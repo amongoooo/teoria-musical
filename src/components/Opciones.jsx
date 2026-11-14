@@ -81,7 +81,7 @@ const NOTA_GESTO = {
   invertido: 'Hacia la derecha, el paso siguiente; hacia la izquierda, el anterior (las flechitas apuntan hacia donde deslizas).',
 }
 
-function PanelOpciones({ onCerrar }) {
+export function PanelOpciones({ onCerrar, titulo = 'Opciones' }) {
   const { tema, vidrio, octavas, gesto } = useOpciones()
   return (
     <div className="flex flex-col gap-7">
@@ -90,7 +90,7 @@ function PanelOpciones({ onCerrar }) {
         <p className="font-dato text-sm font-medium tabular-nums text-zinc-500" data-version-app>
           {__VERSION_APP__}
         </p>
-        <h2 className="font-titulo text-2xl font-bold tracking-tight">Opciones</h2>
+        <h2 className="font-titulo text-2xl font-bold tracking-tight">{titulo}</h2>
       </div>
 
       <Grupo titulo="Pantalla" id="opciones-pantalla">
