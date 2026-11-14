@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-ya-lo-sabes',
+    fecha: '14 nov 2026',
+    titulo: '¿Ya lo sabes?',
+    cosas: [
+      {
+        texto: 'Al tocar un **módulo** sube una hoja con **«¿Ya lo sabes?»**: una pregunta por lección y puedes **saltar** las que ya dominas.',
+        donde: { etiqueta: 'Probar con el módulo 3', href: '#/prueba/modulo/3' },
+      },
+      {
+        texto: 'En las **rutas**, la prueba es la del **tramo** en el que vas (toca otro tramo para cambiarla).',
+        donde: { etiqueta: 'Ver la ruta de acordes', href: '#/ruta/acordes' },
+      },
+      {
+        texto: 'Las lecciones saltadas llevan el **✓ en contorno** y cuentan como hechas: abren la siguiente, avanzan la ruta y abren sus herramientas.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-boton-vidrio',
     fecha: '14 nov 2026',
     titulo: 'Botón de vidrio',

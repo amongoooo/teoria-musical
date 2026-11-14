@@ -14,6 +14,7 @@ function parse(hash) {
   if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'piano') return { pagina: 'piano' }
   if (partes[0] === 'ruta' && partes[1]) return { pagina: 'ruta', id: partes[1] }
+  if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
 }
@@ -43,6 +44,8 @@ export const rutas = {
   piano: () => '#/piano',
   /** Una ruta de curso (se ve igual que un módulo). */
   ruta: (id) => `#/ruta/${id}`,
+  /** Prueba rápida «¿Ya lo sabes?»: 'modulo/3' o 'ruta/acordes/triadas' (content/pruebas/). */
+  prueba: (id) => `#/prueba/${id}`,
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),
   ritmo: (modo) => (modo ? `#/ritmo/${modo}` : '#/ritmo'),

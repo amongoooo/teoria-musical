@@ -9,6 +9,7 @@
 //  - Programar el tema:      Sol (modo claro) · Luna (modo oscuro)
 //  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo) · Pluma (letras)
 //  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos)
+//  - Prueba rápida «¿Ya lo sabes?»: Saltar (doble flecha: saltar lo que ya dominas)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
 // Los módulos NO llevan ícono: se reconocen por su color y su número.
@@ -257,11 +258,26 @@ export const ICONO_ACTIVIDAD = { oido: Oreja, practicar: Teclas, reto: Trofeo }
  * Marca de «hecho»: ✓ blanco en un círculo verde. Para poner sobre cualquier fondo (también sobre el
  * color de un módulo), así el verde siempre significa «bien / hecho». `aro` = color del anillo que la separa.
  */
-export function MarcaBien({ className = 'size-6', aro }) {
+/** Saltar: doble flecha de la prueba rápida «¿Ya lo sabes?» (saltar las lecciones que ya dominas). */
+export function Saltar(props) {
+  return (
+    <Icono {...props}>
+      <path d="M5 6l6 6-6 6" />
+      <path d="M13 6l6 6-6 6" />
+    </Icono>
+  )
+}
+
+/**
+ * ✓ verde en un círculo (hecho). `saltada`: en CONTORNO (fondo suave, borde y ✓ verdes) = lección saltada con la
+ * prueba rápida: cuenta como hecha, pero no la hiciste.
+ */
+export function MarcaBien({ className = 'size-6', aro, saltada = false }) {
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-full bg-bien-relleno text-blanco ${className}`}
+      data-marca={saltada ? 'saltada' : undefined}
+      className={`grid shrink-0 place-items-center rounded-full ${saltada ? 'border-2 border-bien bg-bien-suave text-bien-tinta' : 'bg-bien-relleno text-blanco'} ${className}`}
       style={aro ? { boxShadow: `0 0 0 2.5px ${aro}` } : undefined}
     >
       <Check className="size-[68%]" grosor={3} />

@@ -982,6 +982,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                               etiqueta={l.titulo}
                               cuadrada={l.parada.tipo === 'abre'}
                               contenido={contenidoParada(l.parada, ruta, 'size-9')}
+                              saltada={l.parada.tipo === 'leccion' && Boolean(progreso.lecciones[l.parada.id]?.saltada)}
                               onClick={() => irA(i + 1)}
                             />
                           ) : (
@@ -992,6 +993,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                               avance={estado === 'empezada' && contenido ? p.paso / contenido.pasos.length : 0}
                               acento={modulo.acento}
                               descripcion={texto}
+                              saltada={Boolean(p?.saltada)}
                               onClick={() => irA(i + 1)}
                             />
                           )}
@@ -1596,7 +1598,7 @@ function calcular({ ancho, vertical, n, abierta, grande, alto: altoAbierta = ALT
 }
 
 export function textoEstado(estado, p, contenido) {
-  if (estado === 'hecha') return 'Completada'
+  if (estado === 'hecha') return p?.saltada ? 'Saltada' : 'Completada'
   if (estado === 'empezada') return `Paso ${p.paso + 1} de ${contenido.pasos.length}`
   if (estado === 'nueva') return 'Empezar'
   if (estado === 'bloqueada') return 'Bloqueada'
@@ -1608,7 +1610,7 @@ const GRIS = 'var(--color-zinc-200)'
 const LABIO_GRIS = 'color-mix(in oklab, var(--color-zinc-200) 82%, black)'
 
 /** Una isla pequeña: círculo con «labio» inferior que se hunde al tocarla. */
-function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick, etiqueta = null, cuadrada = false, contenido = null }) {
+function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick, etiqueta = null, cuadrada = false, contenido = null, saltada = false }) {
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
   const fondo = lleno ? oscuro(acento) : estado === 'bloqueada' ? GRIS : 'var(--color-white)'
   const sombra = lleno ? labio(acento) : estado === 'bloqueada' ? LABIO_GRIS : 'transparent'
@@ -1624,8 +1626,9 @@ function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick,
       >
         {estado === 'bloqueada' ? <Candado className="size-8" grosor={2.2} /> : estado === 'proximamente' ? <span className="text-xl">…</span> : (contenido ?? leccion.id)}
       </Pulsable>
-      {/* Hecha: el número sigue a la vista y el ✓ verde va en la esquina (verde = hecho en toda la app). */}
-      {estado === 'hecha' && <MarcaBien className="pointer-events-none absolute -right-1 -top-1 size-7" aro="var(--color-fondo)" />}
+      {/* Hecha: el número sigue a la vista y el ✓ verde va en la esquina (verde = hecho en toda la app). Saltada con la
+          prueba rápida: el ✓ en contorno. */}
+      {estado === 'hecha' && <MarcaBien className="pointer-events-none absolute -right-1 -top-1 size-7" aro="var(--color-fondo)" saltada={saltada} />}
     </div>
   )
 }
@@ -1690,7 +1693,11 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
       </>
     )
   else if (estado === 'hecha')
-    detalle = (
+    detalle = p?.saltada ? (
+      <>
+        <MarcaBien className="size-5" saltada /> Saltada con la prueba
+      </>
+    ) : (
       <>
         <MarcaBien className="size-5" /> Completada{p?.total ? ` · ${p.aciertos}/${p.total} a la primera` : ''}
       </>
@@ -1707,7 +1714,7 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
     <div className="flex flex-col items-center" role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
       <Bola acento={acento} estado={estado} avance={lleno ? porcentaje / 100 : null} onClick={onCerrar}>
         {estado === 'bloqueada' ? <Candado className="size-10" /> : estado === 'proximamente' ? '…' : meta.id}
-        {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" />}
+        {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" saltada={Boolean(p?.saltada)} />}
       </Bola>
       <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
         <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{meta.titulo}</h3>
@@ -1715,7 +1722,7 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
         {lleno && (
           <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => ir(estado === 'hecha')}>
             {estado !== 'hecha' && <Reproducir className="size-5" />}
-            {estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir'}
+            {estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : p?.saltada ? 'Hacerla' : 'Repetir'}
           </BotonGlobo>
         )}
         {estado === 'empezada' && (
@@ -1922,7 +1929,7 @@ function estadoParada(p, progreso) {
 
 /** Texto corto bajo la isla (en el celular) y en su aria-label. */
 function textoParada(p, estado, progreso) {
-  if (estado === 'hecha') return p.tipo === 'leccion' ? 'Completada' : 'Hecha'
+  if (estado === 'hecha') return p.tipo === 'leccion' ? (progreso.lecciones[p.id]?.saltada ? 'Saltada' : 'Completada') : 'Hecha'
   if (estado === 'bloqueada') return 'Bloqueada'
   if (p.tipo === 'leccion') return getLeccion(p.id) ? textoEstado(estado, progreso.lecciones[p.id], getLeccion(p.id)) : 'Llega pronto'
   return { meta: 'Practicar', abre: 'Se abre', reto: 'Reto en FL' }[p.tipo]
@@ -1966,7 +1973,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   else if (estado === 'hecha')
     detalle = (
       <>
-        <MarcaBien className="size-5" /> {p.tipo === 'leccion' ? 'Completada' : 'Hecha'}
+        <MarcaBien className="size-5" saltada={Boolean(lp?.saltada)} /> {p.tipo !== 'leccion' ? 'Hecha' : lp?.saltada ? 'Saltada con la prueba' : 'Completada'}
       </>
     )
   else if (p.tipo === 'leccion' && !leccion) detalle = 'Llega pronto'
@@ -1980,7 +1987,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
     if (actual) boton = { texto: `Ir a: ${actual.titulo}`, onClick: () => onIr(actual.parada.i) }
   } else if (p.tipo === 'leccion' && leccion) {
     boton = {
-      texto: estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : 'Repetir',
+      texto: estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : lp?.saltada ? 'Hacerla' : 'Repetir',
       icono: estado !== 'hecha',
       onClick: () => {
         if (estado === 'hecha') reiniciarLeccion(p.id)
@@ -1996,7 +2003,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
     <div className="flex flex-col items-center" role="group" aria-label={p.titulo}>
       <Bola acento={acento} estado={estado} avance={lleno ? porcentaje / 100 : null} retos={reto && estado !== 'bloqueada'} cuadrada={p.tipo === 'abre'} onClick={onCerrar}>
         {estado === 'bloqueada' ? <Candado className="size-10" /> : contenidoParada(p, ruta, 'size-12')}
-        {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" />}
+        {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" saltada={p.tipo === 'leccion' && Boolean(lp?.saltada)} />}
       </Bola>
       <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
         <span className={`font-juego text-base uppercase tracking-wide ${enColor ? 'text-blanco/85' : ''}`} style={enColor ? undefined : { color: tinta(acento) }}>

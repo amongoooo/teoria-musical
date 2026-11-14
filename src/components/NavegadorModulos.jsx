@@ -5,7 +5,9 @@ import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
-import { MarcaBien } from '../ui/Iconos.jsx'
+import { MarcaBien, Saltar } from '../ui/Iconos.jsx'
+import { pruebaModulo } from '../content/pruebas/index.js'
+import { pendientesModulo } from './HojaEntrada.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
@@ -20,6 +22,7 @@ const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
  * «Pestaña» de módulos: hoja inferior que se abre al tocar la insignia del módulo (el cuadrito
  * con su número, al inicio del camino). Es un carrusel lateral con una tarjeta por módulo:
  * deslizar (reglas de la skill, sección 3b) o las flechas ‹ › pasan de módulo; «Ir al módulo» lo abre.
+ * Si la prueba rápida puede saltar algo del módulo, debajo va «¿Ya lo sabes?» (como en su hoja de Inicio).
  */
 export default function NavegadorModulos({ abierta, onCerrar, actual }) {
   return (
@@ -130,6 +133,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
   const disponible = moduloDisponible(m)
   const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
   const total = m.lecciones.length
+  const pend = disponible ? pendientesModulo(m.numero, progreso).length : 0
   return (
     <div className="flex h-full flex-col items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-5 text-center">
       <Cuadrito modulo={m} disponible={disponible} tam={64} />
@@ -157,6 +161,17 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
           </Pulsable>
         ) : (
           <span className="grid min-h-12 place-items-center rounded-2xl border-2 border-dashed border-zinc-300 text-lg font-semibold text-zinc-500">Próximamente</span>
+        )}
+        {pend > 0 && (
+          <Pulsable
+            onClick={() => navegar(rutas.prueba(pruebaModulo(m.numero)))}
+            data-ya-lo-sabes
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-lg font-semibold ${VIDRIO}`}
+            style={{ color: tinta(m.acento) }}
+          >
+            <Saltar className="size-5" grosor={2.4} />
+            ¿Ya lo sabes?
+          </Pulsable>
         )}
       </div>
     </div>

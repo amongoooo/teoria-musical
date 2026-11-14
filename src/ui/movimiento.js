@@ -23,7 +23,7 @@ export const HUNDIR = { boton: 0.96, tarjeta: 0.98 }
 /** Profundidad de cada ruta: sirve para saber si se avanza (entra por la derecha) o se vuelve. */
 export function profundidad(ruta) {
   if (ruta.pagina === 'inicio') return 0
-  if (ruta.pagina === 'leccion') return 2
+  if (ruta.pagina === 'leccion' || ruta.pagina === 'prueba') return 2
   if (ruta.pagina === 'oido' || ruta.pagina === 'ritmo' || ruta.pagina === 'letras') return ruta.id ? 2 : 1
   if (ruta.pagina === 'vocabulario') return ruta.id ? 3 : 2
   return 1 // módulo y explorador del círculo

@@ -72,6 +72,9 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await preparar({ lecciones: completadas(['2.1', '2.2']), nivelSeguir: 2 })
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await page.locator('[data-cuadrito-ruta="ritmo"]').click()
+  // Con lecciones por saltar sube la hoja de la ruta (prueba rápida «¿Ya lo sabes?»): «Seguir» entra.
+  await espera(600)
+  if (await page.locator('[data-entrar]').count()) await page.locator('[data-entrar]').click()
   await page.waitForSelector('[data-pagina-ruta="ritmo"]')
   await espera(1600)
   comprobar(r, 'abre #/ruta/ritmo', page.url().includes('#/ruta/ritmo'))

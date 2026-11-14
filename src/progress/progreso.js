@@ -8,8 +8,13 @@
 //   },
 //   retos: {
 //     '1.1': { hecho: true, fecha: '2026-11-08', nota: 'Al subir se siente…' }
+//   },
+//   pruebas: {            // prueba rápida «¿Ya lo sabes?» (content/pruebas/): el último resultado de cada una
+//     'M3': { fecha: '2026-11-14', aciertos: 5, total: 7 }
 //   }
 // }
+// Una lección SALTADA con la prueba rápida: { completada: true, saltada: true, fecha } (cuenta como hecha para el
+// desbloqueo, las rutas y las herramientas; si luego se hace de verdad, `completarLeccion` le quita `saltada`).
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:progreso:v1'
@@ -92,9 +97,33 @@ export function completarLeccion(id, { aciertos = 0, total = 0 } = {}) {
     ...p,
     lecciones: {
       ...p.lecciones,
-      [id]: { ...actual, paso: 0, completada: true, fecha: hoy(), aciertos, total },
+      [id]: { ...sinSaltada(actual), paso: 0, completada: true, fecha: hoy(), aciertos, total },
     },
   })
+}
+
+function sinSaltada({ saltada, ...resto }) {
+  return resto
+}
+
+/**
+ * Prueba rápida: marca como hechas (saltadas) las lecciones que se dominan. Nunca toca las que ya están completadas.
+ * `clave` y `resultado` ({ aciertos, total }) guardan el último resultado de esa prueba.
+ */
+export function saltarLecciones(ids, clave, resultado) {
+  const p = leer()
+  const lecciones = { ...p.lecciones }
+  for (const id of ids) {
+    if (lecciones[id]?.completada) continue
+    lecciones[id] = { ...lecciones[id], paso: 0, completada: true, saltada: true, fecha: hoy() }
+  }
+  const pruebas = clave ? { ...p.pruebas, [clave]: { fecha: hoy(), ...resultado } } : p.pruebas
+  escribir({ ...p, lecciones, ...(pruebas ? { pruebas } : {}) })
+}
+
+/** Último resultado de una prueba rápida (o null). */
+export function getPrueba(clave) {
+  return leer().pruebas?.[clave] ?? null
 }
 
 export function estaCompletada(id) {

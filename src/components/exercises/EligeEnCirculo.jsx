@@ -7,6 +7,7 @@ import useSobreBarra from '../../ui/useSobreBarra.js'
 import BotonSonido from '../BotonSonido.jsx'
 import CirculoQuintas, { CentroTonalidad, datosCasilla } from '../CirculoQuintas.jsx'
 import Rich from '../Rich.jsx'
+import { BotonNoLoSe } from './EscuchaElige.jsx'
 import Rondas from './Rondas.jsx'
 
 /**
@@ -21,9 +22,9 @@ import Rondas from './Rondas.jsx'
  *  - resaltar: ids en el tono suave del módulo (p. ej. la tonalidad de la que se parte)
  *  - sonidos: [sonido…] opcionales (botones encima del círculo)
  *  - explicacion: texto al comprobar
- * Tocar una casilla la elige y suena su tónica.
+ * Tocar una casilla la elige y suena su tónica. `noLoSe` (prueba rápida): botón «No lo sé» bajo el círculo.
  */
-export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, completar }) {
+export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, completar, noLoSe = false }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [seleccion, setSeleccion] = useState(null)
@@ -72,6 +73,12 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
     })
   }, [respondida, resultado, seleccion, aciertos, ultima, r, ronda, correcta, rondas.length, setAccion, siguiente, completar])
 
+  const noSe = () => {
+    setSeleccion(null)
+    setResultado('mal')
+    if (ultima) completar({ aciertos, total: rondas.length })
+  }
+
   const elegir = (id) => {
     if (respondida) return
     setSeleccion(id)
@@ -119,6 +126,7 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
           }
         />
       </div>
+      {noLoSe && !respondida && <BotonNoLoSe onClick={noSe} />}
     </div>
   )
 }

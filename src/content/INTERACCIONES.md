@@ -104,6 +104,13 @@ Variantes de T1 ya usadas: solo en el 1 (`cada: 4`), «1 y 2 y» (`cada: 0.5`), 
 
 El quiz O3 también lee versos: `letra` en una ronda de `elegir` («¿Qué esquema tiene?», «¿Cuántas sílabas?»).
 
+## Prueba rápida «¿Ya lo sabes?» (hecha)
+
+Al tocar el cuadrito de un módulo o de una ruta sube una hoja con «¿Ya lo sabes?»: **una pregunta por lección
+pendiente** (O1–O4, u O7 en la 3.5), con «No lo sé». Las acertadas se pueden **saltar** (cuentan como hechas).
+**Cada lección nueva trae 3 preguntas de prueba** en `src/content/pruebas/` (ver FORMATO.md → «Preguntas de la
+prueba rápida»): al nivel del final de la lección y con 3+ opciones o dos sonidos parecidos, para que no se adivinen.
+
 ## Plantilla de lección
 
 Orden que siguen las lecciones (10–16 pasos, 8–15 min). Alternar **explicar → hacer → oír**:
@@ -139,4 +146,3 @@ Ideas para cuando lleguen esos temas; aún **no existen** (Emparejar ya existe: 
 - **Ordenar** (arrastrar tarjetas: grados de una escala, partes de una canción) — módulos 3, 8.
 - **Dictado**: oír una melodía corta y dibujarla en el Piano Roll (R2 sin guía y sin verla).
 - **Mezclador / perillas** (volumen, filtro, paneo con antes/después) — módulos de producción.
-- **Prueba rápida de módulo** (5–8 preguntas O1–O4 para saltar lo que ya se domina) — pendiente del plan.
