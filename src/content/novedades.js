@@ -14,7 +14,10 @@ export const NOVEDADES = [
         donde: { etiqueta: 'Abrir la ruta de acordes', href: '#/ruta/acordes' },
       },
       {
-        texto: 'Desliza **de lado** para pasar de tarjeta y **arriba o abajo** para cambiar entre módulos y prácticas. Toca la del centro o **sube el botón** para abrirla; tócalo otra vez para volver a las islas.',
+        texto: 'Como un **juego de cartas**: la fila elegida va arriba en grande y la otra espera **abajo, chiquita**. Desliza **arriba o abajo** para sacar la de abajo (cada fila guarda su tarjeta) y **de lado** para pasar de tarjeta. Toca la del centro o **sube el botón** para abrirla; tócalo otra vez para volver a las islas.',
+      },
+      {
+        texto: 'La **barra de puntitos** sigue a lo que ves: un puntito por módulo o por práctica, con las prácticas **agrupadas por tipo**. Deslizar la barra arriba o abajo también cambia de fila.',
       },
     ],
   },

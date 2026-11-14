@@ -6,8 +6,11 @@
 //    Prácticas (Intervalos, Acordes, Oído absoluto); deslizar de lado pasa de módulo; deslizar hacia arriba pasa a
 //    Prácticas; tocar una tarjeta de al lado la trae al centro; tocar el botón otra vez vuelve a las islas.
 //  - Subir el botón (gesto) abre la tarjeta del centro: Intervalos → #/oido/intervalos; un toque en la del centro abre el módulo.
-//  - Con una isla abierta, el botón la cierra; tocar un puntito con el carrusel a la vista vuelve a las islas y abre esa.
-//  - #/curso/bloque/1: Módulos 1 y 2; Prácticas Seguir, Vocabulario, Eco y Tus letras. Sin errores en la consola.
+//  - Con una isla abierta, el botón la cierra.
+//  - #/curso/bloque/1: Módulos 1 y 2; Prácticas agrupadas por tipo (Seguir, Eco | Vocabulario, Tus letras).
+//  - La barra de puntitos sigue al carrusel: un puntito por tarjeta de la fila (el del centro marcado), las prácticas
+//    con un hueco entre grupos; tocar un puntito lleva a su tarjeta; deslizar la barra arriba/abajo cambia de fila.
+//  Sin errores en la consola.
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/carrusel-modulos.mjs [carpeta-de-capturas]
 import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -67,6 +70,13 @@ for (const [tema, reducir, ancho] of [['claro', false, 375], ['oscuro', false, 3
   comprobar(r, 'filas: módulos 1, 3, 4', (await tarjetas('modulos')).join() === 'modulo-1,modulo-3,modulo-4', (await tarjetas('modulos')).join())
   comprobar(r, 'prácticas de oído', (await tarjetas('practicas')).join() === 'oido-intervalos,oido-acordes,oido-absoluto', (await tarjetas('practicas')).join())
   comprobar(r, 'empieza en Módulo 1', (await centro()) === 'modulo-1')
+  // La otra fila espera abajo, chiquita y desenfocada (como las cartas en la mano).
+  const mano = await page.locator('[data-fila="practicas"]').evaluate((e) => ({ mano: e.hasAttribute('data-mano'), filtro: e.style.filter, alto: e.getBoundingClientRect().height, top: e.getBoundingClientRect().top }))
+  const grande = await page.locator('[data-fila="modulos"]').boundingBox()
+  comprobar(r, 'Prácticas abajo, chiquita' + (reducir ? '' : ' y desenfocada'), mano.mano && mano.top > grande.y + grande.height - 4 && mano.alto < grande.height * 0.5 && (reducir || mano.filtro.includes('blur')), JSON.stringify(mano))
+  // La vecina de lado deja ver su símbolo (su cuadrito queda dentro de la pantalla).
+  const simbolo = await page.locator('[data-tarjeta-modulo="modulo-3"] [aria-hidden]').first().boundingBox()
+  comprobar(r, 'se ve el símbolo de la vecina', simbolo && simbolo.x + simbolo.width <= ancho + 1, JSON.stringify(simbolo))
   await foto('modulos')
 
   // 2) Deslizar de lado pasa de módulo; hacia arriba, a Prácticas.
@@ -81,11 +91,18 @@ for (const [tema, reducir, ancho] of [['claro', false, 375], ['oscuro', false, 3
   await foto('practicas')
   // Tocar la de al lado la trae al centro (no la abre).
   const vecina = await page.locator('[data-tarjeta-modulo="oido-acordes"]').boundingBox()
-  await page.mouse.click(Math.min(vecina.x + 20, ancho - 6), vecina.y + vecina.height / 2)
+  await page.mouse.click(Math.min(vecina.x + vecina.width - 16, ancho - 6), vecina.y + vecina.height / 2) // asoma detrás, a la derecha
   await espera(800)
   comprobar(r, 'tocar la vecina: Acordes al centro', (await centro()) === 'oido-acordes' && page.url().includes('#/ruta/acordes'), page.url())
   await arrastrar(cx, cy - 60, cx, cy + 150)
-  comprobar(r, 'hacia abajo: Módulos (en Módulo 3)', (await carrusel.getAttribute('data-fila-actual')) === 'modulos' && (await centro()) === 'modulo-3')
+  comprobar(r, 'hacia abajo también saca la de abajo: Módulos (guarda el Módulo 3)', (await carrusel.getAttribute('data-fila-actual')) === 'modulos' && (await centro()) === 'modulo-3')
+  // Tocar la mano saca esa fila (y guarda su tarjeta: Acordes).
+  const enMano = await page.locator('[data-fila="practicas"][data-mano] [data-tarjeta-modulo="oido-acordes"]').boundingBox()
+  await page.mouse.click(enMano.x + enMano.width / 2, enMano.y + enMano.height / 2)
+  await espera(900)
+  comprobar(r, 'tocar la mano: Prácticas en Acordes', (await carrusel.getAttribute('data-fila-actual')) === 'practicas' && (await centro()) === 'oido-acordes', await centro())
+  await page.keyboard.press('ArrowDown')
+  await espera(800)
 
   // 3) Tocar el botón otra vez: vuelven las islas.
   await boton.click()
@@ -119,21 +136,37 @@ for (const [tema, reducir, ancho] of [['claro', false, 375], ['oscuro', false, 3
   await espera(900)
   comprobar(r, 'subir el botón: #/oido/intervalos', page.url().includes('#/oido/intervalos'), page.url())
 
-  // 6) Un puntito con el carrusel a la vista: vuelven las islas y se abre esa.
-  await ir('#/ruta/acordes')
-  await boton.click()
-  await espera(900)
-  await page.locator('[data-punto]').nth(3).click()
-  await espera(1300)
-  comprobar(r, 'puntito: islas y la 3.ª parada abierta', (await carrusel.count()) === 0 && (await page.locator('[data-posicion]').first().getAttribute('data-posicion')) === '3.000')
 
   // 7) Bloque 1 del curso.
   await ir('#/curso/bloque/1')
   await boton.click()
   await espera(900)
   comprobar(r, 'bloque 1: módulos 1 y 2', (await tarjetas('modulos')).join() === 'modulo-1,modulo-2', (await tarjetas('modulos')).join())
-  comprobar(r, 'bloque 1: prácticas', (await tarjetas('practicas')).join() === 'ritmo-seguir,letras-vocabulario,ritmo-eco,letras-cuaderno', (await tarjetas('practicas')).join())
+  comprobar(r, 'bloque 1: prácticas agrupadas', (await tarjetas('practicas')).join() === 'ritmo-seguir,ritmo-eco,letras-vocabulario,letras-cuaderno', (await tarjetas('practicas')).join())
+  const puntos = page.locator('[data-puntos-dummy], [data-puntitos] [data-punto]')
+  const marcado = async () => page.locator('[data-puntitos] [data-punto][aria-current]').getAttribute('data-punto')
+  comprobar(r, 'barra: 2 puntitos (módulos 1 y 2), el 1 marcado', (await puntos.count()) === 2 && (await marcado()) === '0')
   await foto('bloque')
+  await puntos.nth(1).click()
+  await espera(800)
+  comprobar(r, 'tocar el 2.º puntito: Módulo 2 al centro', (await centro()) === 'modulo-2' && (await marcado()) === '1', await centro())
+  const barra = await page.locator('[data-puntitos] [role=group]').boundingBox()
+  const bx = barra.x + barra.width / 2
+  const by = barra.y + barra.height / 2
+  await arrastrar(bx, by, bx, by - 50, 8)
+  comprobar(r, 'barra hacia arriba: Prácticas', (await carrusel.getAttribute('data-fila-actual')) === 'practicas')
+  comprobar(r, 'barra: 4 puntitos con hueco antes de letras', (await puntos.count()) === 4 && (await page.locator('[data-puntitos] [data-punto="2"][data-inicio-tramo]').count()) === 1 && (await page.locator('[data-puntitos] [data-inicio-tramo]').count()) === 1)
+  await foto('bloque-practicas')
+  await arrastrar(bx, by, bx, by + 50, 8)
+  comprobar(r, 'barra hacia abajo: Módulos', (await carrusel.getAttribute('data-fila-actual')) === 'modulos' && (await puntos.count()) === 2)
+  await page.keyboard.press('ArrowDown')
+  await espera(600)
+  await page.keyboard.press('ArrowRight')
+  await espera(700)
+  comprobar(r, 'el carrusel mueve el puntito marcado', (await marcado()) === '1')
+  await boton.click()
+  await espera(900)
+  comprobar(r, 'al volver a las islas: insignia + 11 paradas', (await puntos.count()) === 12, String(await puntos.count()))
 
   comprobar(r, 'sin errores', errores.length === 0, errores.join(' | '))
   await browser.close()

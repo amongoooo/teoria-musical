@@ -702,17 +702,6 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     if (abiertaRef.current !== null) cerrarRef.current()
     if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reducir ? 'auto' : 'smooth' })
   }, [oculto]) // eslint-disable-line react-hooks/exhaustive-deps
-  // Un puntito tocado con el carrusel a la vista: vuelven las islas y se abre esa (cuando el camino ya se ve).
-  const pendiente = useRef({ i: null, t: null })
-  useEffect(() => () => clearTimeout(pendiente.current.t), [])
-  const irDesdeBarra = (i) => {
-    if (!oculto) return irA(i)
-    carrusel.onCerrar()
-    pendiente.current.i = i
-    clearTimeout(pendiente.current.t)
-    pendiente.current.t = setTimeout(() => irARef.current(pendiente.current.i), 280)
-  }
-
   // Escape, tocar fuera de las islas y de la barra o tocar la isla abierta la cierra (vista completa);
   // flechas: anterior / siguiente. (Tras un arrastre, useDeslizar anula ese «click», así que deslizar no cierra.)
   const abiertaSiNo = abierta !== null
@@ -882,6 +871,22 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     animate: { scale: 1, opacity: 1 },
     transition: { ...RESORTE.suave, opacity: { duration: 0.2 }, delay: montado ? 0 : 0.05 + indice * 0.06 },
   })
+
+  // Con el carrusel de módulos a la vista, la barra de puntitos navega lo que se ve (pedido del usuario): un puntito por
+  // tarjeta de la fila (Módulos o Prácticas), las prácticas agrupadas por tipo con un hueco entre grupos; tocar o
+  // arrastrar lleva a esa tarjeta y deslizar la barra arriba o abajo cambia de fila.
+  const filaVista = oculto ? carrusel.filas.filter((f) => f.items.length)[carrusel.sel.fila] : null
+  const barraCarrusel = filaVista && {
+    lecciones: filaVista.items.map((it) => ({ id: it.id, titulo: it.titulo, acento: it.acento, etiquetaPunto: `${it.etiqueta}: ${it.titulo}` })),
+    estados: filaVista.items.map(() => 'carrusel'),
+    abierta: carrusel.sel.indice,
+    foco: carrusel.sel.indice,
+    guardar: () => () => {},
+    onIr: carrusel.irA,
+    onFila: (dir) => carrusel.cambiarFila(dir), // arriba o abajo: sale la fila de la mano
+    // Grupos (prácticas por tipo): como los tramos, un hueco antes del primero de cada grupo (`desde` cuenta la insignia).
+    tramos: filaVista.items.flatMap((it, i) => (i > 0 && it.grupo !== filaVista.items[i - 1].grupo ? [{ id: it.grupo, desde: i - 1, numero: '', acento: it.acento }] : [])),
+  }
 
   return (
     <>
@@ -1088,7 +1093,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
             exit={{ opacity: 0, y: 24, transition: { duration: 0.16 } }}
             transition={RESORTE.suave}
           >
-            <CarruselModulos filas={carrusel.filas} subir={carrusel.subir} listo={carrusel.listo} api={carrusel.api} onCerrar={carrusel.onCerrar} onAlto={setAltoCarrusel} />
+            <CarruselModulos filas={carrusel.filas} subir={carrusel.subir} listo={carrusel.listo} api={carrusel.api} onCerrar={carrusel.onCerrar} onAlto={setAltoCarrusel} onSel={carrusel.onSel} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1109,7 +1114,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               foco={abierta ?? vista ?? (actual >= 0 ? actual + 1 : 0)}
               acento={modulo.acento}
               guardar={guardar}
-              onIr={irDesdeBarra}
+              onIr={irA}
               flotaX={flotaX}
               flotaY={flotaY}
               giro={giro}
@@ -1120,6 +1125,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               textoVerModulos={ruta?.carrusel ? 'Módulos y prácticas' : ruta?.textoVerModulos}
               tramos={tramos}
               carrusel={ruta?.carrusel}
+              {...(oculto && barraCarrusel)}
             />
           )}
         </AnimatePresence>,
@@ -1144,7 +1150,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * centro abre su isla y da su golpe de matraca; al soltar, con inercia, la tira se acomoda con un puntito en el centro
  * (ver REGLA). Tocar (soltar sin haber movido) va al puntito que estaba bajo el dedo.
  */
-function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, textoVerModulos = 'Módulos y prácticas', tramos = [], carrusel = null }) {
+function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, textoVerModulos = 'Módulos y prácticas', tramos = [], carrusel = null, onFila = null }) {
   const sep = DESLIZAR.puntitos.separacion
   const zonaMuerta = DESLIZAR.puntitos.zonaMuerta
   const ventana = useAnchoVentana()
@@ -1226,6 +1232,8 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
     g.current = null
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
+    if (s.eje === 'y') return void (ultimoArrastre.current = performance.now()) // cambió de fila (carrusel)
+    if (s.pendiente) onIr(s.punto) // carrusel: tocar un puntito (sin arrastrar) va a su tarjeta
     if (!s.regla) return
     if (s.movio) {
       // Se asienta con un puntito en el centro: el más cercano a donde la llevaría la inercia.
@@ -1309,6 +1317,10 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             flotaY.stop()
             const base = {
               id: e.pointerId,
+              // Con el carrusel de módulos (`onFila`), el gesto se decide primero: arriba / abajo cambia de fila.
+              x00: e.clientX,
+              y00: e.clientY,
+              eje: onFila ? null : 'x',
               // Desde donde ya estaba (si aún volvía a su sitio), sin saltos.
               y0: e.clientY - desflotar(flotaY.get()),
               tope: 0, // −1 / +1 mientras el dedo está más allá del primer / último puntito
@@ -1334,12 +1346,36 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             })
             g.current = { ...base, centros: cs, punto: masCercano(cs, e.clientX) }
             onMatraca(g.current.punto, cs.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
-            onIr(g.current.punto) // tocar un puntito va directo a su isla
+            // Tocar un puntito va directo a su isla; con el carrusel, al soltar o al empezar a arrastrar de lado.
+            if (onFila) g.current.pendiente = true
+            else onIr(g.current.punto)
           }}
           onPointerMove={(e) => {
             const s = g.current
             if (!s || s.id !== e.pointerId) return
             if (!reducir) flotaY.set(flotar(e.clientY - s.y0)) // flota: sigue al dedo en vertical (con resistencia)
+            // Carrusel de módulos: deslizar la barra hacia arriba o abajo cambia de fila (Módulos ↔ Prácticas).
+            if (s.eje !== 'x') {
+              const dx = e.clientX - s.x00
+              const dy = e.clientY - s.y00
+              if (s.eje === null) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) < zonaMuerta) return
+                s.eje = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x'
+              }
+              if (s.eje === 'y') {
+                if (!s.cambio && Math.abs(dy) >= FILA_BARRA) {
+                  s.cambio = true
+                  onMatraca(1, 3, { dir: Math.sign(dy) })
+                  onFila(dy < 0 ? 1 : -1)
+                }
+                return
+              }
+              if (s.pendiente && !s.regla) {
+                s.pendiente = false
+                onIr(s.punto)
+              }
+              s.pendiente = false
+            }
             const tiron = tironDe(s, e)
             if (s.regla) {
               arrastrar(s, e, tiron)
@@ -1372,12 +1408,13 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
           >
             <motion.div className={regla ? 'flex h-full w-max items-center' : 'contents'} style={regla ? { x: corre } : undefined}>
               {lecciones.map((l, i) => {
-                const hecha = estados[i] === 'hecha'
+                // (En el carrusel de módulos, todos llenos del color de su tarjeta: el del centro se distingue por el tamaño.)
+                const hecha = estados[i] === 'hecha' || estados[i] === 'carrusel'
                 // Islas aún no desbloqueadas (o sin contenido): puntito gris.
                 const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
                 // Opcional sin hacer (Curso completo): puntito hueco gris.
                 const opcional = estados[i] === 'opcional'
-                const color = l.parada?.acento ?? acento
+                const color = l.acento ?? l.parada?.acento ?? acento
                 const tramo = numeroTramo.get(i)
                 return (
                   <Fragment key={l.id}>
@@ -1399,11 +1436,12 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                       data-inicio-tramo={tramo ? '' : undefined}
                       onClick={() => performance.now() - ultimoArrastre.current > 400 && onIr(i)}
                       aria-label={
-                        l.esInsignia
+                        l.etiquetaPunto ??
+                        (l.esInsignia
                           ? `${l.nombre}: ${l.titulo}`
                           : l.esRetos
                             ? 'Retos del módulo'
-                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : opcional ? ' (opcional)' : ''}`
+                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : opcional ? ' (opcional)' : ''}`)
                       }
                       aria-current={i === abierta ? 'true' : undefined}
                       className="grid h-full shrink-0 place-items-center"
@@ -1421,6 +1459,8 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                           border: opcional ? '2px solid var(--color-zinc-300)' : undefined,
                           opacity: cerrada || hecha || opcional || l.esInsignia ? 1 : 0.35,
                           transform: `scale(${i === abierta ? 1 : 0.5})`,
+                          // Carrusel de módulos: nadie los mueve a mano; el de la tarjeta del centro crece con resorte.
+                          transition: onFila ? 'transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1)' : undefined,
                         }}
                       />
                     </button>
@@ -1440,6 +1480,9 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
  * mini barra con lo hecho, en el color del módulo del que sale el tramo. Lo coloca `actualizar()` del camino;
  * sobre `bg-fondo` para que el camino pase por detrás, como los títulos de las islas.
  */
+/** Px que hay que deslizar la barra de puntitos arriba o abajo para cambiar de fila en el carrusel de módulos. */
+const FILA_BARRA = 24
+
 /** Gesto «elegir» del botón de módulos: X = px que hay que subirlo (soltar pasado el 50 % abre la tarjeta del centro). */
 const SUBE_BOTON = 112
 

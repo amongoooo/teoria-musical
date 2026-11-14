@@ -14,29 +14,42 @@ const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
 
 /** Alto de la barra de puntitos con el botón de encima (CaminoLecciones: BARRA_ALTO + BOTON_RUTA). */
 const BARRA = 164
-/** Rótulo de la fila (MÓDULOS / PRÁCTICAS): una rueda vertical pequeña. */
-const ROTULO = 48
-const ROTULO_SEP = 26
-/** Lo que asoma la fila de arriba o de abajo (px) y cómo se ven las vecinas. */
-const ASOMA = 30
-const VECINA = { escala: 0.88, opacidad: 0.4 }
-const SEP_TARJETA = 14
+/** Rótulo de la fila de arriba (MÓDULOS / PRÁCTICAS). */
+const ROTULO = 40
+/**
+ * La otra fila va ABAJO, chiquita y desenfocada, como las cartas en la mano (pedido del usuario): `escala` de la mano,
+ * `desenfoque` (px antes de encoger) y cómo se abren en abanico sus cartas (`giro` grados y `baja` px por carta).
+ */
+const MANO = { escala: 0.36, desenfoque: 7, opacidad: 0.85, giro: 8, baja: 26 }
+/** Vecinas de lado: más chicas y por DETRÁS de la del centro, a `junto` × ancho (así se ve su símbolo). */
+const VECINA = { escala: 0.82, junto: 0.8 }
 /** Al subir el botón de módulos (gesto «elegir»), la tarjeta del centro sube con él y crece al poder soltar. */
 const LEVANTA = { factor: 0.22, max: 26, crece: 0.05 }
 const RELIEVE = '0 5px 0 var(--color-zinc-200)'
 
+/** Distancia (0…1) de la fila `k` a la posición continua `p` en un mazo de `n` filas que da la vuelta. */
+const distanciaFila = (k, p, n) => {
+  if (n < 2) return 0
+  const d = (((k - p) % n) + n) % n
+  return Math.min(1, Math.min(d, n - d))
+}
+
 /**
- * «Módulos y prácticas» de una ruta o de un bloque del Curso completo (pedido del usuario): en lugar de las islas, dos
- * carruseles de lado con tarjetas grandes —los MÓDULOS que usa y sus PRÁCTICAS—, uno encima del otro. Deslizar de lado
- * pasa de tarjeta; deslizar de arriba abajo pasa de una fila a la otra (las mismas reglas de swipe de la app). Tocar la
- * tarjeta del centro la abre (una de al lado, la trae al centro). El botón de módulos (sobre la barra de puntitos)
- * también la abre si se desliza hacia arriba: `subir` (px que sube el botón) y `listo` (1 = soltar ahora la abre)
- * levantan la tarjeta del centro; `api.current.elegir()` la abre.
+ * «Módulos y prácticas» de una ruta o de un bloque del Curso completo (pedido del usuario): en lugar de las islas, las
+ * filas de los MÓDULOS que usa y de sus PRÁCTICAS, como un juego de cartas: la fila elegida va arriba en grande (un
+ * carrusel de lado, las vecinas más chicas y detrás, con su símbolo a la vista) y la otra espera ABAJO, chiquita,
+ * desenfocada y en abanico, como las cartas en la mano. Deslizar de lado pasa de tarjeta; deslizar hacia arriba o hacia
+ * abajo saca la fila de abajo (la elegida baja a la mano y cada fila guarda su tarjeta). Tocar la tarjeta del centro la
+ * abre (una de al lado, la trae al centro; la mano, la saca). El botón de módulos (sobre la barra de puntitos) también la
+ * abre si se desliza hacia arriba: `subir` (px que sube el botón) y `listo` (1 = soltar ahora la abre) levantan la
+ * tarjeta del centro; `api.current.elegir()` la abre. La barra de puntitos sigue al carrusel: `onSel({ fila, indice })`
+ * dice qué se ve y `api.current.irA(i)` / `cambiarFila()` la mueven desde la barra.
  *
- * `filas` = [{ id, titulo, items: [{ id, titulo, etiqueta, acento, numero | Icono, dato, avance?, hecho?, href }] }]
+ * `filas` = [{ id, titulo, items: [{ id, titulo, etiqueta, acento, numero | Icono, dato, avance?, hecho?, grupo?, href }] }]
  */
-export default function CarruselModulos({ filas: todas, subir, listo, api, onCerrar, onAlto }) {
+export default function CarruselModulos({ filas: todas, subir, listo, api, onCerrar, onAlto, onSel }) {
   const filas = todas.filter((f) => f.items.length)
+  const n = filas.length
   const ref = useRef(null)
   const [medida, setMedida] = useState({ ancho: 0, alto: 0 })
   useLayoutEffect(() => {
@@ -60,20 +73,21 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
   const reducir = useReducedMotion()
   const resorte = reducir ? { duration: 0 } : RESORTE.pantalla
   const { ancho, alto } = medida
-  const zona = Math.max(0, alto - ROTULO) // alto de las tarjetas (sin el rótulo)
-  const altoTarjeta = Math.round(limitar(zona - 2 * ASOMA - 4, 252, 310))
-  const tile = altoTarjeta >= 290 ? 104 : 88
-  // La tarjeta deja ver un trozo de sus vecinas a los lados (el carrusel llega al borde de la pantalla).
-  const anchoTarjeta = Math.round(Math.min(ancho - 96, 300))
-  const sep = anchoTarjeta + SEP_TARJETA
-  // La fila vecina asoma ASOMA px por arriba o por abajo (ya encogida).
-  const sepFila = zona / 2 + (altoTarjeta * VECINA.escala) / 2 - ASOMA
+  // Arriba: rótulo + tarjeta grande; abajo: la mano (la otra fila encogida) con su rótulo pequeño.
+  const conMano = n > 1
+  const altoTarjeta = Math.round(limitar((alto - ROTULO - 8 - (conMano ? 30 : 0)) / (1 + (conMano ? MANO.escala : 0)), 200, 270))
+  const anchoTarjeta = Math.round(limitar(altoTarjeta * 0.8, 180, Math.min(224, ancho - 120)))
+  const tile = altoTarjeta >= 250 ? 84 : 68
+  const sep = anchoTarjeta * VECINA.junto
+  const yArriba = ROTULO + 4 // borde de arriba de la fila grande
+  const yMano = alto - 6 - altoTarjeta * MANO.escala // borde de arriba de la mano
   const X = ancho < 560 ? Math.max(100, ancho * DESLIZAR.umbralCelular) : DESLIZAR.umbralAncho
-  const XV = Math.max(100, sepFila * 0.7)
+  const XV = Math.max(100, (yMano - yArriba) * 0.6)
 
-  // Fila (vertical) y tarjeta de cada fila (de lado). Posiciones continuas: índice + progreso del gesto.
+  // Fila (vertical, en un mazo que da la vuelta) y tarjeta de cada fila (de lado). Posiciones continuas.
   const [fila, setFila] = useState(0)
   const filaRef = useRef(0)
+  const absV = useRef(0) // posición vertical sin dar la vuelta (entero)
   const baseV = useMotionValue(0)
   const [indices, setIndices] = useState(() => filas.map(() => 0))
   const idx = useRef(filas.map(() => 0))
@@ -81,24 +95,29 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
   const baseH1 = useMotionValue(0)
   const baseH = [baseH0, baseH1]
   const levanta = useMotionValue(0) // 0 → 1 cuando soltar el botón ya la abriría (con resorte)
+  const modulo = (v) => ((v % n) + n) % n
 
-  const irFila = (k) => {
-    if (k < 0 || k >= filas.length || k === filaRef.current) return
-    filaRef.current = k
-    setFila(k)
-    animate(baseV, k, resorte)
+  /** Saca la fila de abajo (hacia arriba o hacia abajo, siempre sale la que espera en la mano). */
+  const cambiarFila = (dir = 1) => {
+    if (n < 2) return
+    absV.current += dir
+    filaRef.current = modulo(absV.current)
+    setFila(filaRef.current)
+    animate(baseV, absV.current, resorte)
   }
+  const irFila = (k) => k !== filaRef.current && cambiarFila(1)
   const pasoFila = (dir) => {
-    const a = filaRef.current
+    const a = absV.current
     const desfase = baseV.get() - a
-    filaRef.current = a + dir
-    setFila(a + dir)
+    absV.current = a + dir
+    filaRef.current = modulo(a + dir)
+    setFila(filaRef.current)
     baseV.jump(a + dir + desfase)
     if (Math.abs(desfase) > 0.001) animate(baseV, a + dir, resorte)
   }
   const irA = (k, i) => {
-    const n = filas[k].items.length
-    if (i < 0 || i >= n || i === idx.current[k]) return
+    const total = filas[k].items.length
+    if (i < 0 || i >= total || i === idx.current[k]) return
     idx.current[k] = i
     setIndices([...idx.current])
     animate(baseH[k], i, resorte)
@@ -113,8 +132,8 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
   }
   const puedeLado = (k) => (dir) => k === filaRef.current && idx.current[k] + dir >= 0 && idx.current[k] + dir < filas[k].items.length
 
-  // Gestos: arriba/abajo = fila (en todo el carrusel); de lado = tarjeta (solo la fila de ahora responde).
-  const vertical = useDeslizar({ vertical: true, umbral: XV, onPaso: pasoFila, puede: (dir) => filaRef.current + dir >= 0 && filaRef.current + dir < filas.length, continuo: false })
+  // Gestos: arriba/abajo = sacar la fila de la mano (en todo el carrusel); de lado = tarjeta (solo la fila de arriba).
+  const vertical = useDeslizar({ vertical: true, umbral: XV, onPaso: pasoFila, puede: () => n > 1, continuo: false })
   const lado0 = useDeslizar({ umbral: X, onPaso: pasoLado(0), puede: puedeLado(0) })
   const lado1 = useDeslizar({ umbral: X, onPaso: pasoLado(1), puede: puedeLado(1) })
   const lados = [lado0, lado1]
@@ -123,17 +142,20 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
 
   const elegir = (item) => item?.href && navegar(item.href)
   const actualItem = () => filas[filaRef.current]?.items[idx.current[filaRef.current]]
-  if (api) api.current = { elegir: () => elegir(actualItem()) }
+  if (api) api.current = { elegir: () => elegir(actualItem()), irA: (i) => irA(filaRef.current, i), cambiarFila }
+  // Qué se ve (fila y tarjeta del centro): para la barra de puntitos.
+  const indiceActual = indices[fila] ?? 0
+  useEffect(() => onSel?.({ fila, indice: indiceActual }), [fila, indiceActual]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Teclado (computadora): ← → tarjeta, ↑ ↓ fila, Enter la abre, Escape vuelve a las islas.
+  // Teclado (computadora): ← → tarjeta, ↑ ↓ saca la fila de abajo, Enter la abre, Escape vuelve a las islas.
   const teclaRef = useRef(null)
   teclaRef.current = (e) => {
     if (document.querySelector('[role=dialog]') || e.target.closest?.('input, textarea')) return
     const k = filaRef.current
     if (e.key === 'ArrowRight') irA(k, idx.current[k] + 1)
     else if (e.key === 'ArrowLeft') irA(k, idx.current[k] - 1)
-    else if (e.key === 'ArrowDown') irFila(k + 1)
-    else if (e.key === 'ArrowUp') irFila(k - 1)
+    else if (e.key === 'ArrowDown') cambiarFila(1)
+    else if (e.key === 'ArrowUp') cambiarFila(-1)
     else if (e.key === 'Enter') elegir(actualItem())
     else if (e.key === 'Escape') onCerrar?.()
     else return
@@ -145,28 +167,29 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
     return () => document.removeEventListener('keydown', t)
   }, [])
 
-  // Todo se coloca a mano en cada fotograma (como el carrusel de módulos): sigue al dedo de forma continua.
+  // Todo se coloca a mano en cada fotograma: sigue al dedo de forma continua.
   const tarjetas = useRef([[], []])
   const rotulos = useRef([])
   const actualizar = () => {
     if (!ancho) return
     const pV = baseV.get() + vertical.progreso.get()
-    const pcV = limitar(pV, 0, filas.length - 1)
-    const fueraV = pV - pcV
     if (ref.current) ref.current.dataset.posicionFila = pV.toFixed(3)
     filas.forEach((f, k) => {
       const el = filasRef.current[k]
-      const d = k - pcV
-      const a = Math.min(1, Math.abs(d))
+      // a = 0: la fila de arriba en grande; a = 1: en la mano (abajo, chiquita, desenfocada y en abanico).
+      const a = distanciaFila(k, pV, n)
       if (el) {
-        el.style.transform = `translateY(${d * sepFila - fueraV * XV * 0.5}px) scale(${lerp(1, VECINA.escala, a)})`
-        el.style.opacity = String(lerp(1, VECINA.opacidad, a))
-        el.inert = Math.abs(d) > 0.5
+        el.style.transform = `translateY(${lerp(yArriba, yMano, a)}px) scale(${lerp(1, MANO.escala, a)})`
+        el.style.opacity = String(lerp(1, MANO.opacidad, a))
+        el.style.filter = a > 0.02 && !reducir ? `blur(${(a * MANO.desenfoque).toFixed(2)}px)` : ''
+        el.style.zIndex = a < 0.5 ? '2' : '1' // la que sale pasa por delante
+        if (a > 0.5) el.dataset.mano = ''
+        else delete el.dataset.mano
       }
       const r = rotulos.current[k]
       if (r) {
-        r.style.transform = `translateY(${d * ROTULO_SEP}px) scale(${lerp(1, 0.62, a)})`
-        r.style.opacity = String(Math.max(0, lerp(1, 0.4, a) - Math.max(0, Math.abs(d) - 1)))
+        r.style.transform = `translateY(${lerp(0, yMano - 26, a)}px) scale(${lerp(1, 0.62, a)})`
+        r.style.opacity = String(lerp(1, 0.7, a))
       }
       const pH = baseH[k].get() + lados[k].progreso.get()
       const pcH = limitar(pH, 0, f.items.length - 1)
@@ -177,13 +200,18 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
         if (!t) return
         const dh = i - pcH
         const ah = Math.min(1, Math.abs(dh))
-        // La del centro de la fila de ahora sube con el botón de módulos (gesto «elegir»).
+        // La del centro de la fila de arriba sube con el botón de módulos (gesto «elegir»).
         const centro = k === filaRef.current && i === idx.current[k]
         const sube = centro ? Math.min(LEVANTA.max, (subir?.get() ?? 0) * LEVANTA.factor) : 0
         const crece = centro ? levanta.get() * LEVANTA.crece : 0
-        t.style.transform = `translateX(${dh * sep - fueraH * X}px) translateY(${-sube}px) scale(${lerp(1, VECINA.escala, ah) + crece})`
-        t.style.opacity = String(lerp(1, 0.5, ah))
-        t.style.visibility = Math.abs(dh) > 1.8 ? 'hidden' : 'visible'
+        // En la mano, las cartas se abren en abanico (giran y bajan hacia las orillas).
+        const giro = a * dh * MANO.giro
+        const baja = a * dh * dh * MANO.baja
+        t.style.transform = `translateX(${dh * sep - fueraH * X}px) translateY(${baja - sube}px) rotate(${giro}deg) scale(${lerp(1, VECINA.escala, ah) + crece})`
+        t.style.zIndex = String(20 - Math.round(Math.abs(dh) * 4))
+        const lejos = Math.abs(dh) - 1 // las de más allá de la vecina se desvanecen
+        t.style.opacity = String(limitar(1 - lejos, 0, 1))
+        t.style.visibility = Math.abs(dh) > 1.98 ? 'hidden' : 'visible'
         if (centro && levanta.get() > 0.5) t.dataset.listo = ''
         else delete t.dataset.listo
       })
@@ -208,63 +236,54 @@ export default function CarruselModulos({ filas: todas, subir, listo, api, onCer
       data-carrusel-modulos
       data-fila-actual={filas[fila]?.id}
       className="relative select-none"
-      style={{ height: alto || 360, touchAction: 'none', marginInline: -20, width: 'calc(100% + 40px)' }}
+      style={{ height: alto || 360, touchAction: 'none', marginInline: -20, width: 'calc(100% + 40px)', overflow: 'clip' }}
       {...vertical.handlers}
     >
-      {/* Rótulo de la fila: una rueda pequeña (el de la otra fila asoma arriba o abajo, más chico). */}
-      <div aria-hidden className="relative" style={{ height: ROTULO }}>
-        {filas.map((f, k) => (
-          <span
+      {/* Rótulo de cada fila: arriba en grande el de la elegida; el de la mano, chiquito sobre ella. */}
+      {filas.map((f, k) => (
+        <span
+          key={f.id}
+          aria-hidden
+          ref={(el) => (rotulos.current[k] = el)}
+          className="absolute inset-x-0 top-1 text-center font-juego text-2xl uppercase leading-8 tracking-wide text-zinc-800"
+          style={{ transformOrigin: '50% 0' }}
+        >
+          {f.titulo}
+        </span>
+      ))}
+      {ancho > 0 &&
+        filas.map((f, k) => (
+          <div
             key={f.id}
-            ref={(el) => (rotulos.current[k] = el)}
-            className="absolute inset-x-0 top-1/2 -mt-4 text-center font-juego text-2xl uppercase leading-8 tracking-wide text-zinc-800"
+            ref={(el) => (filasRef.current[k] = el)}
+            data-fila={f.id}
+            aria-label={f.titulo}
+            role="group"
+            className="absolute inset-x-0 top-0"
+            style={{ height: altoTarjeta, transformOrigin: '50% 0' }}
+            {...lados[k].handlers}
           >
-            {f.titulo}
-          </span>
+            {f.items.map((it, i) => (
+              <div
+                key={it.id}
+                ref={(el) => (tarjetas.current[k][i] = el)}
+                className="absolute top-0"
+                style={{ left: (ancho - anchoTarjeta) / 2, width: anchoTarjeta, height: altoTarjeta }}
+              >
+                <Tarjeta
+                  item={it}
+                  tile={tile}
+                  centro={k === fila && i === indices[k]}
+                  onClick={() => {
+                    if (k !== filaRef.current) return irFila(k) // tocar la mano: sale esa fila
+                    if (i !== idx.current[k]) return irA(k, i)
+                    elegir(it)
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         ))}
-      </div>
-      <div
-        className="relative"
-        style={{
-          height: zona,
-          overflow: 'clip',
-          maskImage: 'linear-gradient(to bottom, transparent, black 22px, black calc(100% - 22px), transparent)',
-        }}
-      >
-        {ancho > 0 &&
-          filas.map((f, k) => (
-            <div
-              key={f.id}
-              ref={(el) => (filasRef.current[k] = el)}
-              data-fila={f.id}
-              aria-label={f.titulo}
-              role="group"
-              className="absolute inset-x-0"
-              style={{ top: (zona - altoTarjeta) / 2, height: altoTarjeta }}
-              {...lados[k].handlers}
-            >
-              {f.items.map((it, i) => (
-                <div
-                  key={it.id}
-                  ref={(el) => (tarjetas.current[k][i] = el)}
-                  className="absolute top-0"
-                  style={{ left: (ancho - anchoTarjeta) / 2, width: anchoTarjeta, height: altoTarjeta }}
-                >
-                  <Tarjeta
-                    item={it}
-                    tile={tile}
-                    centro={k === fila && i === indices[k]}
-                    onClick={() => {
-                      if (k !== filaRef.current) return irFila(k)
-                      if (i !== idx.current[k]) return irA(k, i)
-                      elegir(it)
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          ))}
-      </div>
     </div>
   )
 }
@@ -278,23 +297,23 @@ function Tarjeta({ item: it, tile, centro, onClick }) {
       data-tarjeta-modulo={it.id}
       data-centro={centro ? '' : undefined}
       aria-label={`${it.etiqueta}: ${it.titulo}`}
-      className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-[1.75rem] border-2 bg-white px-4 py-4 text-center transition-colors duration-200"
+      className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-[1.75rem] border-2 bg-white px-3 py-3 text-center transition-colors duration-200"
       style={{ borderColor: centro ? tinta(it.acento) : 'var(--color-zinc-200)', boxShadow: RELIEVE }}
     >
       <span
-        className="relative mb-2 grid shrink-0 place-items-center rounded-[1.75rem] font-titulo font-bold text-blanco"
+        className="relative mb-1.5 grid shrink-0 place-items-center rounded-[1.75rem] font-titulo font-bold text-blanco"
         style={{ width: tile, height: tile, fontSize: tile * 0.42, backgroundColor: oscuro(it.acento), boxShadow: `0 7px 0 ${labio(it.acento)}` }}
         aria-hidden
       >
-        {it.Icono ? <it.Icono className={tile >= 100 ? 'size-14' : 'size-12'} /> : it.numero}
+        {it.Icono ? <it.Icono className={tile >= 84 ? 'size-12' : 'size-10'} /> : it.numero}
         {it.hecho && <MarcaBien className="absolute -right-2 -top-2 size-8" aro="var(--color-white)" />}
       </span>
       <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(it.acento) }}>
         {it.etiqueta}
       </span>
-      <span className="line-clamp-2 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{it.titulo}</span>
+      <span className="line-clamp-2 font-titulo text-lg font-bold leading-tight tracking-tight [text-wrap:balance]">{it.titulo}</span>
       {it.avance != null ? (
-        <span className="flex w-full max-w-48 items-center gap-2">
+        <span className="flex w-full max-w-40 items-center gap-2">
           <BarraProgreso valor={it.avance} color={it.acento} fondo="bg-zinc-100" alto="h-1.5" className="flex-1" alAparecer={false} />
           <span className="font-dato text-sm font-medium tabular-nums text-zinc-500">{it.dato}</span>
         </span>
