@@ -3,8 +3,10 @@
 //  - 375 px, #/ruta/acordes con el módulo 1 hecho: `data-regla`, la barra a lo ancho, cada puntito de 44 px, el de la
 //    centro de lo que se ve en pantalla en el centro (pedido del usuario: con el camino cerrado, la barra sigue a las
 //    islas que se ven y sus puntitos se inflan un poco), 4 números de tramo en los huecos.
-//  - Tocar un puntito abre su isla y la regla lo lleva al centro. Joystick: dedo a 1 / 2 / 3 puntitos del centro → avanza
-//    1 cada 0,75 s / 2 por s / 4 por s; en el borde, hasta el último (o el primero); en el centro, quieto.
+//  - Tocar un puntito abre su isla y la regla lo lleva al centro. Arrastrar: la tira sigue al dedo en el sentido del
+//    arrastre (2 puntitos a la izquierda → 2 más adelante; 1 a la derecha → 1 atrás), un golpe de matraca por puntito
+//    que pasa por el centro, al soltar siempre un puntito en el centro; lanzar deprisa suma inercia; pasado el último
+//    (o el primero), goma y se queda en el último (o el primero); tocar sin mover no cambia nada.
 //  - #/modulo/1 (6 puntitos) y la computadora (1280 px) sin regla.
 //  - Bucle: deslizar a la izquierda recorre ritmo → letras → acordes → ritmo… y a la derecha al revés, sin tope.
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/regla.mjs [carpeta-de-capturas]
@@ -88,25 +90,30 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'tocar lo lleva al centro', (await alCentro(otro)) < 3, String(await alCentro(otro)))
   await foto('regla-tocar')
 
-  // JOYSTICK: con el dedo apoyado a N puntitos del centro, avanza solo (a 1: uno cada 0,75 s; a 2: 2/s; a 3: 4/s).
+  // ARRASTRE: la tira sigue al dedo; al soltar, un puntito en el centro.
   const c = await pildora()
   const y = c.y + c.height / 2
   const centro = c.x + c.width / 2
-  const mantener = async (dx, ms) => {
-    await page.mouse.move(centro + dx, y)
+  const ZM = 8 // zona muerta de la barra
+  const arrastrar = async (dx, pasos = 12) => {
+    await page.mouse.move(centro, y)
     await page.mouse.down()
-    await espera(ms)
+    for (let k = 1; k <= pasos; k++) {
+      await page.mouse.move(centro + ((dx + Math.sign(dx) * ZM) * k) / pasos, y)
+      await espera(30)
+    }
+    await espera(250) // quieto antes de soltar: sin inercia
     await page.mouse.up()
-    await espera(900)
+    await espera(1100)
   }
   const n = async () => Number(await actual())
   let antes = await n()
-  await mantener(44, 1100) // 1 puntito a la derecha durante 1,1 s → 1 (a los 0,75 s)
-  comprobar(r, 'a 1 puntito, 1,1 s → avanza 1', (await n()) - antes === 1, `${antes} → ${await n()}`)
+  await arrastrar(-88) // a la izquierda 2 puntitos → los de más adelante llegan al centro
+  comprobar(r, 'arrastrar 2 a la izquierda → avanza 2', (await n()) - antes === 2, `${antes} → ${await n()}`)
   comprobar(r, 'al soltar, en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
   antes = await n()
-  await mantener(88, 1250) // 2 puntitos durante 1,25 s → 2 (a los 0,5 y 1 s)
-  comprobar(r, 'a 2 puntitos, 1,25 s → avanza 2', (await n()) - antes === 2, `${antes} → ${await n()}`)
+  await arrastrar(44) // a la derecha 1 → retrocede 1
+  comprobar(r, 'arrastrar 1 a la derecha → retrocede 1', antes - (await n()) === 1, `${antes} → ${await n()}`)
   antes = await n()
   // Cuenta los golpes de matraca (la barra se empuja de lado y vuelve) mientras recorre: uno por puntito.
   await page.evaluate(() => {
@@ -122,19 +129,47 @@ for (const tema of ['claro', 'oscuro']) {
     }
     mirar()
   })
-  await mantener(-132, 880) // 3 puntitos a la izquierda durante 0,88 s → 3 hacia atrás (0,25 · 0,5 · 0,75 s)
+  await arrastrar(-132, 36) // 3 puntitos, despacio (un golpe cada ~0,35 s, para poder contarlos)
   const golpes = await page.evaluate(() => (cancelAnimationFrame(window.__mirar), window.__golpes))
-  comprobar(r, 'a 3 puntitos (izquierda), 0,88 s → retrocede 3', antes - (await n()) === 3, `${antes} → ${await n()}`)
+  comprobar(r, 'arrastrar 3 → avanza 3', (await n()) - antes === 3, `${antes} → ${await n()}`)
   comprobar(r, 'un golpe de matraca por puntito (3)', golpes === 3, String(golpes))
-  await foto('regla-joystick')
-  await mantener(c.width / 2 - 4, 2200) // borde derecho → hasta el último (18)
-  comprobar(r, 'borde derecho → el último (18)', (await n()) === 18, String(await n()))
-  await mantener(-(c.width / 2 - 4), 2200) // borde izquierdo → el primero (0, la insignia)
-  comprobar(r, 'borde izquierdo → el primero (0)', (await n()) === 0, String(await n()))
-  // Dedo en el centro: no se mueve.
+  // Mientras se arrastra (a medio camino entre dos), la tira está con el dedo; al soltar se acomoda.
+  await page.mouse.move(centro, y)
+  await page.mouse.down()
+  await page.mouse.move(centro - ZM - 20, y, { steps: 4 })
+  await espera(300)
+  const medio = await page.$$eval('[data-punto]', (ps, cx) => Math.min(...ps.map((p) => Math.abs(p.getBoundingClientRect().left + 22 - cx))), centro)
+  comprobar(r, 'con el dedo, la tira sigue al dedo (entre dos puntitos)', medio > 12, String(medio))
+  await foto('regla-arrastre')
+  await page.mouse.up()
+  await espera(1100)
+  comprobar(r, 'al soltar, se acomoda con uno en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
+  // Lanzar deprisa: la inercia suma puntitos (eventos dentro de la página: los de Playwright llegan con retraso).
   antes = await n()
-  await mantener(5, 1200)
-  comprobar(r, 'en el centro no se mueve', (await n()) === antes, `${antes} → ${await n()}`)
+  await page.evaluate(async ([cx, y]) => {
+    const el = document.querySelector('[data-puntitos] [role=group]')
+    const ev = (t, x) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: x, clientY: y, pointerId: 7, pointerType: 'touch', isPrimary: true }))
+    ev('pointerdown', cx)
+    ev('pointermove', cx - 12)
+    await new Promise((res) => setTimeout(res, 60))
+    ev('pointermove', cx - 70)
+    ev('pointerup', cx - 70)
+  }, [centro, y])
+  await espera(1300)
+  comprobar(r, 'lanzar 1,4 puntitos deprisa → avanza 3 o más', (await n()) - antes >= 3, `${antes} → ${await n()}`)
+  comprobar(r, 'tras lanzar, en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
+  await arrastrar(-1200) // más allá del último: goma
+  comprobar(r, 'hasta el final → el último (18)', (await n()) === 18, String(await n()))
+  await arrastrar(1200)
+  comprobar(r, 'hasta el principio → el primero (0)', (await n()) === 0, String(await n()))
+  // Tocar sin mover (en el centro): no cambia.
+  antes = await n()
+  await page.mouse.move(centro + 3, y)
+  await page.mouse.down()
+  await espera(400)
+  await page.mouse.up()
+  await espera(900)
+  comprobar(r, 'tocar el del centro no cambia', (await n()) === antes, `${antes} → ${await n()}`)
 
   // Un módulo corto: sin regla.
   await page.goto(BASE + '#/modulo/1')
