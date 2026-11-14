@@ -172,8 +172,11 @@ export function useModulosYPracticas(paradas, practicaDe, practicaRuta = null) {
     if (e && !claves.some(([a, b]) => a === e[0] && b === e[1])) claves.push(e)
   }
   if (practicaRuta) for (const m of MODOS[practicaRuta] ?? []) if (!claves.some(([a, b]) => a === practicaRuta && b === m.id)) claves.push([practicaRuta, m.id])
+  // Agrupadas por tipo de práctica (pedido del usuario): ritmo con ritmo, letras con letras… en el orden en que aparecen.
+  const tipos = [...new Set(claves.map(([pid]) => pid))]
+  claves.sort((a, b) => tipos.indexOf(a[0]) - tipos.indexOf(b[0]))
   const practicas = claves.map(([pid, id]) => {
-    const base = { id: `${pid}-${id}`, Icono: ICONO_PRACTICA[pid], etiqueta: `Práctica · ${PRACTICAS[pid].nombre}` }
+    const base = { id: `${pid}-${id}`, grupo: pid, Icono: ICONO_PRACTICA[pid], etiqueta: `Práctica · ${PRACTICAS[pid].nombre}` }
     if (id === 'cuaderno') return { ...base, titulo: 'Tus letras', acento: ACENTO_PRACTICA.letras, dato: `${letras.length} ${letras.length === 1 ? 'letra' : 'letras'}`, href: rutas.letras() }
     if (id === 'vocabulario') {
       const n = Object.keys(datos.letras.repaso ?? {}).length
@@ -198,6 +201,7 @@ export function useModulosYPracticas(paradas, practicaDe, practicaRuta = null) {
  */
 export function useCarruselModulos(filas) {
   const [abierto, setAbierto] = useState(false)
+  const [sel, setSel] = useState({ fila: 0, indice: 0 }) // lo que se ve en el carrusel (para la barra de puntitos)
   const subir = useMotionValue(0)
   const listo = useMotionValue(0)
   const api = useRef(null)
@@ -211,5 +215,9 @@ export function useCarruselModulos(filas) {
     onAbrir: () => setAbierto(true),
     onCerrar: () => setAbierto(false),
     onElegir: () => api.current?.elegir(),
+    sel,
+    onSel: setSel,
+    irA: (i) => api.current?.irA(i),
+    cambiarFila: (dir) => api.current?.cambiarFila(dir),
   }
 }
