@@ -18,7 +18,7 @@
 //
 // TRAMOS (pedido del usuario: «es un proyecto que escalará mucho»; propuesta aprobada:
 // https://claude.ai/artifact/UXqLcj3Ee1MfzLQYuKvkk3): las paradas no van sueltas en la ruta, sino en TRAMOS
-// (paquetes cortos de lecciones y prácticas con su título y el color del módulo del que salen). Un tramo se
+// (paquetes cortos de lecciones y prácticas con su título y el color del área de su ruta). Un tramo se
 // escribe UNA vez y lo reutilizan varias rutas: módulos (el curso) → tramos → rutas (caminos por habilidad).
 // Cada ruta lista sus `tramos` en orden; `paradas` se arma sola (cada parada sabe su `tramo`). Con 2 tramos o
 // más, el camino pone un letrero al empezar cada tramo y la barra de puntitos los agrupa.
@@ -37,11 +37,11 @@ export function herramientaAbierta(id, progreso, admin = false) {
   return admin || Boolean(progreso.lecciones[HERRAMIENTAS[id].leccion]?.completada)
 }
 
-/** Los tramos: un paquete de paradas con su título y su color (el del módulo del que salen). */
+/** Los tramos: un paquete de paradas con su título y su color (el del área de la ruta en la que van: dentro de una ruta todo lleva su color). */
 export const TRAMOS = {
   'pulso-groove': {
     titulo: 'Pulso y groove',
-    acento: 'var(--color-modulo-2)',
+    acento: 'var(--color-ritmo)',
     paradas: [
       { tipo: 'leccion', id: '2.1' },
       { tipo: 'meta', modo: 'seguir', nivel: 2, dificultad: 1, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
@@ -63,7 +63,7 @@ export const TRAMOS = {
   // Las lecciones L1–L5 viven en la ruta de letras (content/ruta-letras/, registradas en content/index.js).
   'rima-flow': {
     titulo: 'Rima y flow',
-    acento: 'var(--color-modulo-6)',
+    acento: 'var(--color-letras)',
     paradas: [
       { tipo: 'leccion', id: 'L1', titulo: 'Rima consonante y asonante' },
       { tipo: 'meta', clave: 'letra', titulo: 'Analiza tu primera letra', texto: 'Escribe o pega una letra en tu cuaderno y mira sus rimas en colores.' },
@@ -85,7 +85,7 @@ export const TRAMOS = {
   // La base de casi todo lo que suena: dónde están las notas (la 1.1, frecuencia y altura, no hace falta aquí).
   'notas-teclado': {
     titulo: 'Notas y teclado',
-    acento: 'var(--color-modulo-1)',
+    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '1.2' },
       { tipo: 'leccion', id: '1.3' },
@@ -94,7 +94,7 @@ export const TRAMOS = {
   },
   'intervalos-escalas': {
     titulo: 'Intervalos y escalas',
-    acento: 'var(--color-modulo-3)',
+    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '3.1' },
       { tipo: 'leccion', id: '3.2' },
@@ -107,7 +107,7 @@ export const TRAMOS = {
   },
   triadas: {
     titulo: 'Tríadas',
-    acento: 'var(--color-modulo-4)',
+    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '4.1' },
       { tipo: 'meta', modo: 'acordes', nivel: 2, dificultad: 1, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
@@ -117,7 +117,7 @@ export const TRAMOS = {
   // Termina con la 4.5 «Voicings» y el reto de la ruta.
   'acordes-tonalidad': {
     titulo: 'Acordes en la tonalidad',
-    acento: 'var(--color-modulo-4)',
+    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '4.3' },
       { tipo: 'leccion', id: '4.4' },
@@ -138,7 +138,7 @@ export const RUTAS = {
     id: 'ritmo',
     nombre: 'Ritmo',
     titulo: 'Ruta de ritmo',
-    acento: 'var(--color-modulo-2)',
+    acento: 'var(--color-ritmo)',
     descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones del módulo 2 con práctica de Seguir y Eco.',
     modulos: [2],
     practica: 'ritmo',
@@ -148,7 +148,7 @@ export const RUTAS = {
     id: 'letras',
     nombre: 'Letras',
     titulo: 'Ruta de letras',
-    acento: 'var(--color-modulo-6)',
+    acento: 'var(--color-letras)',
     descripcion: 'Rima, esquemas, sílabas, multis y flow: cinco lecciones cortas con tu cuaderno y el vocabulario.',
     modulos: [],
     practica: 'letras',
@@ -158,7 +158,7 @@ export const RUTAS = {
     id: 'acordes',
     nombre: 'Acordes',
     titulo: 'Ruta de acordes',
-    acento: 'var(--color-modulo-4)',
+    acento: 'var(--color-armonia)',
     descripcion: 'Notas, intervalos y escalas, tríadas, acordes de la tonalidad, inversiones y voicings.',
     modulos: [1, 3, 4],
     practica: 'oido',

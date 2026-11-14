@@ -1,7 +1,8 @@
 // Mapa de los 10 módulos del curso (según el plan).
-// `acento` = el color propio del módulo (paleta Lospec500), como variable de src/index.css:
-// `--color-modulo-N` (barras, bordes) y sus variantes `-relleno`, `-tinta` y `-suave`, que
-// cambian con el tema. Usa los helpers de src/ui/color.js: oscuro() → relleno, tinta(), claro() → suave.
+// `area` = su área principal (src/content/areas.js) y `acento` = el color de esa área (pedido del usuario: el color
+// dice el tipo de ruta, no el módulo), como variable de src/index.css: `--color-armonia` (barras, bordes) y sus
+// variantes `-relleno`, `-tinta` y `-suave`, que cambian con el tema. Usa los helpers de src/ui/color.js:
+// oscuro() → relleno, tinta(), claro() → suave.
 // Cada lección tiene `id` ('1.1') y `titulo`. Si existe su archivo de contenido
 // en `lecciones` (ver index.js), la lección está disponible; si no, "Próximamente".
 
@@ -12,7 +13,8 @@ export const MODULOS = [
     descripcion: 'Altura, las 12 notas, octavas, sostenidos y bemoles, el Piano Roll.',
     siente: 'Agudo = brillo y tensión; grave = peso.',
     reto: 'Nombrar las 12 notas en el Piano Roll; melodía de 8 notas.',
-    acento: 'var(--color-modulo-1)',
+    area: 'melodia',
+    acento: 'var(--color-melodia)',
     lecciones: [
       { id: '1.1', titulo: 'Qué es una nota: frecuencia y altura' },
       { id: '1.2', titulo: 'Las 12 notas y la octava' },
@@ -26,7 +28,8 @@ export const MODULOS = [
     descripcion: 'Pulso, BPM, compás 4/4 y 3/4, figuras, síncopa, swing, ghost notes.',
     siente: 'El tempo y la síncopa definen la energía y el “bounce”.',
     reto: 'Un patrón de batería a 3 tempos; aplicar swing.',
-    acento: 'var(--color-modulo-2)',
+    area: 'ritmo',
+    acento: 'var(--color-ritmo)',
     lecciones: [
       { id: '2.1', titulo: 'Pulso y tempo' },
       { id: '2.2', titulo: 'Compás y tiempos fuertes' },
@@ -41,7 +44,8 @@ export const MODULOS = [
     descripcion: 'Tono y semitono, intervalos, escala mayor y menor, grados, círculo de quintas, pentatónicas.',
     siente: 'Mayor = luminoso; menor = melancólico; cada intervalo tiene carácter.',
     reto: 'La misma melodía en mayor y en menor.',
-    acento: 'var(--color-modulo-3)',
+    area: 'melodia',
+    acento: 'var(--color-melodia)',
     lecciones: [
       { id: '3.1', titulo: 'Tono y semitono' },
       { id: '3.2', titulo: 'Los intervalos y su carácter' },
@@ -58,7 +62,8 @@ export const MODULOS = [
     descripcion: 'Tríadas, acordes diatónicos, números romanos, inversiones, voicings.',
     siente: 'Mayor estable, menor íntimo, disminuido inquieto.',
     reto: 'Un pad con los 7 acordes de una tonalidad, en varias inversiones.',
-    acento: 'var(--color-modulo-4)',
+    area: 'armonia',
+    acento: 'var(--color-armonia)',
     lecciones: [
       { id: '4.1', titulo: 'Tríadas por terceras apiladas' },
       { id: '4.2', titulo: '¿Mayor o menor? Entrenamiento de oído' },
@@ -73,7 +78,8 @@ export const MODULOS = [
     descripcion: 'Tónica, subdominante, dominante; cadencias; las progresiones más usadas.',
     siente: 'La dominante pide volver a casa; la cadencia rota sorprende.',
     reto: '4 loops de 8 compases, uno por progresión, con bajo.',
-    acento: 'var(--color-modulo-5)',
+    area: 'armonia',
+    acento: 'var(--color-armonia)',
     lecciones: [
       { id: '5.1', titulo: 'Funciones: tónica, subdominante, dominante' },
       { id: '5.2', titulo: 'Tensión y resolución' },
@@ -90,7 +96,8 @@ export const MODULOS = [
     descripcion: 'Notas del acorde y de paso, contorno, motivos, pregunta–respuesta, hooks.',
     siente: 'Saltos = emoción; pasos = calma; la nota fuera del acorde crea anhelo.',
     reto: 'Un hook sobre tu progresión favorita del módulo 5.',
-    acento: 'var(--color-modulo-6)',
+    area: 'melodia',
+    acento: 'var(--color-melodia)',
     lecciones: [
       { id: '6.1', titulo: 'Notas del acorde y notas de paso' },
       { id: '6.2', titulo: 'Contorno: saltos y pasos' },
@@ -105,7 +112,8 @@ export const MODULOS = [
     descripcion: 'Séptimas, novenas a trecenas, sus2/sus4, add9, conducción de voces.',
     siente: 'maj7 = nostalgia cálida; sus = suspenso; 9 = aire.',
     reto: 'Rearmonizar el loop del módulo 5 en estilo lo-fi o neo-soul.',
-    acento: 'var(--color-modulo-7)',
+    area: 'armonia',
+    acento: 'var(--color-armonia)',
     lecciones: [
       { id: '7.1', titulo: 'Acordes de séptima' },
       { id: '7.2', titulo: 'Extensiones 9, 11 y 13' },
@@ -120,7 +128,8 @@ export const MODULOS = [
     descripcion: 'Los 7 modos, préstamo modal, tercera de Picardía.',
     siente: 'Dórico = melancolía con esperanza; lidio = sueño; iv menor = agridulce.',
     reto: 'Una melodía en 3 modos; meter un iv menor en una progresión mayor.',
-    acento: 'var(--color-modulo-8)',
+    area: 'armonia',
+    acento: 'var(--color-armonia)',
     lecciones: [
       { id: '8.1', titulo: 'Los modos' },
       { id: '8.2', titulo: 'El color de cada modo' },
@@ -135,7 +144,8 @@ export const MODULOS = [
     descripcion: 'Dominantes secundarias, sustitución tritonal, mediantes cromáticas, modulación.',
     siente: 'Sorpresa, épica, giro cinematográfico, el “levantón” final.',
     reto: '16 compases con una modulación y dos dominantes secundarias.',
-    acento: 'var(--color-modulo-9)',
+    area: 'armonia',
+    acento: 'var(--color-armonia)',
     lecciones: [
       { id: '9.1', titulo: 'Dominantes secundarias' },
       { id: '9.2', titulo: 'Cadenas de ii–V' },
@@ -152,7 +162,8 @@ export const MODULOS = [
     descripcion: 'Forma, arco de tensión, arreglo por capas, dinámica, sonido y emoción.',
     siente: 'La canción entera cuenta una historia emocional.',
     reto: 'Una canción de 2–3 min que parte de una emoción elegida.',
-    acento: 'var(--color-modulo-10)',
+    area: 'produccion',
+    acento: 'var(--color-produccion)',
     lecciones: [
       { id: '10.1', titulo: 'Forma de canción' },
       { id: '10.2', titulo: 'El arco emocional' },

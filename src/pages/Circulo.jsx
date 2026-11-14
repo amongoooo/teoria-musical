@@ -14,7 +14,7 @@ import Pulsable from '../ui/Pulsable.jsx'
 import { BotonInicio } from '../ui/Volver.jsx'
 
 /** Color del explorador: el del Módulo 3 (intervalos y escalas, donde se aprende el círculo). */
-export const COLOR_CIRCULO = 'var(--color-modulo-3)'
+export const COLOR_CIRCULO = 'var(--color-armonia)'
 const COLOR = COLOR_CIRCULO
 const BRILLO_MS = 380
 

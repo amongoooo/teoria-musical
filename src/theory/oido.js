@@ -67,8 +67,8 @@ function sonidoIntervalo(raiz, semitonos, direccion) {
 export const modoIntervalos = {
   id: 'intervalos',
   titulo: 'Intervalos',
-  // Color del módulo con el que se relaciona (un color = un lugar): intervalos → M3, acordes → M4, notas → M1.
-  acento: 'var(--color-modulo-3)',
+  // Color del área que entrena (Oído no es un área): intervalos → Melodía, acordes → Armonía, notas → Melodía.
+  acento: 'var(--color-melodia)',
   descripcion: 'Escucha dos notas y elige la distancia entre ellas.',
   info:
     'Cada intervalo tiene su **carácter**: la 3.ª mayor es luminosa, la 5.ª justa hueca y estable, el tritono ' +
@@ -130,7 +130,7 @@ function sonidoAcorde(notas, nivel) {
 export const modoAcordes = {
   id: 'acordes',
   titulo: 'Acordes',
-  acento: 'var(--color-modulo-4)',
+  acento: 'var(--color-armonia)',
   descripcion: 'Escucha un acorde y decide si es mayor o menor.',
   info:
     'El acorde **mayor** suena luminoso y el **menor** íntimo; solo cambia la nota del medio (la 3.ª). ' +
@@ -293,7 +293,7 @@ export function quitarNotaAlAzar(notas) {
 export const modoAbsoluto = {
   id: 'absoluto',
   titulo: 'Oído absoluto',
-  acento: 'var(--color-modulo-1)',
+  acento: 'var(--color-melodia)',
   descripcion: 'Un juego: adivina la nota sin ninguna referencia.',
   // Burbuja ⓘ del arranque (se despliega al tocarla).
   info:

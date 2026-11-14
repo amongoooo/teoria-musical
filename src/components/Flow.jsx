@@ -14,7 +14,7 @@ import { Segmentado } from './Opciones.jsx'
 import { Pad } from './PiezasRitmo.jsx'
 
 /** Color del entrenamiento de letras: M6 (rosa). */
-const ACENTO = 'var(--color-modulo-6)'
+const ACENTO = 'var(--color-letras)'
 const TEMPOS = [75, 90, 105]
 /** «1 e y a»: lo que se ve en una casilla vacía. */
 const CUENTA = ['', 'e', 'y', 'a']

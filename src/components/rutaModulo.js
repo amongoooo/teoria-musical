@@ -133,7 +133,7 @@ export function useRuta(id) {
 /** Modos de cada práctica (los ejercicios que salen en «Módulos y prácticas»). Letras: el cuaderno y el vocabulario. */
 const MODOS = { oido: MODOS_OIDO, ritmo: MODOS_RITMO, letras: [{ id: 'cuaderno' }, { id: 'vocabulario' }] }
 const ICONO_PRACTICA = { oido: Oreja, ritmo: Metronomo, letras: Pluma }
-const ACENTO_PRACTICA = { oido: 'var(--color-modulo-1)', ritmo: 'var(--color-modulo-2)', letras: 'var(--color-modulo-6)' }
+const ACENTO_PRACTICA = { oido: 'var(--color-melodia)', ritmo: 'var(--color-ritmo)', letras: 'var(--color-letras)' }
 
 /** Módulo de una parada (lección numerada o lo que abre una lección), o null. */
 function moduloDeParada(p) {

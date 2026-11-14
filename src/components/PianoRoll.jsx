@@ -25,7 +25,7 @@ import { IconoPlay } from './BotonSonido.jsx'
  *  - fantasma: notas guía (contorno punteado); `fantasmaBien` las pinta en verde.
  *  - color: color de las notas (acento del módulo).
  */
-export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = false, fantasma = [], fantasmaBien = false, color = 'var(--color-modulo-1)' }) {
+export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = false, fantasma = [], fantasmaBien = false, color = 'var(--color-melodia)' }) {
   const filas = filasDe(roll)
   const columnas = roll.columnas ?? 8
   const porTiempo = roll.porTiempo ?? 2

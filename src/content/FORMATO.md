@@ -178,8 +178,11 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
       pregunta: '¿Cuál es más agudo?',   // admite **negritas**
       sonidos: [{ notas: ['C4'] }, { notas: ['G4'] }],
       // sin `opciones`: las tarjetas de sonido son las respuestas (A, B…)
-      opciones: ['texto 1', 'texto 2'],   // opcional
-      correcta: 1,          // índice de la opción (o del sonido)
+      opciones: ['texto 1', 'texto 2'],   // opcional; SE BARAJAN cada vez que se abre el paso (la buena no queda
+                                          // siempre en el mismo lugar), salvo si tienen orden natural: números que suben
+                                          // («60 · 90 · 120 BPM»), «Ninguna · Una · Dos», «La versión A · B»
+      ordenFijo: true,      // opcional: no barajar las opciones de texto
+      correcta: 1,          // índice de la opción (o del sonido) TAL COMO SE ESCRIBIÓ (no importa dónde se vea)
       mezclar: true,        // orden de los sonidos al azar
       mostrarNotas: true,   // al responder, enseña nota y Hz de cada tarjeta
       explicacion: '…',     // se muestra al comprobar (acierto o error)
