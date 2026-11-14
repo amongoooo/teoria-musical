@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-colores-por-area',
+    fecha: '14 nov 2026',
+    titulo: 'Colores por área y respuestas que se mueven',
+    cosas: [
+      {
+        texto: 'Las respuestas de las lecciones **cambian de lugar** cada vez que abres un paso: ya no te aprendes dónde está la buena.',
+      },
+      {
+        texto: 'Ahora el color dice el **tipo de ruta**: Ritmo naranja, Letras rosa, **Armonía violeta intenso**, Melodía turquesa y, más adelante, Producción en rojo coral.',
+        donde: { etiqueta: 'Ver la ruta de acordes', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-tu-camino',
     fecha: '14 nov 2026',
     titulo: 'Tu camino más simple',

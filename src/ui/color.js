@@ -1,14 +1,15 @@
 // Utilidades de color de la app (ver .claude/skills/diseno/SKILL.md, sección 2).
 //
-// Los colores de módulo vienen como variable (`var(--color-modulo-2)`, en src/content/modulos.js) y
-// cada uno tiene sus variantes calculadas para cada tema en src/index.css (`-relleno`, `-tinta`,
-// `-suave`). Para esos, los helpers devuelven la variante; para cualquier otro color, una mezcla.
+// Los colores de ÁREA vienen como variable (`var(--color-armonia)`, en src/content/areas.js; módulos, rutas,
+// tramos, prácticas y herramientas usan el de su área) y cada uno tiene sus variantes calculadas para cada tema
+// en src/index.css (`-relleno`, `-tinta`, `-suave`). Para esos, los helpers devuelven la variante; para cualquier
+// otro color, una mezcla.
 
 // También los colores de dificultad del entrenador de oído (`var(--color-dificultad-N)`) y el neutro del Curso completo
 // (`var(--color-neutro)`), que tienen las mismas variantes.
-const MODULO = /^var\(--color-((?:modulo|dificultad)-\d+|neutro)\)$/
+const MODULO = /^var\(--color-(dificultad-\d+|neutro|ritmo|melodia|armonia|letras|produccion|azul|naranja|turquesa|morado|rojo|rosa|indigo|tierra|celeste|pizarra)\)$/
 
-/** Variante de un color de papel (`var(--color-modulo-N)` → `var(--color-modulo-N-<variante>)`), o null. */
+/** Variante de un color de papel (`var(--color-armonia)` → `var(--color-armonia-<variante>)`), o null. */
 const variante = (color, nombre) => {
   const m = MODULO.exec(String(color).trim())
   return m ? `var(--color-${m[1]}-${nombre})` : null

@@ -78,9 +78,9 @@ export default function Inicio() {
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <Titulo>Prácticas</Titulo>
         <div className="grid grid-cols-3 gap-2">
-          <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-modulo-1)" />
-          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-modulo-2)" />
-          <BloqueRacha tienda={tiendaVocab} href={rutas.letras()} id="letras" nombre="Letras" titulo="Entrenamiento de letras" Icono={Pluma} acento="var(--color-modulo-6)" />
+          <BloqueRacha tienda={tiendaOido} href={rutas.oido()} id="oido" nombre="Oído" titulo="Entrenamiento de oído" Icono={Oreja} acento="var(--color-melodia)" />
+          <BloqueRacha tienda={tiendaRitmo} href={rutas.ritmo()} id="ritmo" nombre="Ritmo" titulo="Entrenamiento de ritmo" Icono={Metronomo} acento="var(--color-ritmo)" />
+          <BloqueRacha tienda={tiendaVocab} href={rutas.letras()} id="letras" nombre="Letras" titulo="Entrenamiento de letras" Icono={Pluma} acento="var(--color-letras)" />
         </div>
       </motion.section>
 
@@ -375,7 +375,7 @@ function TarjetaPiano() {
       <MiniPiano />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Piano libre</span>
-        <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta('var(--color-modulo-1)') }}>
+        <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta('var(--color-melodia)') }}>
           Toca lo que quieras
         </span>
       </span>

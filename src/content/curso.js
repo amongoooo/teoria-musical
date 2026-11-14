@@ -5,13 +5,14 @@
 // cuenta solo aquí. El curso es LINEAL, como las rutas: lo cumplido más adelante sale bloqueado hasta llegar.
 // OPCIONALES (3.6 y 3.7): al final de su bloque, siempre abiertos; no cuentan para cerrar el bloque ni para el %.
 // El curso crecerá: más bloques y, más adelante, «etapas» que los agrupen.
+import { ARMONIA, LETRAS, RITMO } from './areas.js'
 import { TRAMOS, cumplidaParada, tituloLeccion } from './rutas.js'
 
 /** Las áreas del curso: una por ruta (su color y su práctica) y «las tres» para el reto final. */
 export const AREAS = {
-  acordes: { id: 'acordes', nombre: 'Armonía', ruta: 'acordes', practica: 'oido', acento: 'var(--color-modulo-4)' },
-  ritmo: { id: 'ritmo', nombre: 'Ritmo', ruta: 'ritmo', practica: 'ritmo', acento: 'var(--color-modulo-2)' },
-  letras: { id: 'letras', nombre: 'Letras', ruta: 'letras', practica: 'letras', acento: 'var(--color-modulo-6)' },
+  acordes: { id: 'acordes', nombre: 'Armonía', ruta: 'acordes', practica: 'oido', acento: ARMONIA },
+  ritmo: { id: 'ritmo', nombre: 'Ritmo', ruta: 'ritmo', practica: 'ritmo', acento: RITMO },
+  letras: { id: 'letras', nombre: 'Letras', ruta: 'letras', practica: 'letras', acento: LETRAS },
   tres: { id: 'tres', nombre: 'Las tres', ruta: null, practica: null, acento: 'var(--color-neutro)' },
 }
 /** Las áreas que se cuentan por separado (el anillo y las filas de avance). */

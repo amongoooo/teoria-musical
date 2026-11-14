@@ -332,7 +332,7 @@ function puntosDificultad(dificultad) {
 
 const comun = {
   // Color del módulo con el que se relaciona: ritmo → M2.
-  acento: 'var(--color-modulo-2)',
+  acento: 'var(--color-ritmo)',
   niveles: NIVELES.length,
   dificultad: true,
   // La dificultad no son octavas (como en oído) sino el margen: se guarda en `ajustes.dificultad`.

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { reproducir } from '../../audio/sonido.js'
 import { acentoLeccion } from '../../content/index.js'
 import { frecuencia, hz, nombre } from '../../theory/notas.js'
@@ -11,6 +11,7 @@ import PianoRoll, { conIds } from '../PianoRoll.jsx'
 import LetraAnalizada from '../LetraAnalizada.jsx'
 import Rich from '../Rich.jsx'
 import Rondas from './Rondas.jsx'
+import { ordenNatural } from './ordenOpciones.js'
 
 const LETRAS = ['A', 'B', 'C', 'D']
 
@@ -23,6 +24,12 @@ function mezclar(indices) {
   return a
 }
 
+/** Orden en que se muestran las opciones de texto de una ronda (pedido del usuario: que la buena no esté siempre en el mismo lugar). */
+const ordenOpciones = (ronda) => {
+  const idx = (ronda.opciones ?? []).map((_, i) => i)
+  return ronda.ordenFijo || ordenNatural(ronda.opciones ?? []) ? idx : mezclar(idx)
+}
+
 /**
  * "Escucha y elige": una o varias rondas de pregunta con respuesta única.
  *
@@ -32,6 +39,8 @@ function mezclar(indices) {
  *  - opciones: ['texto', …] — si se omite, las tarjetas de sonido SON las opciones
  *  - correcta: índice de la opción (o del sonido) correcto
  *  - mezclar: true para ordenar los sonidos al azar
+ *  - ordenFijo: true para NO barajar las opciones de texto (se barajan siempre, salvo si tienen un orden natural:
+ *    números que suben, «Ninguna · Una · Dos», «La versión A · B»; ver `ordenNatural`)
  *  - mostrarNotas: true para enseñar nota y Hz de cada sonido al responder
  *  - explicacion: texto que se muestra al comprobar
  *  - roll: { ...config del PianoRoll, notas } para leer un Piano Roll (solo lectura)
@@ -47,6 +56,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
       return ronda.mezclar ? mezclar(idx) : idx
     }),
   )
+  // Opciones de texto barajadas cada vez que se abre el paso: posición en pantalla → índice en `ronda.opciones`.
+  const [ordenOp] = useState(() => rondas.map(ordenOpciones))
   const [seleccion, setSeleccion] = useState(null)
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
   const [aciertos, setAciertos] = useState(0)
@@ -56,7 +67,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
   const ronda = rondas[r]
   const sonidos = orden[r].map((i) => ronda.sonidos[i])
   const tarjetasSonOpciones = !ronda.opciones
-  const correcta = tarjetasSonOpciones ? orden[r].indexOf(ronda.correcta) : ronda.correcta
+  const opciones = useMemo(() => (ronda.opciones ? ordenOp[r].map((i) => ronda.opciones[i]) : null), [ronda, ordenOp, r])
+  const correcta = tarjetasSonOpciones ? orden[r].indexOf(ronda.correcta) : ordenOp[r].indexOf(ronda.correcta)
   const ultima = r === rondas.length - 1
   const respondida = resultado !== null
 
@@ -79,7 +91,7 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
 
     const explicacion = ronda.explicacion
     // El título del aviso es texto plano: sin los ** y * de las negritas y cursivas de la opción.
-    const respuesta = tarjetasSonOpciones ? `Sonido ${LETRAS[correcta]}` : ronda.opciones[correcta].replace(/\*/g, '')
+    const respuesta = tarjetasSonOpciones ? `Sonido ${LETRAS[correcta]}` : opciones[correcta].replace(/\*/g, '')
     setAccion({
       label: 'Continuar',
       avanza: ultima, // el último «Continuar» pasa de paso
@@ -94,7 +106,7 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
         setResultado(null)
       },
     })
-  }, [respondida, resultado, seleccion, correcta, aciertos, ultima, r, ronda, rondas.length, tarjetasSonOpciones, setAccion, siguiente, completar])
+  }, [respondida, resultado, seleccion, correcta, opciones, aciertos, ultima, r, ronda, rondas.length, tarjetasSonOpciones, setAccion, siguiente, completar])
 
   const noSe = () => {
     setSeleccion(null)
@@ -138,7 +150,7 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
             </div>
           )}
           <div className="flex flex-col gap-3">
-            {ronda.opciones.map((op, i) => {
+            {opciones.map((op, i) => {
               const estado = respondida ? (i === correcta ? 'bien' : i === seleccion ? 'mal' : null) : null
               return (
                 <motion.div key={`${r}-${i}`} animate={estado === 'bien' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>

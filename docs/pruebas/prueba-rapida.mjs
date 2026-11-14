@@ -78,7 +78,12 @@ for (const tema of ['claro', 'oscuro']) {
   const progreso = () => page.evaluate(() => JSON.parse(localStorage.getItem('teoria-musical:progreso:v1')))
   const boton = () => page.locator('[data-boton-accion] button').first()
   const hoja = () => page.locator('[role="dialog"]')
-  const opcion = (i) => page.locator('main button[aria-pressed]').nth(i)
+  // Las opciones se barajan (pedido del usuario): se toca la opción por su TEXTO (la i-ésima del banco), no por su lugar.
+  const { PREGUNTAS } = await import('../../src/content/pruebas/index.js')
+  const opcion = (id, i) => {
+    const texto = String(PREGUNTAS[id][0].opciones[i]).replace(/\*/g, '')
+    return page.locator('main button[aria-pressed]').filter({ hasText: new RegExp(`^${texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) })
+  }
   const comprobarYSeguir = async () => {
     await boton().click()
     await espera(450)
@@ -107,7 +112,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, '7 segmentos', (await page.locator('[data-segmento]').count()) === 7)
 
   // 3.1 bien (Semitono)
-  await opcion(0).click()
+  await opcion('3.1', 0).click()
   await espera(200)
   await foto('2-pregunta')
   await boton().click()
@@ -116,7 +121,7 @@ for (const tema of ['claro', 'oscuro']) {
   await boton().click()
   await espera(650)
   // 3.2 mal (3.ª mayor; era la 3.ª menor)
-  await opcion(1).click()
+  await opcion('3.2', 1).click()
   await comprobarYSeguir()
   // 3.3 «No lo sé»
   await page.locator('[data-no-lo-se]').click()
@@ -126,7 +131,7 @@ for (const tema of ['claro', 'oscuro']) {
   await boton().click()
   await espera(650)
   // 3.4 bien (Re menor)
-  await opcion(0).click()
+  await opcion('3.4', 0).click()
   await comprobarYSeguir()
   // 3.5 círculo: La mayor
   await page.locator('[data-casilla="A"]').click()
@@ -137,11 +142,11 @@ for (const tema of ['claro', 'oscuro']) {
   await boton().click()
   await espera(650)
   // 3.6 bien, 3.7 bien (armónica)
-  await opcion(0).click()
+  await opcion('3.6', 0).click()
   await comprobarYSeguir()
   const segmentos = await page.locator('[data-segmento]').evaluateAll((s) => s.map((x) => x.dataset.segmento).join(','))
   comprobar(r, 'segmentos verde y oro', segmentos === 'bien,fijate,fijate,bien,bien,bien,actual', segmentos)
-  await opcion(1).click()
+  await opcion('3.7', 1).click()
   await comprobarYSeguir()
 
   await page.waitForSelector('[data-resultado-prueba]')

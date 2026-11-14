@@ -18,7 +18,7 @@ import Pulsable from '../ui/Pulsable.jsx'
 import { BarraAccion } from './Leccion.jsx'
 
 /** Color del entrenamiento de letras: M6 (rosa). */
-const ACENTO = 'var(--color-modulo-6)'
+const ACENTO = 'var(--color-letras)'
 /** Preguntas por tanda: la barra de arriba se llena con ellas. */
 const TANDA = 10
 

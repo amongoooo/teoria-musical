@@ -23,7 +23,7 @@ import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 
 /** Color del entrenamiento de letras: M6 (rosa). */
-const ACENTO = 'var(--color-modulo-6)'
+const ACENTO = 'var(--color-letras)'
 
 /** Letra de ejemplo (escrita para la app) para probar sin pegar nada. */
 const EJEMPLO = {
@@ -141,7 +141,7 @@ function TarjetaLetra({ letra }) {
       data-letra={letra.id}
       className="flex min-h-20 items-center gap-4 rounded-3xl border border-zinc-200 bg-white px-4 py-4"
     >
-      <span className="grid size-12 shrink-0 place-items-center rounded-2xl" style={{ backgroundColor: 'var(--color-modulo-6-suave)', color: tinta(ACENTO) }} aria-hidden>
+      <span className="grid size-12 shrink-0 place-items-center rounded-2xl" style={{ backgroundColor: 'var(--color-letras-suave)', color: tinta(ACENTO) }} aria-hidden>
         <Pluma className="size-7" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">

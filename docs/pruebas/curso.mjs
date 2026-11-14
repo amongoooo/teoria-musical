@@ -142,9 +142,9 @@ for (const tema of ['claro', 'oscuro']) {
   // En el bloque, la flechita ‹ (en lugar de la casita) vuelve al Curso completo.
   comprobar(r, 'bloque: flechita en lugar de la casita', (await page.locator('[data-volver-curso]').count()) === 1 && (await page.getAttribute('[data-volver-curso]', 'href')) === '#/curso' && (await page.locator('a[aria-label="Inicio"]').count()) === 0)
   comprobar(r, 'bloque 2: 0/12', /0\/12/.test(await page.locator('[data-pagina-bloque] header').textContent()))
-  comprobar(r, 'puntito de la 3.1: color de acordes (M4)', /modulo-4/.test(await color(1)), await color(1))
+  comprobar(r, 'puntito de la 3.1: color de Armonía', /armonia/.test(await color(1)), await color(1))
   comprobar(r, 'puntito de la 2.3: gris (bloqueada)', /zinc-300/.test(await color(2)), await color(2))
-  comprobar(r, 'la 3.6 hecha: sin «Opcional» y con ✓', (await page.locator('[data-opcional]').count()) === 0 && /modulo-4/.test(await color(13)))
+  comprobar(r, 'la 3.6 hecha: sin «Opcional» y con ✓', (await page.locator('[data-opcional]').count()) === 0 && /armonia/.test(await color(13)))
   // La insignia abierta: meta del bloque y «Ver todos los bloques».
   await page.getByRole('button', { name: /^Bloque 2:/ }).first().click()
   await espera(1400)
