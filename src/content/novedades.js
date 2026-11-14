@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-tu-camino',
+    fecha: '14 nov 2026',
+    titulo: 'Tu camino más simple',
+    cosas: [
+      {
+        texto: 'En **Tu camino** del Curso completo, cada bloque es una tarjeta chica: **«Bloque N»**, su título y la **barra de progreso**. Tócala para entrar directo.',
+        donde: { etiqueta: 'Abrir el curso', href: '#/curso' },
+      },
+      {
+        texto: 'Dentro de un bloque, la casita cambió por una **flechita ‹** que te regresa al Curso completo.',
+        donde: { etiqueta: 'Ver el bloque 1', href: '#/curso/bloque/1' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-carrusel-modulos',
     fecha: '14 nov 2026',
     titulo: 'Módulos y prácticas',

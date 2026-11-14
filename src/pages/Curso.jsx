@@ -10,7 +10,7 @@ import { AREAS, ORDEN_AREAS, getBloque } from '../content/curso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Check, Trofeo } from '../ui/Iconos.jsx'
+import { Candado, Check, MarcaBien, Trofeo } from '../ui/Iconos.jsx'
 import { DESLIZAR, RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
@@ -286,7 +286,7 @@ function CarruselBloques({ curso }) {
   useRuedaMouse(ref, { puede, conVertical: false, onPaso: (dir) => irA(idx.current + dir) })
 
   const tarjetas = useRef([])
-  const anchoTarjeta = Math.min(ancho - 72, 340)
+  const anchoTarjeta = Math.min(ancho - 112, 280) // más chica: se ven las de al lado
   const actualizar = () => {
     const p = base.get() + gesto.progreso.get()
     const pc = limitar(p, 0, n - 1)
@@ -297,7 +297,7 @@ function CarruselBloques({ curso }) {
       if (!el) return
       const d = i - pc
       const a = Math.min(1, Math.abs(d))
-      el.style.transform = `translateX(${d * sep - fuera * X}px) scale(${lerp(1, 0.92, a)})`
+      el.style.transform = `translateX(${d * sep - fuera * X}px) scale(${lerp(1, 0.9, a)})`
       el.style.opacity = String(lerp(1, 0.5, a))
       el.style.visibility = Math.abs(d) > 1.8 ? 'hidden' : 'visible'
     })
@@ -315,7 +315,7 @@ function CarruselBloques({ curso }) {
       <div
         ref={ref}
         data-carrusel-bloques
-        className="relative -mx-5 h-[23.5rem] select-none overflow-hidden"
+        className="relative -mx-5 h-[9.75rem] select-none overflow-hidden"
         style={{ touchAction: 'pan-y' }}
         {...gesto.handlers}
       >
@@ -326,9 +326,12 @@ function CarruselBloques({ curso }) {
               ref={(el) => (tarjetas.current[i] = el)}
               className="absolute top-2 bottom-4"
               style={{ left: (ancho - anchoTarjeta) / 2, width: anchoTarjeta }}
-              inert={i !== indice ? true : undefined}
             >
-              {b ? <TarjetaBloque bloque={b} actual={curso.estado.actual} /> : <TarjetaPronto numero={bloques.length + 1} />}
+              {b ? (
+                <TarjetaBloque bloque={b} actual={curso.estado.actual} />
+              ) : (
+                <TarjetaPronto numero={bloques.length + 1} centro={i === indice} onTocar={() => irA(i)} />
+              )}
             </div>
           ))}
       </div>
@@ -356,96 +359,60 @@ function CarruselBloques({ curso }) {
   )
 }
 
-/** Chip del estado de un bloque: ✓ Hecho (verde), Ahora (del color del paso que toca) o Siguiente (gris). */
-function ChipBloque({ estado, acento }) {
-  if (estado === 'hecha')
-    return (
-      <span className="flex items-center gap-1 rounded-full bg-bien-suave px-2.5 py-0.5 font-juego text-sm uppercase tracking-wide text-bien-tinta">
-        <Check className="size-4" /> Hecho
-      </span>
-    )
-  if (estado === 'ahora')
-    return (
-      <span className="rounded-full px-2.5 py-0.5 font-juego text-sm uppercase tracking-wide text-blanco" style={{ backgroundColor: oscuro(acento) }}>
-        Ahora
-      </span>
-    )
-  return <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-juego text-sm uppercase tracking-wide text-zinc-600">Siguiente</span>
-}
-
-/** Tarjeta de un bloque: «Bloque N», chip, título, barra y x/y, un puntito por paso, la meta y «Ver los N pasos». */
+/**
+ * Tarjeta de un bloque (pedido del usuario: solo «Bloque N», su título más chico y debajo la barra de progreso). Tocarla
+ * entra directo al bloque (también una de al lado). La de ahora lleva borde oscuro; hecha, la barra verde y ✓.
+ */
 function TarjetaBloque({ bloque: b, actual }) {
   const ahora = b.estado === 'ahora'
-  const acentoAhora = ahora ? actual.acento : ACENTO_CURSO
+  const hecha = b.estado === 'hecha'
+  const acento = hecha ? 'var(--color-bien)' : ahora ? actual.acento : ACENTO_CURSO
   return (
-    <div
-      className="flex h-full flex-col gap-3 rounded-[1.75rem] border-2 bg-white p-5"
+    <Pulsable
+      tipo="tarjeta"
+      href={rutas.bloque(b.numero)}
+      draggable={false}
+      className="flex h-full w-full flex-col justify-between gap-2 rounded-[1.75rem] border-2 bg-white px-5 py-4 text-left"
       style={{ borderColor: ahora ? 'var(--color-zinc-900)' : 'var(--color-zinc-200)', boxShadow: RELIEVE }}
       data-tarjeta-bloque={b.numero}
+      data-ver-bloque={b.numero}
       data-estado={b.estado}
+      aria-label={`Bloque ${b.numero}: ${b.titulo}, ${b.hechas} de ${b.total} pasos`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-juego text-base uppercase tracking-wide text-zinc-500">Bloque {b.numero}</span>
-        <ChipBloque estado={b.estado} acento={acentoAhora} />
-      </div>
-      <h3 className="min-h-[3.75rem] font-titulo text-2xl font-bold leading-tight tracking-tight [text-wrap:balance]">{b.titulo}</h3>
-      <div className="flex items-center gap-3">
-        <BarraProgreso valor={b.hechas / b.total} color={b.estado === 'hecha' ? 'var(--color-bien)' : acentoAhora} fondo="bg-zinc-100" alto="h-2" className="flex-1" aria-hidden />
+      <span className="flex items-center gap-2">
+        <span className="font-juego text-base uppercase tracking-wide" style={{ color: ahora ? tinta(acento) : hecha ? 'var(--color-bien-tinta)' : 'var(--color-zinc-500)' }}>
+          Bloque {b.numero}
+        </span>
+        {hecha && <MarcaBien className="size-5" />}
+      </span>
+      <h3 className="line-clamp-2 font-titulo text-lg font-bold leading-tight tracking-tight [text-wrap:balance]">{b.titulo}</h3>
+      <span className="flex items-center gap-3">
+        <BarraProgreso valor={b.hechas / b.total} color={acento} fondo="bg-zinc-100" alto="h-2" className="flex-1" aria-hidden />
         <span className="font-dato text-sm font-medium tabular-nums text-zinc-500">
           {b.hechas}/{b.total}
         </span>
-      </div>
-      {/* Un puntito por paso, del color de su ruta: relleno = hecho, el actual más grande; opcional = hueco punteado. */}
-      <div aria-hidden className="flex min-h-9 flex-wrap content-start items-center gap-1.5" data-puntitos-bloque>
-        {b.paradas.map((p) => {
-          const esActual = actual && p === actual
-          return (
-            <span
-              key={p.i}
-              data-paso={p.hecha ? 'hecho' : esActual ? 'actual' : p.opcional ? 'opcional' : 'pendiente'}
-              className={`block shrink-0 ${p.tipo === 'abre' || p.tipo === 'reto' ? 'rounded-[4px]' : 'rounded-full'}`}
-              style={{
-                width: esActual ? 16 : 12,
-                height: esActual ? 16 : 12,
-                backgroundColor: p.hecha || esActual ? p.acento : 'transparent',
-                border: p.hecha || esActual ? undefined : p.opcional ? '2px dashed var(--color-zinc-300)' : `2px solid ${p.acento}`,
-                opacity: p.hecha || esActual || p.opcional ? 1 : 0.55,
-              }}
-            />
-          )
-        })}
-      </div>
-      <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full border-2 border-zinc-300 text-zinc-700" aria-hidden>
-          <Trofeo className="size-5" />
-        </span>
-        <span className="flex min-w-0 flex-col">
-          <span className="font-juego text-sm uppercase tracking-wide text-zinc-500">Meta</span>
-          <span className="text-base font-semibold leading-snug">{b.meta}</span>
-        </span>
-      </div>
-      <Pulsable
-        href={rutas.bloque(b.numero)}
-        data-ver-bloque={b.numero}
-        className={`grid min-h-12 place-items-center rounded-2xl font-juego text-lg font-semibold uppercase tracking-wide ${ahora ? 'bg-zinc-900 text-white' : 'border-2 border-zinc-300 text-zinc-800'}`}
-      >
-        Ver los {b.total} pasos
-      </Pulsable>
-    </div>
+      </span>
+    </Pulsable>
   )
 }
 
-/** Al final del carrusel: lo que aún no existe, punteado y con candado. */
-function TarjetaPronto({ numero }) {
+/** Al final del carrusel: lo que aún no existe, punteado y con candado (en lugar de la barra). */
+function TarjetaPronto({ numero, centro, onTocar }) {
   return (
-    <div className="flex h-full flex-col gap-3 rounded-[1.75rem] border-2 border-dashed border-zinc-300 p-5" data-tarjeta-bloque="pronto">
+    <Pulsable
+      tipo="tarjeta"
+      onClick={centro ? undefined : onTocar}
+      className="flex h-full w-full flex-col justify-between gap-2 rounded-[1.75rem] border-2 border-dashed border-zinc-300 px-5 py-4 text-left"
+      data-tarjeta-bloque="pronto"
+      aria-label={`Bloque ${numero}: próximamente`}
+    >
       <span className="font-juego text-base uppercase tracking-wide text-zinc-500">Bloque {numero}</span>
-      <h3 className="font-titulo text-2xl font-bold leading-tight tracking-tight text-zinc-500">Próximamente</h3>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-zinc-500">
-        <Candado className="size-9" />
-        <span className="text-base font-semibold">Llegan con los próximos módulos y rutas</span>
-      </div>
-    </div>
+      <h3 className="font-titulo text-lg font-bold leading-tight tracking-tight text-zinc-500">Próximamente</h3>
+      <span className="flex items-center gap-3 text-zinc-500">
+        <span className="h-2 flex-1 rounded-full border-2 border-dashed border-zinc-300" />
+        <Candado className="size-5" />
+      </span>
+    </Pulsable>
   )
 }
 

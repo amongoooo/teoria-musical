@@ -5,6 +5,9 @@ import { useRuta } from './rutaModulo.js'
 import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
 import { BotonInicio } from '../ui/Volver.jsx'
+import { Atras } from '../ui/Iconos.jsx'
+import Pulsable from '../ui/Pulsable.jsx'
+import { rutas } from '../router.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import BotonOpciones from './Opciones.jsx'
 import BarraCurso from './BarraCurso.jsx'
@@ -40,6 +43,8 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
     return (
       <Fila
         chico={chico}
+        // En un bloque, la flechita ‹ vuelve al Curso completo (pedido del usuario: en lugar de la casita).
+        volver={b ? { href: rutas.curso(), etiqueta: 'Volver al curso completo' } : null}
         titulo={b ? b.titulo : 'Curso completo'}
         barra={<BarraCurso areas={areas} total={total} retraso={0} aria-label={`${b ? `Bloque ${b.numero}` : 'Curso completo'}: ${hechas} de ${total} pasos`} data-barra-curso />}
       />
@@ -74,12 +79,18 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
 }
 
 /** La fila fija de vidrio: casita · píldora con la barra (y el título en pequeño al bajar) · Opciones. */
-function Fila({ chico, titulo, barra }) {
+function Fila({ chico, titulo, barra, volver = null }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-30 pb-5" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-4 sm:pt-6">
         <div className="pointer-events-auto shrink-0">
-          <BotonInicio />
+          {volver ? (
+            <Pulsable href={volver.href} aria-label={volver.etiqueta} data-volver-curso className={`grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}>
+              <Atras className="size-6" />
+            </Pulsable>
+          ) : (
+            <BotonInicio />
+          )}
         </div>
         {/* flex-1 + basis-0 + min-w-0: la zona de la barra tiene un ancho fijo; los segmentos nuevos crecen
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
