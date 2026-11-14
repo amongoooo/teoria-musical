@@ -7,6 +7,8 @@ import { RESORTE } from '../ui/movimiento.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
 import BotonOpciones from './Opciones.jsx'
+import BarraCurso from './BarraCurso.jsx'
+import { useCurso } from './cursoModulo.js'
 
 /** Alto de la cabecera fija (fila de 44 px + márgenes + desvanecido), sin contar la zona segura de arriba. */
 export const ALTO_CABECERA = 80
@@ -24,11 +26,26 @@ const FILA = 60 // borde de abajo de la fila (pt-4 + 44 px), por si aún no se p
  *    (completada = lleno; a medias = paso / pasos).
  * La página de Módulo le deja su hueco arriba (`h-11`).
  */
-export default function CabeceraModulo({ numero, ruta = null }) {
+export default function CabeceraModulo({ numero, ruta = null, curso = false, bloque = null }) {
   const progreso = useProgreso()
   const deRuta = useRuta(ruta) // también para módulos (los hooks van siempre); solo se usa con `ruta`
+  const deCurso = useCurso() // solo se usa con `curso`
+  const chico = useTituloEscondido(curso ? `curso-${bloque}` : (ruta ?? numero))
+  // Curso completo (#/curso y cada bloque): la barra APILADA en los tres colores (lo del curso o lo del bloque).
+  if (curso) {
+    const b = bloque ? deCurso.estado.bloques.find((x) => x.numero === Number(bloque)) : null
+    const areas = b ? Object.fromEntries(Object.keys(deCurso.estado.areas).map((a) => [a, { hechas: b.paradas.filter((p) => !p.opcional && p.hecha && p.area === a).length }])) : deCurso.estado.areas
+    const hechas = b ? b.hechas : deCurso.estado.hechas
+    const total = b ? b.total : deCurso.estado.total
+    return (
+      <Fila
+        chico={chico}
+        titulo={b ? b.titulo : 'Curso completo'}
+        barra={<BarraCurso areas={areas} total={total} retraso={0} aria-label={`${b ? `Bloque ${b.numero}` : 'Curso completo'}: ${hechas} de ${total} pasos`} data-barra-curso />}
+      />
+    )
+  }
   const modulo = ruta ? deRuta.modulo : getModulo(numero)
-  const chico = useTituloEscondido(ruta ?? numero)
   if (!modulo) return null
 
   // Avance de una lección: completada = 1, a medias = paso / pasos.
@@ -48,6 +65,17 @@ export default function CabeceraModulo({ numero, ruta = null }) {
   const total = ruta ? paradas.length : valores.length
 
   return (
+    <Fila
+      chico={chico}
+      titulo={modulo.titulo}
+      barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${total} lecciones completadas`} />}
+    />
+  )
+}
+
+/** La fila fija de vidrio: casita · píldora con la barra (y el título en pequeño al bajar) · Opciones. */
+function Fila({ chico, titulo, barra }) {
+  return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-30 pb-5" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-4 sm:pt-6">
         <div className="pointer-events-auto shrink-0">
@@ -57,7 +85,7 @@ export default function CabeceraModulo({ numero, ruta = null }) {
             DENTRO de ella (antes la ensanchaban un instante y empujaban la rueda de Opciones). */}
         <div data-pildora-cabecera className={`relative mx-auto flex h-11 min-w-0 max-w-xl flex-1 basis-0 flex-col justify-center rounded-full px-4 ${VIDRIO}`}>
           <motion.div animate={{ y: chico ? -8 : 0 }} transition={RESORTE.suave}>
-            <BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${total} lecciones completadas`} />
+            {barra}
           </motion.div>
           <AnimatePresence>
             {chico && (
@@ -69,7 +97,7 @@ export default function CabeceraModulo({ numero, ruta = null }) {
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ ...RESORTE.suave, opacity: { duration: 0.15 } }}
               >
-                {modulo.titulo}
+                {titulo}
               </motion.p>
             )}
           </AnimatePresence>

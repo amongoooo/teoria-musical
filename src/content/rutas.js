@@ -197,18 +197,21 @@ export function tituloLeccion(id) {
  * `medirMeta(p)` → { valor, meta }: cuánto llevas de una meta (nivel más alto del modo, letras en el cuaderno,
  * palabras del tema…) y cuánto pide. Sin él, `nivelMax(modo)` = nivel más alto alcanzado en ese modo.
  */
+/** ¿Se cumple la condición de una parada (sin mirar el orden)? `medir(p)` → { valor, meta } de una meta. */
+export function cumplidaParada(p, progreso, medir) {
+  if (p.tipo === 'leccion') return Boolean(progreso.lecciones[p.id]?.completada)
+  if (p.tipo === 'meta') {
+    const m = medir(p)
+    return m.valor >= m.meta
+  }
+  if (p.tipo === 'abre') return herramientaAbierta(p.herramienta, progreso)
+  if (p.tipo === 'reto') return Boolean(progreso.retos[p.id]?.hecho)
+  return false
+}
+
 export function estadoRuta(ruta, { progreso, nivelMax, medirMeta, admin = false }) {
   const medir = medirMeta ?? ((p) => ({ valor: nivelMax(p.modo), meta: p.nivel }))
-  const cumplida = (p) => {
-    if (p.tipo === 'leccion') return Boolean(progreso.lecciones[p.id]?.completada)
-    if (p.tipo === 'meta') {
-      const m = medir(p)
-      return m.valor >= m.meta
-    }
-    if (p.tipo === 'abre') return herramientaAbierta(p.herramienta, progreso)
-    if (p.tipo === 'reto') return Boolean(progreso.retos[p.id]?.hecho)
-    return false
-  }
+  const cumplida = (p) => cumplidaParada(p, progreso, medir)
   let actual = -1
   const paradas = ruta.paradas.map((p, i) => {
     const ok = cumplida(p)

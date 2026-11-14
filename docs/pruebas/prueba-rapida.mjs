@@ -1,14 +1,15 @@
-// Prueba la PRUEBA RÁPIDA «¿Ya lo sabes?» (content/pruebas/, pages/Prueba.jsx, components/HojaEntrada.jsx):
+// Prueba la PRUEBA RÁPIDA «¿Ya lo sabes?» (content/pruebas/, pages/Prueba.jsx, components/yaLoSabes.js):
 //  - el banco (con node): 26 lecciones × 3 preguntas, `correcta` dentro de las opciones (o de los sonidos), todas
 //    las lecciones con contenido tienen sus 3 preguntas; conteos y esquemas de letras como los da el motor;
-//  - a 375 px en claro y oscuro: Inicio → cuadrito del módulo 3 → hoja con «¿Ya lo sabes? · 7 preguntas» → la prueba
+//  - a 375 px en claro y oscuro: Inicio → cuadrito del módulo 3 (entra directo) → globo de la insignia con
+//    «¿Ya lo sabes? · 7 preguntas» en lugar de «Ir a…» → la prueba
 //    (azar fijo: la 1.ª pregunta de cada lección): bien, mal, «No lo sé», bien, el círculo (La), bien, bien → 5 de 7;
 //    segmentos verde / oro; resultado con 5 marcadas; quitar la 3.7 → «Saltar 4 lecciones» → vuelve al módulo con
 //    3.1, 3.4, 3.5 y 3.6 saltadas (✓ en contorno en el camino), la 3.2 abierta y el Círculo abierto en Inicio;
-//    la hoja vuelve a salir con 3 preguntas y «Última vez: 5 de 7»;
-//  - un módulo ya completo entra directo (sin hoja);
-//  - la ruta de acordes: hoja con sus 4 tramos (el 1.º marcado), tocar «Tríadas» cambia el botón a «tramo 3»; esa
-//    prueba (2 preguntas) con «No lo sé» → «Mejor empieza por las lecciones» → «Ir a la ruta»;
+//    la insignia ofrece después 3 preguntas y «Última vez: 5 de 7»;
+//  - un módulo ya completo: su insignia ya no ofrece la prueba (vuelve «Ver retos»);
+//  - la ruta de acordes: la insignia ofrece «¿Ya lo sabes? · tramo 1»; esa prueba (3 preguntas) con «No lo sé» →
+//    «Mejor empieza por las lecciones» → «Ir a la ruta»;
 //  - la pestaña de módulos (dentro de un módulo) también ofrece «¿Ya lo sabes?»;
 //  - en el globo de una lección saltada: «Saltada con la prueba» y «Hacerla».
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/prueba-rapida.mjs [carpeta-de-capturas]
@@ -85,15 +86,22 @@ for (const tema of ['claro', 'oscuro']) {
     await espera(650)
   }
 
-  // ——— Módulo 3 desde Inicio ———
+  // La insignia abierta (el primer nodo del camino) y su globo.
+  const insignia = async (etiqueta) => {
+    await page.locator(`button[aria-label^="${etiqueta}"]`).first().click()
+    await espera(1200)
+    return page.locator(`[role="group"][aria-label^="${etiqueta}"]`).first()
+  }
+
+  // ——— Módulo 3 desde Inicio: entra directo y la prueba está en la insignia ———
   await preparar()
   await page.locator('[data-cuadrito-modulo="3"]').click()
-  await espera(700)
-  const textoHoja = await hoja().textContent()
-  comprobar(r, 'hoja del módulo 3', textoHoja.includes('Intervalos y escalas') && textoHoja.includes('¿Ya lo sabes? · 7 preguntas'), textoHoja)
-  comprobar(r, 'sigue en Inicio', !page.url().includes('#/modulo'), page.url())
-  await foto('1-hoja-modulo')
-  await page.locator('[data-ya-lo-sabes]').click()
+  await espera(1500)
+  comprobar(r, 'el cuadrito entra directo al módulo', page.url().includes('#/modulo/3') && (await hoja().count()) === 0, page.url())
+  const globoIns = await (await insignia('Módulo 3')).textContent()
+  comprobar(r, 'insignia del módulo 3', globoIns.includes('Intervalos y escalas') && globoIns.includes('¿Ya lo sabes? · 7 preguntas') && !globoIns.includes('Ir a la'), globoIns)
+  await foto('1-insignia-modulo')
+  await page.locator('[data-ya-lo-sabes]:visible').first().click()
   await espera(900)
   comprobar(r, 'abre la prueba', page.url().includes('#/prueba/modulo/3'), page.url())
   comprobar(r, '7 segmentos', (await page.locator('[data-segmento]').count()) === 7)
@@ -161,38 +169,35 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'globo de la saltada', globo.includes('Saltada con la prueba') && globo.includes('Hacerla'), globo)
   await foto('6-globo-saltada')
 
-  // De vuelta en Inicio: el Círculo se abrió (3.5 saltada) y la hoja ofrece 3 preguntas con «Última vez».
+  // De vuelta en Inicio: el Círculo se abrió (3.5 saltada) y la insignia ofrece 3 preguntas con «Última vez».
   await page.goto(BASE + '#/')
   await espera(800)
   comprobar(r, 'Círculo abierto', (await page.locator('[data-tarjeta-circulo="abierta"]').count()) === 1)
   await page.locator('[data-cuadrito-modulo="3"]').click()
-  await espera(700)
-  const textoHoja2 = await hoja().textContent()
-  comprobar(r, 'hoja otra vez', textoHoja2.includes('· 3 preguntas') && textoHoja2.includes('Última vez: 5 de 7') && textoHoja2.includes('Seguir'), textoHoja2)
-  await page.locator('[data-entrar]').click()
-  await espera(900)
-  comprobar(r, 'Seguir entra al módulo', page.url().includes('#/modulo/3'), page.url())
+  await espera(1500)
+  const globoIns2 = await (await insignia('Módulo 3')).textContent()
+  comprobar(r, 'insignia otra vez', globoIns2.includes('· 3 preguntas') && globoIns2.includes('Última vez: 5 de 7'), globoIns2)
 
-  // ——— Un módulo completo entra directo ———
+  // ——— Un módulo completo: entra directo y su insignia ya no ofrece la prueba ———
   await preparar({ 1.1: { completada: true }, 1.2: { completada: true }, 1.3: { completada: true }, 1.4: { completada: true } })
   await page.locator('[data-cuadrito-modulo="1"]').click()
-  await espera(900)
+  await espera(1500)
   comprobar(r, 'módulo completo entra directo', page.url().includes('#/modulo/1') && (await hoja().count()) === 0, page.url())
+  const globoIns3 = await (await insignia('Módulo 1')).textContent()
+  comprobar(r, 'módulo completo: «Ver retos», sin prueba', globoIns3.includes('Ver retos') && !globoIns3.includes('¿Ya lo sabes?'), globoIns3)
 
-  // ——— Ruta de acordes ———
+  // ——— Ruta de acordes: entra directo; la insignia ofrece la prueba del tramo en el que vas ———
   await preparar()
   await page.locator('[data-cuadrito-ruta="acordes"]').click()
-  await espera(700)
-  const marcado = await page.locator('[data-tramo-hoja][data-marcado]').getAttribute('data-tramo-hoja')
-  comprobar(r, 'hoja de la ruta con 4 tramos', (await page.locator('[data-tramo-hoja]').count()) === 4 && marcado === 'notas-teclado', marcado)
-  await page.locator('[data-tramo-hoja="triadas"]').click()
-  await espera(300)
-  comprobar(r, 'tocar un tramo lo marca', (await page.locator('[data-ya-lo-sabes]').textContent()).includes('tramo 3'))
-  await foto('7-hoja-ruta')
-  await page.locator('[data-ya-lo-sabes]').click()
+  await espera(1500)
+  comprobar(r, 'el cuadrito de la ruta entra directo', page.url().includes('#/ruta/acordes') && (await hoja().count()) === 0, page.url())
+  const globoRuta = await (await insignia('Ruta de acordes')).textContent()
+  comprobar(r, 'insignia de la ruta: «tramo 1»', globoRuta.includes('¿Ya lo sabes? · tramo 1') && !globoRuta.includes('Ir a:'), globoRuta)
+  await foto('7-insignia-ruta')
+  await page.locator('[data-ya-lo-sabes]:visible').first().click()
   await espera(900)
-  comprobar(r, 'prueba del tramo', page.url().includes('#/prueba/ruta/acordes/triadas') && (await page.locator('[data-segmento]').count()) === 2, page.url())
-  for (let i = 0; i < 2; i++) {
+  comprobar(r, 'prueba del tramo', page.url().includes('#/prueba/ruta/acordes/notas-teclado') && (await page.locator('[data-segmento]').count()) === 3, page.url())
+  for (let i = 0; i < 3; i++) {
     await page.locator('[data-no-lo-se]').click()
     await espera(400)
     await boton().click()

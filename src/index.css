@@ -119,6 +119,12 @@
   --color-modulo-10-tinta: #5e5b8c;
   --color-modulo-10-suave: #e5e5ee;
 
+  /* Neutro (Curso completo): la insignia de cada bloque y el reto final de las tres rutas, que no son de ningún módulo. */
+  --color-neutro: #5d5f68;
+  --color-neutro-relleno: #3c3e47;
+  --color-neutro-tinta: #3c3e47;
+  --color-neutro-suave: #ececed;
+
   /* Dificultad del entrenador de oído (pedido del usuario): azul → verde → amarillo → naranja → rojo (la más difícil).
      Reusan colores de la paleta; las variantes cambian solas en oscuro porque apuntan a variables que ya cambian. */
   --color-dificultad-1: var(--color-modulo-1);
@@ -229,6 +235,10 @@
   --color-modulo-10: #6a6795;
   --color-modulo-10-tinta: #9a9aba;
   --color-modulo-10-suave: #2e2f41;
+  --color-neutro: #8a8c94;
+  --color-neutro-relleno: #575961;
+  --color-neutro-tinta: #d4d5d7;
+  --color-neutro-suave: #2f313b;
 }
 
 /* Zonas que se ven siempre claras, también en modo oscuro (teclas del piano, como uno real). */

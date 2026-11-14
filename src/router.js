@@ -1,4 +1,4 @@
-// Navegación mínima por hash (#/modulo/1, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
+// Navegación mínima por hash (#/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
 // #/letras/vocabulario/repaso).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
@@ -14,6 +14,7 @@ function parse(hash) {
   if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'piano') return { pagina: 'piano' }
   if (partes[0] === 'ruta' && partes[1]) return { pagina: 'ruta', id: partes[1] }
+  if (partes[0] === 'curso') return { pagina: 'curso', id: partes[1] === 'bloque' && partes[2] ? partes[2] : null }
   if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
   return { pagina: 'inicio' }
@@ -44,6 +45,9 @@ export const rutas = {
   piano: () => '#/piano',
   /** Una ruta de curso (se ve igual que un módulo). */
   ruta: (id) => `#/ruta/${id}`,
+  /** Curso completo (las tres rutas a la par, en bloques) y un bloque abierto como camino de islas. */
+  curso: () => '#/curso',
+  bloque: (n) => `#/curso/bloque/${n}`,
   /** Prueba rápida «¿Ya lo sabes?»: 'modulo/3' o 'ruta/acordes/triadas' (content/pruebas/). */
   prueba: (id) => `#/prueba/${id}`,
   importar: (codigo) => `#/importar/${codigo}`,

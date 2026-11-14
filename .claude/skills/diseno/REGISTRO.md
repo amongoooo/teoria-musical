@@ -2,6 +2,9 @@
 
 De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`; aquí queda el porqué y cuándo.
 
+- 2026-11-14: (pedido del usuario) **Curso completo**: en Inicio, un botón blanco con relieve y un **anillo en tres colores** (Armonía M4, Ritmo M2, Letras M6) en lugar de la tarjeta de «Continuar»; página `#/curso` con barra **apilada**, «Sigue aquí» del color del paso, carrusel de bloques y «Tus rutas»; cada bloque se abre como camino de islas con **cada isla del color de su ruta** y el color nuevo **neutro** para lo que es de las tres (insignia del bloque y reto final). Islas **opcionales**: gris claro con borde punteado, sin candado, ficha «Opcional»; con ✓ si se hacen, sin contar.
+- 2026-11-14: (pedido del usuario) **Los cuadritos entran directo** y **«¿Ya lo sabes?» va en el globo de la insignia** en lugar de «Ir a…»; ya no hay hoja de entrada. **Sin cuadrito del dedo** en la barra de puntitos.
+
 - 2026-11-14: (pedido del usuario) **La regla de puntitos se arrastra** en lugar del joystick: «que al hacer swipe sobre ella los puntos se deslicen en el sentido del arrastre; la barra siempre se acomodará para que un punto esté en medio». La tira sigue al dedo 1:1, cada puntito que cruza el centro abre su isla con su matraca, al soltar se asienta con inercia en un puntito; goma en los extremos. El cuadrito del dedo se queda en el centro.
 - 2026-11-14: (pedido del usuario) **Prueba rápida «¿Ya lo sabes?» sin botón aparte**: sale en una **hoja** al tocar el cuadrito del módulo o de la ruta (entrar = botón sólido del color; prueba = botón de vidrio con el ícono nuevo `Saltar`); en la prueba, segmentos verde/oro por pregunta y «No lo sé» punteado; las lecciones saltadas llevan `MarcaBien` en **contorno** (`saltada`).
 - 2026-11-14: (pedido del usuario) **El botón de la barra de acción sigue siendo de vidrio al presionarlo** (Continuar, Comprobar, Atrás): ya no se vuelve mate; solo se hunde.

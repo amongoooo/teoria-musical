@@ -1,4 +1,4 @@
-import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
+import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion } from 'motion/react'
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
@@ -7,7 +7,7 @@ import { useOpciones } from '../progress/opciones.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { claro, labio, oscuro, tinta } from '../ui/color.js'
-import { Candado, Cerrar, Check, Cuadritos, MarcaBien, Reproducir, Trofeo } from '../ui/Iconos.jsx'
+import { Candado, Cerrar, Check, Cuadritos, MarcaBien, Reproducir, Saltar, Trofeo } from '../ui/Iconos.jsx'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
@@ -16,6 +16,7 @@ import useRuedaMouse from '../ui/useRuedaMouse.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import NavegadorModulos from './NavegadorModulos.jsx'
+import { pruebaDeModulo, pruebaDeRuta } from './yaLoSabes.js'
 
 const ISLA = 80 // diámetro de cada isla (px)
 const INSIGNIA = 72 // cuadrado con el número del módulo, al inicio del camino
@@ -69,21 +70,6 @@ const FLOTA = { factor: 0.5, max: 14 }
 // (Pedido del usuario: el doble de inclinación y la mitad de tiempo.) Los resortes son los de siempre
 // (RESORTE.pulsar para el golpe y RESORTE.suave para volver) con rigidez ×4 y amortiguación ×2: igual de
 // «secos», pero duran la mitad.
-// Cuadrito del dedo (pedido del usuario): al presionar la barra aparece un cuadrito gris leve que sigue al dedo sobre
-// los puntitos, DETRÁS del vidrio de la barra (se ve difuminado; con «Opaco» la barra es sólida y va encima). Se pega con un IMÁN al puntito bajo el dedo
-// (en la regla se queda en el centro: el puntito del medio es el elegido); al soltar vuelve al centro con un resorte
-// que se pasa un poco (`vuelve`). Cuanto más a los costados, más se resalta (`opacidad`: de `min` a `max`).
-const CUADRITO = {
-  lado: 38,
-  iman: { type: 'spring', stiffness: 700, damping: 34, mass: 0.6 },
-  vuelve: { type: 'spring', stiffness: 260, damping: 11, mass: 0.8 },
-  opacidad: { min: 0.12, max: 0.32 }, // encima de la barra (Opaco)
-  opacidadDetras: { min: 0.3, max: 0.58 }, // detrás del vidrio: el desenfoque lo aclara
-  // El brillo crece EXPONENCIAL con la etapa (pedido del usuario): poco en las primeras, mucho al final.
-  curva: 2.5,
-}
-/** 0–1 → 0–1 exponencial: (e^(k·f) − 1) / (e^k − 1). */
-const brilloCuadrito = (f) => (Math.exp(CUADRITO.curva * f) - 1) / (Math.exp(CUADRITO.curva) - 1)
 const MATRACA = {
   max: 3,
   eje: 4,
@@ -212,7 +198,9 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     const m = modulo.vecino ? modulo.vecino(dir) : getModulo(modulo.numero + dir)
     return Boolean(m && (m.esRuta ? m.disponible : moduloDisponible(m)))
   }
-  const nombreModulo = modulo.esRuta ? `Ruta de ${modulo.titulo.toLowerCase()}` : `Módulo ${modulo.numero}`
+  const nombreModulo = modulo.nombre ?? `Módulo ${modulo.numero}`
+  // Color de cada isla: en el Curso completo, el de SU área (cada parada trae su `acento`); si no, el del módulo.
+  const acentoIsla = (i) => islasMeta[i]?.parada?.acento ?? modulo.acento
   const [verModulos, setVerModulos] = useState(false)
   const [verRetos, setVerRetos] = useState(false)
   const vertical = anchoReal < 560
@@ -898,14 +886,14 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                     <feGaussianBlur stdDeviation="0" />
                   </filter>
                   <path ref={guardar('gris', s)} fill="none" stroke="var(--color-zinc-200)" strokeWidth="6" strokeLinecap="round" strokeDasharray="0.1 14" style={{ opacity: 0 }} />
-                  {(l.esRetos ? moduloCompleto : estados[s] !== 'bloqueada' && estados[s] !== 'proximamente') && (
+                  {(l.esRetos ? moduloCompleto : estados[s] !== 'bloqueada' && estados[s] !== 'proximamente' && estados[s] !== 'opcional') && (
                     <motion.path
                       ref={guardar('color', s)}
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
                       transition={{ ...RESORTE.suave, delay: montado ? 0 : DESPLIEGUE.espera + s * DESPLIEGUE.entre + 0.2 }}
                       fill="none"
-                      style={{ stroke: modulo.acento }}
+                      style={{ stroke: acentoIsla(s) }}
                       strokeWidth="6"
                       strokeLinecap="round"
                     />
@@ -970,14 +958,14 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                       <div ref={guardar('difuso', i + 1)}>
                         <div ref={guardar('chica', i + 1)} style={{ opacity: 0 }}>
                           {l.esRetos || l.parada?.tipo === 'reto' ? (
-                            <IslaRetos acento={modulo.acento} completo={estado === 'hecha'} bloqueada={estado === 'bloqueada'} descripcion={texto} onClick={() => irA(i + 1)} />
+                            <IslaRetos acento={acentoIsla(i)} completo={estado === 'hecha'} bloqueada={estado === 'bloqueada'} descripcion={texto} onClick={() => irA(i + 1)} />
                           ) : l.parada ? (
                             <Isla
                               leccion={l}
                               estado={estado}
                               esActual={i === actual}
                               avance={avanceParada(l.parada, estado, progreso)}
-                              acento={modulo.acento}
+                              acento={acentoIsla(i)}
                               descripcion={texto}
                               etiqueta={l.titulo}
                               cuadrada={l.parada.tipo === 'abre'}
@@ -1004,13 +992,20 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                         className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center rounded-xl bg-fondo px-2 py-0.5"
                         style={{ opacity: 0, ...(vertical ? { top: ISLA + 12 } : { bottom: ISLA + 10 }) }}
                       >
-                        <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                        <span className={`line-clamp-2 text-center text-base font-semibold leading-snug ${estado === 'bloqueada' || estado === 'proximamente' || estado === 'opcional' ? 'text-zinc-500' : 'text-zinc-900'}`}>
                           {l.titulo}
                         </span>
-                        {vertical && (
-                          <span className={`text-center text-sm font-semibold ${i === actual ? '' : 'text-zinc-500'}`} style={i === actual ? { color: tinta(modulo.acento) } : undefined}>
-                            {texto}
+                        {/* Opcional (Curso completo): la ficha punteada «Opcional» debajo (también en pantallas anchas). */}
+                        {l.parada?.opcional && estado !== 'hecha' ? (
+                          <span data-opcional className="mt-1 rounded-full border-2 border-dashed border-zinc-300 px-2.5 font-juego text-sm uppercase tracking-wide text-zinc-500">
+                            Opcional
                           </span>
+                        ) : (
+                          vertical && (
+                            <span className={`text-center text-sm font-semibold ${i === actual ? '' : 'text-zinc-500'}`} style={i === actual ? { color: tinta(acentoIsla(i)) } : undefined}>
+                              {texto}
+                            </span>
+                          )
                         )}
                       </span>
                     </div>
@@ -1021,7 +1016,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                             parada={l.parada}
                             estado={estado}
                             ruta={ruta}
-                            acento={modulo.acento}
+                            acento={acentoIsla(i)}
                             progreso={progreso}
                             actual={actual >= 0 ? lecciones[actual] : null}
                             indice={i}
@@ -1067,6 +1062,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
               reducir={reducir}
               onMatraca={matraca}
               onVerModulos={ruta?.onVerModulos}
+              textoVerModulos={ruta?.textoVerModulos}
               tramos={tramos}
             />
           )}
@@ -1092,7 +1088,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
  * centro abre su isla y da su golpe de matraca; al soltar, con inercia, la tira se acomoda con un puntito en el centro
  * (ver REGLA). Tocar (soltar sin haber movido) va al puntito que estaba bajo el dedo.
  */
-function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, tramos = [] }) {
+function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onIr, flotaX, flotaY, giro, golpe, reducir, onMatraca, onVerModulos, textoVerModulos = 'Módulos y prácticas', tramos = [] }) {
   const sep = DESLIZAR.puntitos.separacion
   const zonaMuerta = DESLIZAR.puntitos.zonaMuerta
   const ventana = useAnchoVentana()
@@ -1119,27 +1115,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
   const g = useRef(null) // gesto sobre la barra
   const ultimoArrastre = useRef(0)
   const corre = useMotionValue(0) // x de la tira (regla)
-  // Cuadrito del dedo (ver CUADRITO): x desde el centro de la píldora, cuánto se resalta (0–1) y si se ve.
-  const cuadroX = useMotionValue(0)
-  const cuadroFuerza = useMotionValue(0)
-  const cuadroVe = useMotionValue(0)
-  const detras = useOpciones().vidrio !== 'opaco' // con desenfoque, el cuadrito va detrás del vidrio
-  const rango = detras ? CUADRITO.opacidadDetras : CUADRITO.opacidad
-  const cuadroOpacidad = useTransform(() => cuadroVe.get() * (rango.min + (rango.max - rango.min) * brilloCuadrito(limitar(cuadroFuerza.get(), 0, 1))))
-  const cuadroXDetras = useTransform(() => cuadroX.get() + golpe.get()) // detrás, sigue también el golpe de la matraca
-  const cuadroEscala = useTransform(() => 1 + 0.1 * cuadroFuerza.get())
-  /** Lleva el cuadrito a una etapa (x en px desde el centro y fuerza 0–1), con imán solo si la etapa cambió. */
-  const cuadroA = (s, x, fuerza) => {
-    if (s.etapa === x) return
-    s.etapa = x
-    if (reducir) {
-      cuadroX.jump(x)
-      cuadroFuerza.jump(fuerza)
-      return
-    }
-    animate(cuadroX, x, CUADRITO.iman)
-    animate(cuadroFuerza, fuerza, CUADRITO.iman)
-  }
   const destino = (k) => disponible / 2 - centros[limitar(k, 0, total - 1)]
   /** Puntito que queda en el centro con la tira en `x`. */
   const enCentro = (x) => masCercano(centros, disponible / 2 - x)
@@ -1195,15 +1170,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
     g.current = null
     animate(flotaX, 0, RESORTE.suave)
     animate(flotaY, 0, RESORTE.suave)
-    // El cuadrito vuelve al centro con un resorte que se pasa un poco y luego se apaga.
-    if (reducir) {
-      cuadroX.jump(0)
-      cuadroVe.jump(0)
-    } else {
-      animate(cuadroX, 0, CUADRITO.vuelve)
-      animate(cuadroFuerza, 0, CUADRITO.vuelve)
-      animate(cuadroVe, 0, { duration: 0.25, delay: 0.45 })
-    }
     if (!s.regla) return
     if (s.movio) {
       // Se asienta con un puntito en el centro: el más cercano a donde la llevaría la inercia.
@@ -1256,7 +1222,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
         <Pulsable
           data-encima-barra
           onClick={onVerModulos}
-          aria-label="Módulos y prácticas"
+          aria-label={textoVerModulos}
           className={`pointer-events-auto grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
         >
           <Cuadritos className="size-6" />
@@ -1264,15 +1230,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
       )}
       {/* Capa que flota con el dedo */}
       <motion.div style={{ x: flotaX, y: flotaY }} className={`relative ${regla ? 'w-full' : ''}`}>
-        {/* Cuadrito del dedo DETRÁS de la píldora de vidrio (ver CUADRITO): el desenfoque lo difumina. */}
-        {detras && (
-          <motion.span
-            aria-hidden
-            data-cuadrito="detras"
-            className="pointer-events-none absolute left-1/2 top-1/2 rounded-xl bg-zinc-500"
-            style={{ width: CUADRITO.lado, height: CUADRITO.lado, marginLeft: -CUADRITO.lado / 2, marginTop: -CUADRITO.lado / 2, x: cuadroXDetras, opacity: cuadroOpacidad, scale: cuadroEscala }}
-          />
-        )}
         {/* Capa de la matraca (giro) */}
         <motion.div
           role="group"
@@ -1298,10 +1255,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
             // Eje de la barra en reposo: se mide en la capa que flota (no gira; la inclinada mediría de más).
             const capa = pildora.current.parentElement.getBoundingClientRect()
             base.ejeY = capa.top + capa.height / 2 - flotaY.get()
-            base.centroPildora = capa.left + capa.width / 2 - flotaX.get()
-            base.etapa = null
-            cuadroVe.stop()
-            cuadroVe.set(1)
             if (regla) {
               g.current = {
                 ...base,
@@ -1312,7 +1265,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                 muestras: [[performance.now(), e.clientX]],
                 movio: false,
               }
-              cuadroA(g.current, 0, 0.35) // en el centro: el puntito del medio es el elegido
               return
             }
             const cs = [...pildora.current.querySelectorAll('[data-punto]')].map((b) => {
@@ -1320,9 +1272,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               return c.left + c.width / 2
             })
             g.current = { ...base, centros: cs, punto: masCercano(cs, e.clientX) }
-            const cuadroPunto = (st) => cuadroA(st, cs[st.punto] - st.centroPildora, Math.min(1, Math.abs(cs[st.punto] - st.centroPildora) / (capa.width / 2 - 24)))
-            g.current.cuadro = cuadroPunto
-            cuadroPunto(g.current)
             onMatraca(g.current.punto, cs.length, {}) // tocar un puntito no da golpe (solo lo marca como del dedo)
             onIr(g.current.punto) // tocar un puntito va directo a su isla
           }}
@@ -1344,7 +1293,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
               s.punto = p
               onIr(p)
             }
-            s.cuadro?.(s)
             // Contra un extremo (medio puntito más allá del primero o del último): un golpe al chocar.
             const mitad = (s.centros[1] - s.centros[0] || sep) / 2
             const tope = e.clientX < s.centros[0] - mitad ? -1 : e.clientX > s.centros[s.centros.length - 1] + mitad ? 1 : 0
@@ -1354,13 +1302,6 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
           onPointerUp={soltar}
           onPointerCancel={soltar}
         >
-          {/* Cuadrito del dedo encima (solo con «Opaco»: la barra sólida lo taparía). */}
-          {!detras && <motion.span
-            aria-hidden
-            data-cuadrito="encima"
-            className="pointer-events-none absolute left-1/2 top-1/2 rounded-xl bg-zinc-500"
-            style={{ width: CUADRITO.lado, height: CUADRITO.lado, marginLeft: -CUADRITO.lado / 2, marginTop: -CUADRITO.lado / 2, x: cuadroX, opacity: cuadroOpacidad, scale: cuadroEscala }}
-          />}
           <div
             ref={vista}
             className={regla ? 'h-full w-full overflow-hidden' : 'contents'}
@@ -1373,6 +1314,9 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                 const hecha = estados[i] === 'hecha'
                 // Islas aún no desbloqueadas (o sin contenido): puntito gris.
                 const cerrada = estados[i] === 'bloqueada' || estados[i] === 'proximamente'
+                // Opcional sin hacer (Curso completo): puntito hueco gris.
+                const opcional = estados[i] === 'opcional'
+                const color = l.parada?.acento ?? acento
                 const tramo = numeroTramo.get(i)
                 return (
                   <Fragment key={l.id}>
@@ -1398,7 +1342,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                           ? `${l.nombre}: ${l.titulo}`
                           : l.esRetos
                             ? 'Retos del módulo'
-                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : ''}`
+                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : opcional ? ' (opcional)' : ''}`
                       }
                       aria-current={i === abierta ? 'true' : undefined}
                       className="grid h-full shrink-0 place-items-center"
@@ -1412,8 +1356,9 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                           width: PUNTO,
                           height: PUNTO,
                           // La insignia (el módulo): cuadradito del color del módulo, siempre opaco.
-                          backgroundColor: cerrada ? 'var(--color-zinc-300)' : hecha || l.esInsignia ? oscuro(acento) : acento,
-                          opacity: cerrada || hecha || l.esInsignia ? 1 : 0.35,
+                          backgroundColor: opcional ? 'transparent' : cerrada ? 'var(--color-zinc-300)' : hecha || l.esInsignia ? oscuro(color) : color,
+                          border: opcional ? '2px solid var(--color-zinc-300)' : undefined,
+                          opacity: cerrada || hecha || opcional || l.esInsignia ? 1 : 0.35,
                           transform: `scale(${i === abierta ? 1 : 0.5})`,
                         }}
                       />
@@ -1609,7 +1554,7 @@ const LABIO_GRIS = 'color-mix(in oklab, var(--color-zinc-200) 82%, black)'
 /** Una isla pequeña: círculo con «labio» inferior que se hunde al tocarla. */
 function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick, etiqueta = null, cuadrada = false, contenido = null, saltada = false }) {
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
-  const fondo = lleno ? oscuro(acento) : estado === 'bloqueada' ? GRIS : 'var(--color-white)'
+  const fondo = lleno ? oscuro(acento) : estado === 'bloqueada' ? GRIS : estado === 'opcional' ? 'var(--color-zinc-100)' : 'var(--color-white)'
   const sombra = lleno ? labio(acento) : estado === 'bloqueada' ? LABIO_GRIS : 'transparent'
   return (
     <div className="relative grid place-items-center" style={{ width: ISLA, height: ISLA }}>
@@ -1618,7 +1563,7 @@ function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick,
         onClick={onClick}
         aria-expanded={false}
         aria-label={`${etiqueta ?? `Lección ${leccion.id}: ${leccion.titulo}`}. ${descripcion}`}
-        className={`grid size-full place-items-center ${cuadrada ? 'rounded-3xl' : 'rounded-full'} font-titulo text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
+        className={`grid size-full place-items-center ${cuadrada ? 'rounded-3xl' : 'rounded-full'} font-titulo text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : estado === 'opcional' ? 'border-[3px] border-dashed border-zinc-300 text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
         style={{ backgroundColor: fondo, boxShadow: `0 6px 0 ${sombra}` }}
       >
         {estado === 'bloqueada' ? <Candado className="size-8" grosor={2.2} /> : estado === 'proximamente' ? <span className="text-xl">…</span> : (contenido ?? leccion.id)}
@@ -1745,9 +1690,10 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
  * título, la descripción y cuántas lecciones van; ir a la lección que toca y ver todos los módulos.
  */
 function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRetos, onCerrar, onIr, onVerModulos, total }) {
-  if (ruta) return <InsigniaRuta ruta={ruta} modulo={modulo} actual={actual} onCerrar={onCerrar} onIr={onIr} onVerModulos={onVerModulos} />
+  if (ruta) return <InsigniaRuta ruta={ruta} modulo={modulo} progreso={progreso} actual={actual} onCerrar={onCerrar} onIr={onIr} onVerModulos={onVerModulos} />
   const hechas = modulo.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
   const siguiente = actual >= 0 ? modulo.lecciones[actual] : null
+  const prueba = pruebaDeModulo(modulo.numero, progreso)
   return (
     <div className="flex flex-col items-center" role="group" aria-label={`Módulo ${modulo.numero}: ${modulo.titulo}`}>
       <Bola acento={modulo.acento} estado="nueva" cuadrada onClick={onCerrar}>
@@ -1759,7 +1705,10 @@ function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRet
           Módulo {modulo.numero} · <span className="font-dato tabular-nums">{hechas}/{modulo.lecciones.length}</span> lecciones
         </p>
         {modulo.descripcion && <p className="line-clamp-3 text-base text-blanco/90">{modulo.descripcion}</p>}
-        {siguiente ? (
+        {/* Mientras la prueba rápida pueda saltar algo, «¿Ya lo sabes?» va en lugar de «Ir a…» (pedido del usuario). */}
+        {prueba ? (
+          <BotonYaLoSabes acento={modulo.acento} prueba={prueba} />
+        ) : siguiente ? (
           <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(actual + 1)}>
             Ir a la {siguiente.id}
           </BotonGlobo>
@@ -1777,32 +1726,74 @@ function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRet
   )
 }
 
-/** La insignia de una RUTA abierta: su ícono en grande y la tarjetita (paradas, ir a la que toca, módulos y prácticas). */
-function InsigniaRuta({ ruta, modulo, actual, onCerrar, onIr, onVerModulos }) {
+/**
+ * La insignia de una RUTA abierta: su ícono en grande y la tarjetita (paradas, ir a la que toca, módulos y prácticas).
+ * En el Curso completo, la de un BLOQUE: su número, «Bloque 2 · 4/12», la meta del bloque con trofeo, ir al paso que
+ * toca (o al bloque donde está) y «Ver todos los bloques».
+ */
+function InsigniaRuta({ ruta, modulo, progreso, actual, onCerrar, onIr, onVerModulos }) {
   const { paradas, hechas, total } = ruta.estado
+  // La prueba rápida del tramo en el que vas (no en los bloques del curso).
+  const prueba = modulo.esBloque ? null : pruebaDeRuta(modulo.id, ruta.estado, progreso)
   const siguiente = actual >= 0 ? paradas[actual] : null
+  const ir = siguiente ? () => onIr(actual + 1) : ruta.siguienteFuera?.ir
+  const destino = siguiente ?? ruta.siguienteFuera
   return (
-    <div className="flex flex-col items-center" role="group" aria-label={`Ruta de ${modulo.titulo.toLowerCase()}`}>
+    <div className="flex flex-col items-center" role="group" aria-label={modulo.nombre}>
       <Bola acento={modulo.acento} estado="nueva" cuadrada onClick={onCerrar}>
-        {modulo.Icono && <modulo.Icono className="size-14" />}
+        {modulo.Icono ? <modulo.Icono className="size-14" /> : modulo.numero}
       </Bola>
       <Globo tema="color" acento={modulo.acento} onCerrar={onCerrar}>
-        <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">Ruta de {modulo.titulo.toLowerCase()}</h3>
+        {modulo.esBloque && <span className="font-juego text-base uppercase tracking-wide text-blanco/85">{modulo.nombre}</span>}
+        <h3 className={`${modulo.esBloque ? '-mt-2 ' : ''}pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]`}>
+          {modulo.esBloque ? modulo.titulo : modulo.nombre}
+        </h3>
         <p className="text-base font-medium text-blanco/90">
-          <span className="font-dato tabular-nums">{hechas}/{total}</span> paradas
+          <span className="font-dato tabular-nums">{hechas}/{total}</span> {modulo.esBloque ? 'pasos' : 'paradas'}
         </p>
-        {modulo.descripcion && <p className="line-clamp-3 text-base text-blanco/90">{modulo.descripcion}</p>}
-        {siguiente && (
-          <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(actual + 1)}>
-            Ir a: {siguiente.titulo}
-          </BotonGlobo>
+        {ruta.bloque ? (
+          <p className="flex items-center gap-2 text-base font-semibold" data-meta-bloque>
+            <Trofeo className="size-5 shrink-0" /> Meta: {ruta.bloque.meta}
+          </p>
+        ) : (
+          modulo.descripcion && <p className="line-clamp-3 text-base text-blanco/90">{modulo.descripcion}</p>
+        )}
+        {prueba ? (
+          <BotonYaLoSabes acento={modulo.acento} prueba={prueba} />
+        ) : (
+          destino &&
+          ir && (
+            <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={ir}>
+              Ir a: {destino.titulo}
+            </BotonGlobo>
+          )
         )}
         <BotonGlobo tema="color" acento={modulo.acento} onClick={onVerModulos}>
-          Módulos y prácticas
+          {ruta.textoVerModulos ?? 'Módulos y prácticas'}
         </BotonGlobo>
       </Globo>
       <span className="sr-only">Desliza a los lados para ver las paradas.</span>
     </div>
+  )
+}
+
+/**
+ * «¿Ya lo sabes?» en el globo de la insignia: el botón principal (doble flecha) abre la prueba rápida del módulo o del
+ * tramo; debajo, si ya la hiciste, «Última vez: 5 de 7».
+ */
+function BotonYaLoSabes({ acento, prueba }) {
+  return (
+    <>
+      <BotonGlobo tema="color" acento={acento} principal data-foco data-ya-lo-sabes onClick={() => navegar(rutas.prueba(prueba.id))}>
+        <Saltar className="size-5" grosor={2.4} />
+        ¿Ya lo sabes? · {prueba.tramo ? `tramo ${prueba.tramo}` : `${prueba.n} ${prueba.n === 1 ? 'pregunta' : 'preguntas'}`}
+      </BotonGlobo>
+      {prueba.ultima && (
+        <p className="-mt-1 text-center font-dato text-sm text-blanco/85" data-ultima-prueba>
+          Última vez: {prueba.ultima.aciertos} de {prueba.ultima.total}
+        </p>
+      )}
+    </>
   )
 }
 
@@ -1819,6 +1810,7 @@ function Bola({ acento, estado, avance = null, children, retos = false, cuadrada
       : { backgroundColor: 'var(--color-white)', border: `3px solid ${acento}`, color: tinta(acento), boxShadow: `0 7px 0 ${claro(acento)}` }
   } else if (lleno) estilo = { backgroundColor: oscuro(acento), boxShadow: `0 7px 0 ${labio(acento)}` }
   else if (estado === 'bloqueada') estilo = { backgroundColor: GRIS, boxShadow: `0 7px 0 ${LABIO_GRIS}` }
+  else if (estado === 'opcional') estilo = { backgroundColor: 'var(--color-zinc-100)', borderWidth: 3 }
   else estilo = { backgroundColor: 'var(--color-white)' }
   return (
     <Pulsable
@@ -1920,6 +1912,7 @@ function IslaRetos({ acento, completo, descripcion, onClick, bloqueada = false }
 function estadoParada(p, progreso) {
   if (p.hecha) return 'hecha'
   if (p.estado === 'bloqueada') return 'bloqueada'
+  if (p.estado === 'opcional') return 'opcional'
   if (p.tipo === 'leccion' && progreso.lecciones[p.id]?.paso > 0) return 'empezada'
   return 'nueva'
 }
@@ -1928,6 +1921,7 @@ function estadoParada(p, progreso) {
 function textoParada(p, estado, progreso) {
   if (estado === 'hecha') return p.tipo === 'leccion' ? (progreso.lecciones[p.id]?.saltada ? 'Saltada' : 'Completada') : 'Hecha'
   if (estado === 'bloqueada') return 'Bloqueada'
+  if (estado === 'opcional') return 'Opcional'
   if (p.tipo === 'leccion') return getLeccion(p.id) ? textoEstado(estado, progreso.lecciones[p.id], getLeccion(p.id)) : 'Llega pronto'
   return { meta: 'Practicar', abre: 'Se abre', reto: 'Reto en FL' }[p.tipo]
 }
@@ -1943,7 +1937,7 @@ function avanceParada(p, estado, progreso) {
 function contenidoParada(p, ruta, clase) {
   if (p.tipo === 'leccion') return p.id
   if (p.tipo === 'reto') return <Trofeo className={clase} />
-  const Icono = (p.tipo === 'abre' && ruta.iconosAbre?.[p.herramienta]) || ruta.Icono
+  const Icono = p.Icono || (p.tipo === 'abre' && ruta.iconosAbre?.[p.herramienta]) || ruta.Icono
   return Icono ? <Icono className={clase} /> : null
 }
 
@@ -1951,9 +1945,12 @@ function contenidoParada(p, ruta, clase) {
 function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indice, total, onCerrar, onIr }) {
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
   const reto = p.tipo === 'reto'
-  const tema = estado === 'bloqueada' ? 'gris' : reto && !p.hecha ? 'borde' : 'color'
+  const opcional = estado === 'opcional'
+  const tema = estado === 'bloqueada' ? 'gris' : opcional ? 'blanco' : reto && !p.hecha ? 'borde' : 'color'
   const enColor = tema === 'color'
-  const tipo = { leccion: `Lección ${p.id}`, meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL Studio' }[p.tipo]
+  const tipo = (p.opcional ? 'Opcional · ' : '') + { leccion: `Lección ${p.id}`, meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL Studio' }[p.tipo]
+  // Lo que va antes: la isla actual de este camino o, en el Curso completo, el siguiente paso si está en otro bloque.
+  const antes = actual ? { titulo: actual.titulo, ir: () => onIr(actual.parada.i) } : (ruta.siguienteFuera ?? null)
   const leccion = p.tipo === 'leccion' ? getLeccion(p.id) : null
   const lp = progreso.lecciones[p.id]
   const pasos = leccion?.pasos.length ?? 0
@@ -1962,11 +1959,12 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   let detalle = null
   let texto = p.texto ?? null
   if (estado === 'bloqueada')
-    detalle = (
+    detalle = antes && (
       <>
-        <Candado className="size-5" /> Antes: {actual?.titulo}
+        <Candado className="size-5" /> Antes: {antes.titulo}
       </>
     )
+  else if (opcional) detalle = <>No cuenta para el bloque{leccion ? ` · ~${leccion.minutos} min` : ''}</>
   else if (estado === 'hecha')
     detalle = (
       <>
@@ -1981,10 +1979,10 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
 
   let boton = null
   if (estado === 'bloqueada') {
-    if (actual) boton = { texto: `Ir a: ${actual.titulo}`, onClick: () => onIr(actual.parada.i) }
+    if (antes) boton = { texto: `Ir a: ${antes.titulo}`, onClick: antes.ir }
   } else if (p.tipo === 'leccion' && leccion) {
     boton = {
-      texto: estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : lp?.saltada ? 'Hacerla' : 'Repetir',
+      texto: opcional ? (lp?.paso > 0 ? 'Continuar' : 'Empezar') : estado === 'nueva' ? 'Empezar' : estado === 'empezada' ? 'Continuar' : lp?.saltada ? 'Hacerla' : 'Repetir',
       icono: estado !== 'hecha',
       onClick: () => {
         if (estado === 'hecha') reiniciarLeccion(p.id)

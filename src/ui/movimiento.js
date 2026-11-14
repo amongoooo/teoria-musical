@@ -26,6 +26,7 @@ export function profundidad(ruta) {
   if (ruta.pagina === 'leccion' || ruta.pagina === 'prueba') return 2
   if (ruta.pagina === 'oido' || ruta.pagina === 'ritmo' || ruta.pagina === 'letras') return ruta.id ? 2 : 1
   if (ruta.pagina === 'vocabulario') return ruta.id ? 3 : 2
+  if (ruta.pagina === 'curso') return ruta.id ? 2 : 1 // el curso y, más adentro, cada bloque
   return 1 // módulo y explorador del círculo
 }
 
