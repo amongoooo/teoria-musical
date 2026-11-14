@@ -22,10 +22,16 @@ export function pasoDesde(nota, paso, dir = 1, { simplificar = true } = {}) {
 /**
  * Aplica una fórmula de pasos desde una nota: formula('C4', ['T','T','S']) → ['C4','D4','E4','F4'].
  * Cada paso avanza una letra (2.ª), así los nombres salen como en una escala: desde Sol, Fa♯ (no Sol♭).
+ * En una escala de 7 notas el «T½» también avanza una letra (2.ª aumentada: Fa → Sol♯ en la menor armónica);
+ * en las pentatónicas salta dos (3.ª menor: Mi → Sol).
  */
 export function formula(inicio, pasos) {
   const notas = [inicio]
-  for (const p of pasos) notas.push(Note.transpose(notas[notas.length - 1], INTERVALO[p]))
+  const heptatonica = pasos.length === 7
+  for (const p of pasos) {
+    const intervalo = p === 'T½' && heptatonica ? '2A' : INTERVALO[p]
+    notas.push(Note.transpose(notas[notas.length - 1], intervalo))
+  }
   return notas
 }
 

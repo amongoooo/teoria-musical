@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-14-menores',
+    fecha: '14 nov 2026',
+    titulo: 'Menor armónica y melódica',
+    cosas: [
+      {
+        texto: 'Lección **3.7 «Menor armónica y melódica»**: el 7.º que sube para llegar a casa, el salto de tono y medio y la melódica que sube distinta. Con ella se completa el **Módulo 3**.',
+        donde: { etiqueta: 'Abrir la 3.7', href: '#/leccion/3.7' },
+      },
+      {
+        texto: 'En la fórmula de la armónica, el **T½** se escribe **Fa → Sol♯** (una 2.ª aumentada), como en la escala.',
+        donde: { etiqueta: 'Ver el paso', href: '#/leccion/3.7' },
+      },
+    ],
+  },
+  {
     id: '2026-11-14-pentatonicas',
     fecha: '14 nov 2026',
     titulo: 'Pentatónicas',

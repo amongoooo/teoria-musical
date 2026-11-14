@@ -16,6 +16,16 @@ export const PENTA_MENOR = ['T½', 'T', 'T', 'T½', 'T']
 export const GRADOS_PENTA_MAYOR = ['1', '2', '3', '5', '6', '1']
 export const GRADOS_PENTA_MENOR = ['1', '♭3', '4', '5', '♭7', '1']
 
+/**
+ * Las menores armónica y melódica (lección 3.7). La armónica sube el 7.º (sensible a un semitono de casa) y deja
+ * un salto de tono y medio entre el 6.º y el 7.º: T S T T S T½ S. La melódica sube también el 6.º: T S T T T T S
+ * (al subir; en la versión clásica, al bajar vuelve a la natural: `melodicaClasica`).
+ */
+export const MENOR_ARMONICA = ['T', 'S', 'T', 'T', 'S', 'T½', 'S']
+export const MENOR_MELODICA = ['T', 'S', 'T', 'T', 'T', 'T', 'S']
+export const GRADOS_ARMONICA = ['1', '2', '♭3', '4', '5', '♭6', '7', '1']
+export const GRADOS_MELODICA = ['1', '2', '♭3', '4', '5', '6', '7', '1']
+
 /** Nombre de cada grado de la escala (1.º → 7.º). */
 export const GRADOS = ['Tónica', 'Supertónica', 'Mediante', 'Subdominante', 'Dominante', 'Superdominante', 'Sensible']
 
@@ -38,6 +48,11 @@ export const escalaMayor = (tonica, opciones) => escala(tonica, 'major', opcione
 export const escalaMenor = (tonica, opciones) => escala(tonica, 'minor', opciones)
 export const pentaMayor = (tonica, opciones) => escala(tonica, 'major pentatonic', opciones)
 export const pentaMenor = (tonica, opciones) => escala(tonica, 'minor pentatonic', opciones)
+export const escalaArmonica = (tonica, opciones) => escala(tonica, 'harmonic minor', opciones)
+export const escalaMelodica = (tonica, opciones) => escala(tonica, 'melodic minor', opciones)
+
+/** La melódica clásica: sube por la melódica y baja por la natural (sin repetir la nota de arriba). */
+export const melodicaClasica = (tonica) => [...escalaMelodica(tonica), ...escalaMenor(tonica, { bajando: true }).slice(1)]
 
 /** Tónica de la relativa menor de una mayor (su 6.º grado), sin octava: relativaMenor('G') → 'E'. */
 export const relativaMenor = (tonica) => grado(tonica, 6)
