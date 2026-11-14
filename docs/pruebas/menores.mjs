@@ -34,7 +34,7 @@ for (const tema of ['claro', 'oscuro']) {
       },
       [tema, n],
     )
-    await page.goto(BASE + '#/leccion/3.7')
+    await page.goto(BASE + '#/leccion/3.7/guiada')
     await page.reload()
     await page.waitForSelector('[data-boton-accion]')
     await espera(700)

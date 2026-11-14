@@ -145,8 +145,8 @@ function Resultado({ prueba, preguntas, resultados }) {
   const total = preguntas.length
   const [elegidas, setElegidas] = useState(() => new Set(preguntas.filter((_, i) => resultados[i]).map((p) => p.leccion)))
   const n = elegidas.size
-  const esModulo = prueba.id.startsWith('modulo/')
-  const volver = esModulo ? 'Ir al módulo' : 'Ir a la ruta'
+  const [tipo, idVolver] = prueba.id.split('/')
+  const volver = { modulo: 'Ir al módulo', leccion: `Ir a la ${idVolver}` }[tipo] ?? 'Ir a la ruta'
 
   const cambiar = (id) =>
     setElegidas((s) => {

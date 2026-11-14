@@ -18,7 +18,7 @@ for (let k = 0; k < 6; k++) {
     localStorage.setItem('teoria-musical:progreso:v1', JSON.stringify({ lecciones: { '3.1': { paso: 12 } }, retos: {} }))
   }, k % 2 ? 'oscuro' : 'claro')
   const page = await ctx.newPage()
-  await page.goto(BASE + '#/leccion/3.1')
+  await page.goto(BASE + '#/leccion/3.1/guiada')
   await page.waitForTimeout(1000)
   vistos.add((await page.$$eval('main button[aria-pressed]', (b) => b.map((x) => x.textContent.trim()))).join(' | '))
   if (k < 2) {

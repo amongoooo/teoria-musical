@@ -3,9 +3,11 @@
 // `saltarLecciones`). Se abre al tocar el cuadrito de un módulo o de una ruta (components/HojaEntrada.jsx):
 //   #/prueba/modulo/3                → las lecciones del módulo 3
 //   #/prueba/ruta/acordes/triadas    → las lecciones del tramo «Tríadas» (vuelve a la ruta de acordes)
+//   #/prueba/leccion/4.1             → lo que pide la 4.1 (sus prerrequisitos de content/catalogo.js; vuelve a la 4.1)
 // Las preguntas: 3 por lección en los bancos de esta carpeta (modulo-N.js, letras.js); cada prueba toma una al azar.
 // Una lección nueva trae sus 3 preguntas: añádelas al banco de su módulo (si no tiene, la prueba no la incluye).
-import { getModulo, leccionDisponible } from '../index.js'
+import { acentoLeccion, getLeccion, getModulo, leccionDisponible } from '../index.js'
+import { infoLeccion } from '../catalogo.js'
 import { RUTAS, TRAMOS } from '../rutas.js'
 import { rutas } from '../../router.js'
 import letras from './letras.js'
@@ -54,14 +56,28 @@ export function datosPrueba(id) {
       lecciones: tramo.paradas.filter((p) => p.tipo === 'leccion').map((p) => p.id).filter(conPreguntas),
     }
   }
+  if (tipo === 'leccion') {
+    const leccion = getLeccion(a)
+    if (!leccion) return null
+    return {
+      id,
+      clave: `L-${leccion.id}`,
+      etiqueta: `Antes de la ${leccion.id}`,
+      titulo: leccion.titulo,
+      acento: acentoLeccion(leccion.id),
+      volver: rutas.leccion(leccion.id),
+      lecciones: (infoLeccion(leccion.id)?.requiere ?? []).filter(conPreguntas),
+    }
+  }
   return null
 }
 
 /** Las lecciones de la prueba que aún no están hechas (las únicas que pregunta). */
 export const pendientes = (prueba, progreso) => (prueba?.lecciones ?? []).filter((id) => !progreso.lecciones[id]?.completada)
 
-/** id de la prueba de un módulo o de un tramo de una ruta. */
+/** id de la prueba de un módulo, de un tramo de una ruta o de lo que pide una lección. */
 export const pruebaModulo = (numero) => `modulo/${numero}`
+export const pruebaRequisitos = (leccion) => `leccion/${leccion}`
 export const pruebaTramo = (ruta, tramo) => `ruta/${ruta}/${tramo}`
 
 /**

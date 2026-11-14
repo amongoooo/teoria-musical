@@ -20,7 +20,7 @@ import { RESORTE, profundidad, variantesPantalla } from './ui/movimiento.js'
 
 function Pagina({ ruta }) {
   if (ruta.pagina === 'modulo') return <Modulo numero={ruta.id} />
-  if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} soloReto={ruta.reto} />
+  if (ruta.pagina === 'leccion') return <Leccion id={ruta.id} soloReto={ruta.reto} guiada={ruta.guiada} />
   if (ruta.pagina === 'oido') return <Oido modo={ruta.id} />
   if (ruta.pagina === 'ritmo') return <Ritmo modo={ruta.id} />
   if (ruta.pagina === 'letras') return <Letras id={ruta.id} />

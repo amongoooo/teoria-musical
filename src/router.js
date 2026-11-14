@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 function parse(hash) {
   const partes = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
   if (partes[0] === 'modulo' && partes[1]) return { pagina: 'modulo', id: partes[1] }
-  if (partes[0] === 'leccion' && partes[1]) return { pagina: 'leccion', id: partes[1], reto: partes[2] === 'reto' }
+  if (partes[0] === 'leccion' && partes[1]) return { pagina: 'leccion', id: partes[1], reto: partes[2] === 'reto', guiada: partes[2] === 'guiada' }
   if (partes[0] === 'importar') return { pagina: 'importar', id: partes[1] ?? '' }
   if (partes[0] === 'oido') return { pagina: 'oido', id: partes[1] ?? null }
   if (partes[0] === 'ritmo') return { pagina: 'ritmo', id: partes[1] ?? null }
@@ -37,6 +37,9 @@ export const rutas = {
   inicio: () => '#/',
   modulo: (numero) => `#/modulo/${numero}`,
   leccion: (id) => `#/leccion/${id}`,
+  /** La lección abierta desde una ruta o el Curso completo: el orden ya lo marca el camino, así que no avisa
+   *  «Antes te conviene» (prerrequisitos suaves de content/catalogo.js). */
+  leccionGuiada: (id) => `#/leccion/${id}/guiada`,
   /** Abre la lección directamente en su reto de FL Studio (al terminar vuelve al módulo). */
   reto: (id) => `#/leccion/${id}/reto`,
   /** Explorador del círculo de quintas. */
@@ -48,7 +51,7 @@ export const rutas = {
   /** Curso completo (las tres rutas a la par, en bloques) y un bloque abierto como camino de islas. */
   curso: () => '#/curso',
   bloque: (n) => `#/curso/bloque/${n}`,
-  /** Prueba rápida «¿Ya lo sabes?»: 'modulo/3' o 'ruta/acordes/triadas' (content/pruebas/). */
+  /** Prueba rápida «¿Ya lo sabes?»: 'modulo/3', 'ruta/acordes/triadas' o 'leccion/4.1' (lo que pide; content/pruebas/). */
   prueba: (id) => `#/prueba/${id}`,
   importar: (codigo) => `#/importar/${codigo}`,
   oido: (modo) => (modo ? `#/oido/${modo}` : '#/oido'),

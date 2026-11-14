@@ -61,10 +61,10 @@ export function accionPaso(p, { progreso, meta }) {
   if (!p) return null
   if (p.tipo === 'leccion') {
     const empezada = progreso.lecciones[p.id]?.paso > 0
-    return { texto: empezada ? 'Continuar' : 'Empezar', ir: () => navegar(rutas.leccion(p.id)) }
+    return { texto: empezada ? 'Continuar' : 'Empezar', ir: () => navegar(rutas.leccionGuiada(p.id)) }
   }
   if (p.tipo === 'meta') return { texto: 'Practicar', ir: () => meta(p).ir() }
-  if (p.tipo === 'abre') return { texto: 'Empezar', ir: () => navegar(rutas.leccion(HERRAMIENTAS[p.herramienta].leccion)) }
+  if (p.tipo === 'abre') return { texto: 'Empezar', ir: () => navegar(rutas.leccionGuiada(HERRAMIENTAS[p.herramienta].leccion)) }
   return { texto: 'Ver el reto', ir: () => navegar(rutas.bloque(p.bloque)) }
 }
 

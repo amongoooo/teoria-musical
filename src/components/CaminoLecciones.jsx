@@ -2198,7 +2198,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
       icono: estado !== 'hecha',
       onClick: () => {
         if (estado === 'hecha') reiniciarLeccion(p.id)
-        navegar(rutas.leccion(p.id))
+        navegar(rutas.leccionGuiada(p.id))
       },
     }
   } else if (p.tipo === 'meta') boton = { texto: 'Practicar', onClick: () => ruta.meta(p).ir() }

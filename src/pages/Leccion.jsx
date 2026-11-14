@@ -15,11 +15,13 @@ import FlowEjercicio from '../components/exercises/FlowEjercicio.jsx'
 import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
 import { etiquetaPaso } from '../content/actividad.js'
-import { acentoLeccion, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { acentoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/index.js'
 import { RUTAS } from '../content/rutas.js'
-import { useOpciones } from '../progress/opciones.js'
-import { completarLeccion, getLeccion as getProgresoLeccion, guardarPaso } from '../progress/progreso.js'
+import { getOpciones, useOpciones } from '../progress/opciones.js'
+import { completarLeccion, getLeccion as getProgresoLeccion, getProgreso, guardarPaso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
+import { claro, oscuro, tinta } from '../ui/color.js'
 import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
 import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
 import Hoja from '../ui/Hoja.jsx'
@@ -59,18 +61,18 @@ const PASOS = {
  *  - completar({ aciertos, total }) guarda la puntuación del paso.
  *  - siguiente() avanza al siguiente paso.
  */
-export default function Leccion({ id, soloReto = false }) {
+export default function Leccion({ id, soloReto = false, guiada = false }) {
   const leccion = getLeccion(id)
   const [vuelta, setVuelta] = useState(0)
   if (!leccion) return <NoEncontrada id={id} />
-  return <Visor key={vuelta} leccion={leccion} soloReto={soloReto} onRepetir={() => setVuelta((v) => v + 1)} />
+  return <Visor key={`${id}-${vuelta}`} leccion={leccion} soloReto={soloReto} guiada={guiada} onRepetir={() => setVuelta((v) => v + 1)} />
 }
 
 /**
  * soloReto: abre directamente el paso «reto» (desde la isla de Retos del módulo); al continuar
  * vuelve al módulo sin tocar el progreso de la lección.
  */
-function Visor({ leccion, soloReto, onRepetir }) {
+function Visor({ leccion, soloReto, guiada, onRepetir }) {
   const modulo = getModulo(leccion.modulo)
   const acento = acentoLeccion(leccion.id)
   // A dónde se vuelve: al módulo o, si la lección vive en una ruta, a la ruta.
@@ -84,6 +86,13 @@ function Visor({ leccion, soloReto, onRepetir }) {
     return p && !p.completada && p.paso > 0 && p.paso < total ? p.paso : 0
   })
   const [terminado, setTerminado] = useState(false)
+  // PRERREQUISITOS SUAVES (content/catalogo.js): al empezar la lección desde cero fuera de una ruta o del curso, si
+  // falta algo de lo que pide, primero sale «Antes te conviene». En modo administrador, nunca.
+  const [faltan, setFaltan] = useState(() => {
+    const p = getProgresoLeccion(leccion.id)
+    if (soloReto || guiada || getOpciones().admin || p?.completada || p?.paso > 0) return []
+    return faltanRequisitos(leccion.id, getProgreso())
+  })
   const [accion, setAccion] = useState(null)
   const puntos = useRef({}) // índice de paso -> { aciertos, total }
   const { admin, gesto } = useOpciones() // admin: la barra de pasos abre «Ir al paso» y el gesto pasa sin responder
@@ -149,6 +158,7 @@ function Visor({ leccion, soloReto, onRepetir }) {
   if (terminado) {
     return <Final leccion={leccion} modulo={modulo} puntos={puntos.current} onRepetir={onRepetir} />
   }
+  if (faltan.length > 0) return <AntesTeConviene leccion={leccion} faltan={faltan} acento={acento} onSalir={salir} onSeguir={() => setFaltan([])} />
 
   const paso = leccion.pasos[indice]
   const Componente = PASOS[paso.tipo]
@@ -243,6 +253,105 @@ function Visor({ leccion, soloReto, onRepetir }) {
       </motion.main>
 
       <BarraAccion accion={boton} navegacion={navegacion} />
+    </div>
+  )
+}
+
+/**
+ * «Antes te conviene» (prerrequisitos suaves): bombilla de oro, las lecciones que faltan (cada fila lleva a la suya) y
+ * tres salidas: ir a la primera que falta, «¿Ya lo sabes?» (prueba rápida de lo que pide: si aciertas, la saltas y
+ * vuelves aquí) y seguir con esta lección de todos modos.
+ */
+function AntesTeConviene({ leccion, faltan, acento, onSalir, onSeguir }) {
+  const primera = faltan[0]
+  const idPrueba = pruebaRequisitos(leccion.id)
+  const conPrueba = pendientes(datosPrueba(idPrueba), getProgreso()).length > 0
+  const acentoPrimera = acentoLeccion(primera) ?? 'var(--color-zinc-900)'
+  return (
+    <div className="flex min-h-dvh flex-col" data-antes-te-conviene={leccion.id}>
+      <header className="pointer-events-none sticky top-0 z-10">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 pb-2">
+          <Pulsable
+            onClick={onSalir}
+            aria-label="Salir de la lección"
+            className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}
+          >
+            <Cerrar className="size-6" />
+          </Pulsable>
+        </div>
+      </header>
+
+      <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-5 pb-12 pt-4">
+        <motion.p
+          variants={itemLista}
+          className="-mb-2 inline-flex items-center gap-2 self-start rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700"
+        >
+          <span className="font-dato" style={{ color: tinta(acento ?? 'var(--color-zinc-900)') }}>
+            {leccion.id}
+          </span>
+          {leccion.titulo}
+        </motion.p>
+        <motion.h1 variants={itemLista} className="flex items-center gap-3 font-titulo text-3xl font-bold leading-tight tracking-tight text-fijate-tinta sm:text-4xl">
+          <Bombilla className="size-9 shrink-0" />
+          Antes te conviene
+        </motion.h1>
+
+        <motion.ul variants={lista} className="flex flex-col gap-2">
+          {faltan.map((id) => {
+            const l = getLeccion(id)
+            const a = acentoLeccion(id) ?? 'var(--color-zinc-900)'
+            return (
+              <motion.li key={id} variants={itemLista}>
+                <Pulsable
+                  tipo="tarjeta"
+                  href={rutas.leccion(id)}
+                  data-requisito={id}
+                  className="flex min-h-20 w-full items-center gap-3 rounded-3xl border-2 border-fijate bg-fijate-suave px-3 py-3 text-left"
+                >
+                  <span
+                    className="grid size-12 shrink-0 place-items-center rounded-2xl font-dato text-base font-medium"
+                    style={{ backgroundColor: claro(a), color: tinta(a) }}
+                  >
+                    {id}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-lg font-semibold leading-snug text-zinc-900">{l?.titulo}</span>
+                    <span className="text-sm text-zinc-500">
+                      ~{l?.minutos} min · {l?.pasos.length} pasos
+                    </span>
+                  </span>
+                  <span aria-hidden className="pr-1 text-2xl text-zinc-400">
+                    ›
+                  </span>
+                </Pulsable>
+              </motion.li>
+            )
+          })}
+        </motion.ul>
+
+        <motion.div variants={itemLista} className="mt-auto flex flex-col gap-3">
+          <Pulsable
+            href={rutas.leccion(primera)}
+            data-ir-requisito={primera}
+            className="grid min-h-14 place-items-center rounded-2xl px-6 text-center text-lg font-semibold text-blanco"
+            style={{ backgroundColor: oscuro(acentoPrimera) }}
+          >
+            Ir a la {primera}
+          </Pulsable>
+          {conPrueba && (
+            <Pulsable
+              href={rutas.prueba(idPrueba)}
+              data-ya-lo-sabes
+              className="grid min-h-14 place-items-center rounded-2xl border-2 border-zinc-200 bg-white px-6 text-lg font-semibold text-zinc-800"
+            >
+              ¿Ya lo sabes?
+            </Pulsable>
+          )}
+          <Pulsable onClick={onSeguir} data-seguir className="min-h-12 rounded-2xl px-6 text-base font-medium text-zinc-500">
+            Seguir con la {leccion.id}
+          </Pulsable>
+        </motion.div>
+      </motion.main>
     </div>
   )
 }

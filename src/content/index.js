@@ -1,6 +1,7 @@
 // Registro del contenido: módulos + lecciones disponibles.
 // Para añadir una lección: crea su archivo en src/content/modulo-XX/ y regístrala aquí.
 import { getOpciones } from '../progress/opciones.js'
+import { infoLeccion } from './catalogo.js'
 import { MODULOS } from './modulos.js'
 import { RUTAS } from './rutas.js'
 import leccion11 from './modulo-01/leccion-1-1.js'
@@ -115,4 +116,12 @@ export function leccionAnterior(id) {
   const modulo = MODULOS.find((m) => m.lecciones.some((l) => l.id === id))
   const i = modulo?.lecciones.findIndex((l) => l.id === id) ?? -1
   return i > 0 ? modulo.lecciones[i - 1] : null
+}
+
+/**
+ * PRERREQUISITOS SUAVES (content/catalogo.js): los directos de una lección que existen y aún no están hechos
+ * (una saltada con «¿Ya lo sabes?» cuenta como hecha). Lista de ids; vacía si no falta nada.
+ */
+export function faltanRequisitos(id, progreso) {
+  return (infoLeccion(id)?.requiere ?? []).filter((r) => leccionDisponible(r) && !progreso.lecciones[r]?.completada)
 }

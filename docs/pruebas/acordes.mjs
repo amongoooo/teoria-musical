@@ -38,7 +38,7 @@ for (const tema of ['claro', 'oscuro']) {
   /** Abre la lección `id` en el paso `n`. */
   const irAlPaso = async (id, n) => {
     await preparar({ [id]: { paso: n } })
-    await page.goto(BASE + `#/leccion/${id}`)
+    await page.goto(BASE + `#/leccion/${id}/guiada`)
     await page.reload()
     await page.waitForSelector('[data-boton-accion]')
     await espera(700)
