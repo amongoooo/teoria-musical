@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { reproducir } from '../../audio/sonido.js'
 import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
-import { Bombilla, Check } from '../../ui/Iconos.jsx'
+import { Check, Repaso } from '../../ui/Iconos.jsx'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
 import Rich from '../Rich.jsx'
@@ -28,9 +28,12 @@ function mezclar(n, activo = true) {
  *  - Abajo, los nombres (mezclados). Se toca un nombre y va al hueco activo (el primero vacío,
  *    o la fila que se acaba de escuchar o tocar). Tocar un hueco lleno devuelve el nombre.
  *  - Con todos los huecos llenos, «Comprobar»: cada fila dice si está bien (✓ verde) o cuál era (bombilla, oro).
- * Puntúa una pareja por acierto.
+ * Puntúa una pareja por acierto (al primer «Comprobar»).
+ * «Ahora sí se puede fallar»: al primer «Comprobar» con errores, las bien se quedan en verde (fijas) y los nombres mal
+ * vuelven al banco (oro: inténtalo otra vez); al segundo, las que siguen mal dicen cuál era en ROJO y la ronda va al
+ * repaso del final (`fallo(r)`).
  */
-export default function Emparejar({ paso, setAccion, siguiente, completar }) {
+export default function Emparejar({ paso, setAccion, siguiente, completar, fallo }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [ordenes] = useState(() =>
@@ -45,6 +48,8 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
   const [asignado, setAsignado] = useState(() => Array(n).fill(null)) // fila → índice de pareja del nombre puesto
   const [activa, setActiva] = useState(0)
   const [resultado, setResultado] = useState(null) // null | [bool por fila]
+  const [fijas, setFijas] = useState(() => Array(n).fill(false)) // filas ya bien en el primer intento (verdes)
+  const [segundo, setSegundo] = useState(false) // ya se comprobó una vez con errores
   const [aciertos, setAciertos] = useState(0)
   const [sonando, setSonando] = useState(null)
   const timer = useRef(null)
@@ -94,7 +99,7 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
   }
 
   const tocarHueco = (fila) => {
-    if (respondida) return
+    if (respondida || fijas[fila]) return
     if (asignado[fila] !== null) {
       const nuevo = [...asignado]
       nuevo[fila] = null
@@ -114,12 +119,25 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
             : vacias > 0
               ? `Falta${vacias === 1 ? '' : 'n'} ${vacias}`
               : null,
+        feedback: segundo ? { tipo: 'mal', titulo: `${fijas.filter(Boolean).length} de ${n} bien`, texto: 'Corrige las demás.' } : null,
         onClick: () => {
           const bien = asignado.map((a, fila) => ronda.parejas[a].nombre === ronda.parejas[filas[fila]].nombre)
-          const total = aciertos + bien.filter(Boolean).length
+          const buenas = bien.filter(Boolean).length
+          // Primer intento con errores: las bien se quedan, las mal vuelven al banco.
+          if (!segundo && buenas < n) {
+            setAciertos(aciertos + buenas)
+            setFijas(bien)
+            setSegundo(true)
+            const nuevo = asignado.map((a, fila) => (bien[fila] ? a : null))
+            setAsignado(nuevo)
+            setActiva(siguienteVacia(nuevo, 0))
+            return
+          }
+          const total = segundo ? aciertos : aciertos + buenas
           setAciertos(total)
           setResultado(bien)
           setActiva(null)
+          if (buenas < n) fallo?.(r)
           if (ultima) completar({ aciertos: total, total: totalParejas })
         },
       })
@@ -133,20 +151,22 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
         buenas === n
           ? { tipo: 'bien', titulo: '¡Todas bien!', texto: ronda.explicacion }
           : {
-              tipo: 'mal',
+              tipo: 'error',
               titulo: `${buenas} de ${n} bien`,
-              texto: ronda.explicacion ?? 'Cada fila marcada te dice cuál era. Vuelve a escucharlas para notar la diferencia.',
+              texto: ronda.explicacion ?? 'Cada fila en rojo te dice cuál era. Vuelve a escucharlas para notar la diferencia.',
             },
       onClick: () => {
         if (ultima) return siguiente()
         const m = rondas[r + 1].parejas.length
         setR(r + 1)
         setAsignado(Array(m).fill(null))
+        setFijas(Array(m).fill(false))
+        setSegundo(false)
         setActiva(0)
         setResultado(null)
       },
     })
-  }, [respondida, resultado, asignado, vacias, n, aciertos, ultima, r, ronda, rondas, filas, totalParejas, setAccion, siguiente, completar])
+  }, [respondida, resultado, asignado, fijas, segundo, vacias, n, aciertos, ultima, r, ronda, rondas, filas, totalParejas, setAccion, siguiente, completar, fallo])
 
   return (
     <div className="flex flex-col gap-4">
@@ -158,7 +178,7 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
         <ul className="flex flex-col gap-2">
           {filas.map((p, fila) => {
             const puesto = asignado[fila]
-            const estado = respondida ? (resultado[fila] ? 'bien' : 'mal') : null
+            const estado = respondida ? (resultado[fila] ? 'bien' : 'mal') : fijas[fila] ? 'bien' : null
             const pareja = ronda.parejas[p]
             return (
               <motion.li
@@ -180,7 +200,7 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
 
                 <Pulsable
                   tipo="tarjeta"
-                  disabled={respondida}
+                  disabled={respondida || fijas[fila]}
                   onClick={() => tocarHueco(fila)}
                   aria-label={puesto === null ? `Hueco del sonido ${LETRAS[fila]}, vacío` : `Sonido ${LETRAS[fila]}: ${ronda.parejas[puesto].nombre}. Tocar para quitarlo`}
                   aria-pressed={activa === fila}
@@ -206,7 +226,7 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
                     )}
                   </span>
                   {estado === 'bien' && <Check className="size-6 shrink-0" />}
-                  {estado === 'mal' && <Bombilla className="size-6 shrink-0" />}
+                  {estado === 'mal' && <Repaso className="size-6 shrink-0" />}
                 </Pulsable>
               </motion.li>
             )
@@ -244,7 +264,7 @@ export default function Emparejar({ paso, setAccion, siguiente, completar }) {
 
 function claseHueco(estado, lleno, activo) {
   if (estado === 'bien') return 'border-bien bg-bien-suave text-bien-tinta'
-  if (estado === 'mal') return 'border-fijate bg-fijate-suave text-fijate-tinta'
+  if (estado === 'mal') return 'border-mal bg-mal-suave text-mal-tinta'
   if (activo) return 'border-zinc-900 bg-white text-zinc-900'
   if (lleno) return 'border-zinc-200 bg-white text-zinc-900'
   return 'border-dashed border-zinc-300 bg-white text-zinc-900'

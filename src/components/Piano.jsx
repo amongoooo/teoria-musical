@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getStatus,
   initPiano,
@@ -15,7 +15,7 @@ import SelectorOctava from './SelectorOctava.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
 import { useOpciones } from '../progress/opciones.js'
 import { BRILLO_MS, RESORTE } from '../ui/movimiento.js'
-import { Bombilla, Candado, Check } from '../ui/Iconos.jsx'
+import { Bombilla, Candado, Check, Repaso } from '../ui/Iconos.jsx'
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const SPANISH = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }
@@ -90,7 +90,8 @@ function useVisibleOctaves(ref, max) {
  *  - bloqueada ((nota) => bool): teclas con candado, en gris: no suenan ni responden (p. ej. las notas del oído
  *    absoluto que aún no se desbloquean).
  *  - inactivo (false): ninguna tecla responde (p. ej. mientras suena el «borrador» del oído absoluto).
- *  - estados ({ 'C4': 'bien' | 'fijate' }): tecla en verde con ✓ (la respuesta) u oro con bombilla (lo que elegiste).
+ *  - estados ({ 'C4': 'bien' | 'fijate' | 'mal' }): tecla en verde con ✓ (la respuesta), oro con bombilla (lo que elegiste)
+ *    o roja con el ícono Repaso (la respuesta tras fallar dos veces en una lección).
  *  - sinEstado (false): sin la línea de arriba («Sonido sintetizado», «Teclado: Z–M»), p. ej. en el juego de oído absoluto.
  * Si no caben todas las octavas, el teclado completo va en una TIRA que se recorre con un resorte hasta la octava
  * elegida (pedido del usuario) y debajo va la barra de octavas (SelectorOctava): tocar una o deslizar; mientras
@@ -122,6 +123,12 @@ export default function Piano({
   const [brillo, setBrillo] = useState(() => new Set()) // teclas iluminadas por `senalar`
   // Marcadas normalizadas a sostenidos (así "Db4" resalta la tecla C#4).
   const marcadasSet = new Set(marcadas.map((n) => notaDesdeMidi(midi(n))))
+  // Los estados pueden venir con cualquier nombre de la tecla (Sol♭4 = Fa♯4): se buscan por su nombre en el teclado.
+  const estadoDe = useMemo(() => {
+    const m = {}
+    for (const [n, e] of Object.entries(estados)) m[notaDesdeMidi(midi(n))] = e
+    return m
+  }, [estados])
   const [status, setStatus] = useState(getStatus)
   const [audioOn, setAudioOn] = useState(isAudioRunning)
   const reducir = useReducedMotion()
@@ -369,7 +376,7 @@ export default function Piano({
           <div className="flex h-full gap-px">
             {white.map(({ note, label, octave }) => {
               const cerrada = bloqueada?.(note)
-              const estado = estados[note]
+              const estado = estadoDe[note]
               return (
                 <div
                   key={note}
@@ -383,6 +390,8 @@ export default function Piano({
                         ? 'bg-bien-relleno text-blanco'
                         : estado === 'fijate'
                           ? 'bg-fijate text-zinc-900'
+                          : estado === 'mal'
+                            ? 'bg-mal-relleno text-blanco'
                           : cerrada
                             ? 'bg-zinc-100 text-zinc-400'
                             : marcadasSet.has(note)
@@ -404,7 +413,7 @@ export default function Piano({
 
           {black.map(({ note, afterWhite }) => {
             const cerrada = bloqueada?.(note)
-            const estado = estados[note]
+            const estado = estadoDe[note]
             return (
               <div
                 key={note}
@@ -418,6 +427,8 @@ export default function Piano({
                       ? 'bg-bien-relleno text-blanco'
                       : estado === 'fijate'
                         ? 'bg-fijate text-zinc-900'
+                        : estado === 'mal'
+                          ? 'bg-mal-relleno text-blanco'
                         : cerrada
                           ? 'bg-zinc-400 text-zinc-100'
                           : marcadasSet.has(note)
@@ -447,8 +458,8 @@ export default function Piano({
   )
 }
 
-/** Ícono dentro de una tecla: ✓ (respuesta), bombilla (lo que elegiste) o candado (bloqueada). */
+/** Ícono dentro de una tecla: ✓ (respuesta), bombilla (lo que elegiste), repaso (la respuesta tras fallar dos veces) o candado (bloqueada). */
 function IconoTecla({ cerrada, estado }) {
-  const Icono = estado === 'bien' ? Check : estado === 'fijate' ? Bombilla : cerrada ? Candado : null
+  const Icono = estado === 'bien' ? Check : estado === 'fijate' ? Bombilla : estado === 'mal' ? Repaso : cerrada ? Candado : null
   return Icono ? <Icono className="pointer-events-none size-[18px] max-w-[70%]" /> : null
 }

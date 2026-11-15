@@ -20,11 +20,11 @@ import { acentoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponib
 import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/index.js'
 import { RUTAS } from '../content/rutas.js'
 import { getOpciones, useOpciones } from '../progress/opciones.js'
-import { completarLeccion, getLeccion as getProgresoLeccion, getProgreso, guardarPaso } from '../progress/progreso.js'
+import { completarLeccion, getLeccion as getProgresoLeccion, getProgreso, guardarFalladas, guardarPaso } from '../progress/progreso.js'
 import { navegar, origenDeLeccion, rutas } from '../router.js'
 import { claro, oscuro, tinta } from '../ui/color.js'
 import { RESORTE, SALTO, itemLista, lista } from '../ui/movimiento.js'
-import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD } from '../ui/Iconos.jsx'
+import { Bombilla, Cerrar, Check, ICONO_ACTIVIDAD, Repaso } from '../ui/Iconos.jsx'
 import Hoja from '../ui/Hoja.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import useGestoBoton from '../ui/useGestoBoton.js'
@@ -58,9 +58,12 @@ const PASOS = {
  *    grande de abajo. Solo «Comprobar» y «Continuar» (el gesto añade «Atrás»). Si el paso no la usa, «Continuar».
  *  - avanza: true cuando ese botón pasa al paso siguiente (el paso está resuelto): así el gesto del botón
  *    deja avanzar (tarjeta amarilla) sin modo administrador.
- *  - feedback: { tipo: 'bien' | 'mal', titulo, texto } aparece sobre el botón.
+ *  - feedback: { tipo: 'bien' | 'mal' | 'error', titulo, texto, plegable } aparece sobre el botón. 'mal' = oro (pista,
+ *    se puede intentar otra vez); 'error' = rojo con el ícono Repaso (falló dos veces: cuenta como mal y va al repaso).
+ *    `plegable`: solo se ve el título; la explicación se despliega al tocar la tarjeta.
  *  - flotante: true cuando el botón nunca tendrá retroalimentación ni ayuda: va solo, sin el panel de debajo.
  *  - completar({ aciertos, total }) guarda la puntuación del paso.
+ *  - fallo(ronda) avisa que esa ronda salió en rojo (dos fallos): se vuelve a preguntar en el repaso del final.
  *  - siguiente() avanza al siguiente paso.
  */
 export default function Leccion({ id, soloReto = false, guiada = false }) {
@@ -98,6 +101,16 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   })
   const [accion, setAccion] = useState(null)
   const puntos = useRef({}) // índice de paso -> { aciertos, total }
+  // «Ahora sí se puede fallar»: las rondas que salieron en rojo ([paso, ronda]) se repasan al terminar. Se guardan en el
+  // dispositivo mientras la lección está a medias (si sales y vuelves, el repaso las trae igual).
+  const falladas = useRef(null)
+  if (falladas.current === null) {
+    const p = getProgresoLeccion(leccion.id)
+    falladas.current = !soloReto && p && !p.completada && p.paso > 0 ? (p.falladas ?? []) : []
+  }
+  // Repaso del final: { lista: [[paso, ronda]…], i, mal } (null = aún en los pasos de la lección).
+  const [repaso, setRepaso] = useState(null)
+  const resultadoRepaso = useRef(null) // { bien, total } para la pantalla final
   const { admin, gesto } = useOpciones() // admin: la barra de pasos abre «Ir al paso» y el gesto pasa sin responder
   const [verPasos, setVerPasos] = useState(false)
   // Hasta qué paso se ha llegado avanzando de verdad (los anteriores están resueltos): volver atrás no lo
@@ -118,32 +131,60 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   }, [])
 
   // siguiente/completar estables para que los pasos los usen en efectos.
-  const estado = useRef({ indice, total, alcanzado })
-  estado.current = { indice, total, alcanzado }
+  const estado = useRef({ indice, total, alcanzado, repaso })
+  estado.current = { indice, total, alcanzado, repaso }
+
+  const terminar = useCallback(() => {
+    const suma = Object.values(puntos.current).reduce(
+      (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
+      { aciertos: 0, total: 0 },
+    )
+    completarLeccion(leccion.id, suma)
+    setTerminado(true)
+  }, [leccion.id])
 
   const siguiente = useCallback(() => {
-    const { indice: i, total: t, alcanzado: a } = estado.current
+    const { indice: i, total: t, alcanzado: a, repaso: rep } = estado.current
     if (soloReto) return navegar(volver)
     setAccion(null)
     setHaciaAtras(false)
     window.scrollTo(0, 0)
+    if (rep) {
+      // Repaso: la siguiente pregunta en rojo o, al acabar, la pantalla final.
+      if (rep.i < rep.lista.length - 1) return setRepaso({ ...rep, i: rep.i + 1 })
+      resultadoRepaso.current = { bien: rep.lista.length - rep.mal.size, total: rep.lista.length }
+      return terminar()
+    }
     if (i < t - 1) {
       setIndice(i + 1)
       setAlcanzado(Math.max(a, i + 1))
       guardarPaso(leccion.id, Math.max(a, i + 1)) // tras volver atrás, no se pierde hasta dónde se llegó
+    } else if (falladas.current.length > 0) {
+      setRepaso({ lista: [...falladas.current], i: 0, mal: new Set() })
     } else {
-      const suma = Object.values(puntos.current).reduce(
-        (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
-        { aciertos: 0, total: 0 },
-      )
-      completarLeccion(leccion.id, suma)
-      setTerminado(true)
+      terminar()
     }
-  }, [leccion.id, volver, soloReto])
+  }, [leccion.id, volver, soloReto, terminar])
 
   const completar = useCallback((resultado) => {
+    if (estado.current.repaso) return // el repaso no cambia los aciertos «a la primera»
     puntos.current[estado.current.indice] = resultado
   }, [])
+
+  /** Una ronda salió en rojo: va al repaso (en el repaso, solo se apunta para el resultado). */
+  const fallo = useCallback(
+    (ronda = 0) => {
+      const { indice: i, repaso: rep } = estado.current
+      if (rep) {
+        rep.mal.add(rep.i)
+        return
+      }
+      if (soloReto || falladas.current.some(([p, r]) => p === i && r === ronda)) return
+      falladas.current = [...falladas.current, [i, ronda]]
+      guardarFalladas(leccion.id, falladas.current)
+    },
+    [leccion.id, soloReto],
+  )
 
   const salir = () => navegar(volver)
 
@@ -159,11 +200,14 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   }, [])
 
   if (terminado) {
-    return <Final leccion={leccion} modulo={modulo} puntos={puntos.current} onRepetir={onRepetir} />
+    return <Final leccion={leccion} modulo={modulo} puntos={puntos.current} repaso={resultadoRepaso.current} onRepetir={onRepetir} />
   }
   if (faltan.length > 0) return <AntesTeConviene leccion={leccion} faltan={faltan} acento={acento} onSalir={salir} onSeguir={() => setFaltan([])} />
 
-  const paso = leccion.pasos[indice]
+  // En el repaso, el paso es la misma pregunta, solo con la ronda que salió en rojo.
+  // (Se calcula una vez por pregunta: un objeto nuevo en cada render haría que el paso volviera a pedir su botón sin fin.)
+  const enRepaso = repaso ? repaso.lista[repaso.i] : null
+  const paso = pasoActual(leccion, indice, enRepaso)
   const Componente = PASOS[paso.tipo]
   const boton = accion ?? { label: 'Continuar', onClick: siguiente, avanza: true, flotante: SIN_INFORMACION.has(paso.tipo) }
 
@@ -173,6 +217,12 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   const resuelto = indice < alcanzado || (boton.avanza && !boton.disabled)
   const navegacion = soloReto
     ? null
+    : repaso
+      ? {
+          invertido: gesto === 'invertido',
+          puede: (dir) => dir > 0 && Boolean(boton.avanza && !boton.disabled),
+          ir: () => siguiente(),
+        }
     : {
         invertido: gesto === 'invertido',
         puede: (dir) => (dir < 0 ? indice > 0 : indice < total - 1 && (admin || resuelto)),
@@ -197,6 +247,33 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
             <Cerrar className="size-6" />
           </Pulsable>
           {/* En modo administrador la píldora es un botón que abre «Ir al paso». */}
+          {repaso ? (
+            <BarraPasos admin={false}>
+              {/* Repaso del final: la barra cuenta las preguntas que salieron en rojo. */}
+              <span data-cabecera-repaso className="flex shrink-0 items-center gap-1 text-sm font-bold text-mal-tinta">
+                <Repaso className="size-[18px]" />
+                Repaso
+              </span>
+              <div
+                className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={repaso.lista.length}
+                aria-valuenow={repaso.i}
+                aria-label={`Repaso: pregunta ${repaso.i + 1} de ${repaso.lista.length}`}
+              >
+                <motion.div
+                  className="h-full rounded-full bg-mal"
+                  initial={false}
+                  animate={{ width: `${(repaso.i / repaso.lista.length) * 100}%` }}
+                  transition={RESORTE.suave}
+                />
+              </div>
+              <span className="w-10 shrink-0 text-right font-dato text-sm tabular-nums text-zinc-600">
+                {repaso.i + 1}/{repaso.lista.length}
+              </span>
+            </BarraPasos>
+          ) : (
           <BarraPasos admin={admin} onAbrir={() => setVerPasos(true)}>
             <div
               className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-200"
@@ -218,6 +295,7 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
               {indice + 1}/{total}
             </span>
           </BarraPasos>
+          )}
         </div>
       </header>
 
@@ -229,13 +307,13 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
 
       {/* Cada paso entra desde la derecha con un resorte (como avanzar en iOS); al volver, desde la izquierda. */}
       <motion.main
-        key={indice}
+        key={repaso ? `repaso-${repaso.i}` : indice}
         initial={{ opacity: 0, x: haciaAtras ? -40 : 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4"
       >
-        <Etiqueta paso={paso} indice={indice} />
+        <Etiqueta paso={paso} indice={enRepaso ? enRepaso[0] : indice} repaso={Boolean(repaso)} />
         <h1 className="font-titulo text-2xl font-bold leading-tight tracking-tight sm:text-4xl">{paso.titulo}</h1>
         {paso.intro && (
           <p className="text-lg leading-relaxed text-zinc-600">
@@ -249,6 +327,7 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
             setAccion={setAccion}
             siguiente={siguiente}
             completar={completar}
+            fallo={fallo}
           />
         ) : (
           <p className="text-fijate-tinta">Tipo de paso desconocido: {paso.tipo}</p>
@@ -430,18 +509,76 @@ function IrAlPaso({ pasos, indice, onIr }) {
 }
 
 /**
+ * Una pregunta del paso, sola (para el repaso del final): el paso con solo la ronda `r` (en `rondas` o en
+ * `objetivo.rondas`). Un paso sin rondas se repite entero.
+ */
+const memoRonda = new WeakMap() // paso → { r: paso con solo esa ronda }
+function pasoActual(leccion, indice, enRepaso) {
+  if (!enRepaso) return leccion.pasos[indice]
+  const [p, r] = enRepaso
+  const original = leccion.pasos[p]
+  const porRonda = memoRonda.get(original) ?? {}
+  memoRonda.set(original, porRonda)
+  return (porRonda[r] ??= soloRonda(original, r))
+}
+
+export function soloRonda(paso, r) {
+  if (paso.rondas) return { ...paso, rondas: [paso.rondas[r] ?? paso.rondas[0]] }
+  if (paso.objetivo?.rondas) return { ...paso, objetivo: { ...paso.objetivo, rondas: [paso.objetivo.rondas[r] ?? paso.objetivo.rondas[0]] } }
+  return paso
+}
+
+/**
  * Etiqueta del paso: ícono de su actividad + nombre del ejercicio (catálogo de INTERACCIONES.md),
  * p. ej. «Oído · Escuchar y elegir». Las explicaciones no llevan etiqueta.
+ * En el repaso del final, delante va «Repaso» con su ícono, en rojo.
+ * `paso.pista` (pedido del usuario): al lado, un botoncito de bombilla (oro = pista) que despliega el texto debajo;
+ * tocarlo otra vez lo recoge.
  */
-function Etiqueta({ paso, indice }) {
+function Etiqueta({ paso, indice, repaso = false }) {
+  const [verPista, setVerPista] = useState(false)
   const e = etiquetaPaso(paso, indice)
   if (!e) return null
   const Icono = ICONO_ACTIVIDAD[e.actividad]
   return (
-    <p className="-mb-2 inline-flex items-center gap-1.5 self-start rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700">
-      <Icono className="size-[18px]" />
-      {e.ejercicio ? `${e.texto} · ${e.ejercicio}` : e.texto}
-    </p>
+    <div className="-mb-2 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <p className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700">
+          {repaso && (
+            <span className="inline-flex items-center gap-1 text-mal-tinta" data-etiqueta-repaso>
+              <Repaso className="size-[18px]" />
+              Repaso ·
+            </span>
+          )}
+          {!repaso && <Icono className="size-[18px]" />}
+          {e.ejercicio ? `${e.texto} · ${e.ejercicio}` : e.texto}
+        </p>
+        {paso.pista && (
+          <Pulsable
+            onClick={() => setVerPista((v) => !v)}
+            aria-label={verPista ? 'Ocultar la pista' : 'Ver la pista'}
+            aria-expanded={verPista}
+            data-boton-pista
+            className={`grid size-11 shrink-0 place-items-center rounded-full transition-colors duration-200 ${
+              verPista ? 'bg-fijate text-zinc-900' : 'bg-fijate-suave text-fijate-tinta'
+            }`}
+          >
+            <Bombilla className="size-[22px]" />
+          </Pulsable>
+        )}
+      </div>
+      {paso.pista && verPista && (
+        <motion.p
+          data-pista
+          initial={{ opacity: 0, y: -6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={RESORTE.suave}
+          className="origin-top-left rounded-2xl bg-fijate-suave px-4 py-3 text-base leading-snug text-fijate-tinta"
+        >
+          <Rich>{paso.pista}</Rich>
+        </motion.p>
+      )}
+    </div>
   )
 }
 
@@ -546,26 +683,7 @@ export function BarraAccion({ accion, navegacion = null }) {
             transition={RESORTE.suave}
             className="pointer-events-auto relative flex flex-col gap-2 rounded-[1.625rem] border border-zinc-200 bg-white p-2 shadow-[0_8px_28px_rgb(16_18_28/0.14)] dark:shadow-[0_8px_28px_rgb(0_0_0/0.5)]"
           >
-        {feedback && (
-          <motion.div
-            key={feedback.titulo + feedback.texto}
-            role="status"
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={RESORTE.suave}
-            className={`relative flex max-h-36 flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 ${bien ? 'bg-bien-suave text-bien-tinta' : 'bg-fijate-suave text-fijate-tinta'}`}
-          >
-            <p className="flex items-center gap-2 text-base font-bold leading-snug">
-              {bien ? <Check className="size-5" /> : <Bombilla className="size-5" />}
-              {feedback.titulo}
-            </p>
-            {feedback.texto && (
-              <p className="text-base leading-snug">
-                <Rich>{feedback.texto}</Rich>
-              </p>
-            )}
-          </motion.div>
-        )}
+        {feedback && <Retroalimentacion key={feedback.tipo + feedback.titulo + feedback.texto} feedback={feedback} />}
         {accion.ayuda && <p className="relative px-2 py-1 text-center text-sm font-medium text-zinc-600">{accion.ayuda}</p>}
           </motion.div>
         )}
@@ -615,6 +733,80 @@ export function BarraAccion({ accion, navegacion = null }) {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+/**
+ * El mensaje de bien (verde, ✓), fíjate (oro, bombilla: se puede intentar otra vez) o error (rojo, ícono Repaso: falló
+ * dos veces, cuenta como mal). Con `plegable` (pedido del usuario: al tocar una nota equivocada solo «Esa es Fa4.»), la
+ * explicación se despliega al tocar la tarjeta y se recoge al tocarla otra vez o al tocar cualquier otra parte.
+ */
+function Retroalimentacion({ feedback }) {
+  const { tipo } = feedback
+  const plegable = Boolean(feedback.plegable && feedback.texto)
+  const [abierta, setAbierta] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!abierta) return
+    const fuera = (e) => {
+      if (!ref.current?.contains(e.target)) setAbierta(false)
+    }
+    document.addEventListener('pointerdown', fuera, true)
+    return () => document.removeEventListener('pointerdown', fuera, true)
+  }, [abierta])
+  const color = tipo === 'bien' ? 'bg-bien-suave text-bien-tinta' : tipo === 'error' ? 'bg-mal-suave text-mal-tinta' : 'bg-fijate-suave text-fijate-tinta'
+  const Icono = tipo === 'bien' ? Check : tipo === 'error' ? Repaso : Bombilla
+  const verTexto = feedback.texto && (!plegable || abierta)
+  const contenido = (
+    <>
+      <p className="flex items-center gap-2 text-base font-bold leading-snug">
+        <Icono className="size-5" />
+        <span className="flex-1">{feedback.titulo}</span>
+        {plegable && (
+          <motion.span aria-hidden initial={false} animate={{ rotate: abierta ? 180 : 0 }} transition={RESORTE.pulsar} className="grid size-6 place-items-center">
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </motion.span>
+        )}
+      </p>
+      {verTexto && (
+        <motion.p
+          initial={plegable ? { opacity: 0, y: -4 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={RESORTE.suave}
+          className="text-left text-base leading-snug"
+        >
+          <Rich>{feedback.texto}</Rich>
+        </motion.p>
+      )}
+      {/* Cerrada, la explicación sigue ahí para los lectores de pantalla. */}
+      {plegable && !abierta && (
+        <span className="sr-only">
+          <Rich>{feedback.texto}</Rich>
+        </span>
+      )}
+    </>
+  )
+  const clase = `relative flex max-h-36 w-full flex-col gap-0.5 overflow-y-auto rounded-2xl px-4 py-3 text-left ${color}`
+  return (
+    <motion.div
+      ref={ref}
+      role="status"
+      data-feedback={tipo}
+      data-plegable={plegable ? (abierta ? 'abierta' : 'cerrada') : undefined}
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={RESORTE.suave}
+    >
+      {plegable ? (
+        <Pulsable tipo="tarjeta" onClick={() => setAbierta((a) => !a)} aria-expanded={abierta} className={clase}>
+          {contenido}
+        </Pulsable>
+      ) : (
+        <div className={clase}>{contenido}</div>
+      )}
+    </motion.div>
   )
 }
 
@@ -859,7 +1051,7 @@ function Flechita({ gesto, visible, cubre, invertido, color }) {
   )
 }
 
-function Final({ leccion, modulo, puntos, onRepetir }) {
+function Final({ leccion, modulo, puntos, repaso = null, onRepetir }) {
   const suma = Object.values(puntos).reduce(
     (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
     { aciertos: 0, total: 0 },
@@ -888,10 +1080,20 @@ function Final({ leccion, modulo, puntos, onRepetir }) {
         <p className="text-lg text-zinc-500">
           {leccion.id} · {leccion.titulo}
         </p>
-        {suma.total > 0 && (
-          <p className="rounded-full bg-zinc-100 px-4 py-2 text-base font-medium text-zinc-700">
-            {suma.aciertos} de {suma.total} a la primera
-          </p>
+        {(suma.total > 0 || repaso) && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {suma.total > 0 && (
+              <p className="rounded-full bg-zinc-100 px-4 py-2 text-base font-medium text-zinc-700">
+                {suma.aciertos} de {suma.total} a la primera
+              </p>
+            )}
+            {repaso && (
+              <p data-resultado-repaso className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-4 py-2 text-base font-medium text-zinc-700">
+                <Repaso className="size-[18px] text-mal-tinta" />
+                Repaso: {repaso.bien} de {repaso.total}
+              </p>
+            )}
+          </div>
         )}
       </motion.div>
 

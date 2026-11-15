@@ -124,6 +124,7 @@ export default {
     {
       tipo: 'tocar',
       titulo: 'Un paso desde una nota',
+      pista: 'Escucha la nota marcada y da el paso que se pide. **Sube** = a la derecha; **baja** = a la izquierda.',
       objetivo: {
         tipo: 'paso',
         rondas: [
@@ -141,6 +142,7 @@ export default {
     {
       tipo: 'tocar',
       titulo: 'Ahora sin nombres',
+      pista: 'Las mismas reglas, sin nombres en las teclas. Ojo con **Mi–Fa** y **Si–Do**.',
       objetivo: {
         tipo: 'paso',
         rondas: [

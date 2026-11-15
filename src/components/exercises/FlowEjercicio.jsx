@@ -10,7 +10,7 @@ import { FlowVerso } from '../Flow.jsx'
  *
  *   { tipo: 'flow', titulo, intro, verso: 'Camino de noche por la avenida', explicacion }
  */
-export default function FlowEjercicio({ paso, setAccion, siguiente, completar }) {
+export default function FlowEjercicio({ paso, setAccion, siguiente, completar, fallo }) {
   const verso = useMemo(() => analizar(paso.verso).estrofas[0].versos[0], [paso.verso])
   const silabas = useMemo(() => silabasFlow(verso), [verso])
   const total = compasesPara(silabas.length) * POR_COMPAS
@@ -19,6 +19,7 @@ export default function FlowEjercicio({ paso, setAccion, siguiente, completar })
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
   const [solucion, setSolucion] = useState(null)
   const [tuyos, setTuyos] = useState(null) // acentos al comprobar (luego la rejilla enseña la solución)
+  const [primero, setPrimero] = useState(null) // primer intento con errores: { bien, total } (oro: se puede corregir)
   const onCasillas = useCallback((c) => setCasillas(c), [])
 
   const completas = casillas.length === silabas.length
@@ -29,13 +30,20 @@ export default function FlowEjercicio({ paso, setAccion, siguiente, completar })
       setAccion({
         label: 'Comprobar',
         disabled: !completas,
-        ayuda: completas ? null : 'Graba todas las sílabas',
+        ayuda: completas || primero ? null : 'Graba todas las sílabas',
+        feedback: primero
+          ? { tipo: 'mal', titulo: `${primero.bien} de ${primero.total} acentos en el pulso`, texto: 'Mueve las sílabas fuertes a las casillas del pulso y comprueba otra vez.' }
+          : null,
         onClick: () => {
           const bien = acentos.bien === acentos.total
+          if (!bien && !primero) return setPrimero({ bien: acentos.bien, total: acentos.total })
           setResultado(bien ? 'bien' : 'mal')
           setTuyos({ bien: acentos.bien, total: acentos.total })
-          if (!bien) setSolucion(repartirConAcentos(silabas, total))
-          completar({ aciertos: bien ? 1 : 0, total: 1 })
+          if (!bien) {
+            setSolucion(repartirConAcentos(silabas, total))
+            fallo?.(0)
+          }
+          completar({ aciertos: bien && !primero ? 1 : 0, total: 1 })
         },
       })
       return
@@ -47,13 +55,13 @@ export default function FlowEjercicio({ paso, setAccion, siguiente, completar })
         resultado === 'bien'
           ? { tipo: 'bien', titulo: '¡Todos los acentos en el pulso!', texto: paso.explicacion }
           : {
-              tipo: 'mal',
+              tipo: 'error',
               titulo: `${tuyos?.bien} de ${tuyos?.total} acentos en el pulso`,
               texto: `Así quedan todos en el pulso: escúchalo. ${paso.explicacion ?? ''}`.trim(),
             },
       onClick: siguiente,
     })
-  }, [resultado, completas, acentos.bien, acentos.total, tuyos, silabas, total, paso.explicacion, setAccion, siguiente, completar])
+  }, [resultado, primero, completas, acentos.bien, acentos.total, tuyos, silabas, total, paso.explicacion, setAccion, siguiente, completar, fallo])
 
   return (
     <div data-paso-flow={paso.verso} data-resultado={resultado ?? undefined}>

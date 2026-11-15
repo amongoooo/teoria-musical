@@ -4,6 +4,7 @@ import { reproducir } from '../../audio/sonido.js'
 import { acentoLeccion } from '../../content/index.js'
 import { frecuencia, hz, nombre } from '../../theory/notas.js'
 import { ENTRA_DERECHA, SALTO } from '../../ui/movimiento.js'
+import { Bombilla, Check, Repaso } from '../../ui/Iconos.jsx'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
 import BotonSonido from '../BotonSonido.jsx'
@@ -46,8 +47,12 @@ const ordenOpciones = (ronda) => {
  *  - roll: { ...config del PianoRoll, notas } para leer un Piano Roll (solo lectura)
  *  - letra: { texto, colores, esquema, silabas, multis } para leer unos versos (LetraAnalizada)
  * `noLoSe` (prueba rápida): botón punteado «No lo sé» bajo las opciones; cuenta como fallo y enseña la respuesta.
+ *
+ * «Ahora sí se puede fallar» (en las lecciones; la prueba rápida sigue con un intento y en oro): el primer error deja
+ * la opción tachada en oro y se intenta otra vez; el segundo enseña la correcta en ROJO (ícono Repaso), cuenta como mal
+ * y la ronda va al repaso del final (`fallo(r)`). Con dos opciones, un solo intento (el segundo sería regalado).
  */
-export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar, noLoSe = false }) {
+export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, completar, fallo, noLoSe = false }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [orden] = useState(() =>
@@ -59,7 +64,8 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
   // Opciones de texto barajadas cada vez que se abre el paso: posición en pantalla → índice en `ronda.opciones`.
   const [ordenOp] = useState(() => rondas.map(ordenOpciones))
   const [seleccion, setSeleccion] = useState(null)
-  const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
+  const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal' (prueba rápida, oro) | 'rojo' (lección)
+  const [descartadas, setDescartadas] = useState([]) // posiciones que ya se intentaron mal en esta ronda
   const [aciertos, setAciertos] = useState(0)
   const [notasRoll] = useState(() => rondas.map((ronda) => (ronda.roll ? conIds(ronda.roll.notas) : null)))
   const color = acentoLeccion(leccionId)
@@ -71,18 +77,31 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
   const correcta = tarjetasSonOpciones ? orden[r].indexOf(ronda.correcta) : ordenOp[r].indexOf(ronda.correcta)
   const ultima = r === rondas.length - 1
   const respondida = resultado !== null
+  const cuantas = tarjetasSonOpciones ? sonidos.length : opciones.length
+  const intentos = noLoSe || cuantas <= 2 ? 1 : 2
 
   useEffect(() => {
     if (!respondida) {
+      const otraVez = descartadas.length > 0
       setAccion({
         label: 'Comprobar',
         disabled: seleccion === null,
-        ayuda: seleccion === null ? (tarjetasSonOpciones ? 'Escucha y elige una tarjeta' : 'Elige una respuesta') : null,
+        ayuda: seleccion === null && !otraVez ? (tarjetasSonOpciones ? 'Escucha y elige una tarjeta' : 'Elige una respuesta') : null,
+        // Primer error: oro, sin dar la respuesta (la pista de la ronda, si tiene).
+        feedback: otraVez
+          ? { tipo: 'mal', titulo: 'No es esa.', texto: ronda.pista ?? (tarjetasSonOpciones || sonidos.length ? 'Escucha otra vez y prueba con otra.' : 'Prueba con otra.') }
+          : null,
         onClick: () => {
           const bien = seleccion === correcta
-          const total = aciertos + (bien ? 1 : 0)
+          if (!bien && descartadas.length + 1 < intentos) {
+            setDescartadas([...descartadas, seleccion])
+            setSeleccion(null)
+            return
+          }
+          const total = aciertos + (bien && descartadas.length === 0 ? 1 : 0)
           setAciertos(total)
-          setResultado(bien ? 'bien' : 'mal')
+          setResultado(bien ? 'bien' : noLoSe ? 'mal' : 'rojo')
+          if (!bien && !noLoSe) fallo?.(r)
           if (ultima) completar({ aciertos: total, total: rondas.length })
         },
       })
@@ -98,15 +117,30 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
       feedback:
         resultado === 'bien'
           ? { tipo: 'bien', titulo: '¡Correcto!', texto: explicacion }
-          : { tipo: 'mal', titulo: `La respuesta era: ${respuesta}`, texto: explicacion ?? 'Escucha otra vez los sonidos para notar la diferencia.' },
+          : {
+              tipo: resultado === 'rojo' ? 'error' : 'mal',
+              titulo: `La respuesta era: ${respuesta}`,
+              texto: explicacion ?? 'Escucha otra vez los sonidos para notar la diferencia.',
+            },
       onClick: () => {
         if (ultima) return siguiente()
         setR(r + 1)
         setSeleccion(null)
         setResultado(null)
+        setDescartadas([])
       },
     })
-  }, [respondida, resultado, seleccion, correcta, opciones, aciertos, ultima, r, ronda, rondas.length, tarjetasSonOpciones, setAccion, siguiente, completar])
+  }, [respondida, resultado, seleccion, descartadas, intentos, noLoSe, correcta, opciones, aciertos, ultima, r, ronda, rondas.length, tarjetasSonOpciones, sonidos.length, setAccion, siguiente, completar, fallo])
+
+  /** bien = la correcta (✓); rojo = la correcta tras fallar dos veces; mal = la elegida mal; descartada = ya intentada. */
+  function estadoOpcion(i) {
+    if (respondida) {
+      if (i === correcta) return resultado === 'rojo' ? 'rojo' : 'bien'
+      if (i === seleccion || descartadas.includes(i)) return 'mal'
+      return null
+    }
+    return descartadas.includes(i) ? 'descartada' : null
+  }
 
   const noSe = () => {
     setSeleccion(null)
@@ -134,9 +168,9 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
               letra={LETRAS[i]}
               sonido={s}
               seleccionada={seleccion === i}
-              estado={respondida ? (i === correcta ? 'bien' : i === seleccion ? 'mal' : null) : null}
+              estado={estadoOpcion(i)}
               detalle={respondida && ronda.mostrarNotas && s.notas?.length === 1 ? s.notas[0] : null}
-              onClick={() => !respondida && setSeleccion(i)}
+              onClick={() => !respondida && !descartadas.includes(i) && setSeleccion(i)}
             />
           ))}
         </div>
@@ -151,17 +185,21 @@ export default function EscuchaElige({ paso, leccionId, setAccion, siguiente, co
           )}
           <div className="flex flex-col gap-3">
             {opciones.map((op, i) => {
-              const estado = respondida ? (i === correcta ? 'bien' : i === seleccion ? 'mal' : null) : null
+              const estado = estadoOpcion(i)
               return (
-                <motion.div key={`${r}-${i}`} animate={estado === 'bien' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
+                <motion.div key={`${r}-${i}`} animate={estado === 'bien' || estado === 'rojo' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
                   <Pulsable
                     tipo="tarjeta"
-                    disabled={respondida}
+                    disabled={respondida || descartadas.includes(i)}
+                    data-estado={estado ?? undefined}
                     onClick={() => setSeleccion(i)}
                     aria-pressed={seleccion === i}
-                    className={`min-h-14 w-full rounded-2xl border-2 px-5 py-3 text-left text-lg font-medium transition-colors duration-200 ${claseEstado(estado, seleccion === i)}`}
+                    className={`flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-5 py-3 text-left text-lg font-medium transition-colors duration-200 ${claseEstado(estado, seleccion === i)}`}
                   >
-                    <Rich>{op}</Rich>
+                    <span className={`flex-1 ${estado === 'descartada' ? 'line-through decoration-2' : ''}`}>
+                      <Rich>{op}</Rich>
+                    </span>
+                    <IconoEstado estado={estado} />
                   </Pulsable>
                 </motion.div>
               )
@@ -189,9 +227,18 @@ export function BotonNoLoSe({ onClick }) {
 
 function claseEstado(estado, seleccionada) {
   if (estado === 'bien') return 'border-bien bg-bien-suave text-bien-tinta'
-  if (estado === 'mal') return 'border-fijate bg-fijate-suave text-fijate-tinta'
+  if (estado === 'rojo') return 'border-mal bg-mal-suave text-mal-tinta font-semibold'
+  if (estado === 'mal' || estado === 'descartada') return 'border-fijate bg-fijate-suave text-fijate-tinta'
   if (seleccionada) return 'border-zinc-900 bg-white text-zinc-900'
   return 'border-zinc-200 bg-white text-zinc-700'
+}
+
+/** El ícono de una opción respondida (lo importante va doble: color + ícono). */
+function IconoEstado({ estado }) {
+  if (estado === 'bien') return <Check className="size-5 shrink-0" />
+  if (estado === 'rojo') return <Repaso className="size-5 shrink-0" />
+  if (estado === 'mal' || estado === 'descartada') return <Bombilla className="size-5 shrink-0" />
+  return null
 }
 
 /** Tarjeta que suena al tocarla y a la vez sirve como respuesta. */
@@ -205,15 +252,21 @@ function TarjetaSonido({ letra, sonido, seleccionada, estado, detalle, onClick }
   }
 
   return (
-    <motion.div animate={estado === 'bien' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
+    <motion.div animate={estado === 'bien' || estado === 'rojo' ? SALTO : { scale: 1 }} transition={{ duration: 0.35 }}>
     <Pulsable
       tipo="tarjeta"
       onClick={tocar}
       aria-pressed={seleccionada}
-      className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-colors duration-200 ${claseEstado(estado, seleccionada)}`}
+      data-estado={estado ?? undefined}
+      className={`relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-colors duration-200 ${claseEstado(estado, seleccionada)}`}
     >
+      {estado && (
+        <span className="absolute top-3 right-3">
+          <IconoEstado estado={estado} />
+        </span>
+      )}
       <IconoPlay sonando={sonando} />
-      <span className="text-2xl font-bold">{letra}</span>
+      <span className={`text-2xl font-bold ${estado === 'descartada' ? 'line-through decoration-2' : ''}`}>{letra}</span>
       {detalle && (
         <span className="text-sm font-medium opacity-80">
           {nombre(detalle)} · {hz(frecuencia(detalle))}
