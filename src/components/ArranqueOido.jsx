@@ -2,6 +2,8 @@ import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useMotio
 import { useEffect, useRef, useState } from 'react'
 import { tiendaOido } from '../progress/oido.js'
 import { useOpciones } from '../progress/opciones.js'
+import { useProgreso } from '../progress/progreso.js'
+import { PuntosDominio, nivelesAbiertos } from './PanelEntrenamiento.jsx'
 import {
   AJUSTES_ABSOLUTO,
   DIRECCIONES,
@@ -41,13 +43,25 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
   const juego = modo.juegos ? getJuego(datos.ajustes.juego) : null
   // Modo administrador (pedido del usuario): todos los niveles desbloqueados.
   const { admin } = useOpciones()
+  // Niveles con candado de lección (Acordes: las séptimas) no se pueden elegir aunque los hayas alcanzado.
+  const abiertos = nivelesAbiertos(modo, useProgreso(), admin)
+  const nivelMaxAbierto = Math.min(datos.nivelMax, abiertos)
   // Rápido: la rueda de nivel es el multiplicador (1…10, todos disponibles); si no, el nivel de siempre.
   const rapido = Boolean(juego?.multiplicador)
   const mult = AJUSTES_ABSOLUTO.multiplicador
   const dif = AJUSTES_ABSOLUTO[claveDif]
   const rueda = rapido
     ? { total: mult.max, max: mult.max, valor: ajusteAbsoluto(datos.ajustes, 'multiplicador'), elegir: (n) => guardarAjustes(modo.id, { multiplicador: n }) }
-    : { total: modo.niveles, max: admin ? modo.niveles : datos.nivelMax, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n, { libre: admin }) }
+    : { total: modo.niveles, max: admin ? modo.niveles : nivelMaxAbierto, valor: datos.nivel, elegir: (n) => elegirNivel(modo.id, n, { libre: admin }) }
+  // Cada nivel de la rueda lleva debajo su dominio: cinco puntitos encendidos hasta la dificultad con la que lo pasaste.
+  const formatoNivel = rapido
+    ? undefined
+    : (v) => (
+        <span className="flex flex-col items-center gap-1.5">
+          <span className="font-juego text-5xl leading-none">{v}</span>
+          <PuntosDominio dificultad={datos.superado?.[v] ?? 0} />
+        </span>
+      )
   // Lo que se ve en cada rueda mientras se desliza (los puntitos y el color lo siguen al instante).
   const [vista, setVista] = useState(rueda.valor)
   const [vistaDif, setVistaDif] = useState(ajusteAbsoluto(datos.ajustes, claveDif))
@@ -71,7 +85,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
   useEffect(() => setVistaDif(difGuardada), [difGuardada])
   useEffect(() => setVista(rueda.valor), [rueda.valor])
   const vidasElegidas = vidasDe(datos.ajustes, rapido)
-  const nivelPredeterminado = admin ? modo.niveles : datos.nivelMax
+  const nivelPredeterminado = admin ? modo.niveles : nivelMaxAbierto
   const yaPredeterminado = (rapido || datos.nivel === nivelPredeterminado) && vidasElegidas === VIDAS_INFINITAS && difGuardada === 1
   const predeterminados = () => {
     if (!rapido && datos.nivel !== nivelPredeterminado) elegirNivel(modo.id, nivelPredeterminado, { libre: admin })
@@ -146,6 +160,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
                   valor={rueda.valor}
                   onVista={setVista}
                   onElegir={rueda.elegir}
+                  formato={formatoNivel}
                   acento={acento}
                   className={ANCHO_RUEDA}
                 />
@@ -246,7 +261,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
 
         {/* Opciones propias del modo (ritmo: el pad con sonido o mudo), en bloques con dibujito como «Responder con». */}
         {modo.bloques?.map((b) => {
-          const elegido = datos.ajustes[b.clave] ?? b.opciones[0].id
+          const elegido = datos.ajustes[b.clave] ?? b.defecto ?? b.opciones[0].id
           return (
             <motion.section key={b.clave} variants={itemLista} layout="position" className="flex flex-col gap-3">
               <Titulo id={`bloque-${b.clave}`}>{b.titulo}</Titulo>
@@ -895,8 +910,28 @@ function DibujoPadMudo({ className }) {
   )
 }
 
+/** El tempo del ritmo: golpes en fila, más juntos cuanto más rápido. */
+function dibujoTempo(golpes) {
+  return function DibujoTempo({ className }) {
+    const paso = 60 / (golpes - 1)
+    return (
+      <svg viewBox="0 0 72 44" className={className} fill="currentColor" aria-hidden>
+        {Array.from({ length: golpes }, (_, i) => (
+          <rect key={i} x={6 + i * paso - 3} y={i % 2 ? 16 : 10} width="6" height={i % 2 ? 18 : 24} rx="3" />
+        ))}
+      </svg>
+    )
+  }
+}
+
 /** Dibujitos de los bloques propios de un modo (`modo.bloques`), por «clave:opción». */
-const DIBUJOS_BLOQUE = { 'pad:suena': DibujoPadSuena, 'pad:mudo': DibujoPadMudo }
+const DIBUJOS_BLOQUE = {
+  'pad:suena': DibujoPadSuena,
+  'pad:mudo': DibujoPadMudo,
+  'tempo:lento': dibujoTempo(3),
+  'tempo:normal': dibujoTempo(5),
+  'tempo:rapido': dibujoTempo(7),
+}
 
 function DibujoBotones({ className }) {
   return (

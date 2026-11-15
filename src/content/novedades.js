@@ -5,6 +5,29 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-15-niveles',
+    fecha: '15 nov 2026',
+    titulo: 'Niveles más justos',
+    cosas: [
+      {
+        texto: 'Todos los ejercicios suben de nivel igual: **8 de las últimas 10** bien, y lo **nuevo del nivel** bien al menos **2 veces**. Lo que más fallas y lo recién sumado salen más seguido.',
+        donde: { etiqueta: 'Abrir Oído', href: '#/oido' },
+      },
+      {
+        texto: 'Cada nivel recuerda **con qué dificultad lo pasaste**: los puntitos de colores bajo cada número de la rueda. Puedes volver a un nivel con más dificultad para encenderlos.',
+        donde: { etiqueta: 'Abrir Intervalos', href: '#/oido/intervalos' },
+      },
+      {
+        texto: '**Acordes** se reordenó: los niveles suman **disminuido** y **aumentado** (las séptimas llegan con sus lecciones) y la forma de sonar —arpegio, solo el acorde, invertidos…— es ahora la rueda **Sonido**. No pierdes lo que ganaste.',
+        donde: { etiqueta: 'Abrir Acordes', href: '#/oido/acordes' },
+      },
+      {
+        texto: 'En **Ritmo** eliges el **tempo**: lento para practicar sin prisa, normal o rápido. Y desde una ruta o el curso se practica **sin vidas**.',
+        donde: { etiqueta: 'Abrir Ritmo', href: '#/ritmo' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-funciones',
     fecha: '15 nov 2026',
     titulo: 'Módulo 5: funciones',

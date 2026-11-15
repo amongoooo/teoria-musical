@@ -175,6 +175,19 @@ export function modoAbierto(modo, progreso, admin = false) {
   return admin || !modo.requiere || Boolean(progreso?.lecciones?.[modo.requiere]?.completada)
 }
 
+/**
+ * Cuántos niveles del modo están abiertos: un nivel con `modo.requiereNivel[n]` (Acordes: las séptimas ← 5.2 y 5.5)
+ * lleva candado hasta terminar esa lección, y con él los que siguen. En modo administrador, todos.
+ */
+export function nivelesAbiertos(modo, progreso, admin = false) {
+  if (admin || !modo.requiereNivel) return modo.niveles
+  for (let n = 1; n <= modo.niveles; n++) {
+    const id = modo.requiereNivel[n]
+    if (id && !progreso?.lecciones?.[id]?.completada) return n - 1
+  }
+  return modo.niveles
+}
+
 /** Ejercicio con candado: punteado y gris, «Termina la 5.1»; al tocarlo tiembla. */
 function EjercicioBloqueado({ modo, Icono }) {
   const [ref, temblar] = useTemblor()
@@ -207,6 +220,41 @@ const INICIAL_DIA = ['D', 'L', 'M', 'X', 'J', 'V', 'S']
 
 export function nombreNivel(modo, n) {
   return modo.nombreNivel ? modo.nombreNivel(n) : `Nivel ${n}`
+}
+
+/**
+ * Texto del feedback al aprobar un nivel (`r` = lo que devuelve registrarRespuesta): nivel nuevo, o el mismo nivel
+ * superado con más dificultad, o el aviso de la lección que abre lo siguiente (Acordes: las séptimas).
+ */
+export function textoAprobado(modo, r, { abiertos = modo.niveles } = {}) {
+  if (!r?.aprobado) return ''
+  const { nivel, dificultad, mejora } = r.aprobado
+  let t = ''
+  if (r.desbloqueo) t = ` **¡Subiste a ${nombreNivel(modo, r.nuevoNivel).toLowerCase()}!** Nuevo: ${modo.nuevosEnNivel(r.nuevoNivel).join(', ')}.`
+  else if (mejora) t = ` **¡Nivel ${nivel} superado con dificultad ${dificultad}!**`
+  else t = ` **Nivel ${nivel} superado.**`
+  if (r.subio && !r.desbloqueo) t += ` Sigues con el nivel ${r.nuevoNivel}.`
+  const leccion = modo.requiereNivel?.[abiertos + 1]
+  if (!r.subio && nivel >= abiertos && leccion) t += ` Lo siguiente se abre con la lección ${leccion}.`
+  return t
+}
+
+/**
+ * Dominio de un nivel en cinco puntitos: encendidos (cada uno con el color de su dificultad) hasta la dificultad más
+ * alta con la que lo aprobaste. Sin aprobar, los cinco apagados.
+ */
+export function PuntosDominio({ dificultad = 0, className = '' }) {
+  return (
+    <span className={`flex items-center gap-[3px] ${className}`} data-dominio={dificultad} aria-label={dificultad ? `Superado con dificultad ${dificultad}` : 'Sin superar'}>
+      {[1, 2, 3, 4, 5].map((k) => (
+        <span
+          key={k}
+          className="size-[5px] rounded-full"
+          style={{ backgroundColor: k <= dificultad ? `var(--color-dificultad-${k})` : 'var(--color-zinc-300)' }}
+        />
+      ))}
+    </span>
+  )
 }
 
 function porcentaje(a, t) {

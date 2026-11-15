@@ -7,8 +7,11 @@
 // Tipos de parada:
 //   { tipo: 'leccion', id: '2.1' }                                    → hecha si la lección está completada
 //   { tipo: 'meta', modo: 'seguir', nivel: 2, titulo, texto }        → hecha si en ese modo ya llegaste a ese nivel
-//        `dificultad` (1–5): la recomendada para ese punto del curso (pedido del usuario: todo es progresivo). Al tocar
-//        «Practicar» desde la ruta, el entrenador empieza con esa dificultad (octavas en oído, margen en ritmo).
+//        `dificultad` (1–5): la que pide ese punto del curso (pedido del usuario: todo es progresivo): la meta se cumple
+//        al llegar al nivel aprobando con esa dificultad o más (`nivelCon` de progress/entrenamiento.js). Al tocar
+//        «Practicar» desde la ruta, el entrenador empieza con esa dificultad (octavas en oído, margen en ritmo), sin
+//        vidas y a tempo normal. `legado`: el nivel de ANTES que equivalía a la meta (si el modo cambió sus niveles,
+//        como Acordes): quien ya lo tenía la conserva cumplida.
 //   { tipo: 'meta', clave: 'letra', titulo, texto }                  → otras metas (las mide `medirMeta` de
 //   { tipo: 'meta', clave: 'vocab', tema: 'noche', palabras: 10, … }    components/rutaModulo.js): una letra en el cuaderno,
 //                                                                         N palabras de un tema del vocabulario…
@@ -132,7 +135,7 @@ export const TRAMOS = {
     titulo: 'Tríadas',
     paradas: [
       { tipo: 'leccion', id: '4.1' },
-      { tipo: 'meta', modo: 'acordes', nivel: 2, dificultad: 1, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
+      { tipo: 'meta', modo: 'acordes', nivel: 2, dificultad: 1, legado: 2, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supéralo con el arpegio y llega al disminuido.' },
       { tipo: 'leccion', id: '4.2' },
     ],
   },
@@ -142,7 +145,7 @@ export const TRAMOS = {
     paradas: [
       { tipo: 'leccion', id: '4.3' },
       { tipo: 'leccion', id: '4.4' },
-      { tipo: 'meta', modo: 'acordes', nivel: 3, dificultad: 2, titulo: 'Acordes · nivel 3', texto: 'Mayor o menor también con los acordes invertidos.' },
+      { tipo: 'meta', id: 'acordes:3', modo: 'acordes', nivel: 2, dificultad: 3, legado: 3, titulo: 'Acordes · invertidos', texto: 'Mayor o menor también con los acordes invertidos: supéralo con la dificultad 3.' },
       { tipo: 'leccion', id: '4.5' },
       {
         tipo: 'reto',

@@ -7,8 +7,12 @@ import { formaGroove } from './bateria.js'
 
 export const TIEMPOS = 4
 
-/** Rondas buenas para subir de nivel (las partes de la barra de arriba). */
-export const PARTES_NIVEL = 8
+/**
+ * Tempo (ajuste aparte de la figura y del margen, pedido en el plan de niveles): cada nivel trae su bpm «normal»; lento
+ * lo baja para practicar una figura difícil sin prisa (es práctica: no aprueba niveles) y rápido lo sube.
+ */
+export const TEMPOS = { lento: 0.8, normal: 1, rapido: 1.15 }
+export const tempoDe = (ajustes) => (ajustes?.tempo in TEMPOS ? ajustes.tempo : 'normal')
 
 /** Margen de cada dificultad (1…5), en segundos: de ±120 ms a ±40 ms. */
 export const MARGENES = [0.12, 0.095, 0.075, 0.055, 0.04]
@@ -190,7 +194,7 @@ const CLIC_SWING = [...CLIC, ...[0, 1, 2, 3].map((b) => ({ nota: 'hat', t: b + 2
  * Genera una ronda: { item, nombre, porTiempo, casillas, patron, bpm, fondo }.
  * `item` es la figura que se entrena (para las estadísticas); evita repetir el patrón de `anterior`.
  */
-function generar(nivel, eco, anterior) {
+function generar(nivel, eco, anterior, tempo = 'normal') {
   const definido = NIVELES[Math.max(1, Math.min(NIVELES.length, nivel)) - 1]
   let n = definido
   let patron = []
@@ -200,7 +204,8 @@ function generar(nivel, eco, anterior) {
     if (!anterior || anterior.item !== n.id || anterior.patron.join() !== patron.join()) break
   }
   // En «Todo mezclado» todo va un poco más deprisa (las semicorcheas, hasta 90).
-  const bpm = definido.mezcla ? Math.min(n.bpm + 10, n.porTiempo === 4 ? 90 : 100) : n.bpm
+  const base = definido.mezcla ? Math.min(n.bpm + 10, n.porTiempo === 4 ? 90 : 100) : n.bpm
+  const bpm = Math.round(base * (TEMPOS[tempo] ?? 1))
   const fondo = eco ? (n.porTiempo === 3 ? CLIC_SWING : CLIC) : enTiempos(n.fondo)
   return { item: n.id, nombre: n.nombre, porTiempo: n.porTiempo, casillas: TIEMPOS * n.porTiempo, patron, bpm, fondo }
 }
@@ -352,8 +357,19 @@ const comun = {
   },
   nuevosEnNivel: (nivel) => [NIVELES[nivel - 1]?.nombre].filter(Boolean),
   nombreItem: (id) => NIVELES.find((n) => n.id === id)?.nombre ?? id,
-  // Bloques del arranque: el pad puede sonar al tocarlo o ir mudo (con bluetooth el sonido llega tarde y estorba).
+  // Bloques del arranque: el tempo y el pad, que puede sonar al tocarlo o ir mudo (con bluetooth el sonido llega tarde
+  // y estorba).
   bloques: [
+    {
+      clave: 'tempo',
+      titulo: 'Tempo',
+      defecto: 'normal',
+      opciones: [
+        { id: 'lento', nombre: 'Lento' },
+        { id: 'normal', nombre: 'Normal' },
+        { id: 'rapido', nombre: 'Rápido' },
+      ],
+    },
     {
       clave: 'pad',
       titulo: 'Pad',
@@ -372,11 +388,12 @@ export const modoSeguir = {
   descripcion: 'Suena el beat y tocas los golpes marcados.',
   info:
     'Suena **un compás de cuenta** y arranca el beat: tocas en el pad los golpes que llevan aro, durante **dos ' +
-    'compases**. La ronda vale si al menos **4 de cada 5** golpes caen a tiempo. Con **8 rondas buenas** subes de ' +
-    'nivel, y cada nivel trae una figura nueva. La dificultad cierra el margen, de **±120 ms** a **±40 ms**. Si tu ' +
-    'teléfono o tus audífonos suenan con retraso, se descuenta solo.',
+    'compases**. La ronda vale si al menos **4 de cada 5** golpes caen a tiempo. Con **8 rondas buenas de las últimas ' +
+    '10** subes de nivel, y cada nivel trae una figura nueva. La dificultad cierra el margen, de **±120 ms** a ' +
+    '**±40 ms**. En tempo **lento** practicas sin prisa (no sube de nivel). Si tu teléfono o tus audífonos suenan con ' +
+    'retraso, se descuenta solo.',
   pregunta: 'Toca los golpes marcados',
-  generar: (nivel, ajustes, anterior) => generar(nivel, false, anterior),
+  generar: (nivel, ajustes, anterior) => generar(nivel, false, anterior, tempoDe(ajustes)),
 }
 
 export const modoEco = {
@@ -387,10 +404,10 @@ export const modoEco = {
   info:
     'Primero **escuchas** un patrón de un compás sobre el clic y lo **repites** en el compás siguiente, sin verlo. ' +
     'Si no tocas, vuelve a sonar. Al terminar ves el patrón y dónde cayeron tus toques. La ronda vale si al menos ' +
-    '**4 de cada 5** golpes caen a tiempo, y con **8 rondas buenas** subes de nivel. La dificultad cierra el ' +
-    'margen, de **±120 ms** a **±40 ms**.',
+    '**4 de cada 5** golpes caen a tiempo, y con **8 rondas buenas de las últimas 10** subes de nivel. La dificultad ' +
+    'cierra el margen, de **±120 ms** a **±40 ms**. En tempo **lento** practicas sin prisa (no sube de nivel).',
   pregunta: 'Escucha y repite',
-  generar: (nivel, ajustes, anterior) => generar(nivel, true, anterior),
+  generar: (nivel, ajustes, anterior) => generar(nivel, true, anterior, tempoDe(ajustes)),
 }
 
 export const MODOS_RITMO = [modoSeguir, modoEco]

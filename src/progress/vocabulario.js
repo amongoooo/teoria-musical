@@ -37,7 +37,7 @@ export function resumenVocab(estado = tiendaVocab.leer(), palabras = VOCABULARIO
 export function responderVocab(tipo, palabra, bien) {
   const antes = tiendaVocab.leer()
   const eraNueva = !antes.repaso?.[palabra]
-  const { metaCumplida } = tiendaVocab.registrarRespuesta(tipo, { item: palabra, bien, niveles: 1 })
+  const { metaCumplida } = tiendaVocab.registrarRespuesta(tipo, { item: palabra, bien, niveles: 1, sinNivel: true })
   const e = tiendaVocab.leer()
   const r = apuntar(e.repaso ?? {}, palabra, bien, hoy())
   tiendaVocab.guardarCampos({ repaso: r.repaso, ...(eraNueva ? { nuevas: [hoy(), nuevasDeHoy(e) + 1] } : {}) })

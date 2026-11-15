@@ -10,6 +10,7 @@ import { HERRAMIENTAS, ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '..
 import { MODOS_OIDO } from '../theory/oido.js'
 import { MODOS_RITMO } from '../theory/ritmo.js'
 import { getPalabra, getTema } from '../letras/vocabulario/index.js'
+import { nivelCon } from '../progress/entrenamiento.js'
 import { useCuaderno } from '../progress/letras.js'
 import { useOpciones } from '../progress/opciones.js'
 import { tiendaOido } from '../progress/oido.js'
@@ -67,7 +68,10 @@ const palabrasDelTema = (repaso, tema) => Object.keys(repaso ?? {}).filter((p) =
 /**
  * Medidor de las metas de cualquier práctica (rutas y Curso completo): `meta(p, practica)` →
  * { valor, meta, detalle (texto de «cómo vas»), ir() (el botón «Practicar») }.
- *  - con `modo`: nivel del entrenamiento de la práctica.
+ *  - con `modo`: el nivel al que llegaste en ese modo CON la dificultad que pide la meta (`nivelCon`: aprobar un nivel
+ *    con esa dificultad o más). Las metas que ya se cumplían con los datos de antes (`legado`, el nivel máximo que
+ *    había antes de guardar el dominio por dificultad) siguen cumplidas; `p.legado` = el nivel de antes que equivale
+ *    a la meta, si cambió de número (Acordes reordenó sus niveles).
  *  - `letra`: letras con texto en el cuaderno.
  *  - `vocab`: palabras vistas de un tema; «Practicar» deja encendido solo ese tema y abre el vocabulario.
  */
@@ -75,7 +79,8 @@ export function useMedirMetas() {
   const { letras } = useCuaderno()
   const vocab = tiendaVocab.usar()
   const datos = { ritmo: tiendaRitmo.usar(), oido: tiendaOido.usar(), letras: vocab }
-  const nivelMax = (practicaId, modo) => PRACTICAS[practicaId].tienda.datosModo(modo, datos[practicaId]).nivelMax
+  const datosDe = (practicaId, modo) => PRACTICAS[practicaId].tienda.datosModo(modo, datos[practicaId])
+  const nivelMax = (practicaId, modo) => datosDe(practicaId, modo).nivelMax
   const meta = (p, practicaId) => {
     if (p.clave === 'letra') {
       const n = letrasConTexto(letras)
@@ -96,9 +101,12 @@ export function useMedirMetas() {
       }
     }
     const practica = PRACTICAS[practicaId]
-    const n = nivelMax(practicaId, p.modo)
-    // «Practicar» desde la ruta (pedido del usuario): el entrenador empieza con la dificultad recomendada de esa parada.
+    // «Practicar» desde la ruta (pedido del usuario): el entrenador empieza con la dificultad de esa parada, que es
+    // también la que pide la meta.
     const dificultad = p.dificultad ?? 1
+    const m = datosDe(practicaId, p.modo)
+    const conDificultad = nivelCon(m, dificultad)
+    const n = (m.legado ?? 0) >= (p.legado ?? p.nivel) ? Math.max(conDificultad, p.nivel) : conDificultad
     return {
       valor: n,
       meta: p.nivel,
