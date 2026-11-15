@@ -10,7 +10,7 @@
 // Al importar se COMBINA, nunca se reemplaza: por lección se queda lo más avanzado,
 // los retos y los días de práctica se unen. Importar dos veces el mismo código no cambia nada.
 import { getProgreso, importarProgreso } from './progreso.js'
-import { getOido, importarOido } from './oido.js'
+import { getOido, importarOido, tiendaOido } from './oido.js'
 import { tiendaRitmo } from './ritmo.js'
 import { tiendaVocab } from './vocabulario.js'
 import { combinarRepaso } from '../letras/vocabulario/repaso.js'
@@ -163,11 +163,26 @@ function revisarEntrenamiento(llega) {
       dias[f] = { segundos: num(v.segundos), respuestas: num(v.respuestas), aciertos: num(v.aciertos) }
     }
   }
+  // Forma 2 (`v: 2`): dominio por nivel (`superado`), ventana con elemento y dificultad y `legado`. Lo de la forma 1
+  // (sin `v`) llega tal cual y se migra al combinar (migrarModo de entrenamiento.js).
   const modos = entradas(o.modos, (m) => ({
+    ...(m.v === 2 ? { v: 2 } : {}),
     nivel: Math.max(1, Math.floor(num(m.nivel, 1))),
     nivelMax: Math.max(1, Math.floor(num(m.nivelMax, 1))),
-    ventana: Array.isArray(m.ventana) ? m.ventana.filter((x) => typeof x === 'boolean').slice(-10) : [],
-    carga: Math.max(0, Math.min(8, Math.floor(num(m.carga)))),
+    superado: esObjeto(m.superado)
+      ? Object.fromEntries(
+          Object.entries(m.superado)
+            .filter(([n, d]) => /^\d{1,2}$/.test(n) && Number.isInteger(d) && d >= 1 && d <= 5)
+            .map(([n, d]) => [n, d]),
+        )
+      : {},
+    ventana: Array.isArray(m.ventana)
+      ? m.ventana
+          .filter((x) => esObjeto(x) && typeof x.b === 'boolean' && Number.isInteger(x.d) && (x.e === null || esItem(String(x.e))))
+          .map((x) => ({ b: x.b, e: x.e, d: x.d }))
+          .slice(-10)
+      : [],
+    ...(Number.isInteger(m.legado) && m.legado >= 1 ? { legado: m.legado } : {}),
     aciertos: num(m.aciertos),
     total: num(m.total),
     racha: num(m.racha),
@@ -274,8 +289,14 @@ function combinarModo(a, b) {
   for (const [k, it] of Object.entries(b.items ?? {})) {
     if (!items[k] || it.t > items[k].t) items[k] = it
   }
+  // Dominio: por nivel, la dificultad más alta de los dos.
+  const superado = { ...(a.superado ?? {}) }
+  for (const [n, d] of Object.entries(b.superado ?? {})) superado[n] = Math.max(superado[n] ?? 0, d)
+  const legado = Math.max(a.legado ?? 0, b.legado ?? 0)
   return {
     ...base,
+    superado,
+    ...(legado ? { legado } : {}),
     nivelMax: Math.max(a.nivelMax ?? 1, b.nivelMax ?? 1),
     aciertos: Math.max(a.aciertos ?? 0, b.aciertos ?? 0),
     total: Math.max(a.total ?? 0, b.total ?? 0),
@@ -293,15 +314,19 @@ function combinarClaves(a = {}, b = {}, fn) {
 
 const ENTRENAMIENTO_VACIO = { dias: {}, mejorRacha: 0, modos: {} }
 
-/** Un entrenamiento (oído o ritmo) de los dos lados. */
-function combinarEntrenamiento(a = ENTRENAMIENTO_VACIO, b = ENTRENAMIENTO_VACIO) {
+/**
+ * Un entrenamiento (oído o ritmo) de los dos lados. `migrar(id, modo)`: lleva cada modo a la forma de hoy antes de
+ * combinar (un código viejo trae la forma 1; Acordes además reordenó sus niveles).
+ */
+function combinarEntrenamiento(a = ENTRENAMIENTO_VACIO, b = ENTRENAMIENTO_VACIO, migrar = (id, m) => m) {
+  const migrados = (modos = {}) => Object.fromEntries(Object.entries(modos).map(([id, m]) => [id, migrar(id, m)]))
   return {
     // Mismo día en los dos: el máximo de cada dato (no se suma, así importar dos veces no duplica).
     dias: combinarClaves(a.dias, b.dias, (x, y) =>
       x ? { segundos: Math.max(x.segundos, y.segundos), respuestas: Math.max(x.respuestas, y.respuestas), aciertos: Math.max(x.aciertos, y.aciertos) } : y,
     ),
     mejorRacha: Math.max(a.mejorRacha ?? 0, b.mejorRacha ?? 0),
-    modos: combinarClaves(a.modos, b.modos, combinarModo),
+    modos: combinarClaves(migrados(a.modos), migrados(b.modos), combinarModo),
   }
 }
 
@@ -312,9 +337,9 @@ export function combinar(a, b) {
       lecciones: combinarClaves(a.p.lecciones, b.p.lecciones, combinarLeccion),
       retos: combinarClaves(a.p.retos, b.p.retos, combinarReto),
     },
-    o: combinarEntrenamiento(a.o, b.o),
-    r: combinarEntrenamiento(a.r, b.r),
-    l: { ...combinarEntrenamiento(a.l, b.l), repaso: combinarRepaso(a.l?.repaso, b.l?.repaso) },
+    o: combinarEntrenamiento(a.o, b.o, tiendaOido.migrar),
+    r: combinarEntrenamiento(a.r, b.r, tiendaRitmo.migrar),
+    l: { ...combinarEntrenamiento(a.l, b.l, tiendaVocab.migrar), repaso: combinarRepaso(a.l?.repaso, b.l?.repaso) },
   }
 }
 

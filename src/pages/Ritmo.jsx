@@ -4,7 +4,9 @@ import { golpeAhora, iniciarPista, latenciaAudio, tiempoAudio } from '../audio/e
 import ArranqueOido from '../components/ArranqueOido.jsx'
 import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
-import PanelEntrenamiento, { nombreNivel } from '../components/PanelEntrenamiento.jsx'
+import PanelEntrenamiento, { textoAprobado } from '../components/PanelEntrenamiento.jsx'
+import { avanceNivel } from '../progress/entrenamiento.js'
+import { metaGuiada } from '../progress/metaGuiada.js'
 import { Contador, Medidor, Pad, momentoToque } from '../components/PiezasRitmo.jsx'
 import { useOpciones } from '../progress/opciones.js'
 import { apuntarError, compensacionActual, tiendaRitmo } from '../progress/ritmo.js'
@@ -12,7 +14,6 @@ import { rutas } from '../router.js'
 import { VIDAS_INFINITAS, ajusteAbsoluto, vidasDe } from '../theory/oido.js'
 import {
   MODOS_RITMO,
-  PARTES_NIVEL,
   TIEMPOS,
   evaluar,
   eventosCompas,
@@ -21,6 +22,7 @@ import {
   margenDe,
   margenEfectivo,
   objetivosDe,
+  tempoDe,
 } from '../theory/ritmo.js'
 import { tinta } from '../ui/color.js'
 import { Metronomo, Oreja } from '../ui/Iconos.jsx'
@@ -174,11 +176,15 @@ function Entrenador({ modo }) {
   const planJuego = (conDemo) =>
     eco ? { clase: 'eco' } : { clase: 'lista', lista: conDemo ? ['entrada', 'demo', 'toca', 'toca', 'cierre'] : ['entrada', 'toca', 'toca', 'cierre'] }
 
+  // Desde una meta de una ruta o del curso: sin vidas y a tempo normal (ahí se aprende, no se compite).
+  const guiada = () => metaGuiada()?.practica === 'ritmo'
+  const tempoRonda = () => (guiada() ? 'normal' : tempoDe(tiendaRitmo.datosModo(modo.id).ajustes))
+
   const nueva = () => {
     const d = tiendaRitmo.datosModo(modo.id)
-    const g = modo.generar(d.nivel, d.ajustes, rondaRef.current)
+    const g = modo.generar(d.nivel, { ...d.ajustes, tempo: tempoRonda() }, rondaRef.current)
     contador.current += 1
-    const r = { ...g, n: contador.current, nivel: d.nivel }
+    const r = { ...g, n: contador.current, nivel: d.nivel, tempo: tempoRonda() }
     rondaRef.current = r
     setRonda(r)
     window.scrollTo(0, 0)
@@ -187,7 +193,7 @@ function Entrenador({ modo }) {
 
   const empezar = () => {
     tiendaRitmo.empezarSesion()
-    const v = vidasDe(datos.ajustes)
+    const v = guiada() ? VIDAS_INFINITAS : vidasDe(datos.ajustes)
     cambiarVidas({ infinitas: v === VIDAS_INFINITAS, actual: v, max: v, alcanzados: [datos.nivel] })
     marcador.empezar(datos.nivel)
     setJugando(true)
@@ -219,11 +225,13 @@ function Entrenador({ modo }) {
   const cerrar = (ev, ks) => {
     control.current.evaluada = true
     const r = rondaRef.current
+    // Una ronda = una respuesta; en tempo lento es práctica (cuenta para el día, no para aprobar el nivel).
     const res = tiendaRitmo.registrarRespuesta(modo.id, {
       item: r.item,
       bien: ev.buena,
       niveles: modo.niveles,
-      carga: { acierto: 1, fallo: 1, partes: PARTES_NIVEL },
+      dificultad,
+      sinNivel: r.tempo === 'lento',
     })
     const vv = vidasRef.current
     if (vv && !vv.infinitas) {
@@ -427,7 +435,7 @@ function Entrenador({ modo }) {
     const fin = Boolean(resultado?.vidas?.fin)
     const exp = explicar(ev)
     let texto = exp.texto
-    if (resultado?.subio) texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')}.`
+    texto += textoAprobado(modo, resultado)
     if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
     if (resultado?.vidas?.despues > resultado?.vidas?.antes) texto += ' **¡+1 vida!**'
     if (fin) texto += ' **¡Se acabaron las vidas!**'
@@ -438,7 +446,7 @@ function Entrenador({ modo }) {
     }
   }
 
-  const avance = datos.nivel >= modo.niveles ? 1 : (datos.carga ?? 0) / PARTES_NIVEL
+  const avance = avanceNivel(datos, { dificultad })
   const nivelVisto = jugando && ronda ? (resultado?.subio ? resultado.nuevoNivel : ronda.nivel) : datos.nivel
   const vidasVista = jugando && vidas && !vidas.infinitas && { actual: vidas.actual, max: Math.max(1, vidas.max) }
 
@@ -479,7 +487,7 @@ function Entrenador({ modo }) {
         volver={rutas.ritmo()}
         etiquetaVolver="Volver al entrenamiento de ritmo"
         golpes={golpes}
-        barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.subio), acento: `var(--color-dificultad-${dificultad})` }}
+        barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.aprobado), acento: `var(--color-dificultad-${dificultad})` }}
         vidas={vidasVista || null}
         bocina={jugando ? { onClick: escuchar, disabled: !ronda, sonando: tipo === 'demo' } : null}
       />

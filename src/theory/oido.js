@@ -1,5 +1,8 @@
 // Datos y generadores de preguntas del Entrenamiento de oído.
-// Cada modo define: niveles, opciones(nivel) y generar(nivel, ajustes, anterior).
+// Cada modo define: niveles, opciones(nivel), elementosNuevos(nivel) (lo que se sumó en ese nivel: cada uno tiene que
+// salir bien 2 veces para aprobarlo; ver progress/entrenamiento.js) y generar(nivel, ajustes, anterior, contexto).
+// `contexto` = { items, nuevos }: las estadísticas del modo y los elementos nuevos, para que el sorteo saque más lo
+// que más se falla y lo recién sumado (`elegirPesado`).
 // Una pregunta es { item, sonido, notas, sonidoDe(id), explicacion }:
 //  - item: id de la respuesta correcta
 //  - sonido: lo que suena (formato de audio/sonido.js)
@@ -17,10 +20,24 @@ function entre(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1))
 }
 
-/** Elige al azar evitando repetir el anterior (si hay más de una opción). */
-function elegirDistinto(lista, anterior) {
-  const resto = lista.length > 1 ? lista.filter((x) => x !== anterior) : lista
-  return azar(resto)
+/**
+ * Elige al azar dando más peso a lo que más se falla (`items`: { id: { a, t } }) y a lo recién sumado al nivel
+ * (`nuevos`), sin repetir `anterior` (si hay más de una opción). Todo puede salir: nunca deja de cubrir el nivel.
+ */
+export function elegirPesado(lista, { anterior, items = {}, nuevos = [] } = {}) {
+  const resto = lista.length > 1 && anterior != null ? lista.filter((x) => x !== anterior) : lista
+  const peso = (id) => {
+    const it = items[id] ?? { a: 0, t: 0 }
+    const fallo = (it.t - it.a + 1) / (it.t + 2) // 0…1 (sin datos, 0,5)
+    return 1 + 2 * fallo + (nuevos.includes(id) ? 1.5 : 0)
+  }
+  const total = resto.reduce((s, id) => s + peso(id), 0)
+  let r = Math.random() * total
+  for (const id of resto) {
+    r -= peso(id)
+    if (r < 0) return id
+  }
+  return resto.at(-1)
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +92,8 @@ export const modoIntervalos = {
   info:
     'Cada intervalo tiene su **carácter**: la 3.ª mayor es luminosa, la 5.ª justa hueca y estable, el tritono ' +
     'inquietante. Empiezas con 3.ª mayor y 5.ª justa y en cada nivel se suman más. Subes al acertar ' +
-    '**8 de las últimas 10**. La dificultad abre más octavas para la nota de abajo.',
+    '**8 de las últimas 10**, con lo nuevo del nivel bien **2 veces**. La dificultad abre más octavas para la nota de ' +
+    'abajo; cada nivel recuerda la más alta con la que lo pasaste.',
   pregunta: '¿Qué intervalo suena?',
   dificultad: true, // rueda de Dificultad (octavas en las que puede sonar)
   nombreDificultad: 'Octavas',
@@ -87,12 +105,13 @@ export const modoIntervalos = {
   },
   niveles: NUEVOS_POR_NIVEL.length,
   nuevosEnNivel: (nivel) => (NUEVOS_POR_NIVEL[nivel - 1] ?? []).map((id) => INTERVALOS[id].nombre),
+  elementosNuevos: (nivel) => NUEVOS_POR_NIVEL[nivel - 1] ?? [],
   nombreItem: (id) => INTERVALOS[id]?.nombre ?? id,
   opciones: (nivel) => intervalosDelNivel(nivel).map((id) => ({ id, label: INTERVALOS[id].nombre })),
-  generar(nivel, ajustes = {}, anterior) {
+  generar(nivel, ajustes = {}, anterior, contexto = {}) {
     const direccion = ajustes.direccion ?? 'sube'
     const ids = intervalosDelNivel(nivel)
-    const item = elegirDistinto(ids, anterior?.item)
+    const item = elegirPesado(ids, { anterior: anterior?.item, ...contexto })
     // La nota de abajo, entre Fa de la octava anterior y Mi de una de las octavas elegidas (dificultad 1 = Fa3–Mi4).
     const o = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
     const raiz = entre(midi(`F${o - 1}`), midi(`E${o}`))
@@ -108,25 +127,42 @@ export const modoIntervalos = {
 }
 
 // ---------------------------------------------------------------------------
-// Acordes: mayor o menor
+// Acordes (reordenado con «las tres perillas»): el NIVEL suma tipos de acorde y la DIFICULTAD es cómo suena
+// (antes los niveles eran arpegio → solo el acorde → invertidos; ahora son las dificultades 1–3).
 // ---------------------------------------------------------------------------
 
-const ACORDES = {
-  mayor: { nombre: 'Mayor', terceras: [4, 7], siente: 'luminoso y estable' },
-  menor: { nombre: 'Menor', terceras: [3, 7], siente: 'íntimo y melancólico' },
+/** Tipos de acorde: semitonos desde la fundamental. */
+export const ACORDES = {
+  mayor: { nombre: 'Mayor', semitonos: [0, 4, 7], siente: 'luminoso y estable' },
+  menor: { nombre: 'Menor', semitonos: [0, 3, 7], siente: 'íntimo y melancólico' },
+  dis: { nombre: 'Disminuido', semitonos: [0, 3, 6], siente: 'apretado y tenso: pide moverse' },
+  aum: { nombre: 'Aumentado', semitonos: [0, 4, 8], siente: 'flotante, como un sueño sin suelo' },
+  dom7: { nombre: 'Séptima de dominante', corto: '7 de dominante', semitonos: [0, 4, 7, 10], siente: 'mayor con un roce que pide volver a casa' },
+  maj7: { nombre: 'Mayor con 7.ª mayor', corto: 'Maj7', semitonos: [0, 4, 7, 11], siente: 'mayor y suave, con brillo de jazz' },
+  m7: { nombre: 'Menor con 7.ª', corto: 'm7', semitonos: [0, 3, 7, 10], siente: 'menor pero relajado, sin drama' },
 }
 
-const NIVELES_ACORDES = ['Arpegio y luego el acorde', 'Solo el acorde', 'Acordes invertidos']
+/** Lo que se suma en cada nivel; las séptimas se abren con su lección (`requiereNivel`). */
+const NUEVOS_ACORDES = [['mayor', 'menor'], ['dis'], ['aum'], ['dom7'], ['maj7', 'm7']]
+const ORDEN_ACORDES = NUEVOS_ACORDES.flat()
 
-function notasAcorde(raiz, tipo, inversion) {
-  const [t, q] = ACORDES[tipo].terceras
-  const m = [raiz, raiz + t, raiz + q]
+function acordesDelNivel(nivel) {
+  return NUEVOS_ACORDES.slice(0, Math.max(1, nivel)).flat()
+}
+
+/** Dificultad = cómo suena: 1 arpegio y luego el acorde · 2 solo el acorde · 3 + inversiones · 4 + registro amplio · 5 + abiertos. */
+const DIFICULTADES_ACORDES = ['Arpegio y acorde', 'Solo el acorde', '+ Inversiones', '+ Registro amplio', '+ Voicings abiertos']
+
+function notasAcorde(raiz, tipo, { inversion = 0, abierto = false } = {}) {
+  const m = ACORDES[tipo].semitonos.map((s) => raiz + s)
   for (let i = 0; i < inversion; i++) m.push(m.shift() + 12)
+  // Abierto: la segunda voz sube una octava (1 · 5 · 3 en una tríada), como en la lección 4.5.
+  if (abierto) m.push(m.splice(1, 1)[0] + 12)
   return m.map(notaDesdeMidi)
 }
 
-function sonidoAcorde(notas, nivel) {
-  if (nivel === 1) return { notas: [...notas, notas], modo: 'secuencia', intervalo: 0.4, duracion: 1.4 }
+function sonidoAcorde(notas, dificultad) {
+  if (dificultad <= 1) return { notas: [...notas, notas], modo: 'secuencia', intervalo: 0.4, duracion: 1.4 }
   return { notas, modo: 'acorde', duracion: 1.8 }
 }
 
@@ -134,36 +170,63 @@ export const modoAcordes = {
   id: 'acordes',
   titulo: 'Acordes',
   acento: 'var(--color-armonia)',
-  descripcion: 'Escucha un acorde y decide si es mayor o menor.',
+  descripcion: 'Escucha un acorde y elige qué tipo es.',
   info:
-    'El acorde **mayor** suena luminoso y el **menor** íntimo; solo cambia la nota del medio (la 3.ª). ' +
-    'Nivel 1: suena el arpegio y luego el acorde. Nivel 2: solo el acorde. Nivel 3: acordes invertidos ' +
-    '(otra nota abajo). Subes al acertar **8 de las últimas 10**. La dificultad abre más octavas.',
-  pregunta: '¿Mayor o menor?',
+    'El acorde **mayor** suena luminoso y el **menor** íntimo; solo cambia la nota del medio (la 3.ª). En cada nivel ' +
+    'entra un tipo más: disminuido, aumentado y, con sus lecciones, las séptimas. Subes al acertar **8 de las ' +
+    'últimas 10**, con el tipo nuevo bien **2 veces**. La dificultad cambia cómo suena: primero el arpegio, luego solo ' +
+    'el acorde, invertido, en otros registros y abierto.',
+  pregunta: '¿Qué acorde es?',
   dificultad: true,
-  nombreDificultad: 'Octavas',
-  // Puntitos del arranque: los 3 niveles, encendidos hasta el elegido.
-  puntosNivel: (nivel) => ({ encendidos: NIVELES_ACORDES.map((_, i) => i < nivel), etiquetas: NIVELES_ACORDES }),
-  niveles: NIVELES_ACORDES.length,
-  nuevosEnNivel: (nivel) => [NIVELES_ACORDES[nivel - 1]],
+  claveDificultad: 'dificultad',
+  nombreDificultad: 'Sonido',
+  puntosDificultad: (d) => ({ encendidos: DIFICULTADES_ACORDES.map((_, i) => i < d), etiquetas: DIFICULTADES_ACORDES }),
+  // Puntitos del arranque: los 7 tipos (mayor abajo), encendidos los del nivel.
+  puntosNivel: (nivel) => {
+    const ids = new Set(acordesDelNivel(nivel))
+    return { encendidos: ORDEN_ACORDES.map((id) => ids.has(id)), etiquetas: ORDEN_ACORDES.map((id) => ACORDES[id].nombre) }
+  },
+  niveles: NUEVOS_ACORDES.length,
+  // Las séptimas, con candado hasta su lección: la 5.2 trae el V7 y la 5.5 el ii–V–I (m7 y maj7).
+  requiereNivel: { 4: '5.2', 5: '5.5' },
+  nuevosEnNivel: (nivel) => (NUEVOS_ACORDES[nivel - 1] ?? []).map((id) => ACORDES[id].nombre),
+  elementosNuevos: (nivel) => NUEVOS_ACORDES[nivel - 1] ?? [],
   nombreItem: (id) => ACORDES[id]?.nombre ?? id,
-  opciones: () => Object.entries(ACORDES).map(([id, a]) => ({ id, label: a.nombre })),
-  generar(nivel, ajustes) {
+  opciones: (nivel) => acordesDelNivel(nivel).map((id) => ({ id, label: ACORDES[id].corto ?? ACORDES[id].nombre })),
+  generar(nivel, ajustes, anterior, contexto = {}) {
     // Sin evitar repeticiones: que salga dos veces seguidas el mismo es parte del reto.
-    const item = azar(Object.keys(ACORDES))
-    // Registro: una de las octavas elegidas con la Dificultad (1 = Do4–La4).
-    const o = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
+    const item = elegirPesado(acordesDelNivel(nivel), contexto)
+    const dif = ajusteAbsoluto(ajustes, 'dificultad')
+    // Registro: Do4–La4; desde la dificultad 4, de Do3 a La5.
+    const o = dif >= 4 ? azar([3, 4, 5]) : 4
     const raiz = entre(midi(`C${o}`), midi(`A${o}`))
-    const inversion = nivel >= 3 ? entre(0, 2) : 0
-    const notas = notasAcorde(raiz, item, inversion)
+    const tam = ACORDES[item].semitonos.length
+    const inversion = dif >= 3 ? entre(0, tam - 1) : 0
+    const abierto = dif >= 5 && Math.random() < 0.5
+    const forma = { inversion, abierto }
+    const notas = notasAcorde(raiz, item, forma)
+    const nombreRaiz = nombre(notaDesdeMidi(raiz), { octava: false })
     return {
       item,
-      sonido: sonidoAcorde(notas, nivel),
+      sonido: sonidoAcorde(notas, dif),
       notas,
-      sonidoDe: (id) => sonidoAcorde(notasAcorde(raiz, id, inversion), nivel),
-      explicacion: `${nombre(notaDesdeMidi(raiz), { octava: false })} ${ACORDES[item].nombre.toLowerCase()}: ${notas.map((n) => nombre(n, { octava: false })).join(' – ')}. Suena ${ACORDES[item].siente}.`,
+      sonidoDe: (id) => sonidoAcorde(notasAcorde(raiz, id, { ...forma, inversion: Math.min(inversion, ACORDES[id].semitonos.length - 1) }), dif),
+      explicacion: `${nombreRaiz} ${ACORDES[item].nombre.toLowerCase()}: ${notas.map((n) => nombre(n, { octava: false })).join(' – ')}. Suena ${ACORDES[item].siente}.`,
     }
   },
+}
+
+/**
+ * Migración de los datos de Acordes de antes (niveles = arpegio, solo el acorde, invertidos; mayor o menor): llegar
+ * al nivel N de antes = aprobar «Mayor y menor» con la dificultad N − 1. La forma de sonar que tenías elegida pasa a
+ * ser la Dificultad. `legado` guarda el nivel de antes (las metas de Acordes de las rutas lo traducen con `legado`).
+ */
+export function migrarAcordes(m) {
+  const antes = Math.max(1, Math.min(3, Math.floor(Number(m.nivelMax) || 1)))
+  const elegido = Math.max(1, Math.min(3, Math.floor(Number(m.nivel) || 1)))
+  const superado = antes > 1 ? { 1: antes - 1 } : {}
+  const nivelMax = antes > 1 ? 2 : 1
+  return { ...m, nivel: nivelMax, nivelMax, superado, legado: antes, ajustes: { ...(m.ajustes ?? {}), dificultad: elegido } }
 }
 
 // ---------------------------------------------------------------------------
@@ -193,21 +256,18 @@ export function claseDe(nota) {
   return nota.replace(/-?\d+$/, '')
 }
 
-/** Partes del círculo de nivel: al llenarlas se desbloquea una nota más. */
-export const PARTES_NIVEL = 8
-
 /**
  * Modos de juego del oído absoluto (pedido del usuario; se eligen en el arranque, `ajustes.juego`).
- *  - normal: cada acierto llena una parte del círculo de nivel (`acierto`) y cada fallo vacía una (`fallo`).
+ *  - normal: se sube como en todos los modos (8 de las últimas 10, con la nota nueva bien 2 veces).
  *  - rapido: el nivel es un MULTIPLICADOR (`ajustes.multiplicador`, ×1…×10): empiezas con 2 + N notas, cada
  *    `ajustes.cadaAciertos` aciertos (8 por defecto) se suman N más y cada fallo quita una al azar. Es una partida
  *    aparte: no mueve el nivel del modo normal.
  *  - contrarreloj: como el normal, con `ajustes.segundos` por nota (5 por defecto).
  */
 export const JUEGOS_ABSOLUTO = [
-  { id: 'normal', nombre: 'Normal', acierto: 1, fallo: 1 },
+  { id: 'normal', nombre: 'Normal' },
   { id: 'rapido', nombre: 'Rápido', multiplicador: true },
-  { id: 'contrarreloj', nombre: 'Contrarreloj', acierto: 1, fallo: 1, segundos: 5 },
+  { id: 'contrarreloj', nombre: 'Contrarreloj', segundos: 5 },
 ]
 
 /** Ajustes que se pueden cambiar en el arranque (valor por defecto y límites). */
@@ -249,7 +309,7 @@ export function textoJuego(id, ajustes) {
   if (id === 'contrarreloj') {
     return `Tienes **${ajusteAbsoluto(ajustes, 'segundos')} segundos** por nota. Si se acaba el tiempo, cuenta como fallo.`
   }
-  return 'Cada acierto llena una parte del círculo y cada fallo vacía una. Al llenarlo, se suma una nota.'
+  return 'Acierta **8 de las últimas 10**, con la nota nueva bien **2 veces**, y se suma otra nota.'
 }
 
 export function getJuego(id) {
@@ -302,7 +362,8 @@ export const modoAbsoluto = {
   // Burbuja ⓘ del arranque (se despliega al tocarla).
   info:
     'Es un **juego**: suena una nota sin ninguna referencia y la tocas en el piano. Empiezas con 2 notas (las demás ' +
-    'tienen candado) y se desbloquea una más cada vez que llenas el círculo de 8 partes. En adultos el oído absoluto ' +
+    'tienen candado) y se desbloquea una más al acertar **8 de las últimas 10**, con la nota nueva bien **2 veces**. ' +
+    'En adultos el oído absoluto ' +
     'es muy difícil de adquirir, así que tómalo como un reto divertido, no como una promesa. Entre nota y nota suenan ' +
     'unas notas al azar y un ruido corto: así la nota anterior no te sirve de pista.',
   pregunta: '¿Qué nota es?',
@@ -311,6 +372,7 @@ export const modoAbsoluto = {
   nombreNivel: (nivel) => `${nivel + 1} notas`,
   nuevosEnNivel: (nivel) =>
     nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map((c) => nombreClase(c)) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
+  elementosNuevos: (nivel) => (nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2) : [ORDEN_ABSOLUTO[nivel]].filter(Boolean)),
   nombreItem: (id, ajustes) => nombreClase(id, ajustes?.cifrado),
   dificultad: true,
   nombreDificultad: 'Octavas',
@@ -327,8 +389,9 @@ export const modoAbsoluto = {
   juegos: JUEGOS_ABSOLUTO,
   // `ajustes.notas` (modo Rápido): las notas de la partida en lugar de las del nivel.
   opciones: (nivel, ajustes) => (ajustes?.notas ?? notasDelNivel(nivel)).map((id) => ({ id, label: nombreClase(id, ajustes?.cifrado) })),
-  generar(nivel, ajustes) {
-    const item = azar(ajustes?.notas ?? notasDelNivel(nivel))
+  generar(nivel, ajustes, anterior, contexto = {}) {
+    // En Rápido, las notas de la partida al azar; si no, con más peso lo que más se falla y la nota nueva.
+    const item = ajustes?.notas ? azar(ajustes.notas) : elegirPesado(notasDelNivel(nivel), contexto)
     // La octava sale al azar entre las elegidas en el arranque (`ajustes.octavas`: 1 = solo la 4).
     const octava = azar(octavasDe(ajusteAbsoluto(ajustes, 'octavas')))
     const nota = `${item}${octava}`
@@ -351,12 +414,13 @@ export const modoAbsoluto = {
 // ---------------------------------------------------------------------------
 
 /** Lo que se suma en cada nivel (el 5 es la frase: suenan cuatro acordes y se pregunta por el último). */
+/** `nuevos`: los grados que entran en ese nivel (cada uno tiene que salir bien 2 veces para aprobarlo; el I no, que sale poco). */
 const NIVELES_FUNCIONES = [
-  { nombre: 'T o D', grados: ['I', 'V'] },
-  { nombre: '+ Subdominante', grados: ['I', 'IV', 'V'] },
-  { nombre: '+ vi y ii', grados: ['I', 'ii', 'IV', 'V', 'vi'] },
-  { nombre: 'Los 7 acordes', grados: ROMANOS },
-  { nombre: 'Dentro de una frase', grados: ROMANOS, frase: true },
+  { nombre: 'T o D', grados: ['I', 'V'], nuevos: ['V'] },
+  { nombre: '+ Subdominante', grados: ['I', 'IV', 'V'], nuevos: ['IV'] },
+  { nombre: '+ vi y ii', grados: ['I', 'ii', 'IV', 'V', 'vi'], nuevos: ['vi', 'ii'] },
+  { nombre: 'Los 7 acordes', grados: ROMANOS, nuevos: ['iii', 'vii°'] },
+  { nombre: 'Dentro de una frase', grados: ROMANOS, frase: true, nuevos: [] },
 ]
 
 /** Dificultad = tonalidades: 1 Do · 2 Do, Sol y Fa · 3 todas las mayores · 4 + inversiones · 5 + registro amplio. */
@@ -410,7 +474,8 @@ export const modoFunciones = {
   info:
     'Cada acorde tiene un **trabajo**: la **tónica** es la casa, la **subdominante** sale de ella y la **dominante** ' +
     'pide volver. Primero suena el **I** (la casa) y luego otro acorde. Empiezas con T o D y en cada nivel entran más ' +
-    'acordes; en el último, suena una frase y se pregunta por el final. Subes al acertar **8 de las últimas 10**. ' +
+    'acordes; en el último, suena una frase y se pregunta por el final. Subes al acertar **8 de las últimas 10**, ' +
+    'con los acordes nuevos bien **2 veces**. ' +
     'La dificultad abre más tonalidades.',
   pregunta: '¿Qué función tiene?',
   requiere: '5.1',
@@ -425,10 +490,12 @@ export const modoFunciones = {
   },
   niveles: NIVELES_FUNCIONES.length,
   nuevosEnNivel: (nivel) => [NIVELES_FUNCIONES[nivel - 1]?.nombre].filter(Boolean),
+  // Lo que se cubre son los GRADOS (la respuesta es la función): la pregunta lleva `elemento` = el grado.
+  elementosNuevos: (nivel) => NIVELES_FUNCIONES[nivel - 1]?.nuevos ?? [],
   nombreItem: (id) => FUNCIONES[id]?.nombre ?? id,
   // Nivel 1: solo T y D; desde el 2, las tres.
   opciones: (nivel) => (nivel <= 1 ? ['T', 'D'] : ORDEN_FUNCIONES).map((id) => ({ id, label: `${FUNCIONES[id].nombre} · ${id}` })),
-  generar(nivel, ajustes = {}, anterior) {
+  generar(nivel, ajustes = {}, anterior, contexto = {}) {
     const n = NIVELES_FUNCIONES[Math.max(1, Math.min(NIVELES_FUNCIONES.length, nivel)) - 1]
     const dif = ajusteAbsoluto(ajustes, 'dificultad')
     const tonica = tonicaCentrada(azar(TONICAS[Math.min(3, dif)]))
@@ -441,7 +508,7 @@ export const modoFunciones = {
       ? azar(ROMANOS.filter((rn) => rn !== frase.at(-1)))
       : Math.random() < 0.15
         ? 'I'
-        : azar(posibles.filter((rn) => rn !== 'I'))
+        : elegirPesado(posibles.some((rn) => rn !== 'I') ? posibles.filter((rn) => rn !== 'I') : n.grados.filter((rn) => rn !== 'I'), { nuevos: contexto.nuevos })
     const item = FUNCION_GRADO[romano]
     const acorde = vozFuncion(tonica, romano, { inversion: inversion(), subir })
     const antes = frase.map((rn) => vozFuncion(tonica, rn, { inversion: rn === 'I' && !n.frase ? 0 : inversion(), subir }))
@@ -453,6 +520,7 @@ export const modoFunciones = {
     const porque = { T: 'descansa: es de la familia de la casa', S: 'sale de casa sin prisa', D: 'pide volver a casa' }[item]
     return {
       item,
+      elemento: romano,
       romano,
       sonido,
       notas: acorde.slice(1),

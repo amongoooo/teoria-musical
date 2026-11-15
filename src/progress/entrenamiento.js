@@ -8,21 +8,33 @@
 //   mejorRacha: 5,
 //   modos: {
 //     intervalos: {
-//       nivel: 3, nivelMax: 3, ventana: [true, false, …],   // últimas respuestas en el nivel actual
+//       v: 2,                                  // forma de los datos (la 1 no tenía `superado`; se migra sola al leer)
+//       nivel: 3, nivelMax: 3,                 // nivel elegido y el más alto desbloqueado
+//       superado: { 1: 3, 2: 1 },              // DOMINIO: por nivel, la dificultad más alta con la que lo aprobaste
+//       ventana: [{ b: true, e: '3M', d: 1 }, …], // últimas 10 respuestas en el nivel actual (bien, elemento, dificultad)
 //       aciertos: 80, total: 100, racha: 4, mejorRacha: 12,  // racha = aciertos seguidos
 //       items: { '3M': { a: 20, t: 24 } },
 //       ajustes: { direccion: 'sube', juego: 'normal' },
-//       carga: 3,          // partes llenas de la barra de nivel (oído absoluto y ritmo: 8)
+//       legado: 3,                             // nivelMax que traían los datos de antes (cumple las metas que ya cumplía)
 //     }
 //   }
 // }
+//
+// UNA SOLA REGLA PARA APROBAR UN NIVEL (plan de niveles y dificultad, 2026-11): en las últimas 10 respuestas del nivel
+// con la MISMA dificultad, al menos 8 bien y cada elemento NUEVO del nivel (`nuevos`: el intervalo, la nota o el acorde
+// que se sumó) acertado al menos 2 veces. Al aprobar se apunta `superado[nivel] = dificultad` (si es más alta) y se
+// pasa al siguiente nivel. Nunca se baja. Lo que mide las metas de las rutas es `nivelCon(modo, dificultad)`.
 import { useSyncExternalStore } from 'react'
 
 /** Minutos diarios recomendados. */
 export const META_SEGUNDOS = 5 * 60
-/** Para subir de nivel: ACIERTOS_PARA_SUBIR de las últimas TAMANO_VENTANA respuestas. */
+/** Para aprobar un nivel: ACIERTOS_PARA_SUBIR de las últimas TAMANO_VENTANA respuestas… */
 export const TAMANO_VENTANA = 10
 export const ACIERTOS_PARA_SUBIR = 8
+/** …y cada elemento nuevo del nivel, acertado al menos ACIERTOS_NUEVO veces en esa ventana. */
+export const ACIERTOS_NUEVO = 2
+/** Forma de los datos de un modo (ver arriba). */
+export const VERSION_MODO = 2
 /** Tiempo máximo que cuenta por respuesta (si te distraes, no suma de más). */
 const MAX_SEGUNDOS_POR_RESPUESTA = 25
 const DIAS_GUARDADOS = 120
@@ -45,13 +57,61 @@ function diaAnterior(f) {
 }
 
 const DIA_VACIO = { segundos: 0, respuestas: 0, aciertos: 0 }
-const MODO_VACIO = { nivel: 1, nivelMax: 1, ventana: [], carga: 0, aciertos: 0, total: 0, racha: 0, mejorRacha: 0, items: {}, ajustes: {} }
+const MODO_VACIO = { v: VERSION_MODO, nivel: 1, nivelMax: 1, superado: {}, ventana: [], aciertos: 0, total: 0, racha: 0, mejorRacha: 0, items: {}, ajustes: {} }
+
+/**
+ * Datos de un modo de la forma 1 (sin `superado`) a la 2: cada nivel por debajo del máximo cuenta como aprobado con
+ * dificultad 1 (no se sabe con cuál fue; 1 es lo seguro), `legado` guarda el máximo de antes para que las metas que ya
+ * se cumplían sigan cumplidas, y la ventana y la barra de antes se descartan. `propia(m)` = la migración propia del modo
+ * (Acordes reordena sus niveles), que se aplica antes.
+ */
+export function migrarModo(m, propia) {
+  if (!m || typeof m !== 'object' || m.v >= VERSION_MODO) return m
+  const base = propia ? propia(m) : m
+  const nivelMax = Math.max(1, Math.floor(Number(base.nivelMax) || 1))
+  const superado = { ...(base.superado ?? {}) }
+  for (let n = 1; n < nivelMax; n++) superado[n] = Math.max(superado[n] ?? 0, 1)
+  // eslint-disable-next-line no-unused-vars
+  const { carga, ...resto } = base
+  return { ...resto, v: VERSION_MODO, nivelMax, superado, legado: base.legado ?? nivelMax, ventana: [] }
+}
+
+/** Respuestas de la ventana que cuentan con la dificultad `d` (las de otra dificultad no valen para aprobar). */
+const ventanaCon = (ventana, d) => (ventana ?? []).filter((x) => x && typeof x === 'object' && x.d === d)
+
+/** ¿Se aprueba el nivel con esta ventana? 8 de 10 bien y cada elemento nuevo acertado 2 veces. */
+export function apruebaVentana(ventana, nuevos = []) {
+  if (ventana.filter((x) => x.b).length < ACIERTOS_PARA_SUBIR) return false
+  return nuevos.every((e) => ventana.filter((x) => x.b && x.e === e).length >= ACIERTOS_NUEVO)
+}
+
+/**
+ * Cuánto falta para aprobar el nivel actual (0…1) con la dificultad `dificultad`: los aciertos de la ventana (hasta 8)
+ * más los de cada elemento nuevo (hasta 2 cada uno). Si ese nivel ya está aprobado con esa dificultad o más, 1.
+ */
+export function avanceNivel(m, { nuevos = [], dificultad = 1 } = {}) {
+  if ((m.superado?.[m.nivel] ?? 0) >= dificultad) return 1
+  const v = ventanaCon(m.ventana, dificultad)
+  const aciertos = Math.min(ACIERTOS_PARA_SUBIR, v.filter((x) => x.b).length)
+  const cubiertos = nuevos.reduce((s, e) => s + Math.min(ACIERTOS_NUEVO, v.filter((x) => x.b && x.e === e).length), 0)
+  return (aciertos + cubiertos) / (ACIERTOS_PARA_SUBIR + ACIERTOS_NUEVO * nuevos.length)
+}
+
+/**
+ * El nivel al que llegaste con dificultad `dificultad` o más: 1 + el nivel más alto aprobado con ella (los niveles se
+ * acumulan: aprobar el 5 con dificultad 3 demuestra también lo de los anteriores). Con el último nivel aprobado, uno más.
+ */
+export function nivelCon(m, dificultad = 1) {
+  let mayor = 0
+  for (const [n, d] of Object.entries(m.superado ?? {})) if (d >= dificultad) mayor = Math.max(mayor, Number(n))
+  return mayor + 1
+}
 
 /**
  * Crea la memoria de un entrenamiento guardada en `clave` de localStorage. `conservar`: campos propios (p. ej. el
  * repaso del vocabulario, con `guardarCampos`) que «Borrar estadísticas» no borra.
  */
-export function crearEntrenamiento(clave, { conservar = [] } = {}) {
+export function crearEntrenamiento(clave, { conservar = [], migraciones = {} } = {}) {
   const VACIO = { version: 1, dias: {}, mejorRacha: 0, modos: {} }
   let cache = null
   const listeners = new Set()
@@ -127,8 +187,13 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
     return lista
   }
 
+  /** Un modo guardado, ya en la forma de hoy (`migraciones[id]`: lo propio de ese modo, ver migrarModo). */
+  function migrar(id, m) {
+    return migrarModo(m, migraciones[id])
+  }
+
   function datosModo(id, estado = leer()) {
-    return { ...MODO_VACIO, ...(estado.modos[id] ?? {}) }
+    return { ...MODO_VACIO, ...(migrar(id, estado.modos[id]) ?? {}) }
   }
 
   function guardarModo(id, cambios) {
@@ -142,7 +207,7 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
    */
   function elegirNivel(id, nivel, { libre = false } = {}) {
     const m = datosModo(id)
-    guardarModo(id, { nivel: Math.max(1, libre ? nivel : Math.min(nivel, m.nivelMax)), ventana: [], carga: 0 })
+    guardarModo(id, { nivel: Math.max(1, libre ? nivel : Math.min(nivel, m.nivelMax)), ventana: [] })
   }
 
   function guardarAjustes(id, ajustes) {
@@ -158,14 +223,18 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
   }
 
   /**
-   * Registra una respuesta. Devuelve { subio, nuevoNivel, metaCumplida, carga }:
-   *  - Con `carga` ({ acierto, fallo, partes }; oído absoluto y ritmo) se sube al llenar la barra: cada acierto suma
-   *    `acierto` partes y cada fallo resta `fallo`. Sin `carga`, se sube con ACIERTOS_PARA_SUBIR de TAMANO_VENTANA.
-   *  - Con `sinNivel` (modo Rápido del oído absoluto) no se toca el nivel ni la barra.
-   *  - subio: true si con esta respuesta se pasa al siguiente nivel
+   * Registra una respuesta. Devuelve { subio, nuevoNivel, desbloqueo, aprobado, metaCumplida }:
+   *  - `elemento`: lo que se respondió en realidad, si no es el `item` de las estadísticas (Funciones: el grado).
+   *  - `nuevos`: los elementos nuevos del nivel (cada uno tiene que salir bien 2 veces para aprobar).
+   *  - `dificultad`: con la que se juega (la ventana solo cuenta las de la misma).
+   *  - `niveles`: los niveles que se pueden alcanzar (Acordes: menos, si falta la lección de las séptimas).
+   *  - `sinNivel` (Rápido, tempo lento del ritmo, vocabulario): cuenta para el día y las estadísticas, no para el nivel.
+   *  - subio: al aprobar se pasa al nivel siguiente; desbloqueo: ese nivel no lo tenías.
+   *  - aprobado: { nivel, dificultad, mejora } si con esta respuesta se aprobó un nivel (mejora = con más dificultad
+   *    que antes).
    *  - metaCumplida: true si con esta respuesta se llega a los 5 minutos de hoy
    */
-  function registrarRespuesta(id, { item, bien, niveles, carga: reglaCarga, sinNivel = false }) {
+  function registrarRespuesta(id, { item, elemento, bien, niveles, nuevos = [], dificultad = 1, sinNivel = false }) {
     const e = leer()
     const m = datosModo(id, e)
     const ahora = Date.now()
@@ -186,31 +255,32 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
     fechas.slice(0, Math.max(0, fechas.length - DIAS_GUARDADOS)).forEach((k) => delete dias[k])
 
     // Modo
-    const ventana = [...m.ventana, bien].slice(-TAMANO_VENTANA)
     const racha = bien ? m.racha + 1 : 0
     const it = m.items[item] ?? { a: 0, t: 0 }
     let nivel = m.nivel
     let subio = false
-    let carga = m.carga ?? 0
-    if (sinNivel) {
-      // Partida aparte (oído absoluto, modo Rápido): cuenta para el día y las estadísticas, pero no mueve el nivel.
-    } else if (reglaCarga) {
-      carga = Math.max(0, carga + (bien ? reglaCarga.acierto : -reglaCarga.fallo))
-      if (nivel < niveles && carga >= reglaCarga.partes) {
-        nivel += 1
-        subio = true
+    let aprobado = null
+    let ventana = m.ventana
+    let superado = m.superado
+    if (!sinNivel) {
+      ventana = [...ventanaCon(m.ventana, dificultad), { b: bien, e: elemento ?? item, d: dificultad }].slice(-TAMANO_VENTANA)
+      if (apruebaVentana(ventana, nuevos)) {
+        const antes = superado[nivel] ?? 0
+        superado = { ...superado, [nivel]: Math.max(antes, dificultad) }
+        aprobado = { nivel, dificultad, mejora: dificultad > antes }
+        if (nivel < niveles) {
+          nivel += 1
+          subio = true
+        }
+        ventana = []
       }
-      carga = nivel >= niveles ? Math.min(carga, reglaCarga.partes) : subio ? 0 : carga
-    } else if (nivel < niveles && ventana.filter(Boolean).length >= ACIERTOS_PARA_SUBIR) {
-      nivel += 1
-      subio = true
     }
     const modo = {
       ...m,
       nivel,
       nivelMax: Math.max(m.nivelMax, nivel),
-      ventana: sinNivel ? m.ventana : subio ? [] : ventana,
-      carga,
+      superado,
+      ventana,
       aciertos: m.aciertos + (bien ? 1 : 0),
       total: m.total + 1,
       racha,
@@ -221,7 +291,7 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
     const next = { ...e, dias, modos: { ...e.modos, [id]: modo } }
     next.mejorRacha = Math.max(e.mejorRacha ?? 0, rachaActual(next))
     escribir(next)
-    return { subio, nuevoNivel: nivel, metaCumplida, carga }
+    return { subio, nuevoNivel: nivel, desbloqueo: nivel > m.nivelMax, aprobado, metaCumplida }
   }
 
   /** Reemplaza todo el estado (lo usa la importación, ya combinado). */
@@ -249,6 +319,7 @@ export function crearEntrenamiento(clave, { conservar = [] } = {}) {
     rachaActual,
     ultimosDias,
     datosModo,
+    migrar,
     elegirNivel,
     guardarAjustes,
     empezarSesion,

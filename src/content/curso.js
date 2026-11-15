@@ -27,7 +27,8 @@ export const ORDEN_AREAS = ['melodia', 'acordes', 'ritmo', 'letras']
 /** Clave de una parada de los tramos, para buscarla: '2.1', 'seguir:2', 'vocab:noche', 'letra', 'abre:flow', 'reto:ruta-ritmo'. */
 function clave(p) {
   if (p.tipo === 'leccion') return p.id
-  if (p.tipo === 'meta') return p.modo ? `${p.modo}:${p.nivel}` : p.clave === 'vocab' ? `vocab:${p.tema}` : p.clave
+  // Una meta de un modo: 'modo:nivel', o su `id` si dos piden el mismo nivel (Acordes: «acordes:3» = invertidos).
+  if (p.tipo === 'meta') return p.modo ? (p.id ?? `${p.modo}:${p.nivel}`) : p.clave === 'vocab' ? `vocab:${p.tema}` : p.clave
   if (p.tipo === 'abre') return `abre:${p.herramienta}`
   return `reto:${p.id}`
 }

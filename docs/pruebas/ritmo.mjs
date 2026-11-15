@@ -20,10 +20,10 @@ const RITMO = {
   version: 1,
   dias: {},
   mejorRacha: 0,
-  // Con 7 de 8 partes llenas: la primera ronda buena sube de nivel. 3 vidas.
+  // Con 9 rondas buenas en la ventana (8 de las últimas 10 aprueban): la primera ronda buena sube de nivel. 3 vidas.
   modos: {
-    seguir: { nivel: 1, nivelMax: 1, carga: 7, ajustes: { vidas: 3 } },
-    eco: { nivel: 1, nivelMax: 1, carga: 7, ajustes: { vidas: 3 } },
+    seguir: { v: 2, nivel: 1, nivelMax: 1, ventana: Array.from({ length: 9 }, () => ({ b: true, e: 'negras', d: 1 })), ajustes: { vidas: 3 } },
+    eco: { v: 2, nivel: 1, nivelMax: 1, ventana: Array.from({ length: 9 }, () => ({ b: true, e: 'negras', d: 1 })), ajustes: { vidas: 3 } },
   },
 }
 

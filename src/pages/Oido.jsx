@@ -7,14 +7,15 @@ import ArranqueOido from '../components/ArranqueOido.jsx'
 import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
 import EntradaRuta from '../components/EntradaRuta.jsx'
-import PanelEntrenamiento, { nombreNivel } from '../components/PanelEntrenamiento.jsx'
-import { ACIERTOS_PARA_SUBIR, datosModo, elegirNivel, empezarSesion, registrarRespuesta, tiendaOido, useOido } from '../progress/oido.js'
+import PanelEntrenamiento, { nivelesAbiertos, textoAprobado } from '../components/PanelEntrenamiento.jsx'
+import { metaGuiada } from '../progress/metaGuiada.js'
+import { avanceNivel, datosModo, elegirNivel, empezarSesion, registrarRespuesta, tiendaOido, useOido } from '../progress/oido.js'
 import { useOpciones } from '../progress/opciones.js'
+import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 import { parseNota } from '../theory/notas.js'
 import {
   MODOS_OIDO,
-  PARTES_NIVEL,
   VIDAS_ESCALADA,
   VIDAS_INFINITAS,
   ajusteAbsoluto,
@@ -90,6 +91,12 @@ function Entrenador({ modo }) {
   // Se elige en la portada (junto al nivel): responder con el piano o con botones.
   const conPiano = Boolean(modo.piano) && datos.ajustes.respuesta !== 'botones'
   const { gesto: sentidoGesto, admin } = useOpciones()
+  // Dificultad (cada modo la guarda en su clave: octavas o `dificultad`) y niveles abiertos (Acordes: las séptimas
+  // esperan a su lección).
+  const dificultad = ajusteAbsoluto(datos.ajustes, modo.claveDificultad ?? 'octavas')
+  const abiertos = nivelesAbiertos(modo, useProgreso(), admin)
+  const abiertosRef = useRef(abiertos)
+  abiertosRef.current = abiertos
   // Modo administrador (pedido del usuario): al sonar, la respuesta se señala (en oro, sin presionarla).
   const [sono, setSono] = useState(false)
   // Piano de respuesta: la octava que se está viendo (se conserva entre preguntas) y la tecla que se tocó.
@@ -123,9 +130,11 @@ function Entrenador({ modo }) {
   useEffect(() => () => cancelarSenal.current?.(), [])
 
   // Al abrir el modo, el nivel es el más alto al que has llegado (pedido del usuario): solo elegir y empezar.
+  // (Sin pasar de los niveles abiertos: Acordes guarda las séptimas para su lección.)
   useEffect(() => {
     const d = datosModo(modo.id)
-    if (d.nivel < d.nivelMax) elegirNivel(modo.id, d.nivelMax)
+    const objetivo = Math.min(d.nivelMax, abiertosRef.current)
+    if (d.nivel < objetivo || d.nivel > abiertosRef.current) elegirNivel(modo.id, objetivo, { libre: true })
   }, [modo.id])
 
   useEffect(() => {
@@ -157,7 +166,8 @@ function Entrenador({ modo }) {
   const nueva = () => {
     const d = datosModo(modo.id)
     const ajustes = rapido && partidaRef.current ? { ...d.ajustes, notas: partidaRef.current.notas } : d.ajustes
-    const p = modo.generar(d.nivel, ajustes, pregunta)
+    // El sorteo pesa lo que más se falla y lo nuevo del nivel (en Rápido no hay nivel que aprobar).
+    const p = modo.generar(d.nivel, ajustes, pregunta, { items: d.items, nuevos: rapido ? [] : (modo.elementosNuevos?.(d.nivel) ?? []) })
     contador.current += 1
     setPregunta({ ...p, n: contador.current, nivel: d.nivel, opciones: modo.opciones(d.nivel, ajustes) })
     setRespuesta(null)
@@ -189,7 +199,8 @@ function Entrenador({ modo }) {
     // Vidas de la partida (pedido del usuario). `alcanzados`: niveles a los que ya se subió en esta partida (solo
     // la primera vez que se sube a cada uno se gana una vida). En la Escalada (Rápido con 0) las vidas son las notas
     // que llevas por encima de las del inicio.
-    const v = vidasDe(datosModo(modo.id).ajustes, rapido)
+    // Desde una meta de una ruta o del curso no hay vidas: ahí se aprende, no se compite.
+    const v = metaGuiada()?.practica === 'oido' ? VIDAS_INFINITAS : vidasDe(datosModo(modo.id).ajustes, rapido)
     const escalada = rapido && v === VIDAS_ESCALADA
     cambiarVidas({
       infinitas: v === VIDAS_INFINITAS,
@@ -235,10 +246,12 @@ function Entrenador({ modo }) {
     setPulsada(tecla)
     const r = registrarRespuesta(modo.id, {
       item: pregunta.item,
+      elemento: pregunta.elemento,
       bien,
-      niveles: modo.niveles,
+      niveles: abiertos,
+      nuevos: modo.elementosNuevos?.(pregunta.nivel) ?? [],
+      dificultad,
       sinNivel: rapido,
-      carga: juego && !rapido ? { acierto: juego.acierto, fallo: juego.fallo, partes: PARTES_NIVEL } : undefined,
     })
     if (rapido) {
       // Cada `cadaAciertos` aciertos se suman N notas (el multiplicador); cada fallo quita una al azar.
@@ -306,10 +319,7 @@ function Entrenador({ modo }) {
       texto += ` **¡+${cambio.sumadas.length} ${cambio.sumadas.length === 1 ? 'nota' : 'notas'}!** ${cambio.sumadas.map((c) => nombreClase(c, datos.ajustes.cifrado)).join(', ')}.`
     }
     if (cambio?.quitada) texto += ` Se fue ${nombreClase(cambio.quitada, datos.ajustes.cifrado)}.`
-    if (resultado?.subio) {
-      const nuevos = modo.nuevosEnNivel(resultado.nuevoNivel).join(', ')
-      texto += ` **¡Subiste a ${nombreNivel(modo, resultado.nuevoNivel).toLowerCase()}!** Nuevo: ${nuevos}.`
-    }
+    texto += textoAprobado(modo, resultado, { abiertos, nombreDificultad: modo.nombreDificultad })
     if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
     if (resultado?.vidas?.despues > resultado?.vidas?.antes && !vidas?.escalada) texto += ' **¡+1 vida!**'
     if (fin) texto += vidas?.escalada ? ' **Volviste al inicio: se acabó la escalada.**' : ' **¡Se acabaron las vidas!**'
@@ -322,19 +332,18 @@ function Entrenador({ modo }) {
     }
   }
 
-  // Barra de arriba (pedido del usuario): se llena con los aciertos que faltan para subir de nivel. Oído absoluto:
-  // las partes del círculo (8); Rápido: los aciertos para sumar notas; intervalos y acordes: 8 de los últimos 10.
-  let avance
-  if (rapido) avance = ((partida?.aciertos ?? 0) % cadaAciertos) / cadaAciertos
-  else if (datos.nivel >= modo.niveles) avance = 1
-  else if (juego) avance = (datos.carga ?? 0) / PARTES_NIVEL
-  else avance = Math.min(1, datos.ventana.filter(Boolean).length / ACIERTOS_PARA_SUBIR)
-  // Al subir (o al sumar notas en Rápido) la barra se llena del todo y vuelve a empezar.
-  const lleno = Boolean(resultado?.subio || resultado?.partida?.ronda)
+  // Barra de arriba (pedido del usuario): se llena con lo que falta para aprobar el nivel con esta dificultad (8 de las
+  // últimas 10 y lo nuevo bien 2 veces); llena si ya lo aprobaste con esta dificultad o más. Rápido: los aciertos
+  // para sumar notas.
+  const avance = rapido
+    ? ((partida?.aciertos ?? 0) % cadaAciertos) / cadaAciertos
+    : avanceNivel(datos, { nuevos: modo.elementosNuevos?.(datos.nivel) ?? [], dificultad })
+  // Al aprobar (o al sumar notas en Rápido) la barra se llena del todo y vuelve a empezar.
+  const lleno = Boolean(resultado?.aprobado || resultado?.partida?.ronda)
   const nivelVisto = rapido ? multiplicador : jugando && pregunta ? (resultado?.subio ? resultado.nuevoNivel : pregunta.nivel) : datos.nivel
 
   // Color de la dificultad (la barra de aciertos lo toma; en Contrarreloj, mientras corre el tiempo, va en amarillo).
-  const colorDif = `var(--color-dificultad-${ajusteAbsoluto(datos.ajustes, 'octavas')})`
+  const colorDif = `var(--color-dificultad-${dificultad})`
   // Solo jugando (pedido del usuario): mientras se configura, la barra sigue igual de delgada.
   const vidasVista = jugando && vidas && !vidas.infinitas && { actual: vidas.actual, max: Math.max(1, vidas.max) }
 

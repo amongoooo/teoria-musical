@@ -1,11 +1,13 @@
 // Estadísticas y racha del Entrenamiento de oído, en localStorage (la forma de los datos y las reglas están en
 // entrenamiento.js, que comparte con el entrenamiento de ritmo; cada uno guarda lo suyo).
+import { migrarAcordes } from '../theory/oido.js'
 import { crearEntrenamiento } from './entrenamiento.js'
 
-export { ACIERTOS_PARA_SUBIR, META_SEGUNDOS, TAMANO_VENTANA, hoy } from './entrenamiento.js'
+export { ACIERTOS_PARA_SUBIR, META_SEGUNDOS, TAMANO_VENTANA, avanceNivel, hoy } from './entrenamiento.js'
 
 /** La memoria del entrenamiento de oído (se pasa entera a las piezas compartidas: arranque, panel…). */
-export const tiendaOido = crearEntrenamiento('teoria-musical:oido:v1')
+// Acordes reordenó sus niveles (las formas de sonar pasaron a la Dificultad): sus datos de antes se traducen.
+export const tiendaOido = crearEntrenamiento('teoria-musical:oido:v1', { migraciones: { acordes: migrarAcordes } })
 
 /** Hook: todo el estado del entrenamiento de oído. */
 export const useOido = tiendaOido.usar
