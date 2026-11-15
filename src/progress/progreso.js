@@ -84,6 +84,16 @@ export function guardarPaso(id, paso) {
   escribir({ ...p, lecciones: { ...p.lecciones, [id]: { ...actual, paso } } })
 }
 
+/**
+ * Preguntas que salieron en rojo (dos fallos) en la lección a medias: [[paso, ronda], …]. Se repasan al final de la
+ * lección y se borran al completarla. Solo en este dispositivo (no se sincroniza).
+ */
+export function guardarFalladas(id, falladas) {
+  const p = leer()
+  const actual = p.lecciones[id] ?? {}
+  escribir({ ...p, lecciones: { ...p.lecciones, [id]: { ...actual, falladas } } })
+}
+
 /** Vuelve a empezar una lección desde el paso 1 (conserva si ya estaba completada). */
 export function reiniciarLeccion(id) {
   guardarPaso(id, 0)
@@ -102,7 +112,7 @@ export function completarLeccion(id, { aciertos = 0, total = 0 } = {}) {
   })
 }
 
-function sinSaltada({ saltada, ...resto }) {
+function sinSaltada({ saltada, falladas, ...resto }) {
   return resto
 }
 

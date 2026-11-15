@@ -4,7 +4,7 @@ import { pararProgramado } from '../../audio/engine.js'
 import { reproducir } from '../../audio/sonido.js'
 import { acentoLeccion } from '../../content/index.js'
 import { tinta } from '../../ui/color.js'
-import { Bombilla, Check } from '../../ui/Iconos.jsx'
+import { Check, Repaso } from '../../ui/Iconos.jsx'
 import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
@@ -32,9 +32,12 @@ function mezclar(n) {
  *  - Tocar una ficha de abajo la elige (y suena); tocar una caja (o una ficha que ya está en ella) la manda ahí. Sin
  *    ninguna elegida, tocar una ficha ya puesta la devuelve abajo.
  *  - Con todas puestas, «Comprobar»: las bien, en verde con ✓; las mal pasan a su caja en oro con bombilla.
- * Puntúa una ficha por acierto.
+ * Puntúa una ficha por acierto (al primer «Comprobar»).
+ * «Ahora sí se puede fallar»: al primer «Comprobar» con errores, las bien se quedan en su caja en verde (fijas) y las
+ * mal vuelven a la mano (oro: inténtalo otra vez); al segundo, las que siguen mal pasan a su caja en ROJO y la ronda va
+ * al repaso del final (`fallo(r)`).
  */
-export default function Clasificar({ paso, leccionId, setAccion, siguiente, completar }) {
+export default function Clasificar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
   const color = acentoLeccion(leccionId)
   const cajas = paso.cajas ?? ['T', 'S', 'D']
   const rondas = paso.rondas
@@ -45,6 +48,8 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
   const [puesta, setPuesta] = useState(() => Array(n).fill(null)) // ficha → caja elegida
   const [elegida, setElegida] = useState(null)
   const [resultado, setResultado] = useState(null) // null | [bool por ficha]
+  const [fijas, setFijas] = useState(() => Array(n).fill(false)) // fichas ya bien en el primer intento (verdes)
+  const [segundo, setSegundo] = useState(false)
   const [aciertos, setAciertos] = useState(0)
   const [sonando, setSonando] = useState(null)
     useEffect(() => () => pararProgramado(), [])
@@ -64,7 +69,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
 
   const tocarFicha = (i) => {
     sonar(i)
-    if (respondida) return
+    if (respondida || fijas[i]) return
     if (puesta[i] !== null) {
       // Ya estaba en una caja: vuelve abajo.
       const nueva = [...puesta]
@@ -90,12 +95,22 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
         label: 'Comprobar',
         disabled: faltan > 0,
         ayuda: faltan === n ? (ronda.fichas[0].nombre ? 'Toca un acorde y luego su caja' : 'Escucha un sonido y toca su caja') : faltan > 0 ? `Falta${faltan === 1 ? '' : 'n'} ${faltan}` : null,
+        feedback: segundo ? { tipo: 'mal', titulo: `${fijas.filter(Boolean).length} de ${n} bien`, texto: 'Las demás volvieron a tu mano: inténtalo otra vez.' } : null,
         onClick: () => {
           const bien = puesta.map((c, i) => c === ronda.fichas[i].caja)
-          const suma = aciertos + bien.filter(Boolean).length
+          const buenas = bien.filter(Boolean).length
+          setElegida(null)
+          if (!segundo && buenas < n) {
+            setAciertos(aciertos + buenas)
+            setFijas(bien)
+            setSegundo(true)
+            setPuesta(puesta.map((c, i) => (bien[i] ? c : null)))
+            return
+          }
+          const suma = segundo ? aciertos : aciertos + buenas
           setAciertos(suma)
           setResultado(bien)
-          setElegida(null)
+          if (buenas < n) fallo?.(r)
           if (ultima) completar({ aciertos: suma, total })
         },
       })
@@ -108,16 +123,19 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
       feedback:
         buenas === n
           ? { tipo: 'bien', titulo: '¡Todas en su lugar!', texto: ronda.explicacion }
-          : { tipo: 'mal', titulo: `${buenas} de ${n} bien`, texto: ronda.explicacion ?? 'Las de oro ya están en su caja: escúchalas otra vez.' },
+          : { tipo: 'error', titulo: `${buenas} de ${n} bien`, texto: ronda.explicacion ?? 'Las rojas ya están en su caja: escúchalas otra vez.' },
       onClick: () => {
         if (ultima) return siguiente()
+        const m = rondas[r + 1].fichas.length
         setR(r + 1)
-        setPuesta(Array(rondas[r + 1].fichas.length).fill(null))
+        setPuesta(Array(m).fill(null))
+        setFijas(Array(m).fill(false))
+        setSegundo(false)
         setResultado(null)
         setElegida(null)
       },
     })
-  }, [respondida, resultado, puesta, faltan, n, aciertos, ultima, r, ronda, rondas, total, setAccion, siguiente, completar])
+  }, [respondida, resultado, puesta, fijas, segundo, faltan, n, aciertos, ultima, r, ronda, rondas, total, setAccion, siguiente, completar, fallo])
 
   // Después de comprobar, cada ficha va a su caja correcta (las mal, en oro).
   const cajaDe = (i) => (respondida ? ronda.fichas[i].caja : puesta[i])
@@ -125,7 +143,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
   const enMano = orden.filter((i) => puesta[i] === null)
 
   const ficha = (i, enCaja) => {
-    const estado = respondida ? (resultado[i] ? 'bien' : 'mal') : null
+    const estado = respondida ? (resultado[i] ? 'bien' : 'mal') : fijas[i] ? 'bien' : null
     const f = ronda.fichas[i]
     const deOido = !f.nombre
     return (
@@ -138,6 +156,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
             e.stopPropagation()
             // Con otra ficha elegida, tocar una que ya está en una caja = mandar la elegida a esa caja.
             if (enCaja && elegida !== null && elegida !== i && !respondida) tocarCaja(puesta[i])
+            else if (fijas[i]) sonar(i)
             else tocarFicha(i)
           }}
           animate={{ y: elegida === i ? -4 : 0 }}
@@ -153,7 +172,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
             {f.detalle && !enCaja && <span className="font-dato text-sm font-medium opacity-70">{f.detalle}</span>}
           </span>
           {estado === 'bien' && <Check className="size-4 shrink-0" />}
-          {estado === 'mal' && <Bombilla className="size-4 shrink-0" />}
+          {estado === 'mal' && <Repaso className="size-4 shrink-0" />}
         </Pulsable>
       </motion.div>
     )
@@ -210,7 +229,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
 
 function claseFicha(estado, elegida) {
   if (estado === 'bien') return 'border-bien bg-bien-suave text-bien-tinta'
-  if (estado === 'mal') return 'border-fijate bg-fijate-suave text-fijate-tinta'
+  if (estado === 'mal') return 'border-mal bg-mal-suave text-mal-tinta'
   if (elegida) return 'border-zinc-900 bg-white text-zinc-900'
   return 'border-zinc-200 bg-white text-zinc-900'
 }

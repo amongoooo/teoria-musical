@@ -4,7 +4,7 @@ import { acentoLeccion } from '../../content/index.js'
 import { DEBILES, analizar } from '../../letras/analisis.js'
 import { limpiar } from '../../letras/silabas.js'
 import { tinta } from '../../ui/color.js'
-import { Check } from '../../ui/Iconos.jsx'
+import { Check, Repaso } from '../../ui/Iconos.jsx'
 import { ENTRA_DERECHA, RESORTE } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import Rich from '../Rich.jsx'
@@ -24,12 +24,17 @@ import Rondas from './Rondas.jsx'
  *                tocan) o una lista de claves 'verso.palabra.silaba' (desde 0)
  *  - fijas: ['corazón'] (palabra) → se ven ya marcadas en gris y no se tocan (p. ej. la palabra de la pregunta)
  * Las palabras débiles (la, de, con, que…) se ven como texto y no se tocan (salvo que sean respuesta).
+ * «Ahora sí se puede fallar»: al primer «Comprobar» con errores, las bien marcadas se quedan en verde (fijas), las que
+ * sobraban se desmarcan y se dice cuántas faltan (oro); al segundo, las que faltaban salen en ROJO y la ronda va al
+ * repaso del final (`fallo(r)`).
  */
-export default function MarcaPalabras({ paso, leccionId, setAccion, siguiente, completar }) {
+export default function MarcaPalabras({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [marcadas, setMarcadas] = useState(() => new Set())
   const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
+  const [fijasBien, setFijasBien] = useState(() => new Set()) // bien marcadas en el primer intento (verdes)
+  const [aviso, setAviso] = useState(null) // primer intento con errores: { faltan, sobran }
   const [aciertos, setAciertos] = useState(0)
   const color = acentoLeccion(leccionId) ?? 'var(--color-zinc-900)'
 
@@ -43,15 +48,34 @@ export default function MarcaPalabras({ paso, leccionId, setAccion, siguiente, c
 
   useEffect(() => {
     if (!respondida) {
+      const unidades = unidad === 'silaba' ? 'sílabas' : 'palabras'
       setAccion({
         label: 'Comprobar',
         disabled: marcadas.size === 0,
         ayuda: marcadas.size === 0 ? (unidad === 'silaba' ? 'Toca las sílabas' : 'Toca las palabras') : null,
+        feedback: aviso
+          ? {
+              tipo: 'mal',
+              titulo: aviso.faltan ? `Te falta${aviso.faltan === 1 ? '' : 'n'} ${aviso.faltan}.` : `Sobraba${aviso.sobran === 1 ? '' : 'n'} ${aviso.sobran}.`,
+              texto: aviso.faltan
+                ? `Las verdes ya están.${aviso.sobran ? ` Quité ${aviso.sobran} que no iba${aviso.sobran === 1 ? '' : 'n'}.` : ''} Busca las ${unidades} que faltan.`
+                : 'Las verdes ya están: comprueba otra vez.',
+            }
+          : null,
         onClick: () => {
-          const bien = marcadas.size === correctas.size && [...marcadas].every((k) => correctas.has(k))
-          const total = aciertos + (bien ? 1 : 0)
+          const buenas = [...marcadas].filter((k) => correctas.has(k))
+          const bien = marcadas.size === correctas.size && buenas.length === correctas.size
+          if (!bien && !aviso) {
+            // Primer intento con errores: las bien se quedan (verdes) y las que sobraban se desmarcan.
+            setFijasBien(new Set(buenas))
+            setMarcadas(new Set(buenas))
+            setAviso({ faltan: correctas.size - buenas.length, sobran: marcadas.size - buenas.length })
+            return
+          }
+          const total = aciertos + (bien && !aviso ? 1 : 0)
           setAciertos(total)
           setResultado(bien ? 'bien' : 'mal')
+          if (!bien) fallo?.(r)
           if (ultima) completar({ aciertos: total, total: rondas.length })
         },
       })
@@ -63,18 +87,20 @@ export default function MarcaPalabras({ paso, leccionId, setAccion, siguiente, c
       feedback:
         resultado === 'bien'
           ? { tipo: 'bien', titulo: '¡Correcto!', texto: ronda.explicacion }
-          : { tipo: 'mal', titulo: 'Fíjate en las marcadas en oro', texto: ronda.explicacion },
+          : { tipo: 'error', titulo: 'Las que faltaban van en rojo', texto: ronda.explicacion },
       onClick: () => {
         if (ultima) return siguiente()
         setR(r + 1)
         setMarcadas(new Set())
+        setFijasBien(new Set())
+        setAviso(null)
         setResultado(null)
       },
     })
-  }, [respondida, resultado, marcadas, correctas, aciertos, ultima, r, ronda, rondas.length, unidad, setAccion, siguiente, completar])
+  }, [respondida, resultado, marcadas, aviso, correctas, aciertos, ultima, r, ronda, rondas.length, unidad, setAccion, siguiente, completar, fallo])
 
   const alternar = (clave) => {
-    if (respondida) return
+    if (respondida || fijasBien.has(clave)) return
     setMarcadas((m) => {
       const n = new Set(m)
       if (n.has(clave)) n.delete(clave)
@@ -86,7 +112,7 @@ export default function MarcaPalabras({ paso, leccionId, setAccion, siguiente, c
   /** Estado de una pieza tocable: 'bien' | 'falta' | 'sobra' | 'marcada' | null. */
   const estadoDe = (clave) => {
     const m = marcadas.has(clave)
-    if (!respondida) return m ? 'marcada' : null
+    if (!respondida) return fijasBien.has(clave) ? 'bien' : m ? 'marcada' : null
     if (correctas.has(clave)) return m ? 'bien' : 'falta'
     return m ? 'sobra' : null
   }
@@ -150,7 +176,7 @@ function Pieza({ texto, estado, color, chica = false, onClick, ...resto }) {
   const estilos = {
     marcada: { backgroundColor: color, color: 'var(--color-blanco)', borderColor: color },
     bien: { backgroundColor: 'var(--color-bien-suave)', color: 'var(--color-bien-tinta)', borderColor: 'var(--color-bien)' },
-    falta: { backgroundColor: 'var(--color-fijate-suave)', color: 'var(--color-fijate-tinta)', borderColor: 'var(--color-fijate)' },
+    falta: { backgroundColor: 'var(--color-mal-suave)', color: 'var(--color-mal-tinta)', borderColor: 'var(--color-mal)' },
     sobra: { color: 'var(--color-zinc-400)', borderColor: 'var(--color-zinc-200)', textDecoration: 'line-through' },
     fija: { backgroundColor: 'var(--color-zinc-100)', color: tinta(color), borderColor: 'transparent' },
   }
@@ -174,6 +200,7 @@ function Pieza({ texto, estado, color, chica = false, onClick, ...resto }) {
       {...resto}
     >
       {estado === 'bien' && <Check className="size-4" />}
+      {estado === 'falta' && <Repaso className="size-4" />}
       {texto}
     </Pulsable>
   )

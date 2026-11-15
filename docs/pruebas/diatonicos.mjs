@@ -77,11 +77,12 @@ for (const tema of ['claro', 'oscuro']) {
   await tocar('G4')
   const m1 = await info()
   comprobar(r, 'revelar: fallo en la escala «Nota sí, nota no»', /Nota sí, nota no/.test(m1) && !/3 semitonos \(/.test(m1), m1)
+  // «Ahora sí se puede fallar»: dos fallos SEGUIDOS abren en rojo las que faltan; con un acierto en medio, no.
+  await tocar('F4')
   await tocar('F#4')
   const m2 = await info()
   comprobar(r, 'revelar: fallo fuera de la escala', /no está en Do mayor/.test(m2), m2)
   await foto('4.3-revelar-fallo')
-  await tocar('F4')
   await tocar('A4')
   const m3 = await info()
   comprobar(r, 'revelar: se revela «Re menor»', /Re menor/.test(m3) && /menor/.test(m3), m3)

@@ -15,7 +15,7 @@ import Rich from '../Rich.jsx'
  *  - { tipo: 'velocity', fuertes: [0, 4] }             → subir la velocity de las notas
  *        que empiezan en esas casillas y dejar las demás suaves
  */
-export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguiente, completar }) {
+export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
   const { objetivo, roll = {} } = paso
   const [notas, setNotas] = useState(() => conIds(roll.notas))
   const [resultado, setResultado] = useState(null) // null | { ok, texto }
@@ -54,7 +54,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
         avanza: true,
         feedback: resultado?.ok
           ? { tipo: 'bien', titulo: '¡Perfecto!', texto: objetivo.explicacion ?? 'Pulsa Reproducir para escucharlo.' }
-          : { tipo: 'mal', titulo: 'Así queda.', texto: objetivo.explicacion ?? 'Compara tus notas con las de la solución y pulsa Reproducir.' },
+          : { tipo: 'error', titulo: 'Así queda.', texto: objetivo.explicacion ?? 'Compara tus notas con las de la solución y pulsa Reproducir.' },
         onClick: siguiente,
       })
       return
@@ -67,12 +67,13 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       if (r.ok) {
         setResultado(r)
         completar({ aciertos: intentos === 0 ? 1 : 0, total: 1 })
-      } else if (total >= 3) verSolucion() // tercer fallo: la solución (el botón solo dice «Comprobar» o «Siguiente»)
+      } else if (total >= 2) verSolucion() // «ahora sí se puede fallar»: al segundo fallo, la solución (y al repaso)
       else setResultado(r)
     }
 
     const verSolucion = () => {
       completar({ aciertos: 0, total: 1 })
+      fallo?.(0)
       if (objetivo.tipo === 'velocity') {
         const suave = Math.min(0.35, (objetivo.maxSuave ?? 0.55) - 0.1)
         setNotas((ns) => ns.map((n) => ({ ...n, velocity: objetivo.fuertes.includes(n.inicio) ? 1 : suave })))
@@ -82,15 +83,15 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       setSolucion(true)
     }
 
-    const fallo = resultado && !resultado.ok
+    const mal = resultado && !resultado.ok
     setAccion({
       label: 'Comprobar',
       disabled: notas.length === 0,
-      ayuda: notas.length === 0 ? 'Toca la rejilla para dibujar una nota' : fallo && intentos >= 2 ? 'Si vuelve a fallar, verás la solución' : null,
-      feedback: fallo ? { tipo: 'mal', titulo: 'Casi.', texto: [resultado.texto, objetivo.pista].filter(Boolean).join(' ') } : null,
+      ayuda: notas.length === 0 ? 'Toca la rejilla para dibujar una nota' : null,
+      feedback: mal ? { tipo: 'mal', titulo: 'Casi.', texto: [resultado.texto, objetivo.pista].filter(Boolean).join(' ') } : null,
       onClick: comprobar,
     })
-  }, [notas, resultado, intentos, solucion, objetivo, setAccion, siguiente, completar])
+  }, [notas, resultado, intentos, solucion, objetivo, setAccion, siguiente, completar, fallo])
 
   const terminado = resultado?.ok || solucion
   const guia = objetivo.tipo === 'copiar' && (objetivo.fantasma || solucion) ? objetivo.notas : []
@@ -106,7 +107,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
         onCambio={terminado ? undefined : cambiar}
         soloVelocity={objetivo.tipo === 'velocity'}
         fantasma={guia}
-        fantasmaBien={terminado}
+        fantasmaBien={Boolean(resultado?.ok)}
         color={color}
       />
       {!terminado && objetivo.tipo !== 'velocity' && (

@@ -24,11 +24,12 @@ import Rondas from './Rondas.jsx'
  *  - explicacion: texto al comprobar
  * Tocar una casilla la elige y suena su tónica. `noLoSe` (prueba rápida): botón «No lo sé» bajo el círculo.
  */
-export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, completar, noLoSe = false }) {
+export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, completar, fallo, noLoSe = false }) {
   const rondas = paso.rondas
   const [r, setR] = useState(0)
   const [seleccion, setSeleccion] = useState(null)
-  const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal'
+  const [resultado, setResultado] = useState(null) // null | 'bien' | 'mal' (prueba rápida, oro) | 'rojo' (lección: dos fallos)
+  const [descartadas, setDescartadas] = useState([]) // casillas ya intentadas mal (primer intento: oro)
   const [aciertos, setAciertos] = useState(0)
   const color = acentoLeccion(leccionId)
   const circuloRef = useRef(null)
@@ -41,17 +42,26 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
   const anillo = ronda.anillo ?? (correcta.menor ? 'menor' : 'mayor')
   const menores = ronda.menores ?? (anillo !== 'mayor' || correcta.menor)
 
+  const intentos = noLoSe ? 1 : 2
+
   useEffect(() => {
     if (!respondida) {
       setAccion({
         label: 'Comprobar',
         disabled: seleccion === null,
         ayuda: null,
+        feedback: descartadas.length ? { tipo: 'mal', titulo: 'No es esa.', texto: ronda.pista ?? 'Prueba con otra casilla.' } : null,
         onClick: () => {
           const bien = seleccion === ronda.correcta
-          const total = aciertos + (bien ? 1 : 0)
+          if (!bien && descartadas.length + 1 < intentos) {
+            setDescartadas([...descartadas, seleccion])
+            setSeleccion(null)
+            return
+          }
+          const total = aciertos + (bien && descartadas.length === 0 ? 1 : 0)
           setAciertos(total)
-          setResultado(bien ? 'bien' : 'mal')
+          setResultado(bien ? 'bien' : noLoSe ? 'mal' : 'rojo')
+          if (!bien && !noLoSe) fallo?.(r)
           if (ultima) completar({ aciertos: total, total: rondas.length })
         },
       })
@@ -63,15 +73,16 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
       feedback:
         resultado === 'bien'
           ? { tipo: 'bien', titulo: '¡Correcto!', texto: ronda.explicacion }
-          : { tipo: 'mal', titulo: `La respuesta era: ${correcta.nombre}`, texto: ronda.explicacion },
+          : { tipo: resultado === 'rojo' ? 'error' : 'mal', titulo: `La respuesta era: ${correcta.nombre}`, texto: ronda.explicacion },
       onClick: () => {
         if (ultima) return siguiente()
         setR(r + 1)
         setSeleccion(null)
         setResultado(null)
+        setDescartadas([])
       },
     })
-  }, [respondida, resultado, seleccion, aciertos, ultima, r, ronda, correcta, rondas.length, setAccion, siguiente, completar])
+  }, [respondida, resultado, seleccion, descartadas, intentos, noLoSe, aciertos, ultima, r, ronda, correcta, rondas.length, setAccion, siguiente, completar, fallo])
 
   const noSe = () => {
     setSeleccion(null)
@@ -80,15 +91,16 @@ export default function EligeEnCirculo({ paso, leccionId, setAccion, siguiente, 
   }
 
   const elegir = (id) => {
-    if (respondida) return
+    if (respondida || descartadas.includes(id)) return
     setSeleccion(id)
     const d = datosCasilla(id)
     playNotes(`${d.tonica}4`, { duracion: 0.5 })
   }
 
+  const yaMal = Object.fromEntries(descartadas.map((id) => [id, 'mal']))
   const estados = respondida
-    ? { [ronda.correcta]: 'bien', ...(resultado === 'mal' && seleccion ? { [seleccion]: 'mal' } : {}) }
-    : {}
+    ? { ...yaMal, ...(resultado !== 'bien' && seleccion ? { [seleccion]: 'mal' } : {}), [ronda.correcta]: resultado === 'rojo' ? 'rojo' : 'bien' }
+    : yaMal
 
   return (
     <div className="flex flex-col gap-5">

@@ -4,7 +4,7 @@ import { playNotes } from '../audio/engine.js'
 import { CIRCULO, armaduraMayor, escalaMayor, escalaMenor, relativaMenor } from '../theory/escalas.js'
 import { nombre } from '../theory/notas.js'
 import { claro, oscuro, tinta } from '../ui/color.js'
-import { Bombilla, Check } from '../ui/Iconos.jsx'
+import { Bombilla, Check, Repaso } from '../ui/Iconos.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 
 // Círculo de quintas táctil (lección 3.5): las 12 mayores en el anillo de fuera (Do arriba; en el sentido
@@ -56,7 +56,8 @@ function sector(i, [r1, r2]) {
  * Props:
  *  - color: acento del módulo
  *  - seleccion: id elegido (se pinta en el color del módulo)
- *  - estados: { id: 'bien' | 'mal' } (al comprobar)
+ *  - estados: { id: 'bien' | 'mal' | 'rojo' } (al comprobar; mal = oro, lo que elegiste; rojo = la respuesta tras
+ *    fallar dos veces en una lección)
  *  - resaltar: ids en el tono suave del módulo (p. ej. el lado de los sostenidos)
  *  - armaduras: muestra «2♯» bajo cada mayor
  *  - menores: muestra el anillo de dentro
@@ -120,15 +121,17 @@ function Casilla({ i, id, menor, color, estado, armadura, activo, onElegir }) {
     elegida: oscuro(color),
     bien: 'var(--color-bien-relleno)',
     mal: 'var(--color-fijate)',
+    rojo: 'var(--color-mal-relleno)',
     resaltada: claro(color),
   }[estado] ?? (menor ? 'var(--color-zinc-100)' : 'var(--color-white)')
   const texto = {
     elegida: 'var(--color-blanco)',
     bien: 'var(--color-blanco)',
     mal: 'var(--color-zinc-900)',
+    rojo: 'var(--color-blanco)',
     resaltada: tinta(color),
   }[estado] ?? (menor ? 'var(--color-zinc-600)' : 'var(--color-zinc-900)')
-  const pop = estado === 'elegida' || estado === 'bien'
+  const pop = estado === 'elegida' || estado === 'bien' || estado === 'rojo'
 
   return (
     <motion.g
@@ -192,6 +195,7 @@ export function CentroTonalidad({ id, color, armadura = true, relativa = true, e
     >
       {estado === 'bien' && <Check className="size-5 text-bien-tinta" />}
       {estado === 'mal' && <Bombilla className="size-5 text-fijate-tinta" />}
+      {estado === 'rojo' && <Repaso className="size-5 text-mal-tinta" />}
       <span className="font-titulo text-[17px] font-bold leading-tight" style={{ color: tinta(color) }}>
         {d.nombre}
       </span>

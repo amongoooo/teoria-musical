@@ -173,6 +173,7 @@ export default {
     {
       tipo: 'tocar',
       titulo: 'Constrúyelos en el teclado',
+      pista: 'Desde la nota marcada, toca la que forma el intervalo. Cuenta los semitonos (los saltos, no las teclas).',
       objetivo: {
         tipo: 'paso',
         rondas: [

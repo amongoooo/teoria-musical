@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-15-fallar',
+    fecha: '15 nov 2026',
+    titulo: 'Ahora sí se puede fallar',
+    cosas: [
+      {
+        texto: 'Cada pregunta tiene **dos intentos**. El primer error te da una pista en oro; si fallas otra vez, la respuesta sale en **rojo** y esa pregunta **vuelve al final** de la lección, en el **repaso**.',
+        donde: { etiqueta: 'Probar en la 3.1', href: '#/leccion/3.1' },
+      },
+      {
+        texto: 'En los pasos con piano, el botón de **bombilla** junto al nombre del paso te da la **pista**. Si tocas una nota equivocada, la barra solo dice cuál tocaste: **tócala** para ver la explicación.',
+        donde: { etiqueta: 'Abrir la 3.2', href: '#/leccion/3.2' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-recuadros',
     fecha: '15 nov 2026',
     titulo: 'Notas en recuadros',

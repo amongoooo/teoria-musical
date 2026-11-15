@@ -25,7 +25,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 ## B. Oído y comprensión: elegir (puntúan)
 
 Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran `explicacion`
-(acierto o error: el error nunca castiga).
+(acierto o error: dos intentos; el 1.º error es oro y el 2.º enseña la respuesta en rojo y va al repaso del final).
 
 | Código | Interacción | Qué hace el usuario | Contenido | Ejemplo |
 |---|---|---|---|---|

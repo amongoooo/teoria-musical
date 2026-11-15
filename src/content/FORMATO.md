@@ -32,6 +32,8 @@ P1–P4, F1, R1–R3, T1–T4, X1) y la plantilla de orden de los pasos.
 - `tipo` (obligatorio): uno de los de abajo.
 - `titulo`: título grande del paso.
 - `intro`: texto corto bajo el título.
+- `pista` (opcional): texto que NO se ve al entrar; sale con el botón de bombilla junto a la etiqueta del paso (cómo hacer el ejercicio, sin dar la respuesta). Úsalo en lugar de `intro` en los pasos de piano.
+- **Se puede fallar**: en los pasos que puntúan, cada ronda tiene dos intentos; al segundo fallo la respuesta sale en rojo y esa ronda vuelve en el **repaso** del final de la lección. La `pista` de una ronda (`elegir`, `circulo`) sale con el primer error.
 
 ## Sonidos
 
@@ -283,7 +285,7 @@ respuesta con su armadura.
   //     `pista` (opcional) se muestra al tocar una nota equivocada.
   // objetivo: { tipo: 'paso', rondas: [{ desde: 'E4', paso: 'S' | 'T', direccion: 'sube' | 'baja', pista }] }
   //   → tocar la nota a un semitono / un tono de `desde` (calculada con Tonal en theory/intervalos.js;
-  //     vale cualquier nombre de la misma tecla). `pista` se añade al fallar; al 2.º fallo se marca la tecla.
+  //     vale cualquier nombre de la misma tecla). `pista` se añade al fallar; al 2.º fallo la nota buscada se abre en rojo y la ronda va al repaso.
   //   Con `intervalo` (nombre de Tonal: '2m','2M','3m','3M','4P','4A' = tritono,'5P','6m','6M','7m','7M','8P') en lugar
   //   de `paso` → construir ese intervalo (P7): { desde: 'D4', intervalo: '3M', direccion: 'sube', pista, mensaje }.
   //   Nombres y semitonos: INTERVALOS / nombreIntervalo / notaIntervalo de theory/intervalos.js.

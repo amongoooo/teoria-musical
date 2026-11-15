@@ -85,6 +85,16 @@ export function Bombilla(props) {
   )
 }
 
+/** Repaso: falló dos veces y vuelve al final de la lección. Siempre en rojo (`text-mal-tinta`). Flecha en círculo. */
+export function Repaso(props) {
+  return (
+    <Icono {...props}>
+      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+      <path d="M20 4v5h-5" />
+    </Icono>
+  )
+}
+
 /** Bloqueado: siempre en gris. */
 export function Candado(props) {
   return (

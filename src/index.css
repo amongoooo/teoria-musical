@@ -203,6 +203,11 @@
   --color-rima-8-tinta: var(--color-celeste-tinta);
   /* Vidas del entrenador de oído (barra roja de la cabecera). */
   --color-vida: var(--color-rojo);
+  /* Mal = falló dos veces en una lección (cuenta como fallo y va al repaso del final). Siempre con el ícono Repaso. */
+  --color-mal: var(--color-rojo);
+  --color-mal-relleno: var(--color-rojo-relleno);
+  --color-mal-tinta: var(--color-rojo-tinta);
+  --color-mal-suave: var(--color-rojo-suave);
 }
 
 /*
