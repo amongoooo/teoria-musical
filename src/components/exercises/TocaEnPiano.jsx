@@ -19,6 +19,7 @@ import { BRILLO_MS, ENTRA_DERECHA, POP, RESORTE, SALTO, SUBE } from '../../ui/mo
 import Pulsable from '../../ui/Pulsable.jsx'
 import useTemblor from '../../ui/useTemblor.js'
 import Piano from '../Piano.jsx'
+import { Candado } from '../../ui/Iconos.jsx'
 import {
   APILADO,
   TERCERA,
@@ -240,9 +241,14 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
   const ultima = r === rondas.length - 1
   const palabra = ronda.direccion === 'agudo' ? 'más aguda' : 'más grave'
   const { senal, senalar } = useSenal()
+  const [sacudidas, setSacudidas] = useState({}) // { nota: veces } que se tocó en el piano la nota de un recuadro
 
   const onNoteOn = useCallback(
     (nota) => {
+      // Tocar en el piano la nota de un recuadro ya a la vista lo hace temblar (así se ve cuál es).
+      const vistas = [ronda.referencia, ...(resuelta ? [intento.nota] : [])]
+      const ya = vistas.find((n) => mismaTecla(n, nota))
+      if (ya) setSacudidas((s) => ({ ...s, [ya]: (s[ya] ?? 0) + 1 }))
       if (resuelta) return
       const dif = compararAltura(nota, ronda.referencia)
       const ok = ronda.direccion === 'agudo' ? dif > 0 : dif < 0
@@ -255,7 +261,7 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
         setFallos((f) => f + 1)
       }
     },
-    [resuelta, ronda, aciertos, fallos, ultima, rondas.length, completar],
+    [resuelta, intento, ronda, aciertos, fallos, ultima, rondas.length, completar],
   )
 
   useEffect(() => {
@@ -292,6 +298,7 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
         setR(r + 1)
         setIntento(null)
         setFallos(0)
+        setSacudidas({})
         playNotes(next.referencia)
       },
     })
@@ -306,15 +313,20 @@ function Comparar({ paso, setAccion, siguiente, completar }) {
           Toca una nota <span className="underline decoration-fijate decoration-4 underline-offset-4">{palabra}</span>{' '}
           que <span className="rounded-md bg-fijate-claro px-1.5">{nombre(ronda.referencia)}</span>
         </p>
-        <BotonSonido
-          sonido={{ notas: [ronda.referencia] }}
-          etiqueta={nombre(ronda.referencia)}
-          onNotas={senalar}
-          className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
-        />
       </motion.div>
 
-      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia]} senalar={senal} />
+      {/* La referencia y, con candado, la que buscas (a su derecha si es más aguda, a su izquierda si es más grave). */}
+      <FilaNotas
+        key={r}
+        desde={ronda.referencia}
+        meta={resuelta ? intento.nota : null}
+        sube={ronda.direccion === 'agudo'}
+        senal={senal}
+        senalar={senalar}
+        sacudidas={sacudidas}
+      />
+
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={[ronda.referencia, ...(resuelta ? [intento.nota] : [])]} senalar={senal} />
     </div>
   )
 }
@@ -492,10 +504,14 @@ function Paso({ paso, setAccion, siguiente, completar }) {
   const ultima = r === rondas.length - 1
   const verbo = dir > 0 ? 'Sube' : 'Baja'
   const { senal, senalar } = useSenal()
+  const [sacudidas, setSacudidas] = useState({}) // { nota: veces } que se tocó en el piano la nota de un recuadro
 
   const onNoteOn = useCallback(
     (nota) => {
-      if (resuelta) return
+      // Tocar en el piano la nota de un recuadro ya a la vista lo hace temblar (así se ve cuál es).
+      const ya = [simple(ronda.desde), ...(resuelta ? [meta] : [])].find((n) => mismaTecla(n, nota))
+      if (ya) setSacudidas((s) => ({ ...s, [ya]: (s[ya] ?? 0) + 1 }))
+      if (resuelta || ya === simple(ronda.desde)) return
       const ok = mismaTecla(nota, meta)
       setIntento({ nota, ok })
       if (ok) {
@@ -506,7 +522,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
         setFallos((f) => f + 1)
       }
     },
-    [resuelta, meta, aciertos, fallos, ultima, rondas.length, completar],
+    [resuelta, ronda.desde, meta, aciertos, fallos, ultima, rondas.length, completar],
   )
 
   useEffect(() => {
@@ -551,6 +567,7 @@ function Paso({ paso, setAccion, siguiente, completar }) {
         setR(r + 1)
         setIntento(null)
         setFallos(0)
+        setSacudidas({})
         playNotes(next.desde)
       },
     })
@@ -569,26 +586,70 @@ function Paso({ paso, setAccion, siguiente, completar }) {
           <span className="underline decoration-fijate decoration-4 underline-offset-4">{ronda.grado ?? palabra}</span>{' '}
           {ronda.grado ? 'de' : 'desde'} <span className="rounded-md bg-fijate-claro px-1.5">{nombre(simple(ronda.desde))}</span>
         </p>
-        <BotonSonido
-          sonido={{ notas: [ronda.desde] }}
-          etiqueta={nombre(simple(ronda.desde))}
-          onNotas={senalar}
-          className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
-        />
       </motion.div>
 
-      {resuelta && (
-        <motion.div {...SUBE}>
-          <BotonSonido
-            sonido={{ notas: [ronda.desde, meta], intervalo: 0.6 }}
-            etiqueta={`Escuchar ${nombre(simple(ronda.desde), { octava: false })} → ${nombre(meta, { octava: false })}`}
-            onNotas={senalar}
-            className="w-full"
-          />
-        </motion.div>
-      )}
+      {/* Pedido del usuario: las notas como recuadros (no botones). La que buscas, con candado hasta tocarla. */}
+      <FilaNotas
+        key={r}
+        desde={simple(ronda.desde)}
+        meta={resuelta ? meta : null}
+        sube={dir > 0}
+        etiqueta={ronda.grado ? ronda.grado.replace(/^(la|el) /, '') : ronda.intervalo ? datosIntervalo(ronda.intervalo)?.corto : ronda.paso}
+        tenue={!ronda.grado && !ronda.intervalo && ronda.paso === 'T'}
+        senal={senal}
+        senalar={senalar}
+        sacudidas={sacudidas}
+      />
 
       <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} ir={simple(ronda.desde)} senalar={senal} />
+    </div>
+  )
+}
+
+/**
+ * Dos recuadros (pedido del usuario: «las notas que indican algo del piano aparecen como recuadros»): la nota de la
+ * que se parte y la que buscas, de grave a aguda como en el teclado (la buscada a la derecha si sube, a la izquierda
+ * si baja). La buscada va con **candado** hasta tocarla en el piano; entonces se abre con su nombre. Tocar un recuadro
+ * abierto hace sonar su nota y la enciende en el teclado; tocar en el piano la nota de un recuadro lo hace temblar
+ * (`sacudidas`: { nota: veces }). Encima, el paso que se pide (S, T, 3.ª M, dominante…) con una flechita hacia la buscada.
+ */
+function FilaNotas({ desde, meta, sube, etiqueta, tenue = false, senal, senalar, sacudidas = {} }) {
+  const recuadros = [{ nota: desde }, { nota: meta, buscada: true }]
+  if (!sube) recuadros.reverse()
+  const tocar = (nota, i) => {
+    playNotes(nota)
+    senalar(nota, i)
+  }
+  return (
+    <div className="flex flex-col items-center gap-1.5" data-fila-notas>
+      {/* El paso que se pide, con la flechita hacia la buscada. */}
+      {etiqueta && (
+        <span
+          aria-hidden
+          className={`grid h-7 place-items-center whitespace-nowrap rounded-full px-2.5 font-dato text-sm font-medium ${
+            tenue ? 'bg-zinc-100 text-zinc-700' : 'bg-fijate-suave text-fijate-tinta'
+          }`}
+        >
+          {sube ? `${etiqueta} →` : `← ${etiqueta}`}
+        </span>
+      )}
+      <ol className="grid w-full grid-cols-2 gap-3">
+        {recuadros.map(({ nota, buscada }, i) => (
+          <CasillaFormula
+            key={buscada ? 'buscada' : 'desde'}
+            hecha={!buscada || Boolean(nota)}
+            dada={!buscada}
+            salta={buscada && Boolean(nota)}
+            suena={Boolean(nota && senal?.activa && senal.i === i)}
+            sacude={nota ? (sacudidas[nota] ?? 0) : 0}
+            onTocar={nota ? () => tocar(nota, i) : undefined}
+            etiqueta={nota ? `Escuchar ${nombre(nota)}` : 'Nota por descubrir: tócala en el piano'}
+            alto
+          >
+            {nota ? nombre(nota) : <Candado className="size-5 text-zinc-400" />}
+          </CasillaFormula>
+        ))}
+      </ol>
     </div>
   )
 }
@@ -691,7 +752,19 @@ function Formula({ paso, setAccion, siguiente, completar }) {
         )}
       </motion.p>
 
-      <FilaFormula key={r} notas={notas} pasos={ronda.pasos} hechas={hechas} senal={senal} sacudidas={sacudidas} grados={ronda.grados} />
+      <FilaFormula
+        key={r}
+        notas={notas}
+        pasos={ronda.pasos}
+        hechas={hechas}
+        senal={senal}
+        sacudidas={sacudidas}
+        grados={ronda.grados}
+        alTocar={(n, i) => {
+          playNotes(n)
+          senalar(simple(n), i)
+        }}
+      />
 
       {listo && (
         <motion.div {...SUBE}>
@@ -712,7 +785,7 @@ function Formula({ paso, setAccion, siguiente, completar }) {
  * `grados`: debajo, el número de grado de cada nota (1 … 7 y la octava otra vez 1), o una lista propia
  *   (pentatónicas, 3.6: ['1', '♭3', '4', '5', '♭7', '1']).
  */
-function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = false }) {
+function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = false, alTocar }) {
   const columnas = { gridTemplateColumns: `repeat(${notas.length}, minmax(0, 1fr))` }
   return (
     <div className="flex flex-col gap-1.5" aria-label={`Fórmula: ${pasos.join(' ')}`}>
@@ -740,8 +813,10 @@ function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = fal
             salta={i > 0 && i === hechas - 1}
             suena={Boolean(senal?.activa && senal.i === i)}
             sacude={sacudidas[i] ?? 0}
+            onTocar={alTocar && i < hechas ? () => alTocar(n, i) : undefined}
+            etiqueta={i < hechas ? `Escuchar ${nombre(simple(n))}` : 'Nota por descubrir'}
           >
-            {i < hechas ? nombre(simple(n), { octava: false }) : '?'}
+            {i < hechas ? nombre(simple(n), { octava: false }) : <Candado className="size-[18px] text-zinc-400" />}
           </CasillaFormula>
         ))}
       </ol>
@@ -758,29 +833,45 @@ function FilaFormula({ notas, pasos, hechas, senal, sacudidas = {}, grados = fal
   )
 }
 
-/** Una casilla de la fila de la fórmula. El `li` tiembla (useTemblor); dentro, el SALTO al acertar. */
-function CasillaFormula({ hecha, ahora, salta, suena, sacude, children }) {
+/**
+ * Una casilla de una fila de notas (fórmula, acorde, paso). El `li` tiembla (useTemblor); dentro, el SALTO al acertar.
+ * Las que faltan llevan **candado** (pedido del usuario). Con `onTocar`, la casilla es un botón: abierta, hace sonar su
+ * nota (y la enciende en el teclado); con candado, tiembla (aún no se puede escuchar). `dada` = la nota de la que se
+ * parte (borde de oro claro, como el nombre en la pregunta). `alto` = más grande (dos casillas a lo ancho).
+ */
+function CasillaFormula({ hecha, ahora, salta, suena, sacude, dada = false, alto = false, onTocar, etiqueta, children }) {
   const [ref, temblar] = useTemblor()
   useEffect(() => {
     if (sacude > 0) temblar()
   }, [sacude, temblar])
-  return (
-    <li ref={ref} data-casilla={hecha ? 'ok' : ahora ? 'ahora' : 'pendiente'}>
-      <motion.div
-        initial={false}
-        animate={hecha && salta ? SALTO : { scale: 1 }}
-        transition={{ duration: 0.35 }}
-        data-sonando={suena || undefined}
-        className={`grid h-11 place-items-center rounded-xl border-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${suena ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''} ${
-          hecha
+  const caja = (
+    <motion.div
+      initial={false}
+      animate={hecha && salta ? SALTO : { scale: 1 }}
+      transition={{ duration: 0.35 }}
+      data-sonando={suena || undefined}
+      className={`grid place-items-center rounded-xl border-2 font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 ${alto ? 'h-14 text-lg' : 'h-11 text-sm'} ${suena ? 'ring-4 ring-sky-300 dark:ring-sky-500' : ''} ${
+        dada
+          ? 'border-fijate bg-fijate-claro text-zinc-900'
+          : hecha
             ? 'border-bien bg-bien-suave text-bien-tinta'
             : ahora
               ? 'border-zinc-900 bg-white text-zinc-600'
               : 'border-zinc-200 bg-white text-zinc-500'
-        }`}
-      >
-        {children}
-      </motion.div>
+      }`}
+    >
+      {children}
+    </motion.div>
+  )
+  return (
+    <li ref={ref} data-casilla={dada ? 'dada' : hecha ? 'ok' : ahora ? 'ahora' : 'pendiente'}>
+      {onTocar || !hecha ? (
+        <Pulsable onClick={hecha ? onTocar : temblar} aria-label={etiqueta} className="block w-full rounded-xl">
+          {caja}
+        </Pulsable>
+      ) : (
+        caja
+      )}
     </li>
   )
 }
@@ -1039,15 +1130,25 @@ function Acorde({ paso, setAccion, siguiente, completar }) {
             </>
           )}
         </p>
-        <BotonSonido
-          sonido={escuchar ? sonidoAcorde : { notas: [referencia] }}
-          etiqueta={escuchar ? 'Escuchar' : nombre(simple(referencia))}
-          onNotas={escuchar ? undefined : senalar}
-          className="min-h-12 shrink-0 py-1.5 pl-2 pr-4"
-        />
+        {/* «Escucha y construye»: el acorde ES la pregunta. Si no, la nota de partida ya es un recuadro que suena. */}
+        {escuchar && <BotonSonido sonido={sonidoAcorde} etiqueta="Escuchar" className="min-h-12 shrink-0 py-1.5 pl-2 pr-4" />}
       </motion.div>
 
-      <FilaAcorde key={r} orden={orden} partes={partes} dada={dada} tocadas={tocadas} guia={guia} revelada={revelar} senal={senal} sacudidas={sacudidas} />
+      <FilaAcorde
+        key={r}
+        orden={orden}
+        partes={partes}
+        dada={dada}
+        tocadas={tocadas}
+        guia={guia}
+        revelada={revelar}
+        senal={senal}
+        sacudidas={sacudidas}
+        alTocar={(n, i) => {
+          playNotes(n)
+          senalar(simple(n), i)
+        }}
+      />
 
       {listo && (
         <motion.div {...SUBE}>
@@ -1073,7 +1174,7 @@ const GRADOS_CORTOS = ['1.er', '2.º', '3.er', '4.º', '5.º', '6.º', '7.º']
  * pareja el intervalo que la separa (3M / 3m / 4J), que aparece con un pop si llega al final (`revelar`).
  * Debajo, qué parte es cada una: 1 · 3 · 5, 3 · 5 · 1 o 5 · 1 · 3.
  */
-function FilaAcorde({ orden, partes, dada, tocadas, guia, revelada = false, senal, sacudidas = {} }) {
+function FilaAcorde({ orden, partes, dada, tocadas, guia, revelada = false, senal, sacudidas = {}, alTocar }) {
   const columnas = { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
   const saltos = orden.slice(1).map((n, j) => APILADO[midi(n) - midi(orden[j])])
   return (
@@ -1107,9 +1208,10 @@ function FilaAcorde({ orden, partes, dada, tocadas, guia, revelada = false, sena
               salta={i !== dada && hecha}
               suena={Boolean(senal?.activa && senal.i === i)}
               sacude={sacudidas[i] ?? 0}
+              onTocar={alTocar && hecha ? () => alTocar(n, i) : undefined}
+              etiqueta={hecha ? `${PARTES[partes[i]]}: escuchar ${nombre(n)}` : `${PARTES[partes[i]]}: por descubrir`}
             >
-              <span className="sr-only">{PARTES[partes[i]]}: </span>
-              {hecha ? nombre(n, { octava: false }) : '?'}
+              {hecha ? nombre(n, { octava: false }) : <Candado className="size-[18px] text-zinc-400" />}
             </CasillaFormula>
           )
         })}
