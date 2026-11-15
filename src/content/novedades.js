@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-15-melodia-etapas',
+    fecha: '15 nov 2026',
+    titulo: 'Ruta de Melodía y etapas',
+    cosas: [
+      {
+        texto: 'Nueva **ruta de Melodía**: notas, tonos e intervalos y las escalas mayor, menor y **pentatónicas**, con práctica de **Intervalos** y **Oído absoluto** y un reto: tu melodía pentatónica en FL Studio. Lo que ya hiciste cuenta solo.',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/melodia' },
+      },
+      {
+        texto: 'El **Curso completo** ahora va por **etapas**: 1 Fundamentos, 2 Tu primera canción y, pronto, 3 Construir canciones, 4 Sonido propio y 5 Terminar y publicar. Toca una etapa para ir a sus bloques.',
+        donde: { etiqueta: 'Ver el curso', href: '#/curso' },
+      },
+      {
+        texto: 'Las notas, intervalos y escalas del curso ahora son de **Melodía** (turquesa): el curso tiene **cuatro colores**.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-barra-iconos',
     fecha: '14 nov 2026',
     titulo: 'La barra con íconos',

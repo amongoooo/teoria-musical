@@ -53,7 +53,12 @@ function Panel() {
       modos={MODOS_OIDO}
       ruta={rutas.oido}
       Icono={Oreja}
-      despues={<EntradaRuta id="acordes" />}
+      despues={
+        <>
+          <EntradaRuta id="melodia" />
+          <EntradaRuta id="acordes" />
+        </>
+      }
     />
   )
 }

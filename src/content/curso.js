@@ -4,19 +4,25 @@
 // lleva su ÁREA (la ruta de la que sale: su color y la práctica con la que se mide). Lo hecho en módulos y rutas
 // cuenta solo aquí. El curso es LINEAL, como las rutas: lo cumplido más adelante sale bloqueado hasta llegar.
 // OPCIONALES (3.6 y 3.7): al final de su bloque, siempre abiertos; no cuentan para cerrar el bloque ni para el %.
-// El curso crecerá: más bloques y, más adelante, «etapas» que los agrupen.
-import { ARMONIA, LETRAS, RITMO } from './areas.js'
+// ETAPAS (fase 4 del rediseño; plan aprobado: https://claude.ai/artifact/JT5CGCcMc457BZF8XTYe8L): los bloques se
+// agrupan en 5 etapas (1 Fundamentos · 2 Tu primera canción · 3 Construir canciones · 4 Sonido propio · 5 Terminar y
+// publicar). Cada bloque dice su `etapa`; las etapas sin bloques salen «Próximamente». Desde la fase 4 el curso usa
+// CUATRO colores: cada lección toma su área principal del catálogo (Melodía = notas, intervalos y escalas; Armonía =
+// acordes) y cada meta, la de su modo. No se añaden pasos a los bloques que ya existen: el curso es lineal y un paso
+// nuevo antes de donde vas te regresaría.
+import { ARMONIA, LETRAS, MELODIA, RITMO } from './areas.js'
 import { TRAMOS, cumplidaParada, tituloLeccion } from './rutas.js'
 
-/** Las áreas del curso: una por ruta (su color y su práctica) y «las tres» para el reto final. */
+/** Las áreas del curso: una por ruta (su color y su práctica) y «todo junto» para el reto final. */
 export const AREAS = {
+  melodia: { id: 'melodia', nombre: 'Melodía', ruta: 'melodia', practica: 'oido', acento: MELODIA },
   acordes: { id: 'acordes', nombre: 'Armonía', ruta: 'acordes', practica: 'oido', acento: ARMONIA },
   ritmo: { id: 'ritmo', nombre: 'Ritmo', ruta: 'ritmo', practica: 'ritmo', acento: RITMO },
   letras: { id: 'letras', nombre: 'Letras', ruta: 'letras', practica: 'letras', acento: LETRAS },
-  tres: { id: 'tres', nombre: 'Las tres', ruta: null, practica: null, acento: 'var(--color-neutro)' },
+  tres: { id: 'tres', nombre: 'Todo junto', ruta: null, practica: null, acento: 'var(--color-neutro)' },
 }
 /** Las áreas que se cuentan por separado (el anillo y las filas de avance). */
-export const ORDEN_AREAS = ['acordes', 'ritmo', 'letras']
+export const ORDEN_AREAS = ['melodia', 'acordes', 'ritmo', 'letras']
 
 /** Clave de una parada de los tramos, para buscarla: '2.1', 'seguir:2', 'vocab:noche', 'letra', 'abre:flow', 'reto:ruta-ritmo'. */
 function clave(p) {
@@ -34,35 +40,48 @@ function paso(area, c, extra = {}) {
   if (!base && !extra.tipo) throw new Error(`Curso: no existe la parada «${c}»`)
   return { ...base, ...extra, area }
 }
+const M = (c, e) => paso('melodia', c, e)
 const A = (c, e) => paso('acordes', c, e)
 const R = (c, e) => paso('ritmo', c, e)
 const L = (c, e) => paso('letras', c, e)
 
+/** Las etapas del curso, en orden (sus bloques llevan `etapa`). */
+export const ETAPAS = [
+  { numero: 1, titulo: 'Fundamentos' },
+  { numero: 2, titulo: 'Tu primera canción' },
+  { numero: 3, titulo: 'Construir canciones' },
+  { numero: 4, titulo: 'Sonido propio' },
+  { numero: 5, titulo: 'Terminar y publicar' },
+]
+
 export const BLOQUES = [
   {
     numero: 1,
+    etapa: 1,
     titulo: 'Arrancar',
     meta: 'Analiza tu primera letra',
     descripcion: 'Las notas y el teclado, el pulso y el compás, y tu primera rima.',
-    paradas: [A('1.1'), R('2.1'), L('L1'), A('1.2'), R('seguir:2'), A('1.3'), R('2.2'), L('vocab:noche'), A('1.4'), R('eco:3'), L('letra')],
+    paradas: [M('1.1'), R('2.1'), L('L1'), M('1.2'), R('seguir:2'), M('1.3'), R('2.2'), L('vocab:noche'), M('1.4'), R('eco:3'), L('letra')],
   },
   {
     numero: 2,
+    etapa: 1,
     titulo: 'El idioma de la música',
     meta: 'Se abre el Flow',
     descripcion: 'Tonos e intervalos, la escala mayor y la menor, figuras y síncopa, esquemas y sílabas.',
     paradas: [
-      A('3.1'), R('2.3'), L('L2'), A('3.2'), R('seguir:5'), L('L3'), A('intervalos:4'), A('3.3'), L('vocab:calle'), A('3.4'), R('2.4'), R('abre:flow'),
-      A('3.6', { opcional: true }),
+      M('3.1'), R('2.3'), L('L2'), M('3.2'), R('seguir:5'), L('L3'), M('intervalos:4'), M('3.3'), L('vocab:calle'), M('3.4'), R('2.4'), R('abre:flow'),
+      M('3.6', { opcional: true }),
     ],
   },
   {
     numero: 3,
+    etapa: 2,
     titulo: 'Tu primera canción',
     meta: 'Tus tres retos en una canción',
     descripcion: 'El círculo de quintas, los acordes y sus inversiones, el swing, los multis y el flow: todo junto en una canción.',
     paradas: [
-      A('3.5'), R('2.5'), L('L4'), A('abre:circulo'),
+      M('3.5'), R('2.5'), L('L4'), A('abre:circulo'),
       A('4.1'), A('acordes:2'),
       L('abre:flow', { titulo: 'Flow en tus letras', texto: 'Tus versos sobre el beat, sílaba por sílaba: la pestaña Flow de cada letra.' }),
       A('4.2'), L('L5'), R('reto:ruta-ritmo'), A('4.3'), A('4.4'), A('acordes:3'), L('reto:ruta-letras'), A('4.5'), A('reto:ruta-acordes'),
@@ -72,12 +91,15 @@ export const BLOQUES = [
         titulo: 'Tus tres retos en una canción',
         texto: 'En FL Studio, junta en una sola canción tu progresión I–V–vi–IV, tu groove con swing y tus 8 versos con flow encima: 8 compases que suenen juntos.',
       }),
-      A('3.7', { opcional: true }),
+      M('3.7', { opcional: true }),
     ],
   },
 ]
 
 export const getBloque = (n) => BLOQUES.find((b) => b.numero === Number(n)) ?? null
+
+/** La etapa de un bloque ({ numero, titulo }). */
+export const etapaDeBloque = (n) => ETAPAS.find((e) => e.numero === getBloque(n)?.etapa) ?? null
 
 /**
  * Estado del curso. `medir(p)` → { valor, meta } de una meta (con la práctica de su área).
@@ -87,6 +109,8 @@ export const getBloque = (n) => BLOQUES.find((b) => b.numero === Number(n)) ?? n
  *    `estado`: 'hecha' | 'ahora' | 'siguiente'.
  *  - `actual`: el siguiente paso del curso (con su `bloque`), o null si está todo hecho.
  *  - `hechas`, `total` y `areas` ({ acordes: { hechas, total }, … }): solo los pasos necesarios.
+ *  - `etapas`: cada una con sus `bloques` (números), `hechas`, `total` y `estado`: 'hecha' | 'ahora' | 'siguiente' |
+ *    'pronto' (aún sin bloques). `etapa` = el número de la etapa en la que vas.
  */
 export function estadoCurso({ progreso, medir, admin = false }) {
   let actual = null
@@ -112,5 +136,14 @@ export function estadoCurso({ progreso, medir, admin = false }) {
   for (const b of bloques) b.estado = b.hechas === b.total ? 'hecha' : actual?.bloque === b.numero ? 'ahora' : 'siguiente'
   const hechas = bloques.reduce((t, b) => t + b.hechas, 0)
   const total = bloques.reduce((t, b) => t + b.total, 0)
-  return { bloques, actual, hechas, total, areas }
+  const etapas = ETAPAS.map((e) => {
+    const suyos = bloques.filter((b) => b.etapa === e.numero)
+    const h = suyos.reduce((t, b) => t + b.hechas, 0)
+    const tot = suyos.reduce((t, b) => t + b.total, 0)
+    const estado = !suyos.length ? 'pronto' : suyos.some((b) => b.estado === 'ahora') ? 'ahora' : h === tot ? 'hecha' : 'siguiente'
+    return { ...e, bloques: suyos.map((b) => b.numero), hechas: h, total: tot, estado }
+  })
+  // La etapa en la que vas: la del paso actual o, con todo hecho, la última que tiene bloques.
+  const etapa = actual ? getBloque(actual.bloque).etapa : Math.max(...BLOQUES.map((b) => b.etapa))
+  return { bloques, actual, hechas, total, areas, etapas, etapa }
 }

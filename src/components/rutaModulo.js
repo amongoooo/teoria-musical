@@ -19,10 +19,10 @@ import { tiendaVocab } from '../progress/vocabulario.js'
 import { navegar, rutas } from '../router.js'
 import { guiarMeta } from '../progress/metaGuiada.js'
 import { nombreNivel } from './PanelEntrenamiento.jsx'
-import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
+import { Corchea, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 
 /** Ícono de cada ruta (el de su práctica) y de lo que se abre en ella. */
-export const ICONO_RUTA = { ritmo: Metronomo, letras: Pluma, acordes: Oreja }
+export const ICONO_RUTA = { ritmo: Metronomo, letras: Pluma, melodia: Corchea, acordes: Oreja }
 export const ICONOS_ABRE = { flow: Pluma }
 
 /** La memoria del entrenamiento de cada práctica y a dónde lleva cada modo. */

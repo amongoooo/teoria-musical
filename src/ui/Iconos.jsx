@@ -10,7 +10,8 @@
 //  - Entrenamientos (Inicio): Oreja (oído) · Metronomo (ritmo) · Pluma (letras)
 //  - Barra de pestañas (pedido del usuario): Lapiz (Herramientas) · Pesas (Practicar) · Inicio · Libro (Aprender)
 //    · Opciones (Configuración)
-//  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos)
+//  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos) · Corchea (la ruta y el área de
+//    Melodía; las demás rutas usan el ícono de su práctica)
 //  - Prueba rápida «¿Ya lo sabes?»: Saltar (doble flecha: saltar lo que ya dominas)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
@@ -216,6 +217,16 @@ export function Pluma(props) {
       <path d="M20 4c-7 0-12 5-13 13l-2 3" />
       <path d="M20 4c0 7-5 11-11 12" />
       <path d="M9 13l4-4" />
+    </Icono>
+  )
+}
+
+/** Corchea: la ruta de Melodía (y el área Melodía en el Curso completo). */
+export function Corchea(props) {
+  return (
+    <Icono {...props}>
+      <ellipse cx="8.5" cy="17.5" rx="3.5" ry="2.6" transform="rotate(-20 8.5 17.5)" />
+      <path d="M11.8 16.5V3.5c.4 2.6 5.7 3.4 5.7 8" />
     </Icono>
   )
 }

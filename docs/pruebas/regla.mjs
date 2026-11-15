@@ -187,15 +187,15 @@ for (const tema of ['claro', 'oscuro']) {
     await page.mouse.up()
     await espera(1500)
   }
-  // Bucle sin tope: a la izquierda siempre la siguiente (… acordes → ritmo → letras → acordes → ritmo) y a la
-  // derecha siempre la anterior (… ritmo → acordes → letras → ritmo → acordes).
+  // Bucle sin tope: a la izquierda siempre la siguiente (… acordes → ritmo → letras → melodia → acordes → ritmo) y a
+  // la derecha siempre la anterior (… ritmo → acordes → melodia → letras → ritmo → acordes).
   await page.goto(BASE + '#/ruta/acordes')
   await espera(2000)
-  for (const sig of ['ritmo', 'letras', 'acordes', 'ritmo']) {
+  for (const sig of ['ritmo', 'letras', 'melodia', 'acordes', 'ritmo']) {
     await deslizar(340, 30)
     comprobar(r, `izquierda → ${sig}`, page.url().endsWith(`#/ruta/${sig}`), page.url())
   }
-  for (const ant of ['acordes', 'letras', 'ritmo', 'acordes']) {
+  for (const ant of ['acordes', 'melodia', 'letras', 'ritmo', 'acordes']) {
     await deslizar(30, 340)
     comprobar(r, `derecha → ${ant}`, page.url().endsWith(`#/ruta/${ant}`), page.url())
   }

@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import BarraCurso from '../components/BarraCurso.jsx'
 import CaminoLecciones from '../components/CaminoLecciones.jsx'
@@ -6,7 +6,7 @@ import useCambioModulo from '../components/CambioModulo.jsx'
 import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import { ACENTO_CURSO, ICONO_AREA, accionPaso, moduloDeBloque, rutaDeBloque, useCurso } from '../components/cursoModulo.js'
 import { useCarruselModulos, useModulosYPracticas, useRuta } from '../components/rutaModulo.js'
-import { AREAS, ORDEN_AREAS, getBloque } from '../content/curso.js'
+import { AREAS, ORDEN_AREAS, etapaDeBloque, getBloque } from '../content/curso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
@@ -15,18 +15,20 @@ import { DESLIZAR, RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useDeslizar from '../ui/useDeslizar.js'
 import useRuedaMouse from '../ui/useRuedaMouse.js'
+import useTemblor from '../ui/useTemblor.js'
 
 /** Relieve sólido bajo tarjetas (como el labio de las islas). */
 const RELIEVE = '0 5px 0 var(--color-zinc-200)'
-/** Rutas en «Tus rutas» (pedido del usuario: Acordes, Ritmo, Letras). */
-const RUTAS_CURSO = ['acordes', 'ritmo', 'letras']
+/** Rutas en «Tus rutas» (en el orden de las áreas del curso). */
+const RUTAS_CURSO = ['melodia', 'acordes', 'ritmo', 'letras']
 
 /**
  * CURSO COMPLETO (#/curso; maqueta: https://claude.ai/artifact/7pwg9QVpih3UueHpwWQooH, cambios aprobados:
- * https://claude.ai/artifact/K9mUUjKNofxBuLNV2QsoEZ): las tres rutas a la par, en bloques. De arriba abajo: título y
- * tarjeta de avance (%, barra apilada y una fila por área), «Sigue aquí» (el siguiente paso, del color de su ruta),
- * «Tu camino» (carrusel de bloques con las reglas de swipe de la app) y «Tus rutas». La cabecera fija (casita · barra
- * del curso en tres colores · engrane) vive en App.jsx, como la de los módulos.
+ * https://claude.ai/artifact/K9mUUjKNofxBuLNV2QsoEZ; etapas: https://claude.ai/artifact/JT5CGCcMc457BZF8XTYe8L): las
+ * rutas a la par, en bloques agrupados en ETAPAS. De arriba abajo: título y tarjeta de avance (%, barra apilada y una
+ * fila por área), «Sigue aquí» (el siguiente paso, del color de su ruta), «Tu camino» (escalera de las 5 etapas y
+ * carrusel de bloques con el nombre de la etapa encima) y «Tus rutas». La cabecera fija (casita · barra del curso en
+ * los colores de las áreas · engrane) vive en App.jsx, como la de los módulos.
  * Con `bloque` (#/curso/bloque/2), ese bloque abierto como CAMINO DE ISLAS, igual que una ruta.
  */
 export default function Curso({ bloque = null }) {
@@ -63,6 +65,7 @@ function PaginaBloque({ numero }) {
   const cambio = useCambioModulo(modulo, { isla: carrusel.abierto ? { inicio: false, fin: false } : isla, tira })
   const ruta = { ...rutaDeBloque(curso, numero, () => navegar(rutas.curso())), onVerModulos: carrusel.onTocar, onInsigniaVer: () => navegar(rutas.curso()), carrusel }
   const b = ruta.bloque
+  const etapa = etapaDeBloque(numero)
   return (
     <>
       <motion.main
@@ -77,7 +80,7 @@ function PaginaBloque({ numero }) {
         <div aria-hidden className="h-11 shrink-0" />
         <motion.header variants={itemLista} className="flex flex-col items-center gap-2 text-center">
           <span className="font-dato text-sm font-medium uppercase tracking-wider text-zinc-500">
-            Bloque {numero} · {b.hechas}/{b.total}
+            Etapa {etapa.numero} · Bloque {numero} · {b.hechas}/{b.total}
           </span>
           <h1 data-titulo-modulo className="font-titulo text-4xl font-extrabold leading-tight tracking-tight [text-wrap:balance] sm:text-6xl">
             {b.titulo}
@@ -105,6 +108,8 @@ function Resumen() {
   const curso = useCurso()
   const { estado } = curso
   const porcentaje = Math.round((estado.hechas / estado.total) * 100)
+  // La escalera de etapas mueve el carrusel de bloques (CarruselBloques deja aquí su `irA`).
+  const irBloque = useRef(null)
   return (
     <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-9 px-5 pt-4 pb-14 sm:pt-6" data-pagina-curso>
       {/* Hueco de la cabecera fija (App.jsx). */}
@@ -126,7 +131,8 @@ function Resumen() {
 
       <motion.section variants={itemLista} className="flex flex-col gap-3" aria-label="Tu camino">
         <Titulo>Tu camino</Titulo>
-        <CarruselBloques curso={curso} />
+        <EscaleraEtapas estado={estado} onBloque={(n) => irBloque.current?.(n)} />
+        <CarruselBloques curso={curso} irBloque={irBloque} />
       </motion.section>
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
@@ -245,7 +251,7 @@ export function SigueAqui({ curso }) {
 const lerp = (a, b, t) => a + (b - a) * t
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
 
-function CarruselBloques({ curso }) {
+function CarruselBloques({ curso, irBloque }) {
   const { bloques } = curso.estado
   const n = bloques.length + 1 // + la tarjeta «Próximamente»
   const ref = useRef(null)
@@ -281,6 +287,8 @@ function CarruselBloques({ curso }) {
     base.jump(a + dir + desfase)
     if (Math.abs(desfase) > 0.001) animate(base, a + dir, resorte)
   }
+  // La escalera de etapas pide ir a un bloque (por su número).
+  if (irBloque) irBloque.current = (numero) => irA(bloques.findIndex((b) => b.numero === numero))
   const puede = (dir) => idx.current + dir >= 0 && idx.current + dir < n
   const gesto = useDeslizar({ umbral: X, onPaso: paso, puede })
   useRuedaMouse(ref, { puede, conVertical: false, onPaso: (dir) => irA(idx.current + dir) })
@@ -310,8 +318,25 @@ function CarruselBloques({ curso }) {
     return () => quitar.forEach((q) => q())
   }, [base, gesto.progreso])
 
+  // Letrero de la etapa del bloque del centro (como el de un tramo): cambia al deslizar.
+  const etapa = indice < bloques.length ? curso.estado.etapas.find((e) => e.numero === bloques[indice].etapa) : null
   return (
     <div className="flex flex-col gap-1">
+      <div className="grid h-7 place-items-center overflow-hidden" aria-live="polite">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={etapa ? etapa.numero : 'pronto'}
+            data-letrero-etapa={etapa ? etapa.numero : 'pronto'}
+            className="font-juego text-base uppercase tracking-wide text-zinc-500"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={RESORTE.pulsar}
+          >
+            {etapa ? `Etapa ${etapa.numero} · ${etapa.titulo}` : 'Más bloques'}
+          </motion.span>
+        </AnimatePresence>
+      </div>
       <div
         ref={ref}
         data-carrusel-bloques
@@ -355,6 +380,64 @@ function CarruselBloques({ curso }) {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * ESCALERA DE ETAPAS (fase 4): las 5 etapas del curso, una por fila: número, nombre, «Bloques 1–2 · x de y» y mini
+ * barra. La de ahora con borde oscuro; hecha, ✓ y barra verde; sin bloques aún, punteada con candado (tocarla tiembla).
+ * Tocar una etapa con bloques mueve el carrusel a su primer bloque.
+ */
+function EscaleraEtapas({ estado, onBloque }) {
+  return (
+    <ol className="flex flex-col gap-2" aria-label="Etapas del curso">
+      {estado.etapas.map((e) => (
+        <li key={e.numero}>
+          <FilaEtapa etapa={e} acentoAhora={estado.actual?.acento} onBloque={onBloque} />
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function FilaEtapa({ etapa: e, acentoAhora, onBloque }) {
+  const [ref, temblar] = useTemblor()
+  const pronto = e.estado === 'pronto'
+  const ahora = e.estado === 'ahora'
+  const hecha = e.estado === 'hecha'
+  const acento = hecha ? 'var(--color-bien)' : ahora && acentoAhora ? acentoAhora : ACENTO_CURSO
+  const bloques = e.bloques.length > 1 ? `Bloques ${e.bloques[0]}–${e.bloques[e.bloques.length - 1]}` : `Bloque ${e.bloques[0]}`
+  return (
+    <div ref={ref}>
+      <Pulsable
+        tipo="tarjeta"
+        onClick={pronto ? temblar : () => onBloque(e.bloques[0])}
+        data-etapa={e.numero}
+        data-estado={e.estado}
+        aria-label={pronto ? `Etapa ${e.numero}: ${e.titulo}, próximamente` : `Etapa ${e.numero}: ${e.titulo}, ${e.hechas} de ${e.total} pasos`}
+        className={`flex w-full items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left ${pronto ? 'border-dashed border-zinc-300' : 'bg-white'}`}
+        style={pronto ? undefined : { borderColor: ahora ? 'var(--color-zinc-900)' : 'var(--color-zinc-200)' }}
+      >
+        <span
+          className="grid size-8 shrink-0 place-items-center rounded-full font-dato text-sm font-medium text-blanco"
+          style={{ backgroundColor: pronto ? 'var(--color-zinc-300)' : hecha ? 'var(--color-bien-relleno)' : oscuro(acento) }}
+          aria-hidden
+        >
+          {hecha ? <Check className="size-4" /> : e.numero}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className={`font-titulo text-base font-bold leading-tight ${pronto ? 'text-zinc-500' : ''}`}>{e.titulo}</span>
+          <span className="font-dato text-xs font-medium tabular-nums text-zinc-500">
+            {pronto ? 'Próximamente' : `${bloques} · ${e.hechas} de ${e.total}`}
+          </span>
+        </span>
+        {pronto ? (
+          <Candado className="size-5 text-zinc-400" />
+        ) : (
+          <BarraProgreso valor={e.total ? e.hechas / e.total : 0} color={acento} fondo="bg-zinc-100" alto="h-1.5" className="w-16 shrink-0" aria-hidden />
+        )}
+      </Pulsable>
     </div>
   )
 }
