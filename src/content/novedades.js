@@ -5,6 +5,17 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-15-recuadros',
+    fecha: '15 nov 2026',
+    titulo: 'Notas en recuadros',
+    cosas: [
+      {
+        texto: 'En los pasos con piano, las notas son **recuadros**: tócalos para oírlos en el piano, y si tocas su tecla, **tiemblan**. La nota que buscas sale con **candado** y se abre al encontrarla.',
+        donde: { etiqueta: 'Probar en la 3.1', href: '#/leccion/3.1' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-niveles',
     fecha: '15 nov 2026',
     titulo: 'Niveles más justos',

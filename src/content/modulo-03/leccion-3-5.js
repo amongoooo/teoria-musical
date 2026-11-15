@@ -144,7 +144,6 @@ export default {
     {
       tipo: 'tocar',
       titulo: 'Encuentra el grado',
-      intro: 'La tónica está marcada. Cuenta por su escala mayor hasta el grado que se pide.',
       objetivo: {
         tipo: 'paso',
         rondas: [
