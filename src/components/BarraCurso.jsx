@@ -4,7 +4,7 @@ import { RESORTE } from '../ui/movimiento.js'
 
 /**
  * Barra APILADA del Curso completo (pedido del usuario): lo hecho de cada área, una detrás de otra, en su color
- * (Armonía M4, Ritmo M2, Letras M6 y, al final, el reto de las tres en neutro), sobre el total. Cada tramo crece con
+ * (Melodía, Armonía, Ritmo, Letras y, al final, el reto de todo junto en neutro), sobre el total. Cada tramo crece con
  * un resorte (uno tras otro). `areas` = { acordes: { hechas }, … }, `total` = pasos necesarios.
  */
 export default function BarraCurso({ areas, total, alto = 'h-2.5', fondo = 'bg-zinc-200', retraso = 0.2, className = '', ...props }) {

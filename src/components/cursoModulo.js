@@ -1,16 +1,16 @@
 // El CURSO COMPLETO presentado como módulos (como las rutas en rutaModulo.js): cada BLOQUE se abre como un camino de
 // islas (CaminoLecciones con `ruta`), con la misma cabecera, deslizar entre bloques y cuadritos. La diferencia: cada
-// isla lleva el color de SU área (acordes M4, ritmo M2, letras M6; el reto de las tres en neutro).
+// isla lleva el color de SU área (Melodía, Armonía, Ritmo, Letras; el reto de todo junto en neutro).
 import { AREAS, BLOQUES, estadoCurso, getBloque } from '../content/curso.js'
 import { HERRAMIENTAS } from '../content/rutas.js'
 import { useOpciones } from '../progress/opciones.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
-import { Metronomo, Oreja, Pluma, Trofeo } from '../ui/Iconos.jsx'
+import { Corchea, Metronomo, Oreja, Pluma, Trofeo } from '../ui/Iconos.jsx'
 import { ICONOS_ABRE, PRACTICAS, useMedirMetas } from './rutaModulo.js'
 
 /** Ícono de cada área (el de su práctica). */
-export const ICONO_AREA = { acordes: Oreja, ritmo: Metronomo, letras: Pluma, tres: Trofeo }
+export const ICONO_AREA = { melodia: Corchea, acordes: Oreja, ritmo: Metronomo, letras: Pluma, tres: Trofeo }
 
 /** Color del curso: el neutro (insignias de los bloques). */
 export const ACENTO_CURSO = 'var(--color-neutro)'

@@ -51,7 +51,7 @@ export function datosPrueba(id) {
       clave: `T-${b}`,
       etiqueta: ruta.tramos.length > 1 ? `Tramo ${n + 1} · ${ruta.titulo}` : ruta.titulo,
       titulo: tramo.titulo,
-      acento: tramo.acento,
+      acento: ruta.acento, // el tramo toma el color de la ruta
       volver: rutas.ruta(ruta.id),
       lecciones: tramo.paradas.filter((p) => p.tipo === 'leccion').map((p) => p.id).filter(conPreguntas),
     }

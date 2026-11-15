@@ -1,5 +1,5 @@
 // Prueba el CURSO COMPLETO (content/curso.js, pages/Curso.jsx) a 375 px en claro y oscuro:
-//  - Inicio: el botón «Curso completo» (anillo en tres colores, «x de 40») en lugar de la tarjeta de «Continuar».
+//  - Inicio: el botón «Curso completo» (anillo en los colores de las áreas, «x de 40 · Etapa N de 5») en lugar de la tarjeta de «Continuar».
 //  - #/curso: tarjeta de avance (%, filas por área), «Sigue aquí», carrusel de bloques (abre centrado en el bloque
 //    actual, se desliza con el dedo, puntitos para saltar, «Próximamente» al final) y «Tus rutas»; sin «Cuando quieras».
 //  - #/curso/bloque/2: camino de islas (insignia + 12 pasos + la 3.6 opcional), cada puntito del color de su ruta,
@@ -70,8 +70,8 @@ for (const tema of ['claro', 'oscuro']) {
   await preparar()
   comprobar(r, 'inicio: botón «Curso completo»', (await page.locator('[data-boton-curso]').count()) === 1)
   comprobar(r, 'inicio: sin la tarjeta de «Continuar»', (await page.locator('[data-siguiente]').count()) === 0)
-  comprobar(r, 'inicio: «0 de 40 · 3 rutas»', /0 de 40 · 3 rutas/.test(await page.locator('[data-boton-curso]').textContent()))
-  comprobar(r, 'inicio: anillo con 4 arcos (tres áreas + las tres)', (await page.locator('[data-arco-curso]').count()) === 4)
+  comprobar(r, 'inicio: «0 de 40 · Etapa 1 de 5»', /0 de 40 · Etapa 1 de 5/.test(await page.locator('[data-boton-curso]').textContent()))
+  comprobar(r, 'inicio: anillo con 5 arcos (cuatro áreas + todo junto)', (await page.locator('[data-arco-curso]').count()) === 5)
   await foto('inicio')
 
   // 2. Con 1.1, 2.1, L1 y la 3.1 hecha (fuera de orden).
@@ -82,11 +82,12 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'el botón abre #/curso', page.url().endsWith('#/curso'), page.url())
   comprobar(r, 'curso: 8 %', (await page.locator('[data-porcentaje]').textContent()) === '8%', await page.locator('[data-porcentaje]').textContent())
   comprobar(r, 'curso: barra de la cabecera', (await page.locator('[data-barra-curso]').count()) === 1)
-  comprobar(r, 'curso: tres filas de área', (await page.locator('[data-area]').count()) === 3)
-  comprobar(r, 'curso: Armonía 1/19', /1\/19/.test(await page.locator('[data-area="acordes"]').textContent()))
+  comprobar(r, 'curso: cuatro filas de área', (await page.locator('[data-area]').count()) === 4)
+  comprobar(r, 'curso: Melodía 1/10', /1\/10/.test(await page.locator('[data-area="melodia"]').textContent()))
+  comprobar(r, 'curso: Armonía 0/9', /0\/9/.test(await page.locator('[data-area="acordes"]').textContent()))
   comprobar(r, 'curso: «Sigue aquí» = 1.2', (await page.getAttribute('[data-sigue-aqui]', 'data-sigue-aqui')) === '1.2')
   comprobar(r, 'curso: sin «Cuando quieras»', (await page.getByText('Cuando quieras').count()) === 0)
-  comprobar(r, 'curso: «Tus rutas» con 3 tarjetas', (await page.locator('[data-tarjeta-ruta]').count()) === 3)
+  comprobar(r, 'curso: «Tus rutas» con 4 tarjetas', (await page.locator('[data-tarjeta-ruta]').count()) === 4)
   comprobar(r, 'carrusel: 3 bloques + «Próximamente»', (await page.locator('[data-tarjeta-bloque]').count()) === 4)
   comprobar(r, 'carrusel: abre en el bloque 1', Math.abs(await posicion()) < 0.01, String(await posicion()))
   comprobar(r, 'bloque 1: chip «Ahora»', (await page.getAttribute('[data-tarjeta-bloque="1"]', 'data-estado')) === 'ahora')
@@ -119,6 +120,26 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'carrusel: el puntito lleva a «Próximamente»', Math.abs((await posicion()) - 3) < 0.01, String(await posicion()))
   await foto('pronto')
 
+  // Etapas (fase 4): escalera de 5 (1 ahora, 2 siguiente, 3–5 próximamente); el letrero sigue al bloque del centro y
+  // tocar una etapa mueve el carrusel a su primer bloque.
+  comprobar(r, 'etapas: 5 filas', (await page.locator('[data-etapa]').count()) === 5)
+  const estados = await page.$$eval('[data-etapa]', (els) => els.map((e) => e.dataset.estado).join(','))
+  comprobar(r, 'etapas: ahora, siguiente, pronto×3', estados === 'ahora,siguiente,pronto,pronto,pronto', estados)
+  comprobar(r, 'etapa 1: «Bloques 1–2»', /Bloques 1–2/.test(await page.textContent('[data-etapa="1"]')))
+  comprobar(r, 'letrero en «Próximamente»: «Más bloques»', (await page.getAttribute('[data-letrero-etapa]', 'data-letrero-etapa')) === 'pronto')
+  await page.locator('[data-etapa="2"]').click()
+  await espera(1200)
+  comprobar(r, 'tocar la etapa 2 → bloque 3', Math.abs((await posicion()) - 2) < 0.01, String(await posicion()))
+  comprobar(r, 'letrero: «Etapa 2 · Tu primera canción»', /Etapa 2 · Tu primera canción/.test(await page.textContent('[data-letrero-etapa]')))
+  await page.locator('[data-etapa="4"]').click()
+  await espera(600)
+  comprobar(r, 'etapa sin bloques: no mueve el carrusel', Math.abs((await posicion()) - 2) < 0.01, String(await posicion()))
+  await page.locator('[data-etapa="1"]').click()
+  await espera(1200)
+  comprobar(r, 'letrero: «Etapa 1 · Fundamentos»', /Etapa 1 · Fundamentos/.test(await page.textContent('[data-letrero-etapa]')))
+  await page.locator('[data-etapa="1"]').scrollIntoViewIfNeeded()
+  await foto('etapas')
+
   // 3. Lineal: la 3.1 está hecha pero el bloque 1 no → en el bloque 2 sale bloqueada.
   await page.goto(BASE + '#/curso/bloque/2')
   await espera(2000)
@@ -141,10 +162,10 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'tocar la tarjeta del centro abre el bloque 2', page.url().endsWith('#/curso/bloque/2'), page.url())
   // En el bloque, la flechita ‹ (en lugar de la casita) vuelve al Curso completo.
   comprobar(r, 'bloque: flechita en lugar de la casita', (await page.locator('[data-volver-curso]').count()) === 1 && (await page.getAttribute('[data-volver-curso]', 'href')) === '#/curso' && (await page.locator('a[aria-label="Inicio"]').count()) === 0)
-  comprobar(r, 'bloque 2: 0/12', /0\/12/.test(await page.locator('[data-pagina-bloque] header').textContent()))
-  comprobar(r, 'puntito de la 3.1: color de Armonía', /armonia/.test(await color(1)), await color(1))
+  comprobar(r, 'bloque 2: «Etapa 1 · Bloque 2 · 0/12»', /Etapa 1 · Bloque 2 · 0\/12/.test(await page.locator('[data-pagina-bloque] header').textContent()))
+  comprobar(r, 'puntito de la 3.1: color de Melodía', /melodia/.test(await color(1)), await color(1))
   comprobar(r, 'puntito de la 2.3: gris (bloqueada)', /zinc-300/.test(await color(2)), await color(2))
-  comprobar(r, 'la 3.6 hecha: sin «Opcional» y con ✓', (await page.locator('[data-opcional]').count()) === 0 && /armonia/.test(await color(13)))
+  comprobar(r, 'la 3.6 hecha: sin «Opcional» y con ✓', (await page.locator('[data-opcional]').count()) === 0 && /melodia/.test(await color(13)))
   // La insignia abierta: meta del bloque y «Ver todos los bloques».
   await page.getByRole('button', { name: /^Bloque 2:/ }).first().click()
   await espera(1400)

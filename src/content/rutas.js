@@ -18,8 +18,9 @@
 //
 // TRAMOS (pedido del usuario: «es un proyecto que escalará mucho»; propuesta aprobada:
 // https://claude.ai/artifact/UXqLcj3Ee1MfzLQYuKvkk3): las paradas no van sueltas en la ruta, sino en TRAMOS
-// (paquetes cortos de lecciones y prácticas con su título y el color del área de su ruta). Un tramo se
-// escribe UNA vez y lo reutilizan varias rutas: módulos (el curso) → tramos → rutas (caminos por habilidad).
+// (paquetes cortos de lecciones y prácticas con su título). Un tramo se escribe UNA vez y lo reutilizan varias
+// rutas: módulos (el curso) → tramos → rutas (caminos por habilidad). El tramo NO tiene color propio: toma el de la
+// ruta en la que va (fase 4: «Notas y teclado» sale turquesa en Melodía y violeta en Acordes).
 // Cada ruta lista sus `tramos` en orden; `paradas` se arma sola (cada parada sabe su `tramo`). Con 2 tramos o
 // más, el camino pone un letrero al empezar cada tramo y la barra de puntitos los agrupa.
 // Las metas de un tramo miden el entrenamiento de la `practica` de la ruta: un tramo con metas de oído va en
@@ -37,11 +38,10 @@ export function herramientaAbierta(id, progreso, admin = false) {
   return admin || Boolean(progreso.lecciones[HERRAMIENTAS[id].leccion]?.completada)
 }
 
-/** Los tramos: un paquete de paradas con su título y su color (el del área de la ruta en la que van: dentro de una ruta todo lleva su color). */
+/** Los tramos: un paquete de paradas con su título (el color lo pone la ruta en la que van: dentro de una ruta todo lleva su color). */
 export const TRAMOS = {
   'pulso-groove': {
     titulo: 'Pulso y groove',
-    acento: 'var(--color-ritmo)',
     paradas: [
       { tipo: 'leccion', id: '2.1' },
       { tipo: 'meta', modo: 'seguir', nivel: 2, dificultad: 1, titulo: 'Seguir · nivel 2', texto: 'Toca las negras a tiempo sobre el beat hasta subir al nivel 2.' },
@@ -63,7 +63,6 @@ export const TRAMOS = {
   // Las lecciones L1–L5 viven en la ruta de letras (content/ruta-letras/, registradas en content/index.js).
   'rima-flow': {
     titulo: 'Rima y flow',
-    acento: 'var(--color-letras)',
     paradas: [
       { tipo: 'leccion', id: 'L1', titulo: 'Rima consonante y asonante' },
       { tipo: 'meta', clave: 'letra', titulo: 'Analiza tu primera letra', texto: 'Escribe o pega una letra en tu cuaderno y mira sus rimas en colores.' },
@@ -85,7 +84,6 @@ export const TRAMOS = {
   // La base de casi todo lo que suena: dónde están las notas (la 1.1, frecuencia y altura, no hace falta aquí).
   'notas-teclado': {
     titulo: 'Notas y teclado',
-    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '1.2' },
       { tipo: 'leccion', id: '1.3' },
@@ -94,7 +92,6 @@ export const TRAMOS = {
   },
   'intervalos-escalas': {
     titulo: 'Intervalos y escalas',
-    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '3.1' },
       { tipo: 'leccion', id: '3.2' },
@@ -105,9 +102,34 @@ export const TRAMOS = {
       { tipo: 'abre', herramienta: 'circulo', titulo: 'Círculo de quintas', texto: 'Las tonalidades y sus vecinas, de donde salen los acordes de cada tonalidad.' },
     ],
   },
+  // Ruta de Melodía (fase 4 del rediseño; plan aprobado: https://claude.ai/artifact/JT5CGCcMc457BZF8XTYe8L).
+  'pasos-intervalos': {
+    titulo: 'Pasos e intervalos',
+    paradas: [
+      { tipo: 'leccion', id: '3.1' },
+      { tipo: 'meta', modo: 'absoluto', nivel: 2, dificultad: 1, titulo: 'Oído absoluto · nivel 2', texto: 'Reconoce Do, Sol y Mi sin ninguna referencia: un juego para conocer el color de cada nota.' },
+      { tipo: 'leccion', id: '3.2' },
+      { tipo: 'meta', modo: 'intervalos', nivel: 5, dificultad: 1, titulo: 'Intervalos · nivel 5', texto: 'Llega al nivel en el que se suman la 2.ª mayor y la 6.ª mayor: los pasos de la escala.' },
+    ],
+  },
+  'escalas-melodias': {
+    titulo: 'Escalas y melodías',
+    paradas: [
+      { tipo: 'leccion', id: '3.3' },
+      { tipo: 'leccion', id: '3.4' },
+      { tipo: 'meta', modo: 'absoluto', nivel: 4, dificultad: 1, titulo: 'Oído absoluto · nivel 4', texto: 'Cinco notas: se suman La y Re.' },
+      { tipo: 'leccion', id: '3.6' },
+      { tipo: 'meta', modo: 'intervalos', nivel: 6, dificultad: 2, titulo: 'Intervalos · nivel 6', texto: 'Se suman la 2.ª menor y la 6.ª menor, ahora en dos octavas.' },
+      {
+        tipo: 'reto',
+        id: 'ruta-melodia',
+        titulo: 'Tu melodía pentatónica',
+        texto: 'En FL Studio, escribe 4 compases de melodía con la pentatónica menor de La sobre un acorde de Am: que empiece y termine en La, con al menos un salto de 3.ª y uno de 5.ª.',
+      },
+    ],
+  },
   triadas: {
     titulo: 'Tríadas',
-    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '4.1' },
       { tipo: 'meta', modo: 'acordes', nivel: 2, dificultad: 1, titulo: 'Acordes · nivel 2', texto: '¿Mayor o menor? Supera el nivel del arpegio: llega a oír solo el acorde.' },
@@ -117,7 +139,6 @@ export const TRAMOS = {
   // Termina con la 4.5 «Voicings» y el reto de la ruta.
   'acordes-tonalidad': {
     titulo: 'Acordes en la tonalidad',
-    acento: 'var(--color-armonia)',
     paradas: [
       { tipo: 'leccion', id: '4.3' },
       { tipo: 'leccion', id: '4.4' },
@@ -156,6 +177,17 @@ export const RUTAS = {
     practica: 'letras',
     tramos: ['rima-flow'],
   },
+  melodia: {
+    id: 'melodia',
+    area: 'melodia', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
+    nombre: 'Melodía',
+    titulo: 'Ruta de melodía',
+    acento: 'var(--color-melodia)',
+    descripcion: 'Notas, tonos e intervalos, escalas mayor, menor y pentatónicas, con práctica de Intervalos y Oído absoluto.',
+    modulos: [1, 3],
+    practica: 'oido',
+    tramos: ['notas-teclado', 'pasos-intervalos', 'escalas-melodias'],
+  },
   acordes: {
     id: 'acordes',
     area: 'armonia', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
@@ -174,8 +206,8 @@ for (const ruta of Object.values(RUTAS)) {
   ruta.paradas = ruta.tramos.flatMap((tramo) => TRAMOS[tramo].paradas.map((p) => ({ ...p, tramo })))
 }
 
-/** Orden de las rutas (en Inicio y al deslizar entre rutas). */
-export const ORDEN_RUTAS = ['ritmo', 'letras', 'acordes']
+/** Orden de las rutas (en Inicio y al deslizar entre rutas, en bucle). Melodía justo antes de Acordes: la prepara. */
+export const ORDEN_RUTAS = ['ritmo', 'letras', 'melodia', 'acordes']
 
 export const getRuta = (id) => RUTAS[id]
 
@@ -230,7 +262,7 @@ export function estadoRuta(ruta, { progreso, nivelMax, medirMeta, admin = false 
       id,
       numero: t + 1,
       titulo: TRAMOS[id].titulo,
-      acento: TRAMOS[id].acento,
+      acento: ruta.acento, // el tramo toma el color de la ruta en la que va
       desde: suyas[0].i,
       hasta: suyas[suyas.length - 1].i,
       hechas: suyas.filter((p) => p.hecha).length,

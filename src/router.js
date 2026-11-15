@@ -62,7 +62,7 @@ export const rutas = {
   piano: () => '#/piano',
   /** Una ruta de curso (se ve igual que un módulo). */
   ruta: (id) => `#/ruta/${id}`,
-  /** Curso completo (las tres rutas a la par, en bloques) y un bloque abierto como camino de islas. */
+  /** Curso completo (las rutas a la par, en bloques agrupados en etapas) y un bloque abierto como camino de islas. */
   curso: () => '#/curso',
   bloque: (n) => `#/curso/bloque/${n}`,
   /** Prueba rápida «¿Ya lo sabes?»: 'modulo/3', 'ruta/acordes/triadas' o 'leccion/4.1' (lo que pide; content/pruebas/). */

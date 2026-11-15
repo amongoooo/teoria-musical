@@ -21,7 +21,7 @@ import { datosCasilla } from './CirculoQuintas.jsx'
 import { COLOR_CIRCULO } from '../pages/Circulo.jsx'
 import useTemblor from '../ui/useTemblor.js'
 import { useCurso } from './cursoModulo.js'
-import { AREAS, ORDEN_AREAS } from '../content/curso.js'
+import { AREAS, ETAPAS, ORDEN_AREAS } from '../content/curso.js'
 
 /** Título de sección con aire de videojuego (como en el arranque del entrenador). */
 export function Titulo({ children }) {
@@ -31,7 +31,7 @@ export function Titulo({ children }) {
 /** Relieve sólido bajo bloques y tarjetas (como el labio de las islas). */
 export const RELIEVE = '0 5px 0 var(--color-zinc-200)'
 
-/** Anillo del curso: lo hecho de cada área, una detrás de otra en su color (y el reto de las tres en neutro). */
+/** Anillo del curso: lo hecho de cada área, una detrás de otra en su color (y el reto de todo junto en neutro). */
 export function AnilloCurso({ areas, total, tam = 84, grosor = 10 }) {
   const r = (100 - grosor) / 2
   const c = 2 * Math.PI * r
@@ -66,8 +66,8 @@ export function AnilloCurso({ areas, total, tam = 84, grosor = 10 }) {
 
 /**
  * El botón CURSO COMPLETO (pedido del usuario; en el lugar de la tarjeta de «Continuar»): tarjeta blanca con relieve,
- * el anillo con el % en los tres colores (Armonía M4, Ritmo M2, Letras M6), «11 de 40 · 3 rutas», la leyenda de las
- * tres áreas y ›. Sin franja «Sigue…»: el siguiente paso vive solo dentro del curso.
+ * el anillo con el % en los colores de las áreas (Melodía, Armonía, Ritmo, Letras), «11 de 40 · Etapa 1 de 5», la
+ * leyenda de las áreas y ›. Sin franja «Sigue…»: el siguiente paso vive solo dentro del curso.
  */
 export function BotonCurso() {
   const { estado } = useCurso()
@@ -90,7 +90,7 @@ export function BotonCurso() {
       <span className="flex min-w-0 flex-1 flex-col gap-1.5">
         <span className="whitespace-nowrap font-juego text-xl font-semibold uppercase leading-tight tracking-wide text-zinc-900">Curso completo</span>
         <span className="font-dato text-sm font-medium tabular-nums text-zinc-500">
-          {estado.hechas} de {estado.total} · 3 rutas
+          {estado.hechas} de {estado.total} · Etapa {estado.etapa} de {ETAPAS.length}
         </span>
         <span className="flex flex-wrap gap-x-2.5 gap-y-1">
           {ORDEN_AREAS.map((a) => (

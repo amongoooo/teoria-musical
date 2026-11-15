@@ -34,7 +34,7 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
   const deRuta = useRuta(ruta) // también para módulos (los hooks van siempre); solo se usa con `ruta`
   const deCurso = useCurso() // solo se usa con `curso`
   const chico = useTituloEscondido(curso ? `curso-${bloque}` : (ruta ?? numero))
-  // Curso completo (#/curso y cada bloque): la barra APILADA en los tres colores (lo del curso o lo del bloque).
+  // Curso completo (#/curso y cada bloque): la barra APILADA en los colores de las áreas (lo del curso o lo del bloque).
   if (curso) {
     const b = bloque ? deCurso.estado.bloques.find((x) => x.numero === Number(bloque)) : null
     const areas = b ? Object.fromEntries(Object.keys(deCurso.estado.areas).map((a) => [a, { hechas: b.paradas.filter((p) => !p.opcional && p.hecha && p.area === a).length }])) : deCurso.estado.areas
