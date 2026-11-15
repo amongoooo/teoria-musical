@@ -4,11 +4,12 @@ import BotonSonido from '../BotonSonido.jsx'
 import { CirculoSonoro } from '../CirculoQuintas.jsx'
 import Fichas from './Fichas.jsx'
 import LetraAnalizada from '../LetraAnalizada.jsx'
+import MapaFunciones from '../MapaFunciones.jsx'
 import PianoRoll, { conIds } from '../PianoRoll.jsx'
 import Rich from '../Rich.jsx'
 import Nota from './Nota.jsx'
 
-/** Paso de explicación: párrafos, una letra analizada (colores de rima, esquema, sílabas), Piano Roll de ejemplo, círculo de quintas, fichas que suenan y botones de sonido opcionales, y una nota al pie. */
+/** Paso de explicación: párrafos, una letra analizada (colores de rima, esquema, sílabas), Piano Roll de ejemplo, círculo de quintas, mapa de funciones (T · S · D), fichas que suenan y botones de sonido opcionales, y una nota al pie. */
 export default function PasoTexto({ paso, leccionId }) {
   const [notasRoll] = useState(() => (paso.roll ? conIds(paso.roll.notas) : null))
   const color = acentoLeccion(leccionId)
@@ -27,6 +28,8 @@ export default function PasoTexto({ paso, leccionId }) {
       {paso.roll && <PianoRoll roll={paso.roll} notas={notasRoll} color={color} />}
 
       {paso.circulo && <CirculoSonoro circulo={paso.circulo} color={color} />}
+
+      {paso.funciones && <MapaFunciones funciones={paso.funciones} color={color} />}
 
       {paso.fichas && <Fichas fichas={paso.fichas} />}
 

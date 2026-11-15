@@ -5,6 +5,25 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-15-funciones',
+    fecha: '15 nov 2026',
+    titulo: 'Módulo 5: funciones',
+    cosas: [
+      {
+        texto: 'Empieza el **Módulo 5**: la lección **5.1 «Funciones»**. Cada acorde tiene un trabajo: **tónica** (casa), **subdominante** (salir) y **dominante** (tensión). Con un **mapa de las tres familias** y un ejercicio nuevo: **ordenar los acordes en su caja**.',
+        donde: { etiqueta: 'Abrir la 5.1', href: '#/leccion/5.1' },
+      },
+      {
+        texto: 'En Oído hay un ejercicio nuevo, **Funciones**: suena la casa y luego un acorde, ¿T, S o D? Se abre al terminar la 5.1. Su dificultad son las **tonalidades**; en los demás, la rueda ahora dice qué cambia (**Octavas** o **Margen**).',
+        donde: { etiqueta: 'Abrir Oído', href: '#/oido' },
+      },
+      {
+        texto: 'La **ruta de Acordes** suma un tramo: **Funciones y cadencias**.',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-melodia-etapas',
     fecha: '15 nov 2026',
     titulo: 'Ruta de Melodía y etapas',

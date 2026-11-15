@@ -30,7 +30,7 @@ const comprobar = (r, nombre, ok, detalle = '') => {
   const { RUTAS } = await import('../../src/content/rutas.js')
   const { BLOQUES } = await import('../../src/content/curso.js')
   const ids = [...MODULOS.flatMap((m) => m.lecciones.map((l) => l.id)), ...RUTAS.letras.paradas.filter((p) => p.tipo === 'leccion').map((p) => p.id)].filter(leccionDisponible)
-  comprobar(r, '26 lecciones en el catálogo', ids.length === 26 && ids.every((id) => CATALOGO[id]), ids.filter((id) => !CATALOGO[id]).join(','))
+  comprobar(r, '27 lecciones en el catálogo', ids.length === 27 && ids.every((id) => CATALOGO[id]), ids.filter((id) => !CATALOGO[id]).join(','))
   const malas = Object.entries(CATALOGO).filter(
     ([, c]) => !c.areas.length || !c.areas.every((a) => AREAS_CONOCIMIENTO[a]) || !NIVELES.includes(c.nivel) || !c.requiere.every(leccionDisponible),
   )

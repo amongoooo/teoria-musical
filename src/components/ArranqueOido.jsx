@@ -81,7 +81,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
     juego && { id: 'juego', contenido: (() => { const I = ICONO_JUEGO[juego.id] ?? Circulo8; return <I className="size-5" /> })(), etiqueta: juego.nombre },
     { id: 'nivel', contenido: `${rapido ? '×' : 'Nv '}${rueda.valor}`, etiqueta: `Nivel ${rueda.valor}` },
     { id: 'vidas', contenido: formatoResumenVidas(vidasElegidas), etiqueta: vidasElegidas === VIDAS_INFINITAS ? 'Vidas infinitas' : vidasElegidas === VIDAS_ESCALADA ? 'Escalada' : `${vidasElegidas} vidas` },
-    { id: 'dificultad', contenido: `Dif ${difGuardada}`, etiqueta: `Dificultad ${difGuardada}` },
+    { id: 'dificultad', contenido: `Dif ${difGuardada}`, etiqueta: `${modo.nombreDificultad ?? 'Dificultad'} ${difGuardada}` },
   ].filter(Boolean)
 
   return (
@@ -167,7 +167,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
                 />
               </Medidor>
               {modo.dificultad && (
-                <Medidor id="dificultad" titulo="Dificultad" lado="derecha" encendidos={puntosDif.encendidos} etiquetas={puntosDif.etiquetas} acento={acento}>
+                <Medidor id="dificultad" titulo={modo.nombreDificultad ?? 'Dificultad'} lado="derecha" encendidos={puntosDif.encendidos} etiquetas={puntosDif.etiquetas} acento={acento}>
                   <Rueda
                     id="dificultad"
                     nombre="dificultad"

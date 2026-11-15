@@ -1,11 +1,15 @@
 import { motion } from 'motion/react'
+import { modoAbierto } from '../components/PanelEntrenamiento.jsx'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
+import { useOpciones } from '../progress/opciones.js'
+import { useProgreso } from '../progress/progreso.js'
 import { TIENDAS_PRACTICA, TarjetaHoy } from '../components/Tarjetas.jsx'
 import { rutas } from '../router.js'
 import { labio, oscuro, tinta, claro } from '../ui/color.js'
-import { Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
+import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import useTemblor from '../ui/useTemblor.js'
 
 const MELODIA = 'var(--color-melodia)'
 const ARMONIA = 'var(--color-armonia)'
@@ -27,6 +31,7 @@ const PRACTICAS = [
     modos: [
       { id: 'intervalos', nombre: 'Intervalos', acento: MELODIA, href: rutas.oido('intervalos') },
       { id: 'acordes', nombre: 'Acordes', acento: ARMONIA, href: rutas.oido('acordes') },
+      { id: 'funciones', nombre: 'Funciones', acento: ARMONIA, href: rutas.oido('funciones'), requiere: '5.1' },
       { id: 'absoluto', nombre: 'Oído absoluto', acento: MELODIA, href: rutas.oido('absoluto') },
     ],
   },
@@ -91,6 +96,8 @@ function BloquePractica({ practica: p }) {
   const minutos = Math.floor(tienda.datosDeHoy(estado).segundos / 60)
   const meta = Math.round(META_SEGUNDOS / 60)
   const Icono = p.Icono
+  const progreso = useProgreso()
+  const { admin } = useOpciones()
   return (
     <section className="flex flex-col gap-3 rounded-[1.75rem] border-2 border-zinc-200 bg-white p-3" style={{ boxShadow: '0 5px 0 var(--color-zinc-200)' }}>
       <Pulsable
@@ -114,7 +121,10 @@ function BloquePractica({ practica: p }) {
         </span>
       </Pulsable>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {p.modos.map((m) => (
+        {p.modos.map((m) =>
+          !modoAbierto(m, progreso, admin) ? (
+            <ModoBloqueado key={m.id} modo={m} />
+          ) : (
           <Pulsable
             key={m.id}
             href={m.href}
@@ -125,8 +135,28 @@ function BloquePractica({ practica: p }) {
             <span className="size-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: m.acento }} aria-hidden />
             {m.nombre}
           </Pulsable>
-        ))}
+          ),
+        )}
       </div>
     </section>
+  )
+}
+
+/** Modo con candado (p. ej. Funciones hasta terminar la 5.1): punteado y gris; al tocarlo tiembla. */
+function ModoBloqueado({ modo: m }) {
+  const [ref, temblar] = useTemblor()
+  return (
+    <div ref={ref}>
+      <Pulsable
+        onClick={temblar}
+        data-modo-practica={m.id}
+        data-bloqueado
+        aria-label={`${m.nombre}: se abre al terminar la lección ${m.requiere}`}
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 px-3 text-center text-base font-bold leading-tight text-zinc-500"
+      >
+        <Candado className="size-4 shrink-0" />
+        {m.nombre}
+      </Pulsable>
+    </div>
   )
 }

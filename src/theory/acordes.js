@@ -116,3 +116,45 @@ export function abierto(notas) {
   const [f, t, q] = notas
   return [f, q, Note.transpose(t, '8P')]
 }
+
+// ——— Funciones (lección 5.1): tónica, subdominante y dominante ———
+
+/**
+ * Las tres funciones, en el orden de la frase T → S → D. `jefe` = su acorde principal en mayor; `corto` = la palabra
+ * que la resume (lo que se siente).
+ */
+export const FUNCIONES = {
+  T: { id: 'T', nombre: 'Tónica', corto: 'Casa', jefe: 'I' },
+  S: { id: 'S', nombre: 'Subdominante', corto: 'Salir', jefe: 'IV' },
+  D: { id: 'D', nombre: 'Dominante', corto: 'Tensión', jefe: 'V' },
+}
+export const ORDEN_FUNCIONES = ['T', 'S', 'D']
+
+/** Función de cada grado en mayor (el iii, el más ambiguo, cuenta como tónica). */
+export const FUNCION_GRADO = { I: 'T', vi: 'T', iii: 'T', IV: 'S', ii: 'S', V: 'D', 'vii°': 'D' }
+
+/** Función de un número romano: funcionDe('vi') → 'T'. */
+export const funcionDe = (romano) => FUNCION_GRADO[romano] ?? null
+
+/** Las notas (sin octava) que comparten dos acordes: notasComunes(['A4','C5','E5'], ['C4','E4','G4']) → ['C', 'E']. */
+export function notasComunes(a, b) {
+  const otras = new Set(b.map((n) => Note.chroma(n)))
+  return a.filter((n) => otras.has(Note.chroma(n))).map((n) => Note.pitchClass(n))
+}
+
+/**
+ * Los 7 acordes de una tonalidad mayor repartidos por función, el jefe primero y luego por cercanía (vi antes que iii):
+ * funcionesDe('C4') → { T: [I, vi, iii], S: [IV, ii], D: [V, vii°] }, cada uno con `funcion` y `comunes` (las notas que
+ * comparte con su jefe; vacío en el jefe).
+ */
+export function funcionesDe(tonica) {
+  const acordes = diatonicos(tonica)
+  const de = (rn) => acordes.find((a) => a.romano === rn)
+  const orden = { T: ['I', 'vi', 'iii'], S: ['IV', 'ii'], D: ['V', 'vii°'] }
+  return Object.fromEntries(
+    ORDEN_FUNCIONES.map((f) => {
+      const jefe = de(FUNCIONES[f].jefe)
+      return [f, orden[f].map((rn) => ({ ...de(rn), funcion: f, comunes: rn === jefe.romano ? [] : notasComunes(de(rn).notas, jefe.notas) }))]
+    }),
+  )
+}

@@ -1,10 +1,13 @@
 import { motion } from 'motion/react'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
+import { useOpciones } from '../progress/opciones.js'
+import { useProgreso } from '../progress/progreso.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
-import { Atras, Check } from '../ui/Iconos.jsx'
+import { Atras, Candado, Check } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
+import useTemblor from '../ui/useTemblor.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 
@@ -21,6 +24,8 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
   const semana = tienda.ultimosDias(7, estado)
   const avance = Math.min(1, dia.segundos / META_SEGUNDOS)
   const hayDatos = modos.some((m) => tienda.datosModo(m.id, estado).total > 0)
+  const progreso = useProgreso()
+  const { admin } = useOpciones()
 
   return (
     <motion.main
@@ -108,6 +113,7 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
         <h2 className="font-titulo text-2xl font-bold tracking-tight">Ejercicios</h2>
         {modos.map((m) => {
           const d = tienda.datosModo(m.id, estado)
+          if (!modoAbierto(m, progreso, admin)) return <EjercicioBloqueado key={m.id} modo={m} Icono={Icono} />
           return (
             <Pulsable
               key={m.id}
@@ -158,6 +164,42 @@ export default function PanelEntrenamiento({ titulo, descripcion, sugerencia, no
         </motion.section>
       )}
     </motion.main>
+  )
+}
+
+/**
+ * ¿Está abierto este ejercicio? Un modo con `requiere` (p. ej. Funciones ← 5.1) sale con candado hasta terminar esa
+ * lección (como el Flow con la 2.4); en modo administrador, siempre abierto.
+ */
+export function modoAbierto(modo, progreso, admin = false) {
+  return admin || !modo.requiere || Boolean(progreso?.lecciones?.[modo.requiere]?.completada)
+}
+
+/** Ejercicio con candado: punteado y gris, «Termina la 5.1»; al tocarlo tiembla. */
+function EjercicioBloqueado({ modo, Icono }) {
+  const [ref, temblar] = useTemblor()
+  return (
+    <div ref={ref}>
+      <Pulsable
+        tipo="tarjeta"
+        onClick={temblar}
+        data-ejercicio={modo.id}
+        data-bloqueado
+        aria-label={`${modo.titulo}: se abre al terminar la lección ${modo.requiere}`}
+        className="flex min-h-20 w-full items-center gap-4 rounded-3xl border-2 border-dashed border-zinc-300 px-4 py-4 text-left"
+      >
+        <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-zinc-100 text-zinc-400" aria-hidden>
+          <Icono className="size-7" />
+          <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-zinc-400 text-white">
+            <Candado className="size-3.5" />
+          </span>
+        </span>
+        <span className="flex flex-1 flex-col gap-0.5">
+          <span className="font-titulo text-lg font-bold leading-snug text-zinc-500">{modo.titulo}</span>
+          <span className="text-base font-semibold text-zinc-500">Termina la {modo.requiere}</span>
+        </span>
+      </Pulsable>
+    </div>
   )
 }
 
