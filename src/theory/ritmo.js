@@ -337,6 +337,7 @@ const comun = {
   dificultad: true,
   // La dificultad no son octavas (como en oído) sino el margen: se guarda en `ajustes.dificultad`.
   claveDificultad: 'dificultad',
+  nombreDificultad: 'Margen',
   puntosDificultad,
   // Puntitos del nivel: las casillas del compás (la primera arriba) con un patrón de ejemplo; los tiempos, más oscuros.
   puntosNivel: (nivel) => {

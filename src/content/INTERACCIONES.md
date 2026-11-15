@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7 y 4.1–4.5) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7, 4.1–4.5 y 5.1) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -20,6 +20,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 | **L6** | Resumen final | Lee «Lo que aprendiste» al terminar | `resumen` de la lección | Cierre: 3–5 frases con lo esencial |
 | **L8** | Texto + letra analizada | Lee unos versos con sus rimas en color (y, si la lección ya lo enseñó, el esquema, las sílabas con «‿» o «multi N») | `texto` + `letra` (`texto`, `colores`, `esquema`, `silabas`, `multis`, `leyenda`) | Rima consonante / asonante, esquemas, sinalefa, multis (ruta de letras) |
 | **L7** | Texto + círculo de quintas | Lee y toca tonalidades del círculo: cada una suena y el centro dice su armadura y su relativa | `texto` + `circulo` (`inicial`, `menores`, `armaduras`, `resaltar`) | El círculo de quintas, sostenidos y bemoles, relativas y vecinas (3.5) |
+| **L9** | Texto + mapa de funciones | Lee y toca los acordes de una tonalidad repartidos en tres columnas (T · S · D); las notas que comparten con su jefe van en oro | `texto` + `funciones` (`tonalidad`) | Funciones tonales: casa, salir, tensión (5.1) |
 
 ## B. Oído y comprensión: elegir (puntúan)
 
@@ -35,6 +36,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **O5** | Gancho de oído | 1 ronda de O1 al empezar, antes de explicar nada | `elegir` con 1 ronda | «Empecemos con el oído» (1.1, 1.2, 1.3; en la 3.6, dos melodías sobre el acorde de Do: «¿cuál nunca choca?») |
 | **O6** | Emparejar | Escucha 3–4 sonidos (A, B…) y pone a cada uno su nombre tocando los nombres de abajo; al comprobar, cada fila dice si está bien o cuál era | `emparejar` con `parejas` (`sonido`, `nombre`, `detalle`) | «Empareja sonido y nombre» (intervalos, 3.2) |
 | **O7** | Encontrar en el círculo | Toca una tonalidad del círculo de quintas como respuesta; al comprobar, la correcta en verde y la elegida en oro | `circulo` con `rondas` (`correcta: 'D'` o `'Em'`, `anillo`, `armaduras`, `resaltar`) | «¿Qué mayor tiene 2♯?», «La dominante de Re», «La relativa de Si♭» (3.5) |
+| **O8** | Clasificar | Toca una ficha que suena (con nombre o de oído) y luego su caja; al comprobar, las bien en verde y las mal pasan a su caja en oro | `clasificar` con `cajas` y `rondas` (`fichas`: `nombre`, `detalle`, `sonido`, `caja`) | «Ordena la familia»: los 7 acordes en T, S o D, en Do, en Sol y de oído (5.1) |
 
 ## C. Teclado (puntúan al cumplir el objetivo)
 
@@ -141,7 +143,7 @@ Reglas:
 
 ## Interacciones que faltarán (módulos 3–10)
 
-Ideas para cuando lleguen esos temas; aún **no existen** (Emparejar ya existe: `O6`; construir un acorde: `P8`):
+Ideas para cuando lleguen esos temas; aún **no existen** (Emparejar ya existe: `O6`; construir un acorde: `P8`; clasificar: `O8`):
 
 - **Ordenar** (arrastrar tarjetas: grados de una escala, partes de una canción) — módulos 3, 8.
 - **Dictado**: oír una melodía corta y dibujarla en el Piano Roll (R2 sin guía y sin verla).

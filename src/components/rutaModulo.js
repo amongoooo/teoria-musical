@@ -104,7 +104,9 @@ export function useMedirMetas() {
       meta: p.nivel,
       detalle: `Tu nivel: ${Math.min(n, 10)} · meta: ${p.nivel} · dificultad ${dificultad}`,
       ir: () => {
-        if (practica.claveDif) practica.tienda.guardarAjustes(p.modo, { [practica.claveDif]: dificultad })
+        // Cada modo puede guardar su dificultad en otra clave (Funciones: `dificultad` = tonalidades, no octavas).
+        const claveDif = (MODOS[practicaId] ?? []).find((m) => m.id === p.modo)?.claveDificultad ?? practica.claveDif
+        if (claveDif) practica.tienda.guardarAjustes(p.modo, { [claveDif]: dificultad })
         // Al llegar al nivel que pide, «¡Meta cumplida!» y de vuelta a la ruta o al bloque (progress/metaGuiada.js).
         if (n < p.nivel) guiarMeta(p, practicaId, window.location.hash || rutas.inicio())
         navegar(practica.enlace(p.modo))

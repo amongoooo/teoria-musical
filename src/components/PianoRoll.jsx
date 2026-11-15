@@ -213,6 +213,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
           {/* Rejilla */}
           <div
             ref={areaRef}
+            data-rejilla
             className="relative flex-1"
             style={editable && !soloVelocity ? sinToque : undefined}
             onPointerDown={onDown}

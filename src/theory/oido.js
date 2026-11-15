@@ -5,6 +5,8 @@
 //  - sonido: lo que suena (formato de audio/sonido.js)
 //  - notas: notas para marcar en el piano al responder
 //  - sonidoDe(id): cómo sonaría otra opción (para comparar tras responder)
+import { Note } from 'tonal'
+import { FUNCIONES, FUNCION_GRADO, ORDEN_FUNCIONES, ROMANOS, acordeDeGrado, cifrado } from './acordes.js'
 import { frecuencia, hz, midi, nombre, notaDesdeMidi } from './notas.js'
 
 function azar(lista) {
@@ -76,6 +78,7 @@ export const modoIntervalos = {
     '**8 de las últimas 10**. La dificultad abre más octavas para la nota de abajo.',
   pregunta: '¿Qué intervalo suena?',
   dificultad: true, // rueda de Dificultad (octavas en las que puede sonar)
+  nombreDificultad: 'Octavas',
   direcciones: true, // Subiendo / Bajando / A la vez
   // Puntitos del arranque: los 12 intervalos de la 2.ª menor (abajo) a la octava (arriba); encendidos los del nivel.
   puntosNivel: (nivel) => {
@@ -138,6 +141,7 @@ export const modoAcordes = {
     '(otra nota abajo). Subes al acertar **8 de las últimas 10**. La dificultad abre más octavas.',
   pregunta: '¿Mayor o menor?',
   dificultad: true,
+  nombreDificultad: 'Octavas',
   // Puntitos del arranque: los 3 niveles, encendidos hasta el elegido.
   puntosNivel: (nivel) => ({ encendidos: NIVELES_ACORDES.map((_, i) => i < nivel), etiquetas: NIVELES_ACORDES }),
   niveles: NIVELES_ACORDES.length,
@@ -309,6 +313,7 @@ export const modoAbsoluto = {
     nivel === 1 ? ORDEN_ABSOLUTO.slice(0, 2).map((c) => nombreClase(c)) : [nombreClase(ORDEN_ABSOLUTO[nivel])],
   nombreItem: (id, ajustes) => nombreClase(id, ajustes?.cifrado),
   dificultad: true,
+  nombreDificultad: 'Octavas',
   // Puntitos del arranque: un piano roll de 12 notas (Do abajo) con las del nivel (en Rápido, las 2 + N del principio).
   puntosNivel: (nivel, { rapido } = {}) => {
     const notas = new Set(rapido ? notasInicialesRapido(nivel) : notasDelNivel(nivel))
@@ -337,7 +342,127 @@ export const modoAbsoluto = {
   },
 }
 
-export const MODOS_OIDO = [modoIntervalos, modoAcordes, modoAbsoluto]
+
+// ---------------------------------------------------------------------------
+// Funciones (se abre con la lección 5.1): suena la casa (el I) y luego un acorde: ¿T, S o D?
+// Propuesta aprobada de «las tres perillas» (https://claude.ai/artifact/3L2HVesmNfUkDZ9ww1Z2BF):
+//  - Nivel = qué entra (los grados que pueden sonar).
+//  - Dificultad = cómo suena: aquí, las TONALIDADES (y luego inversiones y registro), no las octavas.
+// ---------------------------------------------------------------------------
+
+/** Lo que se suma en cada nivel (el 5 es la frase: suenan cuatro acordes y se pregunta por el último). */
+const NIVELES_FUNCIONES = [
+  { nombre: 'T o D', grados: ['I', 'V'] },
+  { nombre: '+ Subdominante', grados: ['I', 'IV', 'V'] },
+  { nombre: '+ vi y ii', grados: ['I', 'ii', 'IV', 'V', 'vi'] },
+  { nombre: 'Los 7 acordes', grados: ROMANOS },
+  { nombre: 'Dentro de una frase', grados: ROMANOS, frase: true },
+]
+
+/** Dificultad = tonalidades: 1 Do · 2 Do, Sol y Fa · 3 todas las mayores · 4 + inversiones · 5 + registro amplio. */
+const DIFICULTADES_FUNCIONES = ['Do', 'Do, Sol y Fa', 'Todas las mayores', '+ inversiones', '+ registro amplio']
+const TONICAS = { 1: ['C'], 2: ['C', 'G', 'F'], 3: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'] }
+
+/** La tónica con octava, en el centro del teclado (entre Sol3 y Fa♯4). */
+function tonicaCentrada(pc) {
+  const m = Note.midi(`${pc}4`)
+  return m > 66 ? `${pc}3` : `${pc}4`
+}
+
+/** Las tres notas del acorde puestas lo más cerca posible de `cerca` (media de alturas): voces que se mueven poco. */
+function vocesCerca(notas, cerca) {
+  const base = notas.map((n) => Note.midi(n))
+  let mejor = base
+  for (let inv = 0; inv < 3; inv++) {
+    for (const sube of [-12, 0, 12]) {
+      const m = base.map((x, i) => x + (i < inv ? 12 : 0) + sube).sort((a, b) => a - b)
+      const media = (m[0] + m[1] + m[2]) / 3
+      const mejorMedia = (mejor[0] + mejor[1] + mejor[2]) / 3
+      if (Math.abs(media - cerca) < Math.abs(mejorMedia - cerca)) mejor = m
+    }
+  }
+  return mejor
+}
+
+/**
+ * Un acorde de la tonalidad listo para sonar: las voces de arriba cerca de Mi4 y el bajo abajo (la fundamental; con
+ * `inversion`, la 3.ª o la 5.ª). Devuelve las notas (bajo primero).
+ */
+function vozFuncion(tonica, romano, { inversion = 0, subir = 0 } = {}) {
+  const a = acordeDeGrado(tonica, romano)
+  const arriba = vocesCerca(a.notas, 65 + subir)
+  const bajoPc = Note.chroma(a.notas[inversion])
+  // El bajo: la primera nota con ese nombre por debajo de las voces, entre Mi2 y Sol3.
+  let bajo = arriba[0] - 1
+  while (((bajo % 12) + 12) % 12 !== bajoPc) bajo--
+  if (bajo > 55) bajo -= 12
+  if (bajo < 40) bajo += 12
+  return [bajo, ...arriba].map((m) => Note.fromMidiSharps(m))
+}
+
+const FRASES_ANTES = [['I', 'vi', 'IV'], ['I', 'IV', 'ii'], ['vi', 'IV', 'I'], ['I', 'V', 'vi'], ['I', 'ii', 'V'], ['IV', 'I', 'vi'], ['I', 'iii', 'IV']]
+
+export const modoFunciones = {
+  id: 'funciones',
+  titulo: 'Funciones',
+  acento: 'var(--color-armonia)',
+  descripcion: 'Suena la casa y luego un acorde: ¿tónica, subdominante o dominante?',
+  info:
+    'Cada acorde tiene un **trabajo**: la **tónica** es la casa, la **subdominante** sale de ella y la **dominante** ' +
+    'pide volver. Primero suena el **I** (la casa) y luego otro acorde. Empiezas con T o D y en cada nivel entran más ' +
+    'acordes; en el último, suena una frase y se pregunta por el final. Subes al acertar **8 de las últimas 10**. ' +
+    'La dificultad abre más tonalidades.',
+  pregunta: '¿Qué función tiene?',
+  requiere: '5.1',
+  dificultad: true,
+  claveDificultad: 'dificultad',
+  nombreDificultad: 'Tonalidad',
+  puntosDificultad: (d) => ({ encendidos: DIFICULTADES_FUNCIONES.map((_, i) => i < d), etiquetas: DIFICULTADES_FUNCIONES }),
+  // Puntitos del Nivel: los 7 grados (el I abajo) con los que pueden sonar.
+  puntosNivel: (nivel) => {
+    const n = NIVELES_FUNCIONES[Math.max(1, Math.min(NIVELES_FUNCIONES.length, nivel)) - 1]
+    return { encendidos: ROMANOS.map((rn) => n.grados.includes(rn)), etiquetas: ROMANOS.map((rn) => `${rn} · ${FUNCIONES[FUNCION_GRADO[rn]].nombre}`) }
+  },
+  niveles: NIVELES_FUNCIONES.length,
+  nuevosEnNivel: (nivel) => [NIVELES_FUNCIONES[nivel - 1]?.nombre].filter(Boolean),
+  nombreItem: (id) => FUNCIONES[id]?.nombre ?? id,
+  // Nivel 1: solo T y D; desde el 2, las tres.
+  opciones: (nivel) => (nivel <= 1 ? ['T', 'D'] : ORDEN_FUNCIONES).map((id) => ({ id, label: `${FUNCIONES[id].nombre} · ${id}` })),
+  generar(nivel, ajustes = {}, anterior) {
+    const n = NIVELES_FUNCIONES[Math.max(1, Math.min(NIVELES_FUNCIONES.length, nivel)) - 1]
+    const dif = ajusteAbsoluto(ajustes, 'dificultad')
+    const tonica = tonicaCentrada(azar(TONICAS[Math.min(3, dif)]))
+    const subir = dif >= 5 ? azar([-7, 0, 7]) : 0
+    const inversion = () => (dif >= 4 ? entre(0, 2) : 0)
+    // En los niveles 1–4 sale un grado distinto de la casa la mayoría de las veces (el I solo de vez en cuando).
+    const posibles = n.grados.filter((rn) => rn !== anterior?.romano)
+    const frase = n.frase ? azar(FRASES_ANTES) : ['I']
+    const romano = n.frase
+      ? azar(ROMANOS.filter((rn) => rn !== frase.at(-1)))
+      : Math.random() < 0.15
+        ? 'I'
+        : azar(posibles.filter((rn) => rn !== 'I'))
+    const item = FUNCION_GRADO[romano]
+    const acorde = vozFuncion(tonica, romano, { inversion: inversion(), subir })
+    const antes = frase.map((rn) => vozFuncion(tonica, rn, { inversion: rn === 'I' && !n.frase ? 0 : inversion(), subir }))
+    const sonido = { notas: [...antes, acorde], intervalo: 1.0, duracion: 0.95 }
+    const a = acordeDeGrado(tonica, romano)
+    const nombreTonalidad = `${nombre(tonica, { octava: false })} mayor`
+    // Cómo sonaría la otra función: su acorde principal desde la casa.
+    const sonidoDe = (id) => ({ notas: [...antes, vozFuncion(tonica, FUNCIONES[id].jefe, { subir })], intervalo: 1.0, duracion: 0.95 })
+    const porque = { T: 'descansa: es de la familia de la casa', S: 'sale de casa sin prisa', D: 'pide volver a casa' }[item]
+    return {
+      item,
+      romano,
+      sonido,
+      notas: acorde.slice(1),
+      sonidoDe,
+      explicacion: `${cifrado(a.raiz, a.tipo)} es el **${romano}** de ${nombreTonalidad}: ${FUNCIONES[item].nombre.toLowerCase()}, ${porque}.`,
+    }
+  },
+}
+
+export const MODOS_OIDO = [modoIntervalos, modoAcordes, modoFunciones, modoAbsoluto]
 
 export function getModoOido(id) {
   return MODOS_OIDO.find((m) => m.id === id) ?? null

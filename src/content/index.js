@@ -25,6 +25,7 @@ import leccion42 from './modulo-04/leccion-4-2.js'
 import leccion43 from './modulo-04/leccion-4-3.js'
 import leccion44 from './modulo-04/leccion-4-4.js'
 import leccion45 from './modulo-04/leccion-4-5.js'
+import leccion51 from './modulo-05/leccion-5-1.js'
 // Lecciones que viven DENTRO de una ruta (no en un módulo): llevan `ruta` en lugar de `modulo`.
 import letrasL1 from './ruta-letras/leccion-L1.js'
 import letrasL2 from './ruta-letras/leccion-L2.js'
@@ -54,6 +55,7 @@ const LECCIONES = {
   [leccion43.id]: leccion43,
   [leccion44.id]: leccion44,
   [leccion45.id]: leccion45,
+  [leccion51.id]: leccion51,
   [letrasL1.id]: letrasL1,
   [letrasL2.id]: letrasL2,
   [letrasL3.id]: letrasL3,

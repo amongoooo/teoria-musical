@@ -109,6 +109,7 @@ pendiente; si una lección no tiene banco, no entra en la prueba. Reglas: al niv
 | `siente` | `components/pasos/PasoSiente.jsx` | Tarjeta "¿Qué se siente?": `lados: [{ etiqueta, emociones, ejemplos, sonido }]`, `nota` |
 | `elegir` | `components/exercises/EscuchaElige.jsx` | Escucha y elige / quiz, por rondas |
 | `emparejar` | `components/exercises/Emparejar.jsx` | Emparejar varios sonidos con su nombre a la vez, por rondas |
+| `clasificar` | `components/exercises/Clasificar.jsx` | Mandar fichas que suenan a su caja (funciones T · S · D), por rondas |
 | `circulo` | `components/exercises/EligeEnCirculo.jsx` | Responder tocando una tonalidad del círculo de quintas, por rondas |
 | `tocar` | `components/exercises/TocaEnPiano.jsx` | Responder tocando el piano |
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
@@ -149,6 +150,14 @@ en DM Mono), p. ej. la tabla de intervalos con su canción de referencia:
 
 ```js
 fichas: { nombre: 'Intervalo', dato: 'Semitonos', filas: [{ nombre: '3.ª mayor', texto: '«When the Saints»', dato: 4, sonido: { notas: ['C4', 'E4'] } }] }
+```
+
+`texto` acepta además `funciones`: el **mapa de funciones** (`components/MapaFunciones.jsx`, lección 5.1): los 7 acordes de una
+tonalidad mayor en tres columnas **T · S · D** (casa, salir, tensión); el jefe de cada una (I, IV, V) con borde y, en los
+demás, las notas que comparten con él en oro. Cada acorde suena al tocarlo (los parientes, después de su jefe):
+
+```js
+funciones: { tonalidad: 'C4' }   // ayudas en theory/acordes.js: FUNCIONES, FUNCION_GRADO, funcionDe('vi') → 'T', notasComunes, funcionesDe('C4')
 ```
 
 `texto` acepta además `circulo`: el **círculo de quintas** táctil (`components/CirculoQuintas.jsx`); tocar una tonalidad la elige
@@ -216,6 +225,26 @@ Piano Roll de **solo lectura** (con botón Reproducir) junto al texto o la pregu
 Cada sonido es una fila (A, B…) con su botón de escuchar y un hueco; abajo, los nombres. Tocar un nombre lo lleva al
 hueco activo (el que se acaba de escuchar o el primero vacío); tocar un hueco lleno lo devuelve. Al comprobar, cada
 fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Puntúa una pareja por acierto.
+
+### `clasificar`
+
+```js
+{
+  tipo: 'clasificar',
+  cajas: ['T', 'S', 'D'],                  // ids de FUNCIONES (theory/acordes.js): fondo y letra de cada función
+  rondas: [
+    {
+      pregunta: 'Los 7 acordes de **Do mayor**',
+      fichas: [{ nombre: 'Am', detalle: 'vi', sonido: { … }, caja: 'T' }],   // sin `nombre` = de oído (A, B, C…)
+      explicacion: '…',
+    },
+  ],
+}
+```
+
+Las fichas salen abajo en orden al azar. Tocar una la elige (y suena); tocar una caja, o una ficha que ya está en ella, la
+manda ahí; sin ninguna elegida, tocar una ya puesta la devuelve. Con todas puestas, «Comprobar»: las bien en verde con ✓,
+las mal pasan a su caja en oro con bombilla. Puntúa una ficha por acierto. 7 fichas caben a 375 px.
 
 ### `circulo`
 
