@@ -61,7 +61,7 @@ for (const tema of ['claro', 'oscuro']) {
     await espera(450)
   }
   const irAlPaso = async (id, n) => {
-    await preparar({ lecciones: { [id]: { paso: n } }, ruta: `#/leccion/${id}` })
+    await preparar({ lecciones: { [id]: { paso: n } }, ruta: `#/leccion/${id}/guiada` })
     await page.waitForSelector('[data-boton-accion]')
   }
 
