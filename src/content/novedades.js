@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-16-barras',
+    fecha: '16 nov 2026',
+    titulo: 'Tu avance en barras',
+    cosas: [
+      {
+        texto: 'En **Rutas** y **Módulos** de Aprender, cada cuadrito lleva una **barra de su color** que se llena con lo que llevas.',
+        donde: { etiqueta: 'Ver las rutas', href: '#/aprender/rutas' },
+      },
+      {
+        texto: 'Abrir una isla en las **rutas largas** va más ligero: solo se desenfocan las islas que están en pantalla.',
+        donde: { etiqueta: 'Abrir la ruta de Acordes', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-numeros',
     fecha: '16 nov 2026',
     titulo: 'Módulos numerados por área',

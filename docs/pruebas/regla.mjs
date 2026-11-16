@@ -78,7 +78,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.mouse.wheel(0, -900)
   await espera(1200)
   const numeros = await page.$$eval('[data-regla] [aria-hidden].font-dato', (ns) => ns.map((n) => n.textContent).join(''))
-  comprobar(r, 'números de tramo 1 2 3 4', numeros === '1234', numeros)
+  comprobar(r, 'números de tramo 1 2 3 4 5', numeros === '12345', numeros)
   await foto('regla-cerrada')
 
   // Tocar el puntito a la derecha del centro: abre su isla y la regla lo centra.
@@ -159,7 +159,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'lanzar 1,4 puntitos deprisa → avanza 3 o más', (await n()) - antes >= 3, `${antes} → ${await n()}`)
   comprobar(r, 'tras lanzar, en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
   await arrastrar(-1200) // más allá del último: goma
-  comprobar(r, 'hasta el final → el último (18)', (await n()) === 18, String(await n()))
+  comprobar(r, 'hasta el final → el último (20)', (await n()) === 20, String(await n()))
   await arrastrar(1200)
   comprobar(r, 'hasta el principio → el primero (0)', (await n()) === 0, String(await n()))
   // Tocar sin mover (en el centro): no cambia.
