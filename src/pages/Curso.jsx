@@ -105,16 +105,28 @@ function PaginaBloque({ numero }) {
 // ---------------------------------------------------------------------------
 
 function Resumen() {
+  return (
+    <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-9 px-5 pt-4 pb-14 sm:pt-6" data-pagina-curso>
+      {/* Hueco de la cabecera fija (App.jsx). */}
+      <div aria-hidden className="-mb-3 h-11 shrink-0" />
+      <ContenidoCurso />
+    </motion.main>
+  )
+}
+
+/**
+ * Lo de la página del curso (avance, «Sigue aquí», «Tu camino» y «Tus rutas»), sin su `main`: lo usan #/curso y la
+ * pestaña Aprender › Curso (pedido del usuario: «muestra la página de curso completo directamente»). Cada sección es
+ * un `itemLista`: el `main` de quien lo pone hace la entrada escalonada.
+ */
+export function ContenidoCurso() {
   const curso = useCurso()
   const { estado } = curso
   const porcentaje = Math.round((estado.hechas / estado.total) * 100)
   // La escalera de etapas mueve el carrusel de bloques (CarruselBloques deja aquí su `irA`).
   const irBloque = useRef(null)
   return (
-    <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-9 px-5 pt-4 pb-14 sm:pt-6" data-pagina-curso>
-      {/* Hueco de la cabecera fija (App.jsx). */}
-      <div aria-hidden className="-mb-3 h-11 shrink-0" />
-
+    <>
       <motion.section variants={itemLista} className="flex flex-col gap-4">
         <header className="flex flex-col gap-1">
           <span className="font-juego text-base uppercase tracking-wide text-zinc-500">Todo el curso</span>
@@ -143,7 +155,7 @@ function Resumen() {
           ))}
         </div>
       </motion.section>
-    </motion.main>
+    </>
   )
 }
 

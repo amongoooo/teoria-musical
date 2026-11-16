@@ -10,7 +10,7 @@ export const NOVEDADES = [
     titulo: 'Tres maneras de aprender',
     cosas: [
       {
-        texto: 'Aprender ahora tiene **Curso**, **Rutas** y **Módulos**. Si vas empezando, el **Curso completo** te lleva paso a paso por todo.',
+        texto: 'Aprender ahora tiene **Curso**, **Rutas** y **Módulos**. **Curso** es el Curso completo ahí mismo: si vas empezando, te lleva paso a paso por todo.',
         donde: { etiqueta: 'Abrir Aprender', href: '#/aprender' },
       },
       {

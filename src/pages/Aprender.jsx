@@ -1,6 +1,5 @@
 import { LayoutGroup, motion } from 'motion/react'
-import { useCurso } from '../components/cursoModulo.js'
-import { BotonCurso, CuadritoModulo, CuadritoRuta } from '../components/Tarjetas.jsx'
+import { CuadritoModulo, CuadritoRuta } from '../components/Tarjetas.jsx'
 import { AREAS_CONOCIMIENTO, color } from '../content/areas.js'
 import { MODULOS } from '../content/index.js'
 import { ORDEN_RUTAS, RUTAS } from '../content/rutas.js'
@@ -10,13 +9,13 @@ import { tinta } from '../ui/color.js'
 import { Candado } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import { VIDRIO } from '../ui/vidrio.js'
-import { SigueAqui } from './Curso.jsx'
+import { ContenidoCurso } from './Curso.jsx'
 
 /**
  * Pestaña APRENDER (pedido del usuario, 2026-11-16: tres maneras de estudiar en lugar de Rutas | Biblioteca).
  * Arriba, en vidrio, el selector Curso | Rutas | Módulos (#/aprender, #/aprender/rutas y #/aprender/modulos;
  * el viejo #/aprender/biblioteca abre Módulos):
- *  - CURSO (lo recomendado para empezar): el botón del Curso completo y su «Sigue aquí».
+ *  - CURSO (lo recomendado para empezar): la página del Curso completo tal cual (ContenidoCurso de pages/Curso.jsx).
  *  - RUTAS: una fila por ÁREA con sus rutas (cuadritos); un área sin rutas aún, con candado.
  *  - MÓDULOS: el temario, agrupado por ÁREA con su color (el de Letras, con las L1–L5, va en Letras).
  */
@@ -141,18 +140,12 @@ function RutaProxima() {
 // Curso
 // ---------------------------------------------------------------------------
 
-/** El Curso completo (todas las áreas a la par, en orden) y el paso que sigue. */
+/** El Curso completo (todas las áreas a la par, en orden), directamente: avance, «Sigue aquí», bloques y rutas. */
 function Curso() {
-  const curso = useCurso()
   return (
-    <>
-      <motion.div variants={itemLista}>
-        <BotonCurso />
-      </motion.div>
-      <motion.div variants={itemLista}>
-        <SigueAqui curso={curso} />
-      </motion.div>
-    </>
+    <div className="flex flex-col gap-9" data-pagina-curso>
+      <ContenidoCurso />
+    </div>
   )
 }
 
