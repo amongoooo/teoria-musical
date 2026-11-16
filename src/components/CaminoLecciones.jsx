@@ -1,7 +1,7 @@
 import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { estadoLeccion, getLeccion, leccionAnterior, moduloDisponible, moduloVecino, nombreModulo as nombreDe } from '../content/index.js'
+import { codigoLeccion, estadoLeccion, getLeccion, leccionAnterior, moduloDisponible, moduloVecino, nombreModulo as nombreDe, numeroEnArea, posicionLeccion } from '../content/index.js'
 import { iconoModulo } from './NavegadorModulos.jsx'
 import { NOMBRE_NIVEL, infoLeccion } from '../content/catalogo.js'
 import { HERRAMIENTAS } from '../content/rutas.js'
@@ -202,7 +202,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     const m = modulo.vecino ? modulo.vecino(dir) : moduloVecino(modulo.numero, dir)
     return Boolean(m && (m.esRuta ? m.disponible : moduloDisponible(m)))
   }
-  const nombreModulo = modulo.nombre ?? `Módulo ${modulo.numero}`
+  const nombreModulo = nombreDe(modulo)
   // Color de cada isla: en el Curso completo, el de SU área (cada parada trae su `acento`); si no, el del módulo.
   const acentoIsla = (i) => islasMeta[i]?.parada?.acento ?? modulo.acento
   const [verModulos, setVerModulos] = useState(false)
@@ -962,7 +962,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                       >
                         {(() => {
                           const Icono = iconoModulo(modulo)
-                          return Icono ? <Icono className="size-10" /> : modulo.numero
+                          return Icono ? <Icono className="size-10" /> : numeroEnArea(modulo)
                         })()}
                       </Pulsable>
                     </motion.div>
@@ -1449,7 +1449,7 @@ function BarraPuntitos({ lecciones, estados, abierta, foco, acento, guardar, onI
                           ? `${l.nombre}: ${l.titulo}`
                           : l.esRetos
                             ? 'Retos del módulo'
-                            : `${l.parada ? '' : `Lección ${l.id}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : opcional ? ' (opcional)' : ''}`)
+                            : `${l.parada ? '' : `Lección ${codigoLeccion(l.id)}: `}${l.titulo}${hecha ? ' (completada)' : cerrada ? ' (bloqueada)' : opcional ? ' (opcional)' : ''}`)
                       }
                       aria-current={i === abierta ? 'true' : undefined}
                       className="grid h-full shrink-0 place-items-center"
@@ -1782,11 +1782,11 @@ function Isla({ leccion, estado, esActual, avance, acento, descripcion, onClick,
       <Pulsable
         onClick={onClick}
         aria-expanded={false}
-        aria-label={`${etiqueta ?? `Lección ${leccion.id}: ${leccion.titulo}`}. ${descripcion}`}
+        aria-label={`${etiqueta ?? `Lección ${codigoLeccion(leccion.id)}: ${leccion.titulo}`}. ${descripcion}`}
         className={`grid size-full place-items-center ${cuadrada ? 'rounded-3xl' : 'rounded-full'} font-titulo text-2xl font-bold ${lleno ? 'text-blanco' : estado === 'bloqueada' ? 'text-zinc-500' : estado === 'opcional' ? 'border-[3px] border-dashed border-zinc-300 text-zinc-500' : 'border-2 border-dashed border-zinc-300 text-zinc-500'}`}
         style={{ backgroundColor: fondo, boxShadow: `0 6px 0 ${sombra}` }}
       >
-        {estado === 'bloqueada' ? <Candado className="size-8" grosor={2.2} /> : estado === 'proximamente' ? <span className="text-xl">…</span> : (contenido ?? leccion.id)}
+        {estado === 'bloqueada' ? <Candado className="size-8" grosor={2.2} /> : estado === 'proximamente' ? <span className="text-xl">…</span> : (contenido ?? posicionLeccion(leccion.id))}
       </Pulsable>
       {/* Hecha: el número sigue a la vista y el ✓ verde va en la esquina (verde = hecho en toda la app). Saltada con la
           prueba rápida: el ✓ en contorno. */}
@@ -1869,15 +1869,15 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
   else if (estado === 'bloqueada')
     detalle = (
       <>
-        <Candado className="size-5" /> Termina la {anterior?.id} antes
+        <Candado className="size-5" /> Termina la lección {posicionLeccion(anterior?.id)} antes
       </>
     )
   else detalle = <>Llega pronto</>
 
   return (
-    <div className="flex flex-col items-center" role="group" aria-label={`Lección ${meta.id}: ${meta.titulo}`}>
+    <div className="flex flex-col items-center" role="group" aria-label={`Lección ${codigoLeccion(meta.id)}: ${meta.titulo}`}>
       <Bola acento={acento} estado={estado} avance={lleno ? porcentaje / 100 : null} onClick={onCerrar}>
-        {estado === 'bloqueada' ? <Candado className="size-10" /> : estado === 'proximamente' ? '…' : meta.id}
+        {estado === 'bloqueada' ? <Candado className="size-10" /> : estado === 'proximamente' ? '…' : posicionLeccion(meta.id)}
         {estado === 'hecha' && <MarcaBien className="absolute right-0 top-0 size-9" aro="var(--color-fondo)" saltada={Boolean(p?.saltada)} />}
       </Bola>
       <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
@@ -1899,7 +1899,7 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
         )}
         {estado === 'bloqueada' && anterior && (
           <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => onIr(indice - 1)}>
-            Ir a la {anterior.id}
+            Ir a la lección {posicionLeccion(anterior.id)}
           </BotonGlobo>
         )}
       </Globo>
@@ -1923,7 +1923,7 @@ function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRet
   return (
     <div className="flex flex-col items-center" role="group" aria-label={`${nombreDe(modulo)}: ${modulo.titulo}`}>
       <Bola acento={modulo.acento} estado="nueva" cuadrada onClick={onCerrar}>
-        {Icono ? <Icono className="size-14" /> : modulo.numero}
+        {Icono ? <Icono className="size-14" /> : numeroEnArea(modulo)}
       </Bola>
       <Globo tema="color" acento={modulo.acento} onCerrar={onCerrar}>
         <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{modulo.titulo}</h3>
@@ -1936,7 +1936,7 @@ function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRet
           <BotonYaLoSabes acento={modulo.acento} prueba={prueba} />
         ) : siguiente ? (
           <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(actual + 1)}>
-            Ir a la {siguiente.id}
+            Ir a la lección {posicionLeccion(siguiente.id)}
           </BotonGlobo>
         ) : (
           <BotonGlobo tema="color" acento={modulo.acento} principal data-foco onClick={() => onIr(total - 1)}>
@@ -2161,7 +2161,7 @@ function avanceParada(p, estado, progreso) {
 
 /** Lo de dentro de la isla: el número de la lección, el ícono de la práctica o el de lo que se abre. */
 function contenidoParada(p, ruta, clase) {
-  if (p.tipo === 'leccion') return p.id
+  if (p.tipo === 'leccion') return codigoLeccion(p.id)
   if (p.tipo === 'reto') return <Trofeo className={clase} />
   const Icono = p.Icono || (p.tipo === 'abre' && ruta.iconosAbre?.[p.herramienta]) || ruta.Icono
   return Icono ? <Icono className={clase} /> : null
@@ -2174,7 +2174,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   const opcional = estado === 'opcional'
   const tema = estado === 'bloqueada' ? 'gris' : opcional ? 'blanco' : reto && !p.hecha ? 'borde' : 'color'
   const enColor = tema === 'color'
-  const tipo = (p.opcional ? 'Opcional · ' : '') + { leccion: `Lección ${p.id}`, meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL Studio' }[p.tipo]
+  const tipo = (p.opcional ? 'Opcional · ' : '') + { leccion: `Lección ${codigoLeccion(p.id)}`, meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL Studio' }[p.tipo]
   // Lo que va antes: la isla actual de este camino o, en el Curso completo, el siguiente paso si está en otro bloque.
   const antes = actual ? { titulo: actual.titulo, ir: () => onIr(actual.parada.i) } : (ruta.siguienteFuera ?? null)
   const leccion = p.tipo === 'leccion' ? getLeccion(p.id) : null
@@ -2201,7 +2201,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   else if (p.tipo === 'leccion')
     detalle = estado === 'empezada' ? <>Paso {lp.paso + 1} de {pasos} · {porcentaje} %</> : <>~{leccion?.minutos} min · {pasos} pasos</>
   else if (p.tipo === 'meta') detalle = <span className="font-dato">{ruta.meta(p).detalle}</span>
-  if (p.tipo === 'abre' && !p.hecha) texto = `${p.texto} Se abre al terminar la lección ${HERRAMIENTAS[p.herramienta].leccion}.`
+  if (p.tipo === 'abre' && !p.hecha) texto = `${p.texto} Se abre al terminar la lección ${codigoLeccion(HERRAMIENTAS[p.herramienta].leccion)}.`
 
   let boton = null
   if (estado === 'bloqueada') {
@@ -2307,7 +2307,7 @@ function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
                   </span>
                   <span className="flex flex-1 flex-col">
                     <span className="text-base font-semibold leading-snug text-zinc-900">{r.titulo}</span>
-                    <span className="text-sm text-zinc-500">{r.hecho ? 'Hecho' : hecha ? 'Pendiente' : `Termina la lección ${r.clave} para llegar`}</span>
+                    <span className="text-sm text-zinc-500">{r.hecho ? 'Hecho' : hecha ? 'Pendiente' : `Termina la lección ${posicionLeccion(r.clave)} para llegar`}</span>
                   </span>
                   {hecha && (
                     <span aria-hidden className="text-2xl text-zinc-400">

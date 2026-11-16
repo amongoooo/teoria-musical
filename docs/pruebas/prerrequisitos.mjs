@@ -89,7 +89,7 @@ for (const tema of ['claro', 'oscuro']) {
   await ir('#/leccion/4.1')
   comprobar(r, '4.1: aviso', (await aviso()) === 1)
   comprobar(r, '4.1: pide la 3.2', (await filas()) === '3.2', await filas())
-  comprobar(r, '4.1: «Ir a la 3.2»', (await page.locator('[data-ir-requisito]').textContent()).trim() === 'Ir a la 3.2')
+  comprobar(r, '4.1: «Ir a la 3.2»', (await page.locator('[data-ir-requisito]').textContent()).trim() === 'Ir a la M2.2')
   comprobar(r, '4.1: «¿Ya lo sabes?»', (await page.locator('[data-ya-lo-sabes]').count()) === 1)
   await foto('1-aviso-4.1')
   await page.locator('[data-seguir]').click()
@@ -133,7 +133,7 @@ for (const tema of ['claro', 'oscuro']) {
     await espera(700)
   }
   comprobar(r, 'resultado', (await page.locator('[data-resultado-prueba]').count()) === 1)
-  const volver = page.getByText('Ir a la 4.3', { exact: true })
+  const volver = page.getByText('Ir a la A1.3', { exact: true })
   comprobar(r, 'resultado: «Ir a la 4.3»', (await volver.count()) === 1)
   await foto('4-resultado')
   await volver.click()

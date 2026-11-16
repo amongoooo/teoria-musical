@@ -7,6 +7,7 @@ import { Cuadrito } from '../components/NavegadorModulos.jsx'
 import { ACENTO_CURSO, ICONO_AREA, accionPaso, moduloDeBloque, rutaDeBloque, useCurso } from '../components/cursoModulo.js'
 import { useCarruselModulos, useModulosYPracticas, useRuta } from '../components/rutaModulo.js'
 import { AREAS, ORDEN_AREAS, etapaDeBloque, getBloque } from '../content/curso.js'
+import { codigoLeccion } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
@@ -238,7 +239,7 @@ export function SigueAqui({ curso }) {
       <span className="font-juego text-base uppercase tracking-wide text-blanco/85">Sigue aquí · Bloque {p.bloque}</span>
       <span className="flex items-center gap-4">
         <span className={`grid size-14 shrink-0 place-items-center bg-blanco/15 font-titulo text-xl font-bold ${p.tipo === 'abre' ? 'rounded-2xl' : 'rounded-full'}`} aria-hidden>
-          {p.tipo === 'leccion' ? p.id : p.tipo === 'reto' ? <Trofeo className="size-7" /> : Icono && <Icono className="size-7" />}
+          {p.tipo === 'leccion' ? codigoLeccion(p.id) : p.tipo === 'reto' ? <Trofeo className="size-7" /> : Icono && <Icono className="size-7" />}
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="font-juego text-base uppercase tracking-wide text-blanco/85">{tipoPaso(p)}</span>
@@ -538,7 +539,7 @@ function TarjetaRuta({ id }) {
         <span className="truncate text-sm text-zinc-500">
           {sigue ? (
             <>
-              Sigue: <b className="font-semibold text-zinc-700">{sigue.tipo === 'leccion' ? `${sigue.id} ${sigue.titulo}` : sigue.titulo}</b>
+              Sigue: <b className="font-semibold text-zinc-700">{sigue.tipo === 'leccion' ? `${codigoLeccion(sigue.id)} ${sigue.titulo}` : sigue.titulo}</b>
             </>
           ) : (
             '¡Ruta completa!'

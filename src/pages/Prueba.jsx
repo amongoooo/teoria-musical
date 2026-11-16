@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, releaseAll, toneStop } from '../audio/engine.js'
 import EligeEnCirculo from '../components/exercises/EligeEnCirculo.jsx'
 import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
-import { getLeccion } from '../content/index.js'
+import { codigoLeccion, getLeccion } from '../content/index.js'
 import { armarPreguntas, datosPrueba } from '../content/pruebas/index.js'
 import { getProgreso, saltarLecciones } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
@@ -117,7 +117,7 @@ function Visor({ prueba }) {
         {/* De qué lección es (en vez del título del paso): el número en el color de la prueba. */}
         <p className="-mb-1 inline-flex items-center gap-2 self-start rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700">
           <span className="font-dato" style={{ color: tinta(prueba.acento) }}>
-            {pregunta.leccion}
+            {codigoLeccion(pregunta.leccion)}
           </span>
           {leccion?.titulo}
         </p>
@@ -146,7 +146,7 @@ function Resultado({ prueba, preguntas, resultados }) {
   const [elegidas, setElegidas] = useState(() => new Set(preguntas.filter((_, i) => resultados[i]).map((p) => p.leccion)))
   const n = elegidas.size
   const [tipo, idVolver] = prueba.id.split('/')
-  const volver = { modulo: 'Ir al módulo', leccion: `Ir a la ${idVolver}` }[tipo] ?? 'Ir a la ruta'
+  const volver = { modulo: 'Ir al módulo', leccion: `Ir a la ${codigoLeccion(idVolver)}` }[tipo] ?? 'Ir a la ruta'
 
   const cambiar = (id) =>
     setElegidas((s) => {
@@ -209,7 +209,7 @@ function Resultado({ prueba, preguntas, resultados }) {
                     <Bombilla className="size-6 text-fijate-tinta" />
                   )}
                 </span>
-                <span className="w-9 shrink-0 font-dato text-sm font-medium text-zinc-500">{p.leccion}</span>
+                <span className="w-11 shrink-0 font-dato text-sm font-medium text-zinc-500">{codigoLeccion(p.leccion)}</span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-base font-semibold leading-snug text-zinc-900">{getLeccion(p.leccion)?.titulo}</span>
                   <span className={`text-sm font-medium ${elegida ? 'text-bien-tinta' : bien ? 'text-zinc-500' : 'text-fijate-tinta'}`}>

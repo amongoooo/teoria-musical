@@ -153,7 +153,7 @@ export default {
       tipo: 'texto',
       titulo: 'En el grave, solo la fundamental',
       parrafos: [
-        'En la 4.2 oíste que muy abajo las terceras **se embarran**: las notas graves vibran lento y dos a menos de una 5.ª se mezclan.',
+        'En la A1.2 oíste que muy abajo las terceras **se embarran**: las notas graves vibran lento y dos a menos de una 5.ª se mezclan.',
         'El truco de los productores: abajo, **solo la fundamental**; el acorde, arriba. Las mismas tres notas, pero se oye claro.',
       ],
       sonidos: [bloque(cerrado('C2'), 'Todo en el grave'), bloque(['C2', ...cerrado('C4')], 'Fundamental abajo, acorde arriba')],
@@ -196,7 +196,7 @@ export default {
       tipo: 'texto',
       titulo: 'Voicings que se mueven poco',
       parrafos: [
-        'Junta todo: el **bajo** abajo, en la fundamental, y arriba los acordes con el voicing **más cercano** al anterior. Es lo de la 4.4, pero ahora el bajo va aparte.',
+        'Junta todo: el **bajo** abajo, en la fundamental, y arriba los acordes con el voicing **más cercano** al anterior. Es lo de la A1.4, pero ahora el bajo va aparte.',
         `I–V–vi–IV en Do: arriba ${['Do · Mi · Sol', 'Si · Re · Sol', 'Do · Mi · La', 'Do · Fa · La'].join(' → ')}. Cada vez cambian **una o dos notas**, y poquito.`,
       ],
       roll: {

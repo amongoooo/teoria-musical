@@ -5,7 +5,7 @@
 // a la ruta de al lado.
 import { useMotionValue } from 'motion/react'
 import { useRef, useState } from 'react'
-import { getLeccion, getModulo, nombreModulo } from '../content/index.js'
+import { getLeccion, getModulo, nombreModulo, numeroEnArea } from '../content/index.js'
 import { iconoModulo } from './NavegadorModulos.jsx'
 import { HERRAMIENTAS, ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '../content/rutas.js'
 import { MODOS_OIDO } from '../theory/oido.js'
@@ -180,7 +180,7 @@ export function useModulosYPracticas(paradas, practicaDe, practicaRuta = null) {
   const modulos = numeros.map(getModulo).filter(Boolean).map((m) => {
     const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
     const total = m.lecciones.length
-    return { id: `modulo-${m.numero}`, titulo: m.titulo, etiqueta: nombreModulo(m), acento: m.acento, numero: m.numero, Icono: iconoModulo(m), dato: `${hechas}/${total}`, avance: total ? hechas / total : 0, hecho: total > 0 && hechas === total, href: rutas.modulo(m.numero) }
+    return { id: `modulo-${m.numero}`, titulo: m.titulo, etiqueta: nombreModulo(m), acento: m.acento, numero: numeroEnArea(m), Icono: iconoModulo(m), dato: `${hechas}/${total}`, avance: total ? hechas / total : 0, hecho: total > 0 && hechas === total, href: rutas.modulo(m.numero) }
   })
 
   const claves = []

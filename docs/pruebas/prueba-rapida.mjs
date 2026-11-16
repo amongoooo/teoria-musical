@@ -105,7 +105,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
   comprobar(r, 'el cuadrito entra directo al módulo', page.url().includes('#/modulo/3') && (await hoja().count()) === 0, page.url())
-  const globoIns = await (await insignia('Módulo 3')).textContent()
+  const globoIns = await (await insignia('Melodía 2')).textContent()
   comprobar(r, 'insignia del módulo 3', globoIns.includes('Intervalos y escalas') && globoIns.includes('¿Ya lo sabes? · 7 preguntas') && !globoIns.includes('Ir a la'), globoIns)
   await foto('1-insignia-modulo')
   await page.locator('[data-ya-lo-sabes]:visible').first().click()
@@ -170,9 +170,9 @@ for (const tema of ['claro', 'oscuro']) {
   await foto('5-camino')
 
   // Globo de una saltada: «Saltada con la prueba» y «Hacerla».
-  await page.locator('button[aria-label^="Lección 3.1"]').first().click()
+  await page.locator('button[aria-label^="Lección M2.1"]').first().click()
   await espera(900)
-  const globo = await page.locator('[role="group"][aria-label^="Lección 3.1"]').textContent()
+  const globo = await page.locator('[role="group"][aria-label^="Lección M2.1"]').textContent()
   comprobar(r, 'globo de la saltada', globo.includes('Saltada con la prueba') && globo.includes('Hacerla'), globo)
   await foto('6-globo-saltada')
 
@@ -184,7 +184,7 @@ for (const tema of ['claro', 'oscuro']) {
   await espera(800)
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
-  const globoIns2 = await (await insignia('Módulo 3')).textContent()
+  const globoIns2 = await (await insignia('Melodía 2')).textContent()
   comprobar(r, 'insignia otra vez', globoIns2.includes('· 3 preguntas') && globoIns2.includes('Última vez: 5 de 7'), globoIns2)
 
   // ——— Un módulo completo: entra directo y su insignia ya no ofrece la prueba ———
@@ -194,7 +194,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.locator('[data-cuadrito-modulo="1"]').click()
   await espera(1500)
   comprobar(r, 'módulo completo entra directo', page.url().includes('#/modulo/1') && (await hoja().count()) === 0, page.url())
-  const globoIns3 = await (await insignia('Módulo 1')).textContent()
+  const globoIns3 = await (await insignia('Melodía 1')).textContent()
   comprobar(r, 'módulo completo: «Ver retos», sin prueba', globoIns3.includes('Ver retos') && !globoIns3.includes('¿Ya lo sabes?'), globoIns3)
 
   // ——— Ruta de acordes: entra directo; la insignia ofrece la prueba del tramo en el que vas ———
@@ -225,7 +225,7 @@ for (const tema of ['claro', 'oscuro']) {
   // ——— Pestaña de módulos dentro de un módulo ———
   await page.goto(BASE + '#/modulo/4')
   await espera(1000)
-  await page.locator('button[aria-label^="Módulo 4"]').first().click()
+  await page.locator('button[aria-label^="Armonía 1"]').first().click()
   await espera(900)
   await page.getByText('Ver todos los módulos').click()
   await espera(900)

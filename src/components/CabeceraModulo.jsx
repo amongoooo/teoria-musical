@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { getLeccion, getModulo } from '../content/index.js'
+import { getLeccion, getModulo, nombreModulo } from '../content/index.js'
 import { useRuta } from './rutaModulo.js'
 import { useProgreso } from '../progress/progreso.js'
 import { RESORTE } from '../ui/movimiento.js'
@@ -73,7 +73,7 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
     <Fila
       chico={chico}
       titulo={modulo.titulo}
-      barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `${modulo.nombre ?? `Módulo ${modulo.numero}`}: ${hechas} de ${total} lecciones completadas`} />}
+      barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `${nombreModulo(modulo)}: ${hechas} de ${total} lecciones completadas`} />}
     />
   )
 }

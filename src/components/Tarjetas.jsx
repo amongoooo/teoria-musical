@@ -3,7 +3,7 @@
 // las tarjetitas de las herramientas (Círculo, Piano libre, Flow).
 import { motion } from 'motion/react'
 import { Cuadrito } from './NavegadorModulos.jsx'
-import { moduloDisponible } from '../content/index.js'
+import { codigoLeccion, moduloDisponible, nombreModulo } from '../content/index.js'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
 import { tiendaOido } from '../progress/oido.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
@@ -132,7 +132,7 @@ export function CuadritoModulo({ modulo: m, progreso }) {
   )
   if (!disponible) {
     return (
-      <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`${m.nombre ?? `Módulo ${m.numero}`}: ${m.titulo}. Próximamente`}>
+      <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`${nombreModulo(m)}: ${m.titulo}. Próximamente`}>
         {contenido}
       </div>
     )
@@ -143,7 +143,7 @@ export function CuadritoModulo({ modulo: m, progreso }) {
       href={rutas.modulo(m.numero)}
       tipo="tarjeta"
       data-cuadrito-modulo={m.numero}
-      aria-label={`${m.nombre ?? `Módulo ${m.numero}`}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
+      aria-label={`${nombreModulo(m)}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
       className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
     >
       {contenido}
@@ -152,7 +152,7 @@ export function CuadritoModulo({ modulo: m, progreso }) {
 }
 
 /** Lección del curso que abre el explorador del círculo (pedido del usuario: «se desbloquea al desbloquear la rueda en el curso»). */
-const LECCION_CIRCULO = HERRAMIENTAS.circulo.leccion
+const LECCION_CIRCULO = codigoLeccion(HERRAMIENTAS.circulo.leccion)
 
 /**
  * Entrada al explorador del círculo de quintas: tarjetita con un mini círculo de nodos (la última tonalidad vista,
@@ -370,7 +370,7 @@ export function TarjetaHoy({ href = null }) {
 }
 
 /** Lección que abre el Flow (la pestaña Flow de cada letra del cuaderno). */
-const LECCION_FLOW = HERRAMIENTAS.flow.leccion
+const LECCION_FLOW = codigoLeccion(HERRAMIENTAS.flow.leccion)
 
 /**
  * Tarjetita del FLOW (Herramientas): ocho casillas del compás con las tónicas marcadas. Hasta terminar la 2.4, punteada

@@ -1,11 +1,11 @@
 import { animate, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { MODULOS, moduloDisponible, nombreModulo } from '../content/index.js'
+import { MODULOS_POR_AREA as MODULOS, moduloDisponible, nombreModulo, numeroEnArea } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
-import { MarcaBien, Pluma, Saltar } from '../ui/Iconos.jsx'
+import { MarcaBien, Saltar } from '../ui/Iconos.jsx'
 import { pruebaModulo } from '../content/pruebas/index.js'
 import { pendientesModulo } from './yaLoSabes.js'
 import Hoja from '../ui/Hoja.jsx'
@@ -17,12 +17,8 @@ import { VIDRIO } from '../ui/vidrio.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
 
-/** Íconos de los módulos que llevan uno en lugar de su número (`icono` en content/modulos.js). */
-export const ICONOS_MODULO = { pluma: Pluma }
-/** El ícono de un módulo (o del módulo de una ruta: `Icono`), o null si se muestra su número. */
-export const iconoModulo = (m) => m?.Icono ?? ICONOS_MODULO[m?.icono] ?? null
-/** Cuántos módulos van numerados (1–10; el de Letras va aparte, con nombre). */
-const NUMERADOS = MODULOS.filter((m) => !m.nombre).length
+/** El ícono de una ruta presentada como módulo (`Icono`), o null: los módulos muestran su número dentro de su área. */
+export const iconoModulo = (m) => m?.Icono ?? null
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
 
 /**
@@ -126,7 +122,7 @@ function Carrusel({ actual, onCerrar }) {
           ‹
         </Pulsable>
         <span className="text-base font-semibold tabular-nums text-zinc-600" aria-live="polite">
-          {m.nombre ?? `Módulo ${m.numero} de ${NUMERADOS}`}
+          {nombreModulo(m)}
         </span>
         <Pulsable onClick={() => irA(indice + 1)} disabled={indice === n - 1} aria-label="Módulo siguiente" className={`grid size-11 place-items-center rounded-full text-2xl text-zinc-700 disabled:opacity-30 ${VIDRIO}`}>
           ›
@@ -164,7 +160,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
           </Pulsable>
         ) : disponible ? (
           <Pulsable onClick={() => navegar(rutas.modulo(m.numero))} className="min-h-12 rounded-2xl bg-zinc-900 text-lg font-semibold text-white">
-            {m.nombre ? 'Ir al módulo' : `Ir al módulo ${m.numero}`}
+            Ir a {nombreModulo(m)}
           </Pulsable>
         ) : (
           <span className="grid min-h-12 place-items-center rounded-2xl border-2 border-dashed border-zinc-300 text-lg font-semibold text-zinc-500">Próximamente</span>
@@ -187,7 +183,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
 
 /**
  * El cuadrito de un módulo: su número sobre su color, con «labio»; punteado si aún no está.
- * Los módulos se reconocen por su color y su número (el de Letras, por su pluma: `icono`). `hecho` = ✓ verde en la esquina.
+ * Los módulos se reconocen por su color (su área) y su número dentro del área. `hecho` = ✓ verde en la esquina.
  */
 export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, className = '' }) {
   return (
@@ -204,7 +200,7 @@ export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, c
     >
       {(() => {
         const Icono = iconoModulo(modulo)
-        return Icono ? <Icono style={{ width: tam * 0.5, height: tam * 0.5 }} /> : modulo.numero
+        return Icono ? <Icono style={{ width: tam * 0.5, height: tam * 0.5 }} /> : numeroEnArea(modulo)
       })()}
       {hecho && <MarcaBien className="absolute -right-1.5 -top-1.5 size-7" aro="var(--color-fondo)" />}
     </span>

@@ -16,7 +16,7 @@ import FlowEjercicio from '../components/exercises/FlowEjercicio.jsx'
 import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
 import { etiquetaPaso } from '../content/actividad.js'
-import { acentoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
+import { acentoLeccion, codigoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/index.js'
 import { RUTAS } from '../content/rutas.js'
 import { getOpciones, useOpciones } from '../progress/opciones.js'
@@ -370,7 +370,7 @@ function AntesTeConviene({ leccion, faltan, acento, onSalir, onSeguir }) {
           className="-mb-2 inline-flex items-center gap-2 self-start rounded-full bg-zinc-100 py-1 pr-3 pl-2.5 text-sm font-bold text-zinc-700"
         >
           <span className="font-dato" style={{ color: tinta(acento ?? 'var(--color-zinc-900)') }}>
-            {leccion.id}
+            {codigoLeccion(leccion.id)}
           </span>
           {leccion.titulo}
         </motion.p>
@@ -395,7 +395,7 @@ function AntesTeConviene({ leccion, faltan, acento, onSalir, onSeguir }) {
                     className="grid size-12 shrink-0 place-items-center rounded-2xl font-dato text-base font-medium"
                     style={{ backgroundColor: claro(a), color: tinta(a) }}
                   >
-                    {id}
+                    {codigoLeccion(id)}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-lg font-semibold leading-snug text-zinc-900">{l?.titulo}</span>
@@ -419,7 +419,7 @@ function AntesTeConviene({ leccion, faltan, acento, onSalir, onSeguir }) {
             className="grid min-h-14 place-items-center rounded-2xl px-6 text-center text-lg font-semibold text-blanco"
             style={{ backgroundColor: oscuro(acentoPrimera) }}
           >
-            Ir a la {primera}
+            Ir a la {codigoLeccion(primera)}
           </Pulsable>
           {conPrueba && (
             <Pulsable
@@ -431,7 +431,7 @@ function AntesTeConviene({ leccion, faltan, acento, onSalir, onSeguir }) {
             </Pulsable>
           )}
           <Pulsable onClick={onSeguir} data-seguir className="min-h-12 rounded-2xl px-6 text-base font-medium text-zinc-500">
-            Seguir con la {leccion.id}
+            Seguir con la {codigoLeccion(leccion.id)}
           </Pulsable>
         </motion.div>
       </motion.main>
@@ -1079,7 +1079,7 @@ function Final({ leccion, modulo, enRuta, puntos, repaso = null, onRepetir }) {
         </motion.div>
         <h1 className="font-titulo text-3xl font-bold tracking-tight sm:text-4xl">¡Lección completada!</h1>
         <p className="text-lg text-zinc-500">
-          {leccion.id} · {leccion.titulo}
+          {codigoLeccion(leccion.id)} · {leccion.titulo}
         </p>
         {(suma.total > 0 || repaso) && (
           <div className="flex flex-wrap justify-center gap-2">
@@ -1125,7 +1125,7 @@ function Final({ leccion, modulo, enRuta, puntos, repaso = null, onRepetir }) {
         ) : (
           proxima && (
             <p className="text-center text-base text-zinc-500">
-              La lección {proxima.id} ({proxima.titulo}) llega pronto.
+              La lección {codigoLeccion(proxima.id)} ({proxima.titulo}) llega pronto.
             </p>
           )
         )}

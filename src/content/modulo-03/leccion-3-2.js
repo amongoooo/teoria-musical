@@ -77,7 +77,7 @@ export default {
     'Por semitonos: **2.ª m** 1 · **2.ª M** 2 · **3.ª m** 3 · **3.ª M** 4 · **4.ª J** 5 · **tritono** 6 · **5.ª J** 7 · **6.ª m** 8 · **6.ª M** 9 · **7.ª m** 10 · **7.ª M** 11 · **octava** 12.',
     'Las **canciones de referencia** son el atajo para reconocerlos: «Cumpleaños feliz» (2.ª M), «Estrellita» (5.ª J), «Somewhere Over the Rainbow» (octava)…',
     '**Consonantes** (3.ª, 5.ª, octava): reposan. **Disonantes** (2.ª m, tritono, 7.ª M): tensión que pide moverse.',
-    'La **3.ª** decide el color: **menor** = melancólica, **mayor** = luminosa. Es la base de los acordes del módulo 4.',
+    'La **3.ª** decide el color: **menor** = melancólica, **mayor** = luminosa. Es la base de los acordes de Armonía 1.',
   ],
   pasos: [
     // 0 · O5 — Gancho de oído
@@ -102,7 +102,7 @@ export default {
       tipo: 'texto',
       titulo: 'Un nombre para cada distancia',
       parrafos: [
-        'Un **intervalo** es la distancia entre dos notas. En la 3.1 la mediste en semitonos; ahora le vas a poner **nombre**.',
+        'Un **intervalo** es la distancia entre dos notas. En la M2.1 la mediste en semitonos; ahora le vas a poner **nombre**.',
         'El nombre tiene un **número**: cuenta las letras de una nota a la otra, **incluyendo las dos**. Do-Re-Mi son 3 letras: de Do a Mi hay una **3.ª** (tercera).',
         'Y un **apellido**: **menor** o **mayor** según los semitonos (Do → Mi♭ es una 3.ª menor; Do → Mi, una 3.ª mayor). La 4.ª, la 5.ª y la octava se llaman **justas**.',
         'Si las notas suenan **una detrás de otra** es un intervalo **melódico**; si suenan **a la vez**, **armónico**.',
@@ -135,7 +135,7 @@ export default {
       titulo: 'Segundas y terceras',
       intro: 'Toca cada fila para oírla desde Do. La canción es tu atajo para reconocerla.',
       parrafos: [
-        'Las **segundas** son los pasos de la 3.1: la **menor** es un semitono (roza) y la **mayor**, un tono (camina).',
+        'Las **segundas** son los pasos de la M2.1: la **menor** es un semitono (roza) y la **mayor**, un tono (camina).',
         'Las **terceras** ya saltan. La **menor** (3 semitonos) suena **melancólica**; la **mayor** (4) suena **luminosa**. Esa diferencia de un solo semitono es la de los acordes menores y mayores.',
       ],
       fichas: { nombre: 'Intervalo', dato: 'Semitonos', filas: ['2m', '2M', '3m', '3M'].map((id) => ficha(id)) },
