@@ -65,7 +65,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   const areas = await page.$$eval('[data-area-rutas]', (ss) => ss.map((s) => s.dataset.areaRutas))
   comprobar(r, 'Aprender › Rutas: una fila por área', areas.join('|') === 'ritmo|melodia|armonia|letras|produccion', areas.join(' | '))
   comprobar(r, 'ruta de Ritmo 0/10', (await page.getAttribute('[data-ruta-inicio="ritmo"]', 'data-avance')) === '0/10')
-  comprobar(r, 'Letras 0/10 y Acordes 0/20', (await page.getAttribute('[data-ruta-inicio="letras"]', 'data-avance')) === '0/10' && (await page.getAttribute('[data-ruta-inicio="acordes"]', 'data-avance')) === '0/20')
+  comprobar(r, 'Letras 0/10 y Acordes 0/22', (await page.getAttribute('[data-ruta-inicio="letras"]', 'data-avance')) === '0/10' && (await page.getAttribute('[data-ruta-inicio="acordes"]', 'data-avance')) === '0/22')
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await espera(300)
   await foto('inicio-rutas')

@@ -8,6 +8,7 @@ const VOZ = {
   V: ['G3', 'B3', 'D4', 'G4'],
   vi: ['A3', 'C4', 'E4', 'A4'],
 }
+const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
 const frase = (romanos) => ({ etiqueta: 'Escuchar', notas: romanos.map((rn) => VOZ[rn]), intervalo: 0.95, duracion: 0.9 })
 
 export default {
@@ -31,6 +32,27 @@ export default {
       opciones: ['D', 'C', 'Em', 'Am'],
       correcta: 0,
       explicacion: 'El V de Sol es **D** (Re · Fa♯ · La). C y Am son de subdominante; Em, de tónica.',
+    },
+  ],
+  '5.2': [
+    {
+      pregunta: 'Al resolver **G7 → C**, ¿adónde va el **Fa**?',
+      opciones: ['Mi', 'Sol', 'Fa♯', 'Do'],
+      correcta: 0,
+      explicacion: 'Fa es la **7.ª** de G7: baja medio tono, a **Mi**. La sensible, Si, sube a Do.',
+    },
+    {
+      pregunta: '¿Cuál es el **V7** de **Sol mayor**?',
+      opciones: ['D7', 'G7', 'C7', 'A7'],
+      correcta: 0,
+      explicacion: 'El V de Sol es Re: **D7** = Re · Fa♯ · La · Do.',
+    },
+    {
+      pregunta: '¿Cuál es el **tritono**?',
+      sonidos: [dos('B3', 'F4'), dos('C4', 'G4'), dos('C4', 'F4')],
+      correcta: 0,
+      mezclar: true,
+      explicacion: '**Si–Fa**: 6 semitonos, el intervalo más inestable. Do–Sol y Do–Fa suenan estables.',
     },
   ],
 }

@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-16-tension',
+    fecha: '16 nov 2026',
+    titulo: 'Nueva lección: Tensión y resolución',
+    cosas: [
+      {
+        texto: 'La **A2.2** explica por qué el V pide volver: la **sensible** sube, la **7.ª** baja y juntas forman el **tritono** del **V7**, que se cierra en el acorde de casa.',
+        donde: { etiqueta: 'Abrir Armonía 2', href: '#/modulo/5' },
+      },
+      {
+        texto: 'Dos ejercicios nuevos: **construir acordes con séptima** (cuatro casillas) y **«Resuelve la tensión»**, donde tocas adónde va cada nota tensa.',
+      },
+      {
+        texto: 'Al terminarla se abre el nivel del **acorde con séptima** en el entrenador de Acordes, y la ruta de Acordes suma la lección y su meta.',
+        donde: { etiqueta: 'Abrir la ruta de Acordes', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-barras',
     fecha: '16 nov 2026',
     titulo: 'Tu avance en barras',

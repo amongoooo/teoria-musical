@@ -14,27 +14,43 @@ export const TRIADAS = {
   aum: { tonal: 'aug', nombre: 'aumentado', terceras: [4, 4], cifrado: '+', siente: 'suspendido, como un sueño' },
 }
 
+/**
+ * Acordes de séptima (lección 5.2: el V7; la 5.5 usará maj7 y m7). Misma forma que TRIADAS, con una 3.ª más encima.
+ * El «7» solo = dominante con séptima: tríada mayor + 7.ª menor (G7 = Sol · Si · Re · Fa).
+ */
+export const SEPTIMAS = {
+  dom7: { tonal: '7', nombre: 'séptima', terceras: [4, 3, 3], cifrado: '7', siente: 'tensión que pide resolver' },
+  maj7: { tonal: 'maj7', nombre: 'séptima mayor', terceras: [4, 3, 4], cifrado: 'maj7', siente: 'suave, soñador' },
+  m7: { tonal: 'm7', nombre: 'menor séptima', terceras: [3, 4, 3], cifrado: 'm7', siente: 'relajado, cálido' },
+}
+
+/** Todos los tipos de acorde (tríadas y séptimas): lo que aceptan `triada`, `nombreAcorde` y `cifrado`. */
+export const TIPOS_ACORDE = { ...TRIADAS, ...SEPTIMAS }
+
 /** Nombre de una 3.ª por sus semitonos. */
 export const TERCERA = { 3: { corto: '3m', nombre: '3.ª menor' }, 4: { corto: '3M', nombre: '3.ª mayor' } }
 
-/** Notas de la tríada en estado fundamental: triada('D4', 'mayor') → ['D4', 'F#4', 'A4']. */
+/**
+ * Notas del acorde en estado fundamental: triada('D4', 'mayor') → ['D4', 'F#4', 'A4']; con una séptima,
+ * triada('G3', 'dom7') → ['G3', 'B3', 'D4', 'F4'].
+ */
 export function triada(raiz, tipo = 'mayor') {
-  const { intervals } = Chord.getChord(TRIADAS[tipo].tonal, Note.pitchClass(raiz))
+  const { intervals } = Chord.getChord(TIPOS_ACORDE[tipo].tonal, Note.pitchClass(raiz))
   return intervals.map((iv) => Note.simplify(Note.transpose(raiz, iv)))
 }
 
 /** Arpegio (las tres de una en una) y luego las tres a la vez: para el sonido de una lección. */
 export const arpegioYAcorde = (notas) => [...notas, notas]
 
-/** «Re mayor», «Si disminuido» (sin octava). */
+/** «Re mayor», «Si disminuido», «Sol séptima» (sin octava). */
 export function nombreAcorde(raiz, tipo = 'mayor') {
-  return `${nombre(/\d/.test(raiz) ? raiz : `${raiz}4`, { octava: false })} ${TRIADAS[tipo].nombre}`
+  return `${nombre(/\d/.test(raiz) ? raiz : `${raiz}4`, { octava: false })} ${TIPOS_ACORDE[tipo].nombre}`
 }
 
-/** Cifrado americano: cifrado('D4', 'menor') → 'Dm'; 'F#4' mayor → 'F♯'; 'Bb3' → 'B♭'. */
+/** Cifrado americano: cifrado('D4', 'menor') → 'Dm'; 'F#4' mayor → 'F♯'; 'Bb3' → 'B♭'; 'G3' dom7 → 'G7'. */
 export function cifrado(raiz, tipo = 'mayor') {
   const letra = Note.pitchClass(raiz).replace('#', '♯').replace(/b$/, '♭')
-  return `${letra}${TRIADAS[tipo].cifrado}`
+  return `${letra}${TIPOS_ACORDE[tipo].cifrado}`
 }
 
 /** Tipo de tríada por las semitonos de sus terceras ([4, 3] → 'mayor'), o null. */
@@ -72,8 +88,16 @@ export function diatonicos(tonica, { menor = false } = {}) {
   })
 }
 
-/** El acorde de un número romano en una tonalidad: acordeDeGrado('G3', 'vi') → { raiz: 'E4', tipo: 'menor', … }. */
+/**
+ * El acorde de un número romano en una tonalidad: acordeDeGrado('G3', 'vi') → { raiz: 'E4', tipo: 'menor', … }.
+ * 'V7' = la dominante con séptima (5.2): acordeDeGrado('F4', 'V7') → C7 (C5 · E5 · G5 · B♭5); en menor también es
+ * mayor con 7.ª (sale de la menor armónica): acordeDeGrado('A3', 'V7', { menor: true }) → E7.
+ */
 export function acordeDeGrado(tonica, romano, opciones) {
+  if (romano === 'V7') {
+    const v = diatonicos(tonica, opciones)[4]
+    return { ...v, romano: 'V7', tipo: 'dom7', notas: triada(v.raiz, 'dom7'), cifrado: cifrado(v.raiz, 'dom7') }
+  }
   return diatonicos(tonica, opciones).find((a) => a.romano === romano) ?? null
 }
 
@@ -157,4 +181,27 @@ export function funcionesDe(tonica) {
       return [f, orden[f].map((rn) => ({ ...de(rn), funcion: f, comunes: rn === jefe.romano ? [] : notasComunes(de(rn).notas, jefe.notas) }))]
     }),
   )
+}
+
+// ——— Tensión y resolución (lección 5.2): el V7 y su tritono ———
+
+/** El tritono: 6 semitonos, tres tonos, la mitad de la octava (en Tonal, '4A' o '5d'). */
+export const TRITONO = 6
+
+/**
+ * Cómo resuelve un V7 en su tónica: la **sensible** (la 3.ª del V7) sube un semitono a la tónica y la **7.ª** baja a la
+ * 3.ª de la tónica (un semitono en mayor, un tono en menor). Las dos notas tensas forman un tritono que se cierra.
+ * resolucionV7('G3') → { v7: ['G3', 'B3', 'D4', 'F4'], tonica: 'C4', tipoTonica: 'mayor',
+ *   sensible: { desde: 'B3', hacia: 'C4' }, septima: { desde: 'F4', hacia: 'E4' }, acordes: [[G7…], [C…]] }
+ * `menor: true` → E7 → Am (Re → Do baja un tono). `acordes` = el V7 y el acorde al que llega, con cada voz movida lo
+ * mínimo (el bajo salta a la tónica, la 5.ª del V7 baja un tono): para el sonido de la resolución.
+ */
+export function resolucionV7(raiz, { menor = false } = {}) {
+  const v7 = triada(raiz, 'dom7')
+  const [f, t, q, s] = v7
+  const tonica = Note.simplify(Note.transpose(t, '2m'))
+  const sensible = { desde: t, hacia: tonica }
+  const septima = { desde: s, hacia: Note.simplify(Note.transpose(s, menor ? '-2M' : '-2m')) }
+  const llegada = [Note.simplify(Note.transpose(f, '-5P')), Note.simplify(Note.transpose(q, '-2M')), sensible.hacia, septima.hacia]
+  return { v7, tonica, tipoTonica: menor ? 'menor' : 'mayor', sensible, septima, acordes: [v7, llegada] }
 }

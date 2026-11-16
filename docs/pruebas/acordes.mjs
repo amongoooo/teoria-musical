@@ -122,7 +122,7 @@ for (const tema of ['claro', 'oscuro']) {
   await espera(1200)
   const entrada = page.locator('[data-entrada-ruta="acordes"]')
   comprobar(r, 'oído: entrada a la ruta', (await entrada.count()) === 1)
-  comprobar(r, 'oído: «0/20 paradas»', /0\/20 paradas/.test(await entrada.textContent().catch(() => '')))
+  comprobar(r, 'oído: «0/22 paradas»', /0\/22 paradas/.test(await entrada.textContent().catch(() => '')))
   await entrada.scrollIntoViewIfNeeded()
   await foto('oido-entrada-ruta')
 
