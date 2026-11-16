@@ -1,4 +1,4 @@
-// Navegación mínima por hash (#/, #/aprender, #/aprender/biblioteca, #/practicar, #/herramientas, #/configuracion, #/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
+// Navegación mínima por hash (#/, #/aprender, #/aprender/rutas, #/aprender/modulos, #/practicar, #/herramientas, #/configuracion, #/modulo/1, #/curso, #/curso/bloque/2, #/leccion/1.1, #/leccion/1.1/reto, #/oido/intervalos, #/ritmo/seguir,
 // #/letras/vocabulario/repaso).
 // El hash funciona en GitHub Pages sin configurar nada (no hay 404 al recargar).
 import { useEffect, useState } from 'react'
@@ -17,8 +17,9 @@ function parse(hash) {
   if (partes[0] === 'curso') return { pagina: 'curso', id: partes[1] === 'bloque' && partes[2] ? partes[2] : null }
   if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
   if (partes[0] === 'letras') return { pagina: 'letras', id: partes[1] ?? null }
-  // Las 4 pestañas (fase 3 del rediseño): Inicio · Aprender [Rutas | Biblioteca] · Practicar · Herramientas.
-  if (partes[0] === 'aprender') return { pagina: 'aprender', id: partes[1] === 'biblioteca' ? 'biblioteca' : null }
+  // Las pestañas: Inicio · Aprender [Curso | Rutas | Módulos] · Practicar · Herramientas · Configuración.
+  // (El viejo #/aprender/biblioteca abre Módulos.)
+  if (partes[0] === 'aprender') return { pagina: 'aprender', id: partes[1] === 'biblioteca' ? 'modulos' : ['rutas', 'modulos'].includes(partes[1]) ? partes[1] : null }
   if (partes[0] === 'practicar') return { pagina: 'practicar' }
   if (partes[0] === 'herramientas') return { pagina: 'herramientas' }
   if (partes[0] === 'configuracion') return { pagina: 'configuracion' }
@@ -43,8 +44,8 @@ export function useRuta() {
 
 export const rutas = {
   inicio: () => '#/',
-  /** Pestaña Aprender: Rutas (sin vista) o Biblioteca (las lecciones del catálogo por área y nivel). */
-  aprender: (vista) => (vista === 'biblioteca' ? '#/aprender/biblioteca' : '#/aprender'),
+  /** Pestaña Aprender: Curso completo (sin vista), 'rutas' o 'modulos'. */
+  aprender: (vista) => (vista ? `#/aprender/${vista}` : '#/aprender'),
   practicar: () => '#/practicar',
   herramientas: () => '#/herramientas',
   /** Pestaña Configuración: las Opciones como página. */

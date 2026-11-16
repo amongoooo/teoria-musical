@@ -63,7 +63,7 @@ export const TRAMOS = {
       },
     ],
   },
-  // Las lecciones L1–L5 viven en la ruta de letras (content/ruta-letras/, registradas en content/index.js).
+  // Las lecciones L1–L5 (content/ruta-letras/, registradas en content/index.js) son también el Módulo de Letras (11).
   'rima-flow': {
     titulo: 'Rima y flow',
     paradas: [
@@ -184,7 +184,7 @@ export const RUTAS = {
     titulo: 'Ruta de letras',
     acento: 'var(--color-letras)',
     descripcion: 'Rima, esquemas, sílabas, multis y flow: cinco lecciones cortas con tu cuaderno y el vocabulario.',
-    modulos: [],
+    modulos: [11],
     practica: 'letras',
     tramos: ['rima-flow'],
   },

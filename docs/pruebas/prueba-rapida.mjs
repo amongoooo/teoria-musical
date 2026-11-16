@@ -98,9 +98,9 @@ for (const tema of ['claro', 'oscuro']) {
     return page.locator(`[role="group"][aria-label^="${etiqueta}"]`).first()
   }
 
-  // ——— Módulo 3 desde Aprender › Biblioteca: entra directo y la prueba está en la insignia ———
+  // ——— Módulo 3 desde Aprender › Módulos: entra directo y la prueba está en la insignia ———
   await preparar()
-  await page.goto(BASE + '#/aprender/biblioteca')
+  await page.goto(BASE + '#/aprender/modulos')
   await espera(800)
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
@@ -180,7 +180,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.goto(BASE + '#/herramientas')
   await espera(800)
   comprobar(r, 'Círculo abierto', (await page.locator('[data-tarjeta-circulo="abierta"]').count()) === 1)
-  await page.goto(BASE + '#/aprender/biblioteca')
+  await page.goto(BASE + '#/aprender/modulos')
   await espera(800)
   await page.locator('[data-cuadrito-modulo="3"]').click()
   await espera(1500)
@@ -189,7 +189,7 @@ for (const tema of ['claro', 'oscuro']) {
 
   // ——— Un módulo completo: entra directo y su insignia ya no ofrece la prueba ———
   await preparar({ 1.1: { completada: true }, 1.2: { completada: true }, 1.3: { completada: true }, 1.4: { completada: true } })
-  await page.goto(BASE + '#/aprender/biblioteca')
+  await page.goto(BASE + '#/aprender/modulos')
   await espera(800)
   await page.locator('[data-cuadrito-modulo="1"]').click()
   await espera(1500)
@@ -199,7 +199,7 @@ for (const tema of ['claro', 'oscuro']) {
 
   // ——— Ruta de acordes: entra directo; la insignia ofrece la prueba del tramo en el que vas ———
   await preparar()
-  await page.goto(BASE + '#/aprender')
+  await page.goto(BASE + '#/aprender/rutas')
   await espera(800)
   await page.locator('[data-cuadrito-ruta="acordes"]').click()
   await espera(1500)

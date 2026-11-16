@@ -1,7 +1,9 @@
 import { AnimatePresence, animate, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { estadoLeccion, getLeccion, getModulo, leccionAnterior, moduloDisponible } from '../content/index.js'
+import { estadoLeccion, getLeccion, leccionAnterior, moduloDisponible, moduloVecino, nombreModulo as nombreDe } from '../content/index.js'
+import { iconoModulo } from './NavegadorModulos.jsx'
+import { NOMBRE_NIVEL, infoLeccion } from '../content/catalogo.js'
 import { HERRAMIENTAS } from '../content/rutas.js'
 import { useOpciones } from '../progress/opciones.js'
 import { guardarReto, reiniciarLeccion } from '../progress/progreso.js'
@@ -197,7 +199,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
     : [...lecciones.map((l) => estadoLeccion(l.id, progreso)), retosHechos === retos.length ? 'hecha' : 'retos']
   const actual = estados.findIndex((e) => e === 'nueva' || e === 'empezada')
   const vecinoListo = (dir) => {
-    const m = modulo.vecino ? modulo.vecino(dir) : getModulo(modulo.numero + dir)
+    const m = modulo.vecino ? modulo.vecino(dir) : moduloVecino(modulo.numero, dir)
     return Boolean(m && (m.esRuta ? m.disponible : moduloDisponible(m)))
   }
   const nombreModulo = modulo.nombre ?? `Módulo ${modulo.numero}`
@@ -958,7 +960,10 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
                         className="grid place-items-center rounded-3xl font-titulo text-3xl font-bold text-blanco"
                         style={{ width: INSIGNIA, height: INSIGNIA, backgroundColor: oscuro(modulo.acento), boxShadow: `0 6px 0 ${labio(modulo.acento)}` }}
                       >
-                        {modulo.Icono ? <modulo.Icono className="size-10" /> : modulo.numero}
+                        {(() => {
+                          const Icono = iconoModulo(modulo)
+                          return Icono ? <Icono className="size-10" /> : modulo.numero
+                        })()}
                       </Pulsable>
                     </motion.div>
                   </div>
@@ -1835,6 +1840,8 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
     navegar(rutas.leccion(meta.id))
   }
   const tema = lleno ? 'color' : estado === 'bloqueada' ? 'gris' : 'blanco'
+  // Su nivel (content/catalogo.js), mientras aún no está hecha: «· Principiante».
+  const nivel = estado !== 'hecha' && estado !== 'proximamente' ? NOMBRE_NIVEL[infoLeccion(meta.id)?.nivel] : null
 
   let detalle
   if (estado === 'nueva')
@@ -1875,7 +1882,10 @@ function IslaAbierta({ meta, modulo, progreso, indice, total, onCerrar, onIr }) 
       </Bola>
       <Globo tema={tema} acento={acento} onCerrar={onCerrar}>
         <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{meta.titulo}</h3>
-        <p className={`flex flex-wrap items-center gap-1.5 text-base font-medium ${tema === 'color' ? 'text-blanco/90' : 'text-zinc-600'}`}>{detalle}</p>
+        <p className={`flex flex-wrap items-center gap-1.5 text-base font-medium ${tema === 'color' ? 'text-blanco/90' : 'text-zinc-600'}`}>
+          {detalle}
+          {nivel && <span data-nivel-leccion={nivel}>· {nivel}</span>}
+        </p>
         {lleno && (
           <BotonGlobo tema={tema} acento={acento} principal data-foco onClick={() => ir(estado === 'hecha')}>
             {estado !== 'hecha' && <Reproducir className="size-5" />}
@@ -1909,15 +1919,16 @@ function InsigniaAbierta({ ruta, modulo, progreso, actual, retosHechos, totalRet
   const hechas = modulo.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
   const siguiente = actual >= 0 ? modulo.lecciones[actual] : null
   const prueba = pruebaDeModulo(modulo.numero, progreso)
+  const Icono = iconoModulo(modulo)
   return (
-    <div className="flex flex-col items-center" role="group" aria-label={`Módulo ${modulo.numero}: ${modulo.titulo}`}>
+    <div className="flex flex-col items-center" role="group" aria-label={`${nombreDe(modulo)}: ${modulo.titulo}`}>
       <Bola acento={modulo.acento} estado="nueva" cuadrada onClick={onCerrar}>
-        {modulo.numero}
+        {Icono ? <Icono className="size-14" /> : modulo.numero}
       </Bola>
       <Globo tema="color" acento={modulo.acento} onCerrar={onCerrar}>
         <h3 className="pr-10 font-titulo text-xl font-bold leading-tight tracking-tight [text-wrap:balance]">{modulo.titulo}</h3>
         <p className="text-base font-medium text-blanco/90">
-          Módulo {modulo.numero} · <span className="font-dato tabular-nums">{hechas}/{modulo.lecciones.length}</span> lecciones
+          {nombreDe(modulo)} · <span className="font-dato tabular-nums">{hechas}/{modulo.lecciones.length}</span> lecciones
         </p>
         {modulo.descripcion && <p className="line-clamp-3 text-base text-blanco/90">{modulo.descripcion}</p>}
         {/* Mientras la prueba rápida pueda saltar algo, «¿Ya lo sabes?» va en lugar de «Ir a…» (pedido del usuario). */}
@@ -2264,10 +2275,10 @@ function RetosAbierta({ modulo, retos, hechos, onCerrar, onVer }) {
 function HojaRetos({ abierta, onCerrar, modulo, retos, progreso }) {
   const [delModulo, ...deLecciones] = retos
   return (
-    <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta={`Retos del módulo ${modulo.numero}`}>
+    <Hoja abierta={abierta} onCerrar={onCerrar} etiqueta={`Retos · ${nombreDe(modulo)}`}>
       <div className="flex max-h-[70dvh] flex-col gap-5 overflow-y-auto">
         <h2 className="flex items-center gap-2 font-titulo text-2xl font-bold tracking-tight">
-          <Trofeo className="size-7" /> Retos · Módulo {modulo.numero}
+          <Trofeo className="size-7" /> Retos · {nombreDe(modulo)}
         </h2>
         <section className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-4">
           <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>

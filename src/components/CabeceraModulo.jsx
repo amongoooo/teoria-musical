@@ -73,7 +73,7 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
     <Fila
       chico={chico}
       titulo={modulo.titulo}
-      barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `Módulo ${modulo.numero}: ${hechas} de ${total} lecciones completadas`} />}
+      barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `${modulo.nombre ?? `Módulo ${modulo.numero}`}: ${hechas} de ${total} lecciones completadas`} />}
     />
   )
 }

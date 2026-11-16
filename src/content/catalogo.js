@@ -11,6 +11,7 @@
 // Lección nueva = una línea aquí (la prueba falla si falta).
 
 export const NIVELES = ['principiante', 'intermedio', 'avanzado']
+export const NOMBRE_NIVEL = { principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado' }
 
 const l = (areas, nivel, requiere = []) => ({ areas, nivel, requiere })
 

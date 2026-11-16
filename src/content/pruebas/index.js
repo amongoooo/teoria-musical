@@ -6,7 +6,7 @@
 //   #/prueba/leccion/4.1             → lo que pide la 4.1 (sus prerrequisitos de content/catalogo.js; vuelve a la 4.1)
 // Las preguntas: 3 por lección en los bancos de esta carpeta (modulo-N.js, letras.js); cada prueba toma una al azar.
 // Una lección nueva trae sus 3 preguntas: añádelas al banco de su módulo (si no tiene, la prueba no la incluye).
-import { acentoLeccion, getLeccion, getModulo, leccionDisponible } from '../index.js'
+import { acentoLeccion, getLeccion, getModulo, leccionDisponible, nombreModulo } from '../index.js'
 import { infoLeccion } from '../catalogo.js'
 import { RUTAS, TRAMOS } from '../rutas.js'
 import { rutas } from '../../router.js'
@@ -35,7 +35,7 @@ export function datosPrueba(id) {
     return {
       id,
       clave: `M${m.numero}`,
-      etiqueta: `Módulo ${m.numero}`,
+      etiqueta: nombreModulo(m),
       titulo: m.titulo,
       acento: m.acento,
       volver: rutas.modulo(m.numero),

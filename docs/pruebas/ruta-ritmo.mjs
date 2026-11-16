@@ -59,6 +59,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   comprobar(r, 'barra: Herramientas · Practicar · Inicio · Aprender · Configuración', pestanas.join('|') === 'herramientas|practicar|inicio|aprender|configuracion', pestanas.join(' | '))
   comprobar(r, 'barra: solo la elegida muestra su nombre', (await page.locator('[data-pestana="inicio"]').textContent()).trim() === 'Inicio' && (await page.locator('[data-pestana="aprender"]').textContent()).trim() === '')
   await page.locator('[data-pestana="aprender"]').click()
+  await page.locator('[data-aprender="rutas"]').click()
   await page.waitForSelector('[data-area-rutas]')
   await espera(800)
   const areas = await page.$$eval('[data-area-rutas]', (ss) => ss.map((s) => s.dataset.areaRutas))
@@ -77,7 +78,7 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
 
   // 2) Desde Inicio a la ruta: página igual a la de un módulo.
   await preparar({ lecciones: completadas(['2.1', '2.2']), nivelSeguir: 2 })
-  await page.goto(BASE + '#/aprender')
+  await page.goto(BASE + '#/aprender/rutas')
   await espera(800)
   await page.locator('[data-cuadrito-ruta="ritmo"]').scrollIntoViewIfNeeded()
   await page.locator('[data-cuadrito-ruta="ritmo"]').click()

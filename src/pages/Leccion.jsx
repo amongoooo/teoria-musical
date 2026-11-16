@@ -80,9 +80,10 @@ export default function Leccion({ id, soloReto = false, guiada = false }) {
 function Visor({ leccion, soloReto, guiada, onRepetir }) {
   const modulo = getModulo(leccion.modulo)
   const acento = acentoLeccion(leccion.id)
-  // A dónde se vuelve: al módulo o, si la lección vive en una ruta, a la ruta.
-  // (Abierta desde la Biblioteca, vuelve a la Biblioteca.)
-  const volver = (!guiada && origenDeLeccion(leccion.id)) || (leccion.ruta ? rutas.ruta(leccion.ruta) : rutas.modulo(leccion.modulo))
+  // A dónde se vuelve: al módulo o, si la lección es de una ruta (L1–L5) y se abrió desde ella o el curso (`guiada`), a
+  // la ruta. Las L1–L5 también son el Módulo de Letras: abiertas desde él, vuelven al módulo.
+  const enRuta = Boolean(leccion.ruta && (guiada || !leccion.modulo))
+  const volver = (!guiada && origenDeLeccion(leccion.id)) || (enRuta ? rutas.ruta(leccion.ruta) : rutas.modulo(leccion.modulo))
   const total = leccion.pasos.length
 
   const [indice, setIndice] = useState(() => {
@@ -200,7 +201,7 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   }, [])
 
   if (terminado) {
-    return <Final leccion={leccion} modulo={modulo} puntos={puntos.current} repaso={resultadoRepaso.current} onRepetir={onRepetir} />
+    return <Final leccion={leccion} modulo={modulo} enRuta={enRuta} puntos={puntos.current} repaso={resultadoRepaso.current} onRepetir={onRepetir} />
   }
   if (faltan.length > 0) return <AntesTeConviene leccion={leccion} faltan={faltan} acento={acento} onSalir={salir} onSeguir={() => setFaltan([])} />
 
@@ -1051,14 +1052,14 @@ function Flechita({ gesto, visible, cubre, invertido, color }) {
   )
 }
 
-function Final({ leccion, modulo, puntos, repaso = null, onRepetir }) {
+function Final({ leccion, modulo, enRuta, puntos, repaso = null, onRepetir }) {
   const suma = Object.values(puntos).reduce(
     (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
     { aciertos: 0, total: 0 },
   )
   // La siguiente lección del módulo. En una ruta no: entre lección y lección hay metas de práctica, así que el
   // botón principal es «Volver a la ruta» (allí la isla siguiente ya está abierta).
-  const ruta = leccion.ruta ? RUTAS[leccion.ruta] : null
+  const ruta = enRuta ? RUTAS[leccion.ruta] : null
   const lecciones = ruta ? [] : (modulo?.lecciones ?? [])
   const pos = lecciones.findIndex((l) => l.id === leccion.id)
   const proxima = lecciones[pos + 1]

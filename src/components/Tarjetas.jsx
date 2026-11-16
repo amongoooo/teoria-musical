@@ -132,7 +132,7 @@ export function CuadritoModulo({ modulo: m, progreso }) {
   )
   if (!disponible) {
     return (
-      <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`Módulo ${m.numero}: ${m.titulo}. Próximamente`}>
+      <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={`${m.nombre ?? `Módulo ${m.numero}`}: ${m.titulo}. Próximamente`}>
         {contenido}
       </div>
     )
@@ -143,7 +143,7 @@ export function CuadritoModulo({ modulo: m, progreso }) {
       href={rutas.modulo(m.numero)}
       tipo="tarjeta"
       data-cuadrito-modulo={m.numero}
-      aria-label={`Módulo ${m.numero}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
+      aria-label={`${m.nombre ?? `Módulo ${m.numero}`}: ${m.titulo}. ${hechas} de ${m.lecciones.length} lecciones`}
       className="flex min-h-11 w-full flex-col items-center gap-2 rounded-3xl px-1 pt-1 pb-2 text-center"
     >
       {contenido}

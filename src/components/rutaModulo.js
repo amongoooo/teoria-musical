@@ -5,7 +5,8 @@
 // a la ruta de al lado.
 import { useMotionValue } from 'motion/react'
 import { useRef, useState } from 'react'
-import { getModulo } from '../content/index.js'
+import { getLeccion, getModulo, nombreModulo } from '../content/index.js'
+import { iconoModulo } from './NavegadorModulos.jsx'
 import { HERRAMIENTAS, ORDEN_RUTAS, RUTAS, estadoRuta, rutaDisponible } from '../content/rutas.js'
 import { MODOS_OIDO } from '../theory/oido.js'
 import { MODOS_RITMO } from '../theory/ritmo.js'
@@ -153,7 +154,9 @@ const ACENTO_PRACTICA = { oido: 'var(--color-melodia)', ritmo: 'var(--color-ritm
 /** Módulo de una parada (lección numerada o lo que abre una lección), o null. */
 function moduloDeParada(p) {
   const id = p.tipo === 'leccion' ? p.id : p.tipo === 'abre' ? HERRAMIENTAS[p.herramienta]?.leccion : null
-  return id && /^\d+\./.test(id) ? Number(id.split('.')[0]) : null
+  if (!id) return null
+  // Las de un módulo con número en el id ('3.2'); las de la ruta de letras dicen el suyo (`modulo: 11`).
+  return /^\d+\./.test(id) ? Number(id.split('.')[0]) : (getLeccion(id)?.modulo ?? null)
 }
 
 /** Práctica y ejercicio de una meta: ['oido', 'intervalos'], ['letras', 'vocabulario']… */
@@ -177,7 +180,7 @@ export function useModulosYPracticas(paradas, practicaDe, practicaRuta = null) {
   const modulos = numeros.map(getModulo).filter(Boolean).map((m) => {
     const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
     const total = m.lecciones.length
-    return { id: `modulo-${m.numero}`, titulo: m.titulo, etiqueta: `Módulo ${m.numero}`, acento: m.acento, numero: m.numero, dato: `${hechas}/${total}`, avance: total ? hechas / total : 0, hecho: total > 0 && hechas === total, href: rutas.modulo(m.numero) }
+    return { id: `modulo-${m.numero}`, titulo: m.titulo, etiqueta: nombreModulo(m), acento: m.acento, numero: m.numero, Icono: iconoModulo(m), dato: `${hechas}/${total}`, avance: total ? hechas / total : 0, hecho: total > 0 && hechas === total, href: rutas.modulo(m.numero) }
   })
 
   const claves = []
