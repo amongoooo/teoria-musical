@@ -74,7 +74,7 @@ for (const [tema, ancho] of [['claro', 375], ['oscuro', 375], ['claro', 1280]]) 
   const t1 = await page.locator('[data-letrero="notas-teclado"]').textContent()
   comprobar(r, 'módulo 1 hecho → tramo 1 3/3', /3\/3/.test(t1), t1)
   const cab = await page.locator('[aria-label*="paradas"]').first().getAttribute('aria-label').catch(() => '')
-  comprobar(r, 'cabecera: 3 de 20 paradas', /3 de 20/.test(cab ?? ''), cab)
+  comprobar(r, 'cabecera: 3 de 22 paradas', /3 de 22/.test(cab ?? ''), cab)
   await foto('acordes-modulo1', true)
 
   // Abrir la isla de la 3.1 (parada 3 → puntito 4): los letreros se desvanecen.

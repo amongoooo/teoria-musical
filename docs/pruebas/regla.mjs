@@ -159,7 +159,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'lanzar 1,4 puntitos deprisa → avanza 3 o más', (await n()) - antes >= 3, `${antes} → ${await n()}`)
   comprobar(r, 'tras lanzar, en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
   await arrastrar(-1200) // más allá del último: goma
-  comprobar(r, 'hasta el final → el último (20)', (await n()) === 20, String(await n()))
+  comprobar(r, 'hasta el final → el último (22)', (await n()) === 22, String(await n()))
   await arrastrar(1200)
   comprobar(r, 'hasta el principio → el primero (0)', (await n()) === 0, String(await n()))
   // Tocar sin mover (en el centro): no cambia.

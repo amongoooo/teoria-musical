@@ -89,6 +89,11 @@ Acordes de la tonalidad e inversiones (lecciones 4.3 y 4.4, Tonal `Key`): `diato
 `inversion(['C4', 'E4', 'G4'], 1)` → `['E4', 'G4', 'C5']`, `cifradoInversion('G3', 'mayor', 1)` → «G/B», `INVERSIONES` y
 `APILADO` (3 → 3m, 4 → 3M, 5 → 4J; 7 → 5J, 8 → 6m, 9 → 6M). Voicings (lección 4.5): `abierto(['C3', 'E3', 'G3'])` →
 `['C3', 'G3', 'E4']` (la 3.ª sube una octava); en P8, la ronda `{ raiz: 'C3', tipo: 'mayor', voicing: 'abierto' }` pide esas notas con su octava.
+Séptimas y resolución (lección 5.2): `SEPTIMAS` (`dom7` = mayor + 7.ª menor, cifrado «7»; `maj7` y `m7` listos para la 5.5) y
+`TIPOS_ACORDE` (tríadas + séptimas): `triada('G3', 'dom7')` → `['G3', 'B3', 'D4', 'F4']`, `cifrado('G3', 'dom7')` → «G7»,
+`nombreAcorde` → «Sol séptima», `acordeDeGrado('F4', 'V7')` → C7 (en menor, `{ menor: true }`, también mayor con 7.ª: E7 en La menor),
+`TRITONO` (6) y `resolucionV7('G3')` → `{ v7, tonica: 'C4', sensible: { desde: 'B3', hacia: 'C4' }, septima: { desde: 'F4', hacia: 'E4' }, acordes }`
+(`menor: true`: la 7.ª baja un tono; `acordes` = el V7 y el acorde al que llega, para el sonido).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -313,6 +318,14 @@ respuesta con su armadura.
   //     `voicing: 'abierto'` = «Abre Do mayor desde Do3» (4.5): encima de la fundamental, la 5.ª y la 3.ª UNA OCTAVA
   //       arriba (C3 · G3 · E4); solo vale la nota exacta (en otra octava es un fallo que lo explica); casillas
   //       1 · 5 · 3 con 5J / 6M (o 6m). Pon el piano en 2 octavas (`startOctave` = la de la fundamental).
+  //     `tipo: 'dom7'` = con séptima (5.2): cuatro casillas 1 · 3 · 5 · 7 y guía 3M · 3m · 3m; se tocan la 3.ª, la 5.ª y
+  //       la 7.ª. También `romano: 'V7'` + `tonalidad` («Construye el V7 de Fa mayor»: las cuatro, sin nota dada).
+  // objetivo: { tipo: 'resolver', rondas: [{ raiz: 'G3', menor: false, mensaje }] }
+  //   → «Resuelve la tensión» (P9, 5.2): el V7 de `raiz` va marcado en el teclado; arriba, la sensible y la 7.ª en oro
+  //     (Si ↑, Fa ↓) y, debajo, con candado, adónde van. Se tocan las dos EN SU OCTAVA (la sensible sube medio tono; la
+  //     7.ª baja medio tono, o un tono con `menor: true`). Con las dos suena V7 → I. El fallo explica: «Fa subió a Fa♯:
+  //     la 7.ª baja», «Do, pero en otra octava». Dos fallos seguidos: las que faltan en rojo y la ronda va al repaso.
+  //     Elige raíces cuyas dos metas caigan en una octava (G3, D4, C4, A3 menor): a 375 px se ve una (`ir` = la tónica).
 }
 ```
 

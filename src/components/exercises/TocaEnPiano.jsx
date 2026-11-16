@@ -23,14 +23,15 @@ import { Candado, Repaso } from '../../ui/Iconos.jsx'
 import {
   APILADO,
   TERCERA,
+  TIPOS_ACORDE,
   abierto as voicingAbierto,
-  TRIADAS,
   acordeDeGrado,
   arpegioYAcorde,
   cifrado as cifradoDe,
   cifradoInversion,
   inversion,
   nombreAcorde,
+  resolucionV7,
   triada,
 } from '../../theory/acordes.js'
 import { notasTonalidad } from '../../theory/escalas.js'
@@ -53,6 +54,9 @@ import Rondas from './Rondas.jsx'
  *        → tocar en orden las notas que salen de aplicar la fórmula de pasos desde `desde`
  *  - { tipo: 'acorde', rondas: [{ raiz: 'D4', tipo: 'mayor' | 'menor' | 'dis' | 'aum', cifrado, guia, escuchar }] }
  *        → construir la tríada: la fundamental viene marcada y se tocan la 3.ª y la 5.ª (en cualquier orden y octava)
+ *          (`tipo: 'dom7'` = con séptima: cuatro casillas 1 · 3 · 5 · 7, lección 5.2)
+ *  - { tipo: 'resolver', rondas: [{ raiz: 'G3', menor }] }
+ *        → «Resuelve la tensión» (P9, 5.2): el V7 marcado; tocar adónde va la sensible (sube) y la 7.ª (baja)
  */
 export default function TocaEnPiano(props) {
   const { objetivo } = props.paso
@@ -63,6 +67,7 @@ export default function TocaEnPiano(props) {
   if (objetivo.tipo === 'paso') return <Paso {...props} />
   if (objetivo.tipo === 'formula') return <Formula {...props} />
   if (objetivo.tipo === 'acorde') return <Acorde {...props} />
+  if (objetivo.tipo === 'resolver') return <Resolver {...props} />
   return <p>Objetivo desconocido: {objetivo.tipo}</p>
 }
 
@@ -992,8 +997,11 @@ function CasillaFormula({ hecha, ahora, salta, suena, sacude, dada = false, mal 
 
 /** Semitonos hacia arriba de `a` a `b` sin contar octavas (0…11). */
 const haciaArriba = (a, b) => (((midi(b) - midi(a)) % 12) + 12) % 12
-const PARTES = ['fundamental', '3.ª', '5.ª']
-const GRADO_PARTE = [1, 3, 5]
+const PARTES = ['fundamental', '3.ª', '5.ª', '7.ª']
+const GRADO_PARTE = [1, 3, 5, 7]
+/** «la 3.ª y la 5.ª» / «la 3.ª, la 5.ª y la 7.ª». */
+const yLista = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs.at(-1)}`)
+const CUANTAS = ['', 'una', 'las dos', 'las tres', 'las cuatro']
 const Mayus = (t) => `${t[0].toUpperCase()}${t.slice(1)}`
 /** «Do mayor» de una tonalidad ('C4' → 'Do mayor'; con `menor`, 'La menor'). */
 const nombreTonalidad = (t, menor = false) => `${nombre(/\d/.test(t) ? t : `${t}4`, { octava: false })} ${menor ? 'menor' : 'mayor'}`
@@ -1010,7 +1018,7 @@ function acordeDeRonda(ronda) {
   const notas = triada(raiz, tipo)
   if (ronda.voicing === 'abierto') return { raiz, tipo, inv: 0, notas, orden: voicingAbierto(notas), partes: [0, 2, 1], dada: 0, abierto: true }
   const orden = inversion(notas, inv)
-  const partes = orden.map((_, j) => (j + inv) % 3)
+  const partes = orden.map((_, j) => (j + inv) % orden.length)
   return { raiz, tipo, inv, notas, orden, partes, dada: ronda.romano ? null : 0, abierto: false }
 }
 
@@ -1106,7 +1114,7 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
     let feedback = null
     const notasEs = (lista) => lista.map((n) => nombre(n, { octava: false })).join(' · ')
     if (listo) {
-      const [abajo, arriba] = TRIADAS[tipo].terceras
+      const terceras = TIPOS_ACORDE[tipo].terceras
       feedback = {
         tipo: 'bien',
         titulo:
@@ -1115,14 +1123,16 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
             ? `¡${ronda.romano} = ${cifradoDelAcorde}!`
             : abierto
               ? `¡${Mayus(nombreDelAcorde)} abierto!`
-              : `¡${Mayus(inv ? cifradoDelAcorde : nombreDelAcorde)}!`),
+              : `¡${Mayus(inv || ronda.cifrado ? cifradoDelAcorde : nombreDelAcorde)}!`),
         texto:
           ronda.mensaje ??
           (abierto
             ? `${notasEs(orden)}: la 3.ª subió una octava y dejó aire en medio.`
             : inv
             ? `${notasEs(orden)}: ${Mayus(nombreDelAcorde)} con la ${PARTES[inv]} en el bajo.`
-            : `${notasEs(notas)}: ${TERCERA[abajo].nombre} y encima ${TERCERA[arriba].nombre}.`),
+            : terceras.length > 2
+              ? `${notasEs(notas)}: ${yLista(terceras.map((t) => TERCERA[t].nombre))}, una encima de otra.`
+              : `${notasEs(notas)}: ${TERCERA[terceras[0]].nombre} y encima ${TERCERA[terceras[1]].nombre}.`),
       }
     } else if (perdida) {
       const faltan = rojas.map((j) => nombre(orden[j], { octava: false })).join(' y ')
@@ -1164,11 +1174,13 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
           ? `De ${desde} a ${tocada} hay ${plural(d)}. Nota sí, nota no: salta una nota de ${tonalidad ?? 'la escala'} cada vez.`
           : `${Mayus(tocada)} no está en ${tonalidad}: usa solo sus notas.`
       } else {
-        const [abajo, arriba] = TRIADAS[tipo].terceras
+        const terceras = TIPOS_ACORDE[tipo].terceras
+        const [abajo, arriba] = terceras
+        const hasta = (p) => terceras.slice(0, p).reduce((a, b) => a + b, 0)
         const falta = porTocar.filter((j) => !tocadas[j])
         const busca = escuchar
           ? 'Escucha otra vez: la del medio decide si es mayor o menor.'
-          : falta
+          : yLista(falta
               .map((j) =>
                 abierto
                   ? partes[j] === 1
@@ -1176,9 +1188,8 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
                     : `la **5.ª** está a ${plural(abajo + arriba)}`
                   : partes[j] === 1
                     ? `la **3.ª** está a ${plural(abajo)} (${TERCERA[abajo].nombre})`
-                    : `la **5.ª**, a ${plural(abajo + arriba)} (${TERCERA[arriba].nombre} sobre la 3.ª)`,
-              )
-              .join(' y ')
+                    : `la **${PARTES[partes[j]]}**, a ${plural(hasta(partes[j]))} (${TERCERA[terceras[partes[j] - 1]].nombre} sobre la ${PARTES[partes[j] - 1]})`,
+              ))
         texto = `De ${desde} a ${tocada} hay ${plural(d)} hacia arriba. ` + (escuchar ? busca : `${Mayus(busca)}.`)
       }
       feedback = { tipo: 'mal', titulo, texto: texto + pista + marco, plegable: true }
@@ -1193,14 +1204,14 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
         terminada || feedback
           ? null
           : ronda.romano
-            ? `Toca las tres notas ${faltan}`
+            ? `Toca ${CUANTAS[orden.length]} notas ${faltan}`
             : abierto
               ? `Toca la 5.ª y la 3.ª, una octava arriba ${faltan}`
             : inv
               ? `Toca las otras dos encima del bajo ${faltan}`
               : escuchar
-                ? `Toca la 3.ª y la 5.ª que oíste ${faltan}`
-                : `Toca la 3.ª y la 5.ª ${faltan}`,
+                ? `Toca ${yLista(porTocar.map((j) => `la ${PARTES[partes[j]]}`))} que oíste ${faltan}`
+                : `Toca ${yLista(porTocar.map((j) => `la ${PARTES[partes[j]]}`))} ${faltan}`,
       feedback,
       onClick: () => {
         if (ultima) return siguiente()
@@ -1283,8 +1294,8 @@ function Acorde({ paso, setAccion, siguiente, completar, fallo }) {
         <motion.div {...SUBE}>
           <BotonSonido
             sonido={sonidoAcorde}
-            etiqueta={`Escuchar ${inv ? cifradoDelAcorde : nombreDelAcorde}`}
-            onNotas={(ns, i) => senalar(ns.flat().map(simple), i < 3 ? i : null)}
+            etiqueta={`Escuchar ${inv || ronda.cifrado ? cifradoDelAcorde : nombreDelAcorde}`}
+            onNotas={(ns, i) => senalar(ns.flat().map(simple), i < orden.length ? i : null)}
             className="w-full"
           />
         </motion.div>
@@ -1304,7 +1315,7 @@ const GRADOS_CORTOS = ['1.er', '2.º', '3.er', '4.º', '5.º', '6.º', '7.º']
  * Debajo, qué parte es cada una: 1 · 3 · 5, 3 · 5 · 1 o 5 · 1 · 3.
  */
 function FilaAcorde({ orden, partes, dada, tocadas, rojas = [], guia, revelada = false, senal, sacudidas = {}, alTocar }) {
-  const columnas = { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
+  const columnas = { gridTemplateColumns: `repeat(${orden.length}, minmax(0, 1fr))` }
   const saltos = orden.slice(1).map((n, j) => APILADO[midi(n) - midi(orden[j])])
   return (
     <div className="flex flex-col gap-1.5" data-fila-acorde>
@@ -1354,6 +1365,220 @@ function FilaAcorde({ orden, partes, dada, tocadas, rojas = [], guia, revelada =
           </span>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ——— Resuelve la tensión (P9, lección 5.2): adónde va la sensible y adónde va la 7.ª de un V7 ———
+
+/**
+ * Ronda: { raiz: 'G3', menor: false, mensaje }. El V7 va marcado en el teclado y, arriba, sus dos notas tensas como
+ * recuadros de oro con su flecha (la sensible ↑, la 7.ª ↓); debajo de cada una, con candado, la nota a la que va.
+ * Se tocan las dos en su octava (la sensible sube medio tono; la 7.ª baja medio tono, o un tono si la casa es menor).
+ * Con las dos, suena V7 → I. Dos fallos seguidos: las que faltan en rojo y la ronda va al repaso.
+ */
+function Resolver({ paso, setAccion, siguiente, completar, fallo }) {
+  const rondas = paso.objetivo.rondas
+  const [r, setR] = useState(0)
+  const [tocadas, setTocadas] = useState({}) // { 0: 'C4' } = la sensible; { 1: 'E4' } = la 7.ª
+  const [intento, setIntento] = useState(null) // { nota, ok }
+  const [fallos, setFallos] = useState(0) // fallos seguidos
+  const [fallosRonda, setFallosRonda] = useState(0)
+  const [aciertos, setAciertos] = useState(0)
+  const [sacudidas, setSacudidas] = useState({}) // { 'd0' | 'h1': veces }
+  const { senal, senalar } = useSenal()
+  const ronda = rondas[r]
+  const res = useMemo(() => resolucionV7(ronda.raiz, { menor: ronda.menor }), [ronda])
+  const voces = useMemo(() => [res.sensible, res.septima], [res])
+  const listo = voces.every((_, j) => tocadas[j])
+  const perdida = !listo && fallos >= INTENTOS
+  const terminada = listo || perdida
+  const rojas = useMemo(() => (perdida ? [0, 1].filter((j) => !tocadas[j]) : []), [perdida, tocadas])
+  const ultima = r === rondas.length - 1
+  const v7 = cifradoDe(ronda.raiz, 'dom7')
+  const casa = cifradoDe(res.tonica, res.tipoTonica)
+  const sonidoV7 = { notas: [res.v7], duracion: 1.4 }
+  const sonidoResolucion = { notas: res.acordes, intervalo: 1.1, duracion: 1.3 }
+  const n = (x) => nombre(x, { octava: false })
+  const bajaSeptima = ronda.menor ? 'un tono' : 'medio tono'
+
+  const onNoteOn = useCallback(
+    (nota) => {
+      const m = midi(nota)
+      const tensa = voces.findIndex((v) => midi(v.desde) === m)
+      if (tensa >= 0) return setSacudidas((s) => ({ ...s, [`d${tensa}`]: (s[`d${tensa}`] ?? 0) + 1 }))
+      const ya = voces.findIndex((v, j) => tocadas[j] && midi(v.hacia) === m)
+      if (ya >= 0) return setSacudidas((s) => ({ ...s, [`h${ya}`]: (s[`h${ya}`] ?? 0) + 1 }))
+      if (terminada || res.v7.some((x) => midi(x) === m)) return
+      const j = voces.findIndex((v) => midi(v.hacia) === m)
+      if (j >= 0) {
+        const nuevas = { ...tocadas, [j]: nota }
+        setTocadas(nuevas)
+        setIntento({ nota, ok: true })
+        setFallos(0)
+        if (voces.every((_, k) => nuevas[k])) {
+          playNotes(res.acordes, { intervalo: 1.1, duracion: 1.3, retraso: 0.25 })
+          const total = aciertos + (fallosRonda === 0 ? 1 : 0)
+          setAciertos(total)
+          if (ultima) completar({ aciertos: total, total: rondas.length })
+        }
+        return
+      }
+      const f = fallos + 1
+      setIntento({ nota, ok: false })
+      setFallos(f)
+      setFallosRonda((x) => x + 1)
+      if (f >= INTENTOS) {
+        playNotes(res.acordes, { intervalo: 1.1, duracion: 1.3, retraso: 0.35 })
+        fallo?.(r)
+        if (ultima) completar({ aciertos, total: rondas.length })
+      }
+    },
+    [voces, tocadas, terminada, res, aciertos, fallos, fallosRonda, ultima, r, rondas.length, completar, fallo],
+  )
+
+  useEffect(() => {
+    let feedback = null
+    const [s, t] = voces
+    if (listo) {
+      feedback = {
+        tipo: 'bien',
+        titulo: `¡${v7} → ${casa}!`,
+        texto:
+          ronda.mensaje ??
+          `**${n(s.desde)} → ${n(s.hacia)}** (sube medio tono) y **${n(t.desde)} → ${n(t.hacia)}** (baja ${bajaSeptima}): el tritono se cerró en ${n(s.hacia)}–${n(t.hacia)}.`,
+      }
+    } else if (perdida) {
+      const faltan = rojas.map((j) => n(voces[j].hacia)).join(' y ')
+      feedback = {
+        tipo: 'error',
+        titulo: `Faltaba${rojas.length === 1 ? '' : 'n'} ${faltan}.`,
+        texto: `La sensible sube a la tónica (${n(s.desde)} → ${n(s.hacia)}) y la 7.ª baja (${n(t.desde)} → ${n(t.hacia)}). Al final lo repasas.`,
+        plegable: true,
+      }
+    } else if (intento && !intento.ok) {
+      const tocada = nombre(Note.fromMidiSharps(Note.midi(intento.nota)), { octava: false })
+      const otraOctava = voces.findIndex((v) => haciaArriba(v.hacia, intento.nota) === 0)
+      const cerca = voces
+        .map((v, j) => ({ j, d: midi(intento.nota) - midi(v.desde) }))
+        .filter(({ d }) => Math.abs(d) <= 2)
+        .sort((a, b) => Math.abs(a.d) - Math.abs(b.d))[0]
+      let titulo = `Esa es ${tocada}.`
+      let texto = `Desde cada nota en oro, muévete lo mínimo: la sensible **sube** y la 7.ª **baja**.`
+      if (otraOctava >= 0) {
+        titulo = `${Mayus(tocada)}, pero en otra octava.`
+        texto =
+          otraOctava === 0
+            ? `La sensible (${n(s.desde)}) sube **medio tono**: la tecla de al lado, a su derecha.`
+            : `La 7.ª (${n(t.desde)}) baja **${bajaSeptima}**, a su izquierda.`
+      } else if (cerca?.j === 0 && cerca.d < 0) {
+        titulo = `${Mayus(n(s.desde))} bajó a ${tocada}.`
+        texto = `La sensible **sube**: está a medio tono de la tónica y quiere llegar a ella.`
+      } else if (cerca?.j === 1 && cerca.d > 0) {
+        titulo = `${Mayus(n(t.desde))} subió a ${tocada}.`
+        texto = `La 7.ª **baja** ${bajaSeptima}: así el tritono se cierra.`
+      } else if (cerca?.j === 0) {
+        texto = `La sensible (${n(s.desde)}) sube solo **medio tono**: la tecla de al lado.`
+      } else if (cerca?.j === 1) {
+        texto = `La 7.ª (${n(t.desde)}) baja **${bajaSeptima}**.`
+      }
+      feedback = { tipo: 'mal', titulo, texto, plegable: true }
+    }
+    const cuantas = voces.filter((_, j) => tocadas[j]).length
+    setAccion({
+      label: 'Continuar',
+      avanza: ultima,
+      disabled: !terminada,
+      ayuda: terminada || feedback ? null : `Toca adónde va cada nota en oro (${cuantas}/2)`,
+      feedback,
+      onClick: () => {
+        if (ultima) return siguiente()
+        const next = rondas[r + 1]
+        setR(r + 1)
+        setTocadas({})
+        setIntento(null)
+        setFallos(0)
+        setFallosRonda(0)
+        setSacudidas({})
+        playNotes([resolucionV7(next.raiz, { menor: next.menor }).v7], { duracion: 1.4 })
+      },
+    })
+  }, [listo, perdida, rojas, intento, voces, tocadas, ronda, v7, casa, bajaSeptima, ultima, r, rondas, setAccion, siguiente])
+
+  const marcadas = [...res.v7.map(simple), ...Object.values(tocadas)]
+  const estados = rojas.length ? Object.fromEntries(rojas.map((j) => [voces[j].hacia, 'mal'])) : undefined
+  const tocar = (nota, i) => {
+    playNotes(nota)
+    senalar(simple(nota), i)
+  }
+  const columnas = { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Rondas total={rondas.length} actual={r} hecha={terminada} />
+
+      <motion.div key={`frase-${r}`} {...ENTRA_DERECHA} className="flex items-center justify-between gap-3">
+        <p className="text-xl font-semibold leading-snug sm:text-2xl" data-frase-resolver>
+          <span className="rounded-md bg-fijate-claro px-1.5 font-dato font-medium">{v7}</span> →{' '}
+          <span className="underline decoration-fijate decoration-4 underline-offset-4 font-dato font-medium">{casa}</span>: ¿adónde va cada una?
+        </p>
+        <BotonSonido sonido={sonidoV7} etiqueta={v7} className="min-h-12 shrink-0 py-1.5 pl-2 pr-4" />
+      </motion.div>
+
+      <div className="flex flex-col gap-1.5" data-fila-resolver>
+        <ol className="grid gap-1.5" style={columnas}>
+          {voces.map((v, j) => (
+            <CasillaFormula
+              key={`d${j}`}
+              hecha
+              dada
+              alto
+              ahora={false}
+              salta={false}
+              suena={Boolean(senal?.activa && senal.i === `d${j}`)}
+              sacude={sacudidas[`d${j}`] ?? 0}
+              onTocar={() => tocar(v.desde, `d${j}`)}
+              etiqueta={`${j === 0 ? 'La sensible' : 'La 7.ª'}: escuchar ${nombre(v.desde)}`}
+            >
+              {`${n(v.desde)} ${j === 0 ? '↑' : '↓'}`}
+            </CasillaFormula>
+          ))}
+        </ol>
+        <ol className="grid gap-1.5" style={columnas} key={`fila-${r}`}>
+          {voces.map((v, j) => {
+            const mal = rojas.includes(j)
+            const hecha = Boolean(tocadas[j]) || mal
+            return (
+              <CasillaFormula
+                key={`h${j}`}
+                hecha={hecha}
+                mal={mal}
+                alto
+                ahora={false}
+                salta={hecha}
+                suena={Boolean(senal?.activa && senal.i === `h${j}`)}
+                sacude={sacudidas[`h${j}`] ?? 0}
+                onTocar={hecha ? () => tocar(v.hacia, `h${j}`) : undefined}
+                etiqueta={hecha ? `Llega a ${nombre(v.hacia)}` : 'Por descubrir'}
+              >
+                {hecha ? n(v.hacia) : <Candado className="size-[18px] text-zinc-400" />}
+              </CasillaFormula>
+            )
+          })}
+        </ol>
+        <div className="grid gap-1.5" style={columnas} aria-hidden>
+          <span className="text-center font-dato text-sm font-medium text-zinc-500">la sensible</span>
+          <span className="text-center font-dato text-sm font-medium text-zinc-500">la 7.ª</span>
+        </div>
+      </div>
+
+      {terminada && (
+        <motion.div {...SUBE}>
+          <BotonSonido sonido={sonidoResolucion} etiqueta={`Escuchar ${v7} → ${casa}`} className="w-full" />
+        </motion.div>
+      )}
+
+      <Piano {...paso.piano} compacto onNoteOn={onNoteOn} marcadas={marcadas} estados={estados} ir={simple(res.sensible.hacia)} senalar={senal} />
     </div>
   )
 }

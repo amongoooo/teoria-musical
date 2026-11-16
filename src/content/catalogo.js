@@ -43,6 +43,7 @@ export const CATALOGO = {
   '4.5': l(['armonia', 'produccion'], 'intermedio', ['4.3', '4.4']),
   // Módulo 5 · Armonía funcional y progresiones (plan: https://claude.ai/artifact/HjTYcwyL4xszUxAwx2gJBL)
   '5.1': l(['armonia'], 'intermedio', ['4.3']),
+  '5.2': l(['armonia'], 'intermedio', ['5.1', '4.4']),
   // Ruta de letras
   L1: l(['letras'], 'principiante'),
   L2: l(['letras'], 'principiante', ['L1']),
