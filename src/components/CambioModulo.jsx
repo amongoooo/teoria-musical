@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { getModulo, moduloDisponible } from '../content/index.js'
+import { moduloDisponible, moduloVecino } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
 import { tinta } from '../ui/color.js'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
@@ -42,7 +42,7 @@ export default function useCambioModulo(modulo, { isla = null, tira = null } = {
   const X = ancho < 560 ? Math.max(160, ancho * DESLIZAR.pagina.umbralCelular) : DESLIZAR.pagina.umbralAncho
   const XV = DESLIZAR.pagina.umbralVertical
   // Una ruta (rutaModulo.js) trae su propio `vecino` (la ruta de al lado) y `disponible`.
-  const vecino = (dir) => (modulo.vecino ? modulo.vecino(dir) : getModulo(modulo.numero + dir))
+  const vecino = (dir) => (modulo.vecino ? modulo.vecino(dir) : moduloVecino(modulo.numero, dir))
   const puede = (dir) => {
     const m = vecino(dir)
     return Boolean(m && (m.esRuta ? m.disponible : moduloDisponible(m)))
@@ -56,7 +56,7 @@ export default function useCambioModulo(modulo, { isla = null, tira = null } = {
     saliendo.current = true
     setSeVa(true)
     const m = vecino(dir)
-    navegar(m.href ?? rutas.modulo(modulo.numero + dir))
+    navegar(m.href ?? rutas.modulo(m.numero))
   }
 
   const lado = useDeslizar({
@@ -208,7 +208,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
       {cuadrito}
       <span className="flex flex-col items-center gap-0.5 text-center">
         {encabezado}
-        <span className="text-base font-bold leading-tight text-zinc-900">{modulo.esBloque ? modulo.nombre : modulo.esRuta ? modulo.titulo : `Módulo ${modulo.numero}`}</span>
+        <span className="text-base font-bold leading-tight text-zinc-900">{modulo.esBloque ? modulo.nombre : modulo.esRuta ? modulo.titulo : (modulo.nombre ?? `Módulo ${modulo.numero}`)}</span>
         {!disponible && <span className="text-sm font-semibold text-zinc-500">Próximamente</span>}
       </span>
     </motion.div>

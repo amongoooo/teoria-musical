@@ -16,6 +16,7 @@ const cual = (texto, correcta, explicacion) => ({
 export default {
   id: 'L2',
   ruta: 'letras',
+  modulo: 11, // también es la lección 2 del Módulo de Letras (content/modulos.js)
   titulo: 'Esquemas de rima',
   subtitulo: 'AABB, ABAB y ABBA',
   minutos: 5,

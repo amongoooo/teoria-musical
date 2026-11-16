@@ -26,7 +26,7 @@ import leccion43 from './modulo-04/leccion-4-3.js'
 import leccion44 from './modulo-04/leccion-4-4.js'
 import leccion45 from './modulo-04/leccion-4-5.js'
 import leccion51 from './modulo-05/leccion-5-1.js'
-// Lecciones que viven DENTRO de una ruta (no en un módulo): llevan `ruta` en lugar de `modulo`.
+// Lecciones de la ruta de letras: llevan `ruta: 'letras'` y también `modulo: 11` (el Módulo de Letras).
 import letrasL1 from './ruta-letras/leccion-L1.js'
 import letrasL2 from './ruta-letras/leccion-L2.js'
 import letrasL3 from './ruta-letras/leccion-L3.js'
@@ -67,6 +67,19 @@ export { MODULOS }
 
 export function getModulo(numero) {
   return MODULOS.find((m) => m.numero === Number(numero)) ?? null
+}
+
+/** Cómo se llama un módulo: «Módulo 3» o su `nombre` («Módulo de Letras»). */
+export const nombreModulo = (m) => m?.nombre ?? `Módulo ${m?.numero}`
+
+/**
+ * El módulo de al lado (dir = 1 o -1) para deslizar entre módulos: el siguiente CON lecciones, saltando los que aún
+ * no tienen (del 5 se pasa al de Letras, 11). null si no hay más.
+ */
+export function moduloVecino(numero, dir) {
+  const i = MODULOS.findIndex((m) => m.numero === Number(numero))
+  for (let j = i + dir; j >= 0 && j < MODULOS.length; j += dir) if (moduloDisponible(MODULOS[j])) return MODULOS[j]
+  return null
 }
 
 /** Contenido completo de una lección (o null si aún no existe). */

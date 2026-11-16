@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import CaminoLecciones from '../components/CaminoLecciones.jsx'
 import useCambioModulo from '../components/CambioModulo.jsx'
-import { getModulo } from '../content/index.js'
+import { getModulo, nombreModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { rutas } from '../router.js'
 import { tinta } from '../ui/color.js'
@@ -48,7 +48,7 @@ function PaginaModulo({ modulo }) {
 
         <motion.header variants={itemLista} className="flex flex-col items-center gap-2 text-center">
           <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: tinta(modulo.acento) }}>
-            Módulo {modulo.numero}
+            {nombreModulo(modulo)}
           </span>
           <h1 data-titulo-modulo className="font-titulo text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">{modulo.titulo}</h1>
         </motion.header>

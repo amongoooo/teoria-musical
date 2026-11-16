@@ -1,5 +1,5 @@
 // Ruta de letras · L1 — Rima consonante y asonante.
-// Lección corta (~5 min) que vive EN la ruta de letras (no en un módulo): `ruta: 'letras'` en lugar de `modulo`.
+// Lección corta (~5 min) de la ruta de letras (`ruta: 'letras'`) y del Módulo de Letras (`modulo: 11`).
 // Los versos son originales (escritos para la app) y se colorean con el motor de src/letras/ (como en #/letras).
 // Formato: src/content/FORMATO.md · interacciones: src/content/INTERACCIONES.md
 
@@ -11,6 +11,7 @@ const par = (a, b, correcta, explicacion) => ({ pregunta: `*${a}* y *${b}*`, opc
 export default {
   id: 'L1',
   ruta: 'letras',
+  modulo: 11, // también es la lección 1 del Módulo de Letras (content/modulos.js)
   titulo: 'Rima consonante y asonante',
   subtitulo: 'Desde la vocal que suena fuerte',
   minutos: 5,

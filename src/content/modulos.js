@@ -3,6 +3,8 @@
 // dice el tipo de ruta, no el módulo), como variable de src/index.css: `--color-armonia` (barras, bordes) y sus
 // variantes `-relleno`, `-tinta` y `-suave`, que cambian con el tema. Usa los helpers de src/ui/color.js:
 // oscuro() → relleno, tinta(), claro() → suave.
+// `nombre` (opcional) reemplaza «Módulo N» donde se nombra el módulo, e `icono` (opcional, clave de ICONOS_MODULO en
+// components/NavegadorModulos.jsx) reemplaza su número en el cuadrito: así va el Módulo de Letras (numero 11).
 // Cada lección tiene `id` ('1.1') y `titulo`. Si existe su archivo de contenido
 // en `lecciones` (ver index.js), la lección está disponible; si no, "Próximamente".
 
@@ -170,6 +172,26 @@ export const MODULOS = [
       { id: '10.3', titulo: 'Arreglo por capas' },
       { id: '10.4', titulo: 'Sonido y emoción' },
       { id: '10.5', titulo: 'Proyecto final' },
+    ],
+  },
+  {
+    // Módulo de Letras (pedido del usuario, 2026-11-16): las lecciones L1–L5 de la ruta de letras, que ahora también
+    // viven aquí (llevan `ruta` y `modulo`), y las que vengan de lírica en español. Va al final para no mover los números.
+    numero: 11,
+    nombre: 'Módulo de Letras',
+    icono: 'pluma',
+    titulo: 'Letras: rima, métrica y flow',
+    descripcion: 'Rima consonante y asonante, esquemas, sílabas y sinalefa, multis y acentos en el pulso.',
+    siente: 'La rima amarra el oído; la tónica en el pulso hace que el verso suene.',
+    reto: '8 versos con esquema ABAB, acomodados en el Flow y grabados sobre un beat tuyo.',
+    area: 'letras',
+    acento: 'var(--color-letras)',
+    lecciones: [
+      { id: 'L1', titulo: 'Rima consonante y asonante' },
+      { id: 'L2', titulo: 'Esquemas de rima' },
+      { id: 'L3', titulo: 'Sílabas y sinalefa' },
+      { id: 'L4', titulo: 'Multis' },
+      { id: 'L5', titulo: 'Acentos en el pulso' },
     ],
   },
 ]

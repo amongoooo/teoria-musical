@@ -6,6 +6,7 @@
 export default {
   id: 'L5',
   ruta: 'letras',
+  modulo: 11, // también es la lección 5 del Módulo de Letras (content/modulos.js)
   titulo: 'Acentos en el pulso',
   subtitulo: 'Que las tónicas caigan en el tiempo',
   minutos: 6,

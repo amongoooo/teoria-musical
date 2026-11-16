@@ -17,6 +17,7 @@ const cuenta = (texto, n, explicacion) => ({
 export default {
   id: 'L3',
   ruta: 'letras',
+  modulo: 11, // también es la lección 3 del Módulo de Letras (content/modulos.js)
   titulo: 'Sílabas y sinalefa',
   subtitulo: 'Contar como se canta',
   minutos: 5,

@@ -5,6 +5,25 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-16-aprender',
+    fecha: '16 nov 2026',
+    titulo: 'Tres maneras de aprender',
+    cosas: [
+      {
+        texto: 'Aprender ahora tiene **Curso**, **Rutas** y **Módulos**. Si vas empezando, el **Curso completo** te lleva paso a paso por todo.',
+        donde: { etiqueta: 'Abrir Aprender', href: '#/aprender' },
+      },
+      {
+        texto: 'Nuevo **Módulo de Letras**: rima, esquemas, sílabas, multis y flow, con las lecciones de la ruta de letras (lo que ya hiciste cuenta).',
+        donde: { etiqueta: 'Abrir el módulo', href: '#/modulo/11' },
+      },
+      {
+        texto: 'Los módulos van **por área**, con su color, y cada lección dice su **nivel** al tocarla.',
+        donde: { etiqueta: 'Ver los módulos', href: '#/aprender/modulos' },
+      },
+    ],
+  },
+  {
     id: '2026-11-15-fallar',
     fecha: '15 nov 2026',
     titulo: 'Ahora sí se puede fallar',

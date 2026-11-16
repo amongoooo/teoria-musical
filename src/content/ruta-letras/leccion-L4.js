@@ -14,6 +14,7 @@ const multi = (verso, opciones, correcta, explicacion) => ({
 export default {
   id: 'L4',
   ruta: 'letras',
+  modulo: 11, // también es la lección 4 del Módulo de Letras (content/modulos.js)
   titulo: 'Multis',
   subtitulo: 'Rimas de varias sílabas',
   minutos: 5,

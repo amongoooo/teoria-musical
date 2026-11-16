@@ -1,11 +1,11 @@
 import { animate, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { MODULOS, moduloDisponible } from '../content/index.js'
+import { MODULOS, moduloDisponible, nombreModulo } from '../content/index.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { labio, oscuro, tinta } from '../ui/color.js'
-import { MarcaBien, Saltar } from '../ui/Iconos.jsx'
+import { MarcaBien, Pluma, Saltar } from '../ui/Iconos.jsx'
 import { pruebaModulo } from '../content/pruebas/index.js'
 import { pendientesModulo } from './yaLoSabes.js'
 import Hoja from '../ui/Hoja.jsx'
@@ -16,6 +16,13 @@ import useRuedaMouse from '../ui/useRuedaMouse.js'
 import { VIDRIO } from '../ui/vidrio.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
+
+/** Íconos de los módulos que llevan uno en lugar de su número (`icono` en content/modulos.js). */
+export const ICONOS_MODULO = { pluma: Pluma }
+/** El ícono de un módulo (o del módulo de una ruta: `Icono`), o null si se muestra su número. */
+export const iconoModulo = (m) => m?.Icono ?? ICONOS_MODULO[m?.icono] ?? null
+/** Cuántos módulos van numerados (1–10; el de Letras va aparte, con nombre). */
+const NUMERADOS = MODULOS.filter((m) => !m.nombre).length
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
 
 /**
@@ -119,7 +126,7 @@ function Carrusel({ actual, onCerrar }) {
           ‹
         </Pulsable>
         <span className="text-base font-semibold tabular-nums text-zinc-600" aria-live="polite">
-          Módulo {m.numero} de {n}
+          {m.nombre ?? `Módulo ${m.numero} de ${NUMERADOS}`}
         </span>
         <Pulsable onClick={() => irA(indice + 1)} disabled={indice === n - 1} aria-label="Módulo siguiente" className={`grid size-11 place-items-center rounded-full text-2xl text-zinc-700 disabled:opacity-30 ${VIDRIO}`}>
           ›
@@ -138,7 +145,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
     <div className="flex h-full flex-col items-center gap-3 rounded-3xl border border-zinc-200 bg-white p-5 text-center">
       <Cuadrito modulo={m} disponible={disponible} tam={64} />
       <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: disponible ? tinta(m.acento) : undefined }}>
-        Módulo {m.numero}
+        {nombreModulo(m)}
       </span>
       <h3 className="font-titulo text-xl font-bold leading-tight">{m.titulo}</h3>
       <p className="line-clamp-3 text-base text-zinc-600">{m.descripcion}</p>
@@ -157,7 +164,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
           </Pulsable>
         ) : disponible ? (
           <Pulsable onClick={() => navegar(rutas.modulo(m.numero))} className="min-h-12 rounded-2xl bg-zinc-900 text-lg font-semibold text-white">
-            Ir al módulo {m.numero}
+            {m.nombre ? 'Ir al módulo' : `Ir al módulo ${m.numero}`}
           </Pulsable>
         ) : (
           <span className="grid min-h-12 place-items-center rounded-2xl border-2 border-dashed border-zinc-300 text-lg font-semibold text-zinc-500">Próximamente</span>
@@ -180,7 +187,7 @@ function TarjetaModulo({ modulo: m, progreso, esActual, onCerrar }) {
 
 /**
  * El cuadrito de un módulo: su número sobre su color, con «labio»; punteado si aún no está.
- * Los módulos no llevan ícono: se reconocen por su color y su número. `hecho` = ✓ verde en la esquina.
+ * Los módulos se reconocen por su color y su número (el de Letras, por su pluma: `icono`). `hecho` = ✓ verde en la esquina.
  */
 export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, className = '' }) {
   return (
@@ -195,7 +202,10 @@ export function Cuadrito({ modulo, disponible = true, hecho = false, tam = 72, c
       }}
       aria-hidden
     >
-      {modulo.Icono ? <modulo.Icono style={{ width: tam * 0.5, height: tam * 0.5 }} /> : modulo.numero}
+      {(() => {
+        const Icono = iconoModulo(modulo)
+        return Icono ? <Icono style={{ width: tam * 0.5, height: tam * 0.5 }} /> : modulo.numero
+      })()}
       {hecho && <MarcaBien className="absolute -right-1.5 -top-1.5 size-7" aro="var(--color-fondo)" />}
     </span>
   )
