@@ -280,3 +280,12 @@ Pedido del usuario: «van de 1-10 y letras no tiene números, ¿recomendarías q
 - **Aprender**: `Encabezado` con antetítulo `font-juego` y título `font-titulo text-4xl` como el del Curso: «Por habilidad · Rutas» y «Por tema · Módulos».
 - Pruebas: `prueba-rapida.mjs`, `prerrequisitos.mjs` y `funciones.mjs` con los nombres nuevos. Revisado a 375 px en claro y oscuro (Rutas y Módulos con título, Armonía 2 con islas 1…, ruta de acordes con M1.2, «Antes te conviene» de la A1.3, insignia «Armonía 1 · 1/5 lecciones»).
 
+## 2026-11-16 · Barras de avance en Rutas y Módulos, y desenfoque solo en pantalla
+
+Pedido del usuario: «en rutas y módulos que el progreso se muestre por una barra de progreso» y «una ruta con muchísimas islas hace que se trabe la app al abrir una isla: ¿mostrarlas por tramos o que el blur afecte solo a las que se muestran en pantalla?».
+
+- **Barras**: `AvanceCuadrito` (`components/Tarjetas.jsx`) en `CuadritoModulo` y `CuadritoRuta`: `BarraProgreso` `h-2 w-19` del color del área bajo el cuadrito (alineadas aunque el título ocupe 1–3 renglones); el número queda en el `aria-label` y en `data-avance` («4/13»; lo leen `melodia.mjs` y `ruta-ritmo.mjs`).
+- **Medición** (Playwright, 375 px, versión compilada, traza de Chromium al abrir una isla y pasar a la siguiente): pintado (RasterTask) 585 ms con desenfoque y 225 ms sin él → el desenfoque era ~60 %. En el hilo principal, con CPU ×6, el primer cuadro tarda ~117 ms con 20 islas y ~83 ms con 10: crece poco con el largo de la ruta.
+- **Arreglo**: en `actualizar` de `CaminoLecciones.jsx`, una isla fuera de pantalla (margen `MARGEN_PANTALLA` = 1,5 islas, y el ancho de la etiqueta de lado) no lleva `filter`, ni su título; una línea con sus dos islas fuera, tampoco; el desenfoque va en pasos de 0,25 px (menos repintado mientras se abre). Se ve igual. Chromium ya no pinta lo que está fuera, así que en la prueba baja poco (585 → 504 ms); la ganancia grande es en Safari/iPhone, que sí procesa los filtros de capas fuera de pantalla, y hace que el costo no crezca con el largo de la ruta.
+- **Rutas por tramos**: no hizo falta por ahora (recomendación en el chat): con el arreglo, una ruta larga cuesta casi lo mismo que una corta. Si las rutas pasan de ~40 paradas, la opción es mostrar un tramo a la vez (como un módulo, deslizando entre tramos).
+- `regla.mjs` puesta al día (la ruta de Acordes ya tiene 5 tramos y 20 paradas). Pasan `ruta-ritmo`, `melodia`, `tramos` y `regla`. Revisado a 375 px en claro y oscuro.

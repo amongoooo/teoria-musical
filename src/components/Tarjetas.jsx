@@ -20,6 +20,7 @@ import CirculoNodos, { tonalidad } from './CirculoNodos.jsx'
 import { datosCasilla } from './CirculoQuintas.jsx'
 import { COLOR_CIRCULO } from '../pages/Circulo.jsx'
 import useTemblor from '../ui/useTemblor.js'
+import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { useCurso } from './cursoModulo.js'
 import { AREAS, ETAPAS, ORDEN_AREAS } from '../content/curso.js'
 
@@ -108,7 +109,16 @@ export function BotonCurso() {
   )
 }
 
-/** Cuadrito de un módulo: abierto, con lecciones hechas / total; si aún no existe, con candado. */
+/**
+ * Avance de un cuadrito (módulo o ruta; pedido del usuario: «que el progreso se muestre por una barra»): barra del
+ * color del área justo bajo el cuadrito (así quedan alineadas en la fila aunque los títulos ocupen 1 o 3 renglones).
+ * El número va en el aria-label del cuadrito y en `data-avance` (pruebas).
+ */
+function AvanceCuadrito({ hechas, total, color, ...props }) {
+  return <BarraProgreso valor={total ? hechas / total : 0} color={color} alto="h-2" className="mt-0.5 w-19" aria-hidden data-avance={`${hechas}/${total}`} {...props} />
+}
+
+/** Cuadrito de un módulo: abierto, con su barra de lecciones hechas; si aún no existe, con candado. */
 export function CuadritoModulo({ modulo: m, progreso }) {
   const disponible = moduloDisponible(m)
   const hechas = m.lecciones.filter((l) => progreso.lecciones[l.id]?.completada).length
@@ -122,12 +132,8 @@ export function CuadritoModulo({ modulo: m, progreso }) {
           </span>
         )}
       </span>
+      {disponible && <AvanceCuadrito hechas={hechas} total={m.lecciones.length} color={m.acento} data-modulo-avance={m.numero} />}
       <span className={`line-clamp-3 text-base font-semibold leading-snug ${disponible ? 'text-zinc-900' : 'text-zinc-500'}`}>{m.titulo}</span>
-      {disponible && (
-        <span className="font-juego text-base tabular-nums" style={{ color: tinta(m.acento) }}>
-          {hechas}/{m.lecciones.length}
-        </span>
-      )}
     </>
   )
   if (!disponible) {
@@ -260,7 +266,7 @@ export function MiniPiano() {
   )
 }
 
-/** Cuadrito de una ruta (como el de un módulo, con su ícono): paradas hechas / total; sin paradas aún, con candado. */
+/** Cuadrito de una ruta (como el de un módulo, con su ícono): barra de paradas hechas; sin paradas aún, con candado. */
 export function CuadritoRuta({ id }) {
   const { ruta, modulo, estado } = useRuta(id)
   const disponible = modulo.disponible
@@ -274,12 +280,8 @@ export function CuadritoRuta({ id }) {
           </span>
         )}
       </span>
+      {disponible && <AvanceCuadrito hechas={estado.hechas} total={estado.total} color={modulo.acento} data-ruta-inicio={id} />}
       <span className={`text-base font-semibold leading-snug ${disponible ? 'text-zinc-900' : 'text-zinc-500'}`}>{ruta.nombre}</span>
-      {disponible && (
-        <span className="font-juego text-base tabular-nums" style={{ color: tinta(modulo.acento) }} data-ruta-inicio={id}>
-          {estado.hechas}/{estado.total}
-        </span>
-      )}
     </>
   )
   if (!disponible) {

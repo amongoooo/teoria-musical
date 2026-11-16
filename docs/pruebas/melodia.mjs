@@ -72,7 +72,7 @@ for (const tema of ['claro', 'oscuro']) {
   await ir('#/aprender/rutas')
   const fila = page.locator('[data-area-rutas="melodia"]')
   comprobar(r, 'aprender: Melodía sin «Próximamente»', (await fila.getByText('Próximamente').count()) === 0)
-  comprobar(r, 'aprender: cuadrito 0/13', (await fila.locator('[data-ruta-inicio="melodia"]').textContent()) === '0/13')
+  comprobar(r, 'aprender: cuadrito 0/13', (await fila.locator('[data-ruta-inicio="melodia"]').getAttribute('data-avance')) === '0/13')
   await fila.scrollIntoViewIfNeeded()
   await foto('aprender')
 

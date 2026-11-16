@@ -146,7 +146,10 @@ const desenfoqueA = (d) => {
   if (k >= ps.length - 1) return ps[ps.length - 1]
   return lerp(ps[k], ps[k + 1], d - k)
 }
-const filtro = (px) => (px > 0.05 ? `blur(${px.toFixed(2)}px)` : '')
+// En pasos de 0,25 px: mientras la isla se abre, el valor no cambia en cada fotograma y no hay que repintar tanto.
+const filtro = (px) => (px > 0.05 ? `blur(${(Math.round(px * 4) / 4).toFixed(2)}px)` : '')
+// Margen (px de la capa) fuera de la pantalla en el que aún se desenfoca: una isla y media (lo que asoma al moverse).
+const MARGEN_PANTALLA = ISLA * 1.5
 
 const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
 
@@ -501,6 +504,7 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       lienzo.current.style.transform = z !== 1 ? `scale(${z})` : ''
     }
     const difuso = [] // px de desenfoque de cada nodo (para las líneas)
+    const enVista = [] // si cada nodo está en pantalla (o cerca): solo ahí se desenfoca
     const sales = [] // cuánto ha salido cada nodo en el despliegue inicial (0 a 1)
     for (let m = 0; m <= n; m++) {
       const lo = A.nodos[m]
@@ -543,9 +547,15 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       }
       const base = m === 0 ? INSIGNIA : ISLA // tamaño del nodo cerrado
       const tam = lerp(esc, BOLA / base, o) // escala del nodo pequeño (crece hasta el tamaño de la bola)
-      // Desenfoque según la distancia a la isla abierta (solo con una abierta).
-      const borroso = a * desenfoqueA(Math.abs(pc - m))
-      difuso.push(borroso)
+      // Desenfoque según la distancia a la isla abierta (solo con una abierta). SOLO en lo que está en pantalla
+      // (con una isla de margen): el desenfoque es lo que más cuesta pintar, y en una ruta larga casi todas las
+      // islas quedan fuera; así abrir una isla cuesta lo mismo con 10 islas que con 100.
+      const enPantalla =
+        sy > -MARGEN_PANTALLA * z && sy < window.innerHeight + MARGEN_PANTALLA * z &&
+        sx > -(MARGEN_PANTALLA + ETIQUETA) * z && sx < window.innerWidth + (MARGEN_PANTALLA + ETIQUETA) * z
+      const borroso = enPantalla ? a * desenfoqueA(Math.abs(pc - m)) : 0
+      difuso.push(a * desenfoqueA(Math.abs(pc - m)))
+      enVista.push(enPantalla)
       if (els.difuso[m]) els.difuso[m].style.filter = filtro(borroso)
       const chica = els.chica[m]
       if (chica) {
@@ -613,18 +623,18 @@ export default function CaminoLecciones({ modulo, progreso, onAbierta, onTira, r
       els.gris[s]?.setAttribute('d', d)
       els.color[s]?.setAttribute('d', d)
       // La línea se desenfoca como la media de sus dos islas (filtro SVG con la zona justa de la línea).
-      const bl = (difuso[s] + difuso[s + 1]) / 2
+      const bl = enVista[s] || enVista[s + 1] ? (difuso[s] + difuso[s + 1]) / 2 : 0
       const linea = els.linea[s]
       const fil = els.filtro[s]
       if (linea && fil) {
-        if (bl > 0.05) {
+        if (bl > 0.05) { // (con sus dos islas fuera de pantalla, sin desenfoque)
           const mx = Math.min(pos[s].x, pos[s + 1].x) - 40
           const my = Math.min(pos[s].y, pos[s + 1].y) - 40
           fil.setAttribute('x', mx)
           fil.setAttribute('y', my)
           fil.setAttribute('width', Math.abs(pos[s].x - pos[s + 1].x) + 80)
           fil.setAttribute('height', Math.abs(pos[s].y - pos[s + 1].y) + 80)
-          fil.firstChild.setAttribute('stdDeviation', bl.toFixed(2))
+          fil.firstChild.setAttribute('stdDeviation', (Math.round(bl * 4) / 4).toFixed(2))
           linea.setAttribute('filter', `url(#${fil.id})`)
         } else linea.removeAttribute('filter')
       }

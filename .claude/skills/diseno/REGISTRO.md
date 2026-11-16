@@ -193,3 +193,4 @@ De la más reciente a la más antigua. Las reglas vigentes están en `SKILL.md`;
 
 - 2026-11-10: Módulo y Entrenamiento de oído con la skill: `Volver`, `BarraProgreso`, helpers `oscuro`/`claro` en `src/ui/color.js`, entrada escalonada, opciones con `Pulsable` y salto de la correcta, días de racha que aparecen uno a uno, mini barra en lecciones a medias. Prohibido `text-xs`; texto de color con `oscuro()`. Feedback de oído absoluto: «Era Sol. Elegiste Do. Sonó Sol4 (392 Hz).».
 - 2026-11-10: Se crea la skill. Movimiento con `motion` y resortes, `Pulsable`, transiciones entre pantallas y pasos, contraste del acento oscurecido, "Próximamente" compacto en Inicio.
+- 2026-11-16: Aprender › Rutas y Módulos: el «3/10» de cada cuadrito pasa a **barra de progreso** del color del área bajo el cuadrito (`AvanceCuadrito`). Camino de islas: el desenfoque con una isla abierta solo se aplica a lo que está en pantalla (`MARGEN_PANTALLA`) y en pasos de 0,25 px.
