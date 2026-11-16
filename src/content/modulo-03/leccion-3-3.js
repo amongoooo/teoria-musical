@@ -199,7 +199,7 @@ export default {
         mayorONo(
           'C4',
           { grado: 3, semitonos: -1 },
-          'Otra cosa: el **3.º grado** bajó a **Mi♭**. Fíjate cómo se oscurece: la 3.ª decide el color (mayor o menor, como en la 3.2).',
+          'Otra cosa: el **3.º grado** bajó a **Mi♭**. Fíjate cómo se oscurece: la 3.ª decide el color (mayor o menor, como en la M2.2).',
         ),
         mayorONo(
           'G4',
@@ -354,7 +354,7 @@ export default {
           pregunta: '¿Cuál es la fórmula de la escala mayor?',
           opciones: ['T T S T T T S', 'T S T T S T T', 'T T T T T T'],
           correcta: 0,
-          explicacion: '**T T S T T T S**: los semitonos van entre el 3.º y el 4.º y entre el 7.º y la octava. (La de solo tonos es la de **tonos enteros** de la 3.1.)',
+          explicacion: '**T T S T T T S**: los semitonos van entre el 3.º y el 4.º y entre el 7.º y la octava. (La de solo tonos es la de **tonos enteros** de la M2.1.)',
         },
         {
           pregunta: '¿Por qué Sol mayor usa Fa♯ y no Sol♭?',

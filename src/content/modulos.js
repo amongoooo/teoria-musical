@@ -3,8 +3,9 @@
 // dice el tipo de ruta, no el módulo), como variable de src/index.css: `--color-armonia` (barras, bordes) y sus
 // variantes `-relleno`, `-tinta` y `-suave`, que cambian con el tema. Usa los helpers de src/ui/color.js:
 // oscuro() → relleno, tinta(), claro() → suave.
-// `nombre` (opcional) reemplaza «Módulo N» donde se nombra el módulo, e `icono` (opcional, clave de ICONOS_MODULO en
-// components/NavegadorModulos.jsx) reemplaza su número en el cuadrito: así va el Módulo de Letras (numero 11).
+// `numero` es el id interno (no cambia: lo usan las URLs #/modulo/N y el progreso). Lo que se VE es el número dentro
+// de su área (pedido del usuario, 2026-11-16): «Armonía 2», con lecciones A2.1, A2.2… (`nombreModulo`,
+// `numeroEnArea` y `codigoLeccion` de content/index.js). Un módulo nuevo de un área = al final, con el siguiente numero.
 // Cada lección tiene `id` ('1.1') y `titulo`. Si existe su archivo de contenido
 // en `lecciones` (ver index.js), la lección está disponible; si no, "Próximamente".
 
@@ -97,7 +98,7 @@ export const MODULOS = [
     titulo: 'Melodía sobre armonía',
     descripcion: 'Notas del acorde y de paso, contorno, motivos, pregunta–respuesta, hooks.',
     siente: 'Saltos = emoción; pasos = calma; la nota fuera del acorde crea anhelo.',
-    reto: 'Un hook sobre tu progresión favorita del módulo 5.',
+    reto: 'Un hook sobre tu progresión favorita de Armonía 2.',
     area: 'melodia',
     acento: 'var(--color-melodia)',
     lecciones: [
@@ -113,7 +114,7 @@ export const MODULOS = [
     titulo: 'Color armónico',
     descripcion: 'Séptimas, novenas a trecenas, sus2/sus4, add9, conducción de voces.',
     siente: 'maj7 = nostalgia cálida; sus = suspenso; 9 = aire.',
-    reto: 'Rearmonizar el loop del módulo 5 en estilo lo-fi o neo-soul.',
+    reto: 'Rearmonizar el loop de Armonía 2 en estilo lo-fi o neo-soul.',
     area: 'armonia',
     acento: 'var(--color-armonia)',
     lecciones: [
@@ -176,10 +177,8 @@ export const MODULOS = [
   },
   {
     // Módulo de Letras (pedido del usuario, 2026-11-16): las lecciones L1–L5 de la ruta de letras, que ahora también
-    // viven aquí (llevan `ruta` y `modulo`), y las que vengan de lírica en español. Va al final para no mover los números.
-    numero: 11,
-    nombre: 'Módulo de Letras',
-    icono: 'pluma',
+    // viven aquí (llevan `ruta` y `modulo`), y las que vengan de lírica en español.
+    numero: 11, // se ve como «Letras 1» (lecciones L1.1…L1.5)
     titulo: 'Letras: rima, métrica y flow',
     descripcion: 'Rima consonante y asonante, esquemas, sílabas y sinalefa, multis y acentos en el pulso.',
     siente: 'La rima amarra el oído; la tónica en el pulso hace que el verso suene.',

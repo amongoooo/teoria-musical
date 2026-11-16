@@ -1,6 +1,7 @@
 // Registro del contenido: módulos + lecciones disponibles.
 // Para añadir una lección: crea su archivo en src/content/modulo-XX/ y regístrala aquí.
 import { getOpciones } from '../progress/opciones.js'
+import { AREAS_CONOCIMIENTO } from './areas.js'
 import { infoLeccion } from './catalogo.js'
 import { MODULOS } from './modulos.js'
 import { RUTAS } from './rutas.js'
@@ -69,16 +70,50 @@ export function getModulo(numero) {
   return MODULOS.find((m) => m.numero === Number(numero)) ?? null
 }
 
-/** Cómo se llama un módulo: «Módulo 3» o su `nombre` («Módulo de Letras»). */
-export const nombreModulo = (m) => m?.nombre ?? `Módulo ${m?.numero}`
+// ---------------------------------------------------------------------------
+// NÚMEROS POR ÁREA (pedido del usuario, 2026-11-16). Por dentro nada cambia (`numero` 1–11 y los ids '4.1', 'L3' de
+// las lecciones, que usan las URLs y el progreso); lo que se VE es el número del módulo dentro de su área
+// («Armonía 2») y el código de cada lección con la inicial del área («A2.1»). Dentro del camino de un módulo, las
+// islas muestran solo su posición (1, 2, 3…): el color ya dice el área.
+// ---------------------------------------------------------------------------
+
+/** Inicial de cada área en los códigos de lección: M Melodía, R Ritmo, A Armonía, L Letras, P Producción. */
+export const LETRA_AREA = { melodia: 'M', ritmo: 'R', armonia: 'A', letras: 'L', produccion: 'P' }
+
+/** Los módulos en el orden de las áreas (Ritmo, Melodía, Armonía, Letras, Producción) y, dentro, por número. */
+export const MODULOS_POR_AREA = Object.keys(AREAS_CONOCIMIENTO).flatMap((a) => MODULOS.filter((m) => m.area === a))
+
+/** El número de un módulo dentro de su área (Acordes, el 4 de antes, es Armonía 1). Con un módulo de ruta o bloque, su `numero`. */
+export function numeroEnArea(m) {
+  if (!MODULOS.includes(m)) return m?.numero
+  return MODULOS.filter((x) => x.area === m.area).indexOf(m) + 1
+}
+
+/** Cómo se llama un módulo: «Armonía 2» (o el `nombre` de una ruta o un bloque presentados como módulo). */
+export const nombreModulo = (m) => m?.nombre ?? `${AREAS_CONOCIMIENTO[m?.area]?.nombre ?? 'Módulo'} ${numeroEnArea(m)}`
+
+/** El módulo al que pertenece una lección (o null). */
+export const moduloDeLeccion = (id) => MODULOS.find((m) => m.lecciones.some((l) => l.id === id)) ?? null
+
+/** La posición de una lección dentro de su módulo: 1, 2, 3… (o null). */
+export function posicionLeccion(id) {
+  const m = moduloDeLeccion(id)
+  return m ? m.lecciones.findIndex((l) => l.id === id) + 1 : null
+}
+
+/** El código que se VE de una lección fuera de su módulo: '5.1' → 'A2.1', 'L3' → 'L1.3' (si no está en un módulo, su id). */
+export function codigoLeccion(id) {
+  const m = moduloDeLeccion(id)
+  return m ? `${LETRA_AREA[m.area]}${numeroEnArea(m)}.${posicionLeccion(id)}` : String(id)
+}
 
 /**
- * El módulo de al lado (dir = 1 o -1) para deslizar entre módulos: el siguiente CON lecciones, saltando los que aún
- * no tienen (del 5 se pasa al de Letras, 11). null si no hay más.
+ * El módulo de al lado (dir = 1 o -1) para deslizar entre módulos, en el orden por área: el siguiente CON lecciones,
+ * saltando los que aún no tienen. null si no hay más.
  */
 export function moduloVecino(numero, dir) {
-  const i = MODULOS.findIndex((m) => m.numero === Number(numero))
-  for (let j = i + dir; j >= 0 && j < MODULOS.length; j += dir) if (moduloDisponible(MODULOS[j])) return MODULOS[j]
+  const i = MODULOS_POR_AREA.findIndex((m) => m.numero === Number(numero))
+  for (let j = i + dir; j >= 0 && j < MODULOS_POR_AREA.length; j += dir) if (moduloDisponible(MODULOS_POR_AREA[j])) return MODULOS_POR_AREA[j]
   return null
 }
 

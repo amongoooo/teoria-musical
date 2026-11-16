@@ -207,7 +207,7 @@ export default {
       tipo: 'texto',
       titulo: 'La pentatónica menor',
       parrafos: [
-        'Toca las notas de Do pentatónica empezando en **La**, su relativa (el 6.º grado, como en la 3.4): **La · Do · Re · Mi · Sol**. Es la **pentatónica menor**.',
+        'Toca las notas de Do pentatónica empezando en **La**, su relativa (el 6.º grado, como en la M2.4): **La · Do · Re · Mi · Sol**. Es la **pentatónica menor**.',
         'Su fórmula es **T½ T T T½ T** y sus grados, **1 · ♭3 · 4 · 5 · ♭7**: la menor natural **sin el 2.º ni el 6.º**. Tampoco tiene semitonos.',
         'Es la escala de los **solos de rock y blues** y de muchas melodías de **trap**: escucha la escala y un riff con ella.',
       ],

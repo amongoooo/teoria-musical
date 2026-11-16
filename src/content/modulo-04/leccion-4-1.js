@@ -74,7 +74,7 @@ export default {
       parrafos: [
         'Un **acorde** son varias notas sonando a la vez. El más común, la **tríada**, tiene tres.',
         'Se arma **saltando una nota** de la escala: desde Do, salta Re y cae en **Mi**; salta Fa y cae en **Sol**.',
-        'Cada salto es una **3.ª** (como en la 3.2): una tríada son **terceras apiladas**. En el roll se ven una encima de otra, como un muñeco de nieve.',
+        'Cada salto es una **3.ª** (como en la M2.2): una tríada son **terceras apiladas**. En el roll se ven una encima de otra, como un muñeco de nieve.',
       ],
       roll: {
         ...OCTAVA,
@@ -334,7 +334,7 @@ export default {
           sonido: bloque('B3', 'dis', 'Escuchar Si disminuido'),
         },
       ],
-      nota: 'El **menor** queda en medio: tan estable como el mayor, pero más íntimo. Lo comparas a fondo en la 4.2.',
+      nota: 'El **menor** queda en medio: tan estable como el mayor, pero más íntimo. Lo comparas a fondo en la A1.2.',
     },
 
     // 14 · X1 — Reto en FL Studio

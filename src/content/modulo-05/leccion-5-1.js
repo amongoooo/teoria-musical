@@ -203,7 +203,7 @@ export default {
         frase(['I', 'ii', 'V', 'I'], 'C', `${cifras(['I', 'ii', 'V', 'I'])} · I–ii–V–I`),
         frase(['vi', 'IV', 'V', 'I'], 'C', `${cifras(['vi', 'IV', 'V', 'I'])} · vi–IV–V–I`),
       ],
-      nota: 'En el pop también se usa **D → S** (V–IV): suena más relajado, menos «clásico». Lo verás en la 5.4.',
+      nota: 'En el pop también se usa **D → S** (V–IV): suena más relajado, menos «clásico». Lo verás en la A2.4.',
     },
 
     // 7 · R2 — Cambia una sola nota
@@ -297,7 +297,7 @@ export default {
         'Pon los dos patrones seguidos en el Playlist y escúchalos.',
       ],
       consejo: 'Si una función no se siente, revisa el bajo: es lo que más dice qué acorde suena.',
-      reflexion: 'Cambia el último C por **Am**. ¿Se siente terminado? (Eso tiene nombre: lo verás en la 5.3.)',
+      reflexion: 'Cambia el último C por **Am**. ¿Se siente terminado? (Eso tiene nombre: lo verás en la A2.3.)',
     },
   ],
 }

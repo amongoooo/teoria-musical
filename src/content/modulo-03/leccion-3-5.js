@@ -447,7 +447,7 @@ export default {
           sonido: cantar(melodia('C4', [5, 4, 3, 2, 3, 2, 1, 0]), 'Termina en Si'),
         },
       ],
-      nota: 'En el módulo 4 verás que con los acordes pasa lo mismo: el acorde de la **dominante** pide volver al de la **tónica**.',
+      nota: 'En Armonía 1 verás que con los acordes pasa lo mismo: el acorde de la **dominante** pide volver al de la **tónica**.',
     },
 
     // 14 · X1 — Reto en FL Studio

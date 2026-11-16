@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-16-numeros',
+    fecha: '16 nov 2026',
+    titulo: 'Módulos numerados por área',
+    cosas: [
+      {
+        texto: 'Cada área cuenta sus módulos desde el 1: **Melodía 1, 2, 3**, **Armonía 1 a 5**, **Ritmo 1**, **Letras 1** y **Producción 1**. Las lecciones llevan la inicial de su área: **A2.1** es la 1.ª lección de Armonía 2.',
+        donde: { etiqueta: 'Ver los módulos', href: '#/aprender/modulos' },
+      },
+      {
+        texto: '**Rutas** y **Módulos** de Aprender ahora tienen su título, como el Curso.',
+        donde: { etiqueta: 'Abrir Rutas', href: '#/aprender/rutas' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-aprender',
     fecha: '16 nov 2026',
     titulo: 'Tres maneras de aprender',
@@ -14,7 +29,7 @@ export const NOVEDADES = [
         donde: { etiqueta: 'Abrir Aprender', href: '#/aprender' },
       },
       {
-        texto: 'Nuevo **Módulo de Letras**: rima, esquemas, sílabas, multis y flow, con las lecciones de la ruta de letras (lo que ya hiciste cuenta).',
+        texto: 'Nuevo **módulo de Letras**: rima, esquemas, sílabas, multis y flow, con las lecciones de la ruta de letras (lo que ya hiciste cuenta).',
         donde: { etiqueta: 'Abrir el módulo', href: '#/modulo/11' },
       },
       {

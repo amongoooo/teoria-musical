@@ -107,7 +107,7 @@ export default {
       tipo: 'texto',
       titulo: 'La regla para medir',
       parrafos: [
-        'En el módulo 1 viste los dos pasos básicos. Ahora van a ser tu **regla**: con ellos se miden los intervalos, las escalas y los acordes.',
+        'En Melodía 1 viste los dos pasos básicos. Ahora van a ser tu **regla**: con ellos se miden los intervalos, las escalas y los acordes.',
         'Un **semitono** (lo abreviamos **S**) es ir de una tecla a la **de al lado**, sea blanca o negra. Es el paso más pequeño.',
         'Un **tono** (**T**) son **dos semitonos**: saltas una tecla. De Fa a Sol hay un tono porque en medio queda Fa♯.',
         'Recuerda: entre **Mi–Fa** y **Si–Do** no hay negra, así que esas blancas están a **un semitono**.',

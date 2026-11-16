@@ -107,7 +107,7 @@ export default {
       titulo: 'La fórmula menor',
       parrafos: [
         'La **escala menor natural** también tiene 7 notas y la 8.ª repite la primera. Cambia el orden de los pasos: **T S T T S T T**.',
-        'Ahora los semitonos caen entre la **2.ª y la 3.ª** nota y entre la **5.ª y la 6.ª**. Por eso la 3.ª queda **menor** (3 semitonos sobre la tónica), como en los intervalos de la 3.2.',
+        'Ahora los semitonos caen entre la **2.ª y la 3.ª** nota y entre la **5.ª y la 6.ª**. Por eso la 3.ª queda **menor** (3 semitonos sobre la tónica), como en los intervalos de la M2.2.',
         'Desde **La** sale con solo teclas blancas, igual que la mayor desde Do.',
       ],
       sonidos: [sonar(escalaMenor('A3'), 'La menor, subiendo'), sonar(escalaMenor('A3', { bajando: true }), 'La menor, bajando')],

@@ -142,7 +142,7 @@ export default {
       titulo: 'Grave y agudo',
       intro: 'El color no cambia con la altura.',
       rondas: [
-        color(bloque, 'A2', 'menor', `**La menor**, muy grave. Abajo las terceras se embarran: por eso los productores dejan solo la fundamental en el grave (lo verás en la 4.5).`, '¿Mayor o menor? (grave)'),
+        color(bloque, 'A2', 'menor', `**La menor**, muy grave. Abajo las terceras se embarran: por eso los productores dejan solo la fundamental en el grave (lo verás en la A1.5).`, '¿Mayor o menor? (grave)'),
         color(bloque, 'C5', 'mayor', `**Do mayor**, agudo: brillante como en una caja de música.`, '¿Mayor o menor? (agudo)'),
         color(bloque, 'E5', 'menor', `**Mi menor**, agudo: ${notasEs('E5', 'menor')}.`, '¿Mayor o menor? (agudo)'),
         color(bloque, 'G2', 'mayor', `**Sol mayor**, grave: ${notasEs('G2', 'mayor')}.`, '¿Mayor o menor? (grave)'),

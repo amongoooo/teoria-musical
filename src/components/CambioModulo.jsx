@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { moduloDisponible, moduloVecino } from '../content/index.js'
+import { moduloDisponible, moduloVecino, nombreModulo } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
 import { tinta } from '../ui/color.js'
 import { DESLIZAR, RESORTE } from '../ui/movimiento.js'
@@ -191,7 +191,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
           {cuadrito}
           <span className="flex flex-col">
             {encabezado}
-            <span className="text-lg font-bold leading-tight text-zinc-900">{modulo.nombre ?? `Módulo ${modulo.numero}`}</span>
+            <span className="text-lg font-bold leading-tight text-zinc-900">{nombreModulo(modulo)}</span>
             <span className="text-base text-zinc-600">{disponible ? (modulo.subtitulo ?? modulo.titulo) : 'Próximamente'}</span>
           </span>
         </motion.div>
@@ -208,7 +208,7 @@ function Asoma({ lado, progreso, listo: listoMV, modulo, disponible }) {
       {cuadrito}
       <span className="flex flex-col items-center gap-0.5 text-center">
         {encabezado}
-        <span className="text-base font-bold leading-tight text-zinc-900">{modulo.esBloque ? modulo.nombre : modulo.esRuta ? modulo.titulo : (modulo.nombre ?? `Módulo ${modulo.numero}`)}</span>
+        <span className="text-base font-bold leading-tight text-zinc-900">{modulo.esBloque ? modulo.nombre : modulo.esRuta ? modulo.titulo : nombreModulo(modulo)}</span>
         {!disponible && <span className="text-sm font-semibold text-zinc-500">Próximamente</span>}
       </span>
     </motion.div>

@@ -143,7 +143,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.goto(BASE + '#/oido')
   await espera(900)
   const bloqueada = page.locator('[data-ejercicio="funciones"][data-bloqueado]')
-  comprobar(r, 'oído: Funciones con candado', (await bloqueada.count()) === 1 && /Termina la 5\.1/.test(await bloqueada.textContent()))
+  comprobar(r, 'oído: Funciones con candado', (await bloqueada.count()) === 1 && /Termina la A2\.1/.test(await bloqueada.textContent()))
   await preparar({ lecciones: { '5.1': { completada: true } } })
   await page.goto(BASE + '#/oido')
   await page.reload()

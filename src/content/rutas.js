@@ -172,7 +172,7 @@ export const RUTAS = {
     nombre: 'Ritmo',
     titulo: 'Ruta de ritmo',
     acento: 'var(--color-ritmo)',
-    descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones del módulo 2 con práctica de Seguir y Eco.',
+    descripcion: 'Pulso, compás, figuras, síncopa y swing: las lecciones de Ritmo 1 con práctica de Seguir y Eco.',
     modulos: [2],
     practica: 'ritmo',
     tramos: ['pulso-groove'],

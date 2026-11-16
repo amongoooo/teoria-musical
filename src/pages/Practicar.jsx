@@ -10,6 +10,7 @@ import { Candado, Metronomo, Oreja, Pluma } from '../ui/Iconos.jsx'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useTemblor from '../ui/useTemblor.js'
+import { codigoLeccion } from '../content/index.js'
 
 const MELODIA = 'var(--color-melodia)'
 const ARMONIA = 'var(--color-armonia)'
@@ -151,7 +152,7 @@ function ModoBloqueado({ modo: m }) {
         onClick={temblar}
         data-modo-practica={m.id}
         data-bloqueado
-        aria-label={`${m.nombre}: se abre al terminar la lección ${m.requiere}`}
+        aria-label={`${m.nombre}: se abre al terminar la lección ${codigoLeccion(m.requiere)}`}
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 px-3 text-center text-base font-bold leading-tight text-zinc-500"
       >
         <Candado className="size-4 shrink-0" />

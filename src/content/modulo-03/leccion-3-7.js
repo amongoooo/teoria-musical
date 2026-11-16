@@ -116,7 +116,7 @@ export default {
         acordes([EM, AM], 'Mi menor → La menor'),
         acordes([E, AM], 'Mi mayor → La menor'),
       ],
-      nota: 'En inglés: **harmonic minor**. Los acordes se construyen en el **Módulo 4**; por ahora basta con oír la diferencia.',
+      nota: 'En inglés: **harmonic minor**. Los acordes se construyen en **Armonía 1**; por ahora basta con oír la diferencia.',
     },
 
     // 2 · P6 — Toca La menor armónica (con los grados)

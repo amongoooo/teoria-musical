@@ -79,6 +79,18 @@ function Selector({ actual }) {
   )
 }
 
+/** Título de un apartado, igual que el del Curso completo: antetítulo en `font-juego` y título grande. */
+function Encabezado({ antetitulo, titulo }) {
+  return (
+    <motion.header variants={itemLista} className="flex flex-col gap-1">
+      <span className="font-juego text-base uppercase tracking-wide text-zinc-500">{antetitulo}</span>
+      <h1 data-titulo-aprender className="font-titulo text-4xl font-extrabold leading-none tracking-tight sm:text-5xl">
+        {titulo}
+      </h1>
+    </motion.header>
+  )
+}
+
 /** Título de un grupo: el área con su cuadrito de color (o un nivel), en mayúsculas pequeñas. */
 function NombreArea({ area }) {
   const acento = color(area)
@@ -97,6 +109,7 @@ function NombreArea({ area }) {
 function Rutas() {
   return (
     <>
+      <Encabezado antetitulo="Por habilidad" titulo="Rutas" />
       {Object.keys(AREAS_CONOCIMIENTO).map((area) => {
         const suyas = ORDEN_RUTAS.filter((id) => RUTAS[id].area === area)
         return (
@@ -158,6 +171,7 @@ function Modulos() {
   const progreso = useProgreso()
   return (
     <>
+      <Encabezado antetitulo="Por tema" titulo="Módulos" />
       {Object.keys(AREAS_CONOCIMIENTO).map((area) => {
         const suyos = MODULOS.filter((m) => m.area === area)
         if (!suyos.length) return null

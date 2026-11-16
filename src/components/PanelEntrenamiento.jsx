@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
 import { useOpciones } from '../progress/opciones.js'
 import { useProgreso } from '../progress/progreso.js'
+import { codigoLeccion } from '../content/index.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
 import { claro, tinta } from '../ui/color.js'
 import { Atras, Candado, Check } from '../ui/Iconos.jsx'
@@ -198,7 +199,7 @@ function EjercicioBloqueado({ modo, Icono }) {
         onClick={temblar}
         data-ejercicio={modo.id}
         data-bloqueado
-        aria-label={`${modo.titulo}: se abre al terminar la lección ${modo.requiere}`}
+        aria-label={`${modo.titulo}: se abre al terminar la lección ${codigoLeccion(modo.requiere)}`}
         className="flex min-h-20 w-full items-center gap-4 rounded-3xl border-2 border-dashed border-zinc-300 px-4 py-4 text-left"
       >
         <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-zinc-100 text-zinc-400" aria-hidden>
@@ -209,7 +210,7 @@ function EjercicioBloqueado({ modo, Icono }) {
         </span>
         <span className="flex flex-1 flex-col gap-0.5">
           <span className="font-titulo text-lg font-bold leading-snug text-zinc-500">{modo.titulo}</span>
-          <span className="text-base font-semibold text-zinc-500">Termina la {modo.requiere}</span>
+          <span className="text-base font-semibold text-zinc-500">Termina la {codigoLeccion(modo.requiere)}</span>
         </span>
       </Pulsable>
     </div>
@@ -235,7 +236,7 @@ export function textoAprobado(modo, r, { abiertos = modo.niveles } = {}) {
   else t = ` **Nivel ${nivel} superado.**`
   if (r.subio && !r.desbloqueo) t += ` Sigues con el nivel ${r.nuevoNivel}.`
   const leccion = modo.requiereNivel?.[abiertos + 1]
-  if (!r.subio && nivel >= abiertos && leccion) t += ` Lo siguiente se abre con la lección ${leccion}.`
+  if (!r.subio && nivel >= abiertos && leccion) t += ` Lo siguiente se abre con la lección ${codigoLeccion(leccion)}.`
   return t
 }
 
