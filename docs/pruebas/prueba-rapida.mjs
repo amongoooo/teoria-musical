@@ -1,5 +1,5 @@
 // Prueba la PRUEBA RÁPIDA «¿Ya lo sabes?» (content/pruebas/, pages/Prueba.jsx, components/yaLoSabes.js):
-//  - el banco (con node): 27 lecciones × 3 preguntas, `correcta` dentro de las opciones (o de los sonidos), todas
+//  - el banco (con node): 28 lecciones × 3 preguntas, `correcta` dentro de las opciones (o de los sonidos), todas
 //    las lecciones con contenido tienen sus 3 preguntas; conteos y esquemas de letras como los da el motor;
 //  - a 375 px en claro y oscuro: Inicio → cuadrito del módulo 3 (entra directo) → globo de la insignia con
 //    «¿Ya lo sabes? · 7 preguntas» en lugar de «Ir a…» → la prueba
@@ -34,7 +34,7 @@ const comprobar = (r, nombre, ok, detalle = '') => {
   const { RUTAS } = await import('../../src/content/rutas.js')
   const ids = [...MODULOS.flatMap((m) => m.lecciones.map((l) => l.id)), ...RUTAS.letras.paradas.filter((p) => p.tipo === 'leccion').map((p) => p.id)].filter(leccionDisponible)
   comprobar(r, 'lecciones con banco', ids.every((id) => PREGUNTAS[id]?.length === 3), ids.filter((id) => PREGUNTAS[id]?.length !== 3).join(','))
-  comprobar(r, '27 lecciones', Object.keys(PREGUNTAS).length === 27, Object.keys(PREGUNTAS).length)
+  comprobar(r, '28 lecciones', Object.keys(PREGUNTAS).length === 28, Object.keys(PREGUNTAS).length)
   const malas = []
   for (const [id, banco] of Object.entries(PREGUNTAS))
     banco.forEach((p, k) => {
