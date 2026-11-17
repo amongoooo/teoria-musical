@@ -189,7 +189,7 @@ function Nodo({ id, x, y, menor, mini, color, estado, suena, onElegir }) {
               y={armadura ? -5 : 0}
               textAnchor="middle"
               dominantBaseline="central"
-              className={menor ? 'font-sans text-[11px] font-semibold' : 'font-titulo text-[15px] font-bold'}
+              className={menor ? 'font-sans text-[12px] font-semibold' : 'font-titulo text-[15px] font-bold'}
               style={{ fill: texto, transition: 'fill 220ms' }}
             >
               {d.corto}
@@ -200,7 +200,7 @@ function Nodo({ id, x, y, menor, mini, color, estado, suena, onElegir }) {
               y={11}
               textAnchor="middle"
               dominantBaseline="central"
-              className="font-dato text-[10.5px] font-medium"
+              className="font-dato text-[12px] font-medium"
               style={{ fill: texto, opacity: 0.75, transition: 'fill 220ms' }}
             >
               {armadura}

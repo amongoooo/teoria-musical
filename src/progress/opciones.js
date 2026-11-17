@@ -111,9 +111,16 @@ export function setReloj(reloj) {
   escribir({ ...leer(), reloj })
 }
 
+// «Reducir transparencia» del teléfono (iOS, macOS, Windows): el vidrio pasa a sólido solo, como en «Opaco».
+const menosTransparencia = () =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-transparency: reduce)')
+
+/** ¿El vidrio se ve sólido? Con «Opaco» en Opciones o si el teléfono pide reducir la transparencia. */
+export const vidrioOpaco = (vidrio = leer().vidrio) => vidrio === 'opaco' || Boolean(menosTransparencia()?.matches)
+
 /** Pone o quita la clase `opaco` en <html>: el vidrio pasa a superficie sólida (reglas en src/index.css). */
 export function aplicarVidrio(vidrio = leer().vidrio) {
-  document.documentElement.classList.toggle('opaco', vidrio === 'opaco')
+  document.documentElement.classList.toggle('opaco', vidrioOpaco(vidrio))
 }
 
 export function setVidrio(vidrio) {
@@ -141,6 +148,7 @@ export function setAdmin(admin) {
 
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.
 sistema()?.addEventListener?.('change', () => aplicarTema(leer().tema, { fundido: true }))
+menosTransparencia()?.addEventListener?.('change', () => aplicarVidrio())
 
 // En «Programar», cambiar a la hora puesta aunque la app siga abierta (y al volver a ella).
 if (typeof window !== 'undefined') {

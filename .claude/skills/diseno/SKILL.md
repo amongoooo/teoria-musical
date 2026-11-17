@@ -9,6 +9,10 @@ App para aprender música **desde el celular** (el usuario usa Android; pensar t
 Objetivo: que se vea limpia y que **se sienta bien al tacto**, como una app nativa de iOS:
 todo responde al instante, se hunde al tocarlo y se mueve con resortes, nunca con animaciones lineales.
 
+> **Referencia de fondo**: `.claude/skills/apple-design/SKILL.md` (principios de Apple: resortes, arrastre 1:1,
+> interrumpible, inercia, goma, materiales, accesibilidad). Léela al diseñar gestos o animaciones nuevas; si algo choca,
+> **manda esta skill**.
+>
 > Esta skill crece con la app. Cuando el usuario apruebe un estilo nuevo («me gusta así»,
 > «agrega a la skill que…»), anótalo aquí en la sección que toque y añade una línea arriba de **`REGISTRO.md`** (misma carpeta).
 
@@ -357,11 +361,33 @@ Todas las distancias son fracciones de **X** (la distancia de un paso, punto 7).
 - Animaciones lineales (`ease-linear`) o largas; animar al hacer scroll.
 - Enlaces o botones con área táctil menor de 44 px (p. ej. "‹ Inicio" solo texto).
 
+## 5b. Accesibilidad y revisión (de las skills apple-design y diseno-mawy, 2026-11-17)
+
+Lo que el teléfono pide se respeta solo, sin opciones extra:
+- **Reducir movimiento** → `MotionConfig reducedMotion="user"` (ver §3, regla 10).
+- **Reducir transparencia** → el vidrio pasa a sólido como «Opaco»: `vidrioOpaco()` de `src/progress/opciones.js` pone la
+  clase `opaco` (también el script de `index.html`, antes de pintar) y escucha si cambia. En JS, usa `vidrioOpaco(material)`,
+  no `material === 'opaco'`.
+- **Aumentar contraste** (`@media (prefers-contrast: more)` en `src/index.css`) → grises `zinc-200…500` más marcados
+  (bordes y textos secundarios) y vidrio sólido con borde. Si agregas un gris nuevo de estructura, súmalo ahí.
+
+Reglas:
+1. **Piso de 12 px** para cualquier texto (también dentro de un SVG: cuenta en unidades del `viewBox`). Si no cabe, se acorta; nunca se achica.
+2. **Foco visible con teclado**: `:focus-visible` global (anillo de 3 px `--color-azul`, 2 px de separación, en `@layer base`). No lo quites con `outline-none` salvo en campos que marcan el foco con su borde.
+3. **Títulos balanceados**: `h1–h3` llevan `text-wrap: balance` y los párrafos `pretty` (global). Para un título que no sea `h*`, añade `text-balance`.
+4. **Matriz de estados**: todo lo tocable define reposo, foco (teclado), presionado (`Pulsable`), seleccionado (color **y** otra señal: borde, peso, ✓), deshabilitado (candado o explicación; bajar la opacidad no basta) y, si aplica, cargando.
+5. **Nada solo por color**: revisa la pantalla en escala de grises; bien = ✓, fíjate = bombilla, mal = `Repaso`, bloqueado = candado.
+6. **Textos**: de tú, frases cortas, palabras de la música (compás, acorde, tónica), no del software. Sin frases de folleto («Descubre», «Eleva», «al siguiente nivel», «Todo en un solo lugar», «Oops»), sin tríos de adjetivos, sin emojis como viñetas.
+7. **Gestos** (apple-design §3–9): al soltar, el resorte hereda la velocidad del dedo; si hay varios destinos, se elige el más cercano a donde **iba** (proyección con la inercia), no a donde se soltó; una animación se puede agarrar a medio camino; en los bordes, goma.
+
+Lo que **no** se toma de diseno-mawy (choca con decisiones aprobadas): vidrio solo en la barra de arriba, máximo 4 pestañas, botones «tipo tecla» con canto, escalonado de 90 ms y los 5 estilos de landing.
+
 ## 6. Cómo comprobar
 
 1. `npm run build` sin errores.
 2. Captura a 375 × 740 (y 768 px) con Playwright de las pantallas tocadas; revisa contraste, espacios y que nada quede bajo la barra inferior.
 3. Prueba con `reducedMotion: 'reduce'` en Playwright (`page.emulateMedia({ reducedMotion: 'reduce' })`) que la app sigue funcionando.
+4. Con `contrast: 'more'` en el contexto de Playwright, que bordes y textos secundarios se vean más marcados; y que nada baje de 12 px (`grep -rE "text-\[(9|10|11)" src` sin resultados).
 
 ## 7. Pendiente (de la revisión de diseño)
 
