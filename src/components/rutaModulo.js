@@ -85,7 +85,7 @@ export function useMedirMetas() {
   const meta = (p, practicaId) => {
     if (p.clave === 'letra') {
       const n = letrasConTexto(letras)
-      return { valor: n, meta: 1, detalle: `Letras en tu cuaderno: ${n}`, ir: () => navegar(rutas.letras()) }
+      return { valor: n, meta: p.letras ?? 1, detalle: `Letras en tu cuaderno: ${n}`, ir: () => navegar(rutas.letras()) }
     }
     if (p.clave === 'vocab') {
       const n = palabrasDelTema(vocab.repaso, p.tema)

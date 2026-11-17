@@ -120,6 +120,7 @@ pendiente; si una lección no tiene banco, no entra en la prueba. Reglas: al niv
 | `elegir` | `components/exercises/EscuchaElige.jsx` | Escucha y elige / quiz, por rondas |
 | `emparejar` | `components/exercises/Emparejar.jsx` | Emparejar varios sonidos con su nombre a la vez, por rondas |
 | `clasificar` | `components/exercises/Clasificar.jsx` | Mandar fichas que suenan a su caja (funciones T · S · D), por rondas |
+| `analizar` | `components/exercises/Analizar.jsx` | Poner el número (I, ii… vi) a cada compás de una rejilla que suena, por rondas |
 | `circulo` | `components/exercises/EligeEnCirculo.jsx` | Responder tocando una tonalidad del círculo de quintas, por rondas |
 | `tocar` | `components/exercises/TocaEnPiano.jsx` | Responder tocando el piano |
 | `frecuencia` | `components/exercises/ExploraFrecuencia.jsx` | Pad para deslizar Hz: `min`, `max` |
@@ -281,6 +282,31 @@ Las fichas salen abajo en orden al azar. Tocar una la elige (y suena); tocar una
 manda ahí (con cadencias, la caja muestra la fórmula —V → I— y el nombre; `cadenciaDe('V7', 'I')` da la caja de una ficha); sin ninguna elegida, tocar una ya puesta la devuelve. Con todas puestas, «Comprobar»: las bien en verde con ✓,
 las mal pasan a su caja en oro con bombilla. Puntúa una ficha por acierto. 7 fichas caben a 375 px.
 
+### `analizar`
+
+```js
+{
+  tipo: 'analizar',
+  opciones: ['I', 'ii', 'iii', 'IV', 'V', 'vi'],   // opcional (estos son los de por defecto)
+  rondas: [
+    {
+      pregunta: 'En **Do mayor**',
+      compases: [{ cifrado: 'C', grado: 'I', notas: ['C3', 'C4', 'E4', 'G4'] }, …],   // un acorde por compás
+      dados: [0],                                   // los que vienen puestos (la casa)
+      sonido: { etiqueta: 'Escuchar', notas: [un acorde por compás…], intervalo: 0.9, duracion: 0.85 },
+      pista: '…',                                   // opcional: sin ella, la del 1.er error dice el bajo del compás que falló
+      explicacion: '…',
+    },
+  ],
+}
+```
+
+**Analiza la rejilla** (O9, `components/exercises/Analizar.jsx`, lección 5.7): la rejilla de compases por llenar. Escuchar
+enciende cada compás al sonar; se toca un compás vacío (el cursor empieza en el primero) y luego su número: la casilla toma
+el fondo de su función y el cursor salta al siguiente vacío. Tocar un compás lo toca solo. El cifrado sale al comprobar.
+Dos intentos como en todo: al 1.º los bien quedan fijos y los mal vuelven vacíos en oro con lo tachado; al 2.º, el correcto
+en rojo y la ronda al repaso. Puntúa un compás por acierto. 8 compases (2 filas) caben a 375 px.
+
 ### `circulo`
 
 ```js
@@ -397,6 +423,7 @@ Objetivos del paso `pianoroll`:
 objetivo: { tipo: 'libre', cantidad: 4, mensaje: '…' }   // dibujar N notas
 objetivo: { tipo: 'copiar', notas: [...], fantasma: true, instruccion: '…', pista: '…', explicacion: '…' }
   // dibujar exactamente esas notas (fantasma: contornos punteados de guía).
+  // `escuchar: { notas: [...], intervalo, duracion }` = botón «Escuchar el original» encima del roll: dictado de oído (5.7, el bajo)
   // Al fallar explica qué falta/sobra/dura distinto; tras 2 fallos avisa «Si vuelve a fallar, verás la solución» y el tercer «Comprobar» fallido la muestra.
 objetivo: { tipo: 'velocity', fuertes: [0, 4], explicacion: '…' }
   // con las notas de roll.notas: subir la velocity de las que empiezan en esas casillas (≥ 0.75)
