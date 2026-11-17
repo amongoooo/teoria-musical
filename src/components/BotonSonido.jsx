@@ -9,12 +9,13 @@ import { VerSonido, partesSonido, useVistaSonido } from './VerSonido.jsx'
 /**
  * Botón grande que reproduce un sonido del contenido y se ilumina mientras suena. Solo suena uno a la vez: tocar otro
  * sonido para este (y se apaga).
+ * onParar(): opcional, al terminar o al cortarlo otro sonido.
  * onNotas(notas, i): opcional, se llama justo cuando suena cada nota (o grupo), para señalarla en el teclado
  * o en las casillas mientras suena (pedido del usuario).
  * ver: en los pasos para APRENDER (texto y siente), debajo sale lo que suena (VerSonido: metrónomo, pads, teclado u
  * onda) y se enciende al sonar. En las preguntas no (delataría la respuesta). `color` = el de la lección.
  */
-export default function BotonSonido({ sonido, etiqueta, className = '', onPlay, onNotas, ver = false, color = 'var(--color-zinc-900)' }) {
+export default function BotonSonido({ sonido, etiqueta, className = '', onPlay, onNotas, onParar, ver = false, color = 'var(--color-zinc-900)' }) {
   const [sonando, setSonando] = useState(false)
   const { vista, alSonar, alParar, encender, setPulso } = useVistaSonido(sonido)
   const partes = useMemo(() => (ver ? partesSonido(sonido) : null), [ver, sonido])
@@ -39,6 +40,7 @@ export default function BotonSonido({ sonido, etiqueta, className = '', onPlay, 
       alParar: () => {
         setSonando(false)
         alParar()
+        onParar?.()
       },
     })
     onPlay?.()

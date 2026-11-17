@@ -167,13 +167,16 @@ export const TRAMOS = {
       { tipo: 'leccion', id: '5.3' },
     ],
   },
-  // Plan aprobado de la 5.4: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n. Crecerá con la 5.5, la 5.6 y la 5.7.
-  // La meta de Funciones pide llegar al nivel «Los 7 acordes» con la dificultad 2 (más tonalidades).
+  // Plan aprobado de la 5.4: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n y de la 5.5: https://claude.ai/artifact/LqW8UUP3JcQ1h9tsFKbP2T.
+  // Crecerá con la 5.6 y la 5.7. La meta de Funciones pide llegar al nivel «Los 7 acordes» con la dificultad 2 (más
+  // tonalidades); la de Acordes, superar el nivel 5 (el último: maj7 y m7), que se abre con la 5.5.
   progresiones: {
     titulo: 'Progresiones',
     paradas: [
       { tipo: 'leccion', id: '5.4' },
       { tipo: 'meta', modo: 'funciones', nivel: 4, dificultad: 2, titulo: 'Funciones · nivel 4', texto: 'Llega al nivel en el que entran los 7 acordes (el iii y el vii°), ahora en más tonalidades.' },
+      { tipo: 'leccion', id: '5.5' },
+      { tipo: 'meta', modo: 'acordes', nivel: 6, dificultad: 1, titulo: 'Acordes · maj7 y m7', texto: 'Supera el nivel 5, en el que entran la séptima mayor y la menor séptima: el ii–V–I, de oído.' },
     ],
   },
 }

@@ -20,7 +20,10 @@ const VOZ_LOOP = {
   Em: ['E3', 'B3', 'E4', 'G4'],
   E: ['E3', 'B3', 'E4', 'G#4'],
 }
+// Para la 5.5: el ii–V–I con séptimas, con las notas guía de la lección.
+const VOZ_SEPTIMAS = { Dm7: ['D3', 'C4', 'F4', 'A4'], G7: ['G2', 'B3', 'F4', 'G4'], Cmaj7: ['C3', 'B3', 'E4', 'G4'] }
 const loop = (acordes) => ({ etiqueta: 'Escuchar', notas: acordes.map((a) => VOZ_LOOP[a]), intervalo: 0.85, duracion: 0.8 })
+const septimas = (acordes) => ({ etiqueta: 'Escuchar', notas: acordes.map((a) => VOZ_SEPTIMAS[a]), intervalo: 0.95, duracion: 0.9 })
 const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
 const frase = (romanos) => ({ etiqueta: 'Escuchar', notas: romanos.map((rn) => VOZ[rn]), intervalo: 0.95, duracion: 0.9 })
 
@@ -111,6 +114,27 @@ export default {
       opciones: ['i–VI–III–VII', 'i–iv–v', 'I–V–vi–IV', 'i–VII–VI–V'],
       correcta: 0,
       explicacion: 'Desde La: Am = **i**, F = **VI**, C = **III** y G = **VII** (sin sensible). Los mismos acordes que vi–IV–I–V de Do.',
+    },
+  ],
+  '5.5': [
+    {
+      pregunta: '¿Qué **progresión** suena?',
+      sonidos: [septimas(['Dm7', 'G7', 'Cmaj7'])],
+      opciones: ['ii–V–I', 'I–vi–IV–V', 'I–IV–V', 'vi–IV–I–V'],
+      correcta: 0,
+      explicacion: '**Dm7 – G7 – Cmaj7**: subdominante, dominante y casa (S → D → T), con el bajo por quintas. El ii–V–I del jazz.',
+    },
+    {
+      pregunta: '¿Qué acordes usa el **blues de 12 compases** en Do?',
+      opciones: ['C7, F7 y G7', 'C, F y G', 'Cmaj7, Dm7 y G7', 'C, Am, F y G'],
+      correcta: 0,
+      explicacion: 'El I7, el IV7 y el V7, **todos de 7.ª de dominante**: C7 (con Si♭) y F7 (con Mi♭) se salen de Do mayor. Esa es la nota blue.',
+    },
+    {
+      pregunta: '¿Cuál es el **ii–V–I** de **Sol mayor**?',
+      opciones: ['Am7 – D7 – Gmaj7', 'Dm7 – G7 – Cmaj7', 'Em7 – A7 – Dmaj7', 'Am7 – D7 – G7'],
+      correcta: 0,
+      explicacion: 'En Sol: el ii es **Am7**, el V7 es **D7** y el I con séptima mayor es **Gmaj7**.',
     },
   ],
 }

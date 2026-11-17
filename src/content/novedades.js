@@ -5,6 +5,25 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-blues',
+    fecha: '17 nov 2026',
+    titulo: 'ii–V–I, blues y las séptimas',
+    cosas: [
+      {
+        texto: 'Lección nueva **A2.5 «I–vi–IV–V, ii–V–I y blues»**: el loop de los **años 50**, el **ii–V–I del jazz** con sus séptimas (**maj7**, **m7** y **7**) y el **blues de 12 compases** en una rejilla que se enciende mientras suena.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/5.5' },
+      },
+      {
+        texto: 'En **Oído › Acordes** se abre el **nivel 5**: séptima mayor y menor séptima.',
+        donde: { etiqueta: 'Abrir Acordes', href: '#/oido/acordes' },
+      },
+      {
+        texto: 'La **ruta de Acordes** suma la lección y la meta **«Acordes · maj7 y m7»** en el tramo «Progresiones».',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-progresiones-pop',
     fecha: '17 nov 2026',
     titulo: 'Las progresiones pop y la etapa 3',

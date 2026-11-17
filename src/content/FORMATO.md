@@ -89,9 +89,10 @@ Acordes de la tonalidad e inversiones (lecciones 4.3 y 4.4, Tonal `Key`): `diato
 `inversion(['C4', 'E4', 'G4'], 1)` → `['E4', 'G4', 'C5']`, `cifradoInversion('G3', 'mayor', 1)` → «G/B», `INVERSIONES` y
 `APILADO` (3 → 3m, 4 → 3M, 5 → 4J; 7 → 5J, 8 → 6m, 9 → 6M). Voicings (lección 4.5): `abierto(['C3', 'E3', 'G3'])` →
 `['C3', 'G3', 'E4']` (la 3.ª sube una octava); en P8, la ronda `{ raiz: 'C3', tipo: 'mayor', voicing: 'abierto' }` pide esas notas con su octava.
-Séptimas y resolución (lección 5.2): `SEPTIMAS` (`dom7` = mayor + 7.ª menor, cifrado «7»; `maj7` y `m7` listos para la 5.5) y
+Séptimas y resolución (lección 5.2): `SEPTIMAS` (`dom7` = mayor + 7.ª menor, cifrado «7»; `maj7` = mayor + 7.ª mayor y `m7` = menor + 7.ª menor, de la 5.5) y
 `TIPOS_ACORDE` (tríadas + séptimas): `triada('G3', 'dom7')` → `['G3', 'B3', 'D4', 'F4']`, `cifrado('G3', 'dom7')` → «G7»,
-`nombreAcorde` → «Sol séptima», `acordeDeGrado('F4', 'V7')` → C7 (en menor, `{ menor: true }`, también mayor con 7.ª: E7 en La menor),
+`nombreAcorde` → «Sol séptima», `acordeDeGrado('F4', 'V7')` → C7 (en menor, `{ menor: true }`, también mayor con 7.ª: E7 en La menor); con cualquier grado + '7' o 'maj7'
+(5.5): `'ii7'` → Dm7, `'Imaj7'` → Cmaj7, `'I7'` / `'IV7'` → C7 / F7 (sobre mayor, '7' = de dominante; sobre menor, m7),
 `TRITONO` (6) y `resolucionV7('G3')` → `{ v7, tonica: 'C4', sensible: { desde: 'B3', hacia: 'C4' }, septima: { desde: 'F4', hacia: 'E4' }, acordes }`
 (`menor: true`: la 7.ª baja un tono; `acordes` = el V7 y el acorde al que llega, para el sonido).
 Cadencias (lección 5.3): `CADENCIAS` (`autentica`, `plagal`, `semi`, `rota`: `formula` «V → I», `nombre`, `corto`, `intensidad` del fondo de su caja),
@@ -167,6 +168,14 @@ demás, las notas que comparten con él en oro. Cada acorde suena al tocarlo (lo
 
 ```js
 funciones: { tonalidad: 'C4' }   // ayudas en theory/acordes.js: FUNCIONES, FUNCION_GRADO, funcionDe('vi') → 'T', notasComunes, funcionesDe('C4')
+```
+
+`texto` acepta además `rejilla`: la **rejilla de compases** (`components/Rejilla.jsx`, L10, lección 5.5): filas de 4 compases
+con su número, el cifrado en grande y el grado, cada uno con el fondo de su función (T · S · D, como el mapa). El botón de
+arriba toca toda la forma y **enciende cada compás cuando suena**; tocar una casilla toca solo ese compás. Un acorde por compás:
+
+```js
+rejilla: { etiqueta: 'Escuchar los 12 compases', compases: [{ cifrado: 'C7', grado: 'I7' }, …], sonido: { notas: [['C3', 'E4', 'G4', 'Bb4'], …], intervalo: 0.75, duracion: 0.7 } }
 ```
 
 `texto` acepta además `circulo`: el **círculo de quintas** táctil (`components/CirculoQuintas.jsx`); tocar una tonalidad la elige
@@ -324,6 +333,8 @@ respuesta con su armadura.
   //       1 · 5 · 3 con 5J / 6M (o 6m). Pon el piano en 2 octavas (`startOctave` = la de la fundamental).
   //     `tipo: 'dom7'` = con séptima (5.2): cuatro casillas 1 · 3 · 5 · 7 y guía 3M · 3m · 3m; se tocan la 3.ª, la 5.ª y
   //       la 7.ª. También `romano: 'V7'` + `tonalidad` («Construye el V7 de Fa mayor»: las cuatro, sin nota dada).
+  //     `tipo: 'm7' | 'maj7'` (5.5) igual, con su guía (3m 3M 3m / 3M 3m 3M); y `romano: 'ii7' | 'Imaj7' | 'I7'…` + `tonalidad`
+  //       («Construye el ii7 de Fa mayor» → Gm7). Con `romano`, no uses I7 / IV7 si la ronda dice «no está en Do mayor».
   // objetivo: { tipo: 'resolver', rondas: [{ raiz: 'G3', menor: false, mensaje }] }
   //   → «Resuelve la tensión» (P9, 5.2): el V7 de `raiz` va marcado en el teclado; arriba, la sensible y la 7.ª en oro
   //     (Si ↑, Fa ↓) y, debajo, con candado, adónde van. Se tocan las dos EN SU OCTAVA (la sensible sube medio tono; la
