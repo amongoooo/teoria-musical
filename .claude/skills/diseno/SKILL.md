@@ -368,8 +368,10 @@ Lo que el teléfono pide se respeta solo, sin opciones extra:
 - **Reducir transparencia** → el vidrio pasa a sólido como «Opaco»: `vidrioOpaco()` de `src/progress/opciones.js` pone la
   clase `opaco` (también el script de `index.html`, antes de pintar) y escucha si cambia. En JS, usa `vidrioOpaco(material)`,
   no `material === 'opaco'`.
-- **Aumentar contraste** (`@media (prefers-contrast: more)` en `src/index.css`) → grises `zinc-200…500` más marcados
-  (bordes y textos secundarios) y vidrio sólido con borde. Si agregas un gris nuevo de estructura, súmalo ahí.
+- **Más contraste** (Opciones → Contraste → «Alto», o «Aumentar contraste» del sistema; en Android casi nunca llega al
+  navegador, por eso es también opción): `contrasteAlto()` de `src/progress/opciones.js` pone la clase `contraste-alto`
+  en <html> (también `index.html`) → grises `zinc-200…500` más marcados (bordes y textos secundarios) y vidrio sólido con
+  borde (reglas en `src/index.css`); la barra de la lección deja de ser translúcida. Si agregas un gris nuevo de estructura, súmalo ahí.
 
 Reglas:
 1. **Piso de 12 px** para cualquier texto (también dentro de un SVG: cuenta en unidades del `viewBox`). Si no cabe, se acorta; nunca se achica.
@@ -387,7 +389,7 @@ Lo que **no** se toma de diseno-mawy (choca con decisiones aprobadas): vidrio so
 1. `npm run build` sin errores.
 2. Captura a 375 × 740 (y 768 px) con Playwright de las pantallas tocadas; revisa contraste, espacios y que nada quede bajo la barra inferior.
 3. Prueba con `reducedMotion: 'reduce'` en Playwright (`page.emulateMedia({ reducedMotion: 'reduce' })`) que la app sigue funcionando.
-4. Con `contrast: 'more'` en el contexto de Playwright, que bordes y textos secundarios se vean más marcados; y que nada baje de 12 px (`grep -rE "text-\[(9|10|11)" src` sin resultados).
+4. Con «Contraste: Alto» en Opciones (o `contrast: 'more'` en el contexto de Playwright), que bordes y textos secundarios se vean más marcados; y que nada baje de 12 px (`grep -rE "text-\[(9|10|11)" src` sin resultados).
 
 ## 7. Pendiente (de la revisión de diseño)
 
