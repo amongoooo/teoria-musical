@@ -53,6 +53,8 @@ function Panel() {
       modos={MODOS_OIDO}
       ruta={rutas.oido}
       Icono={Oreja}
+      volver={rutas.practicar('oido')}
+      etiquetaVolver="Volver a Entrenar"
     />
   )
 }
@@ -359,8 +361,8 @@ function Entrenador({ modo }) {
         titulo={modo.titulo}
         Icono={Oreja}
         acento={colorDif}
-        volver={rutas.oido()}
-        etiquetaVolver="Volver al entrenamiento de oído"
+        volver={rutas.practicar('oido')}
+        etiquetaVolver="Volver a Entrenar"
         onOtra={() => setFin(null)}
       />
     )
@@ -369,8 +371,8 @@ function Entrenador({ modo }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <CabeceraEntrenador
-        volver={rutas.oido()}
-        etiquetaVolver="Volver al entrenamiento de oído"
+        volver={rutas.practicar('oido')}
+        etiquetaVolver="Volver a Entrenar"
         golpes={golpes}
         barra={{ clave: `${modo.id}-${jugando}`, avance, lleno, reloj: jugando ? reloj : null, parado: Boolean(respuesta), acento: colorDif }}
         vidas={vidasVista || null}
