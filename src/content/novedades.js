@@ -5,6 +5,25 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-progresiones-pop',
+    fecha: '17 nov 2026',
+    titulo: 'Las progresiones pop y la etapa 3',
+    cosas: [
+      {
+        texto: 'Lección nueva **A2.4 «Las progresiones pop»**: el loop **I–V–vi–IV**, sus **rotaciones**, **I–IV–V** y, en menor, **i–VI–III–VII** e **i–iv–v**, los loops del trap y el reguetón. Construyes loops en el piano y escribes el bajo en el roll.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/5.4' },
+      },
+      {
+        texto: 'La **ruta de Acordes** suma el tramo **«Progresiones»**.',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/acordes' },
+      },
+      {
+        texto: 'Se abre la **etapa 3 «Construir canciones»** del Curso completo con el **bloque 4 «Funciones y loops»**: armonía, semicorcheas, síncopa y vocabulario de Amor y Dinero, y el reto **«Tu loop con letra»**.',
+        donde: { etiqueta: 'Abrir el bloque 4', href: '#/curso/bloque/4' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-lento-titulos',
     fecha: '17 nov 2026',
     titulo: 'Tempo lento y títulos más lejanos',

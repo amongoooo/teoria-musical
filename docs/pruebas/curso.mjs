@@ -1,5 +1,5 @@
 // Prueba el CURSO COMPLETO (content/curso.js, pages/Curso.jsx) a 375 px en claro y oscuro:
-//  - Inicio: el botón «Curso completo» (anillo en los colores de las áreas, «x de 40 · Etapa N de 5») en lugar de la tarjeta de «Continuar».
+//  - Inicio: el botón «Curso completo» (anillo en los colores de las áreas, «x de 55 · Etapa N de 5») en lugar de la tarjeta de «Continuar».
 //  - #/curso: tarjeta de avance (%, barra y filas por bloque), «Sigue aquí», carrusel de bloques (abre centrado en el bloque
 //    actual, se desliza con el dedo, puntitos para saltar, «Próximamente» al final) y «Tus rutas»; sin «Cuando quieras».
 //  - #/curso/bloque/2: camino de islas (insignia + 12 pasos + la 3.6 opcional), cada puntito del color de su ruta,
@@ -70,25 +70,25 @@ for (const tema of ['claro', 'oscuro']) {
   await preparar()
   comprobar(r, 'inicio: botón «Curso completo»', (await page.locator('[data-boton-curso]').count()) === 1)
   comprobar(r, 'inicio: sin la tarjeta de «Continuar»', (await page.locator('[data-siguiente]').count()) === 0)
-  comprobar(r, 'inicio: «0 de 40 · Etapa 1 de 5»', /0 de 40 · Etapa 1 de 5/.test(await page.locator('[data-boton-curso]').textContent()))
+  comprobar(r, 'inicio: «0 de 55 · Etapa 1 de 5»', /0 de 55 · Etapa 1 de 5/.test(await page.locator('[data-boton-curso]').textContent()))
   comprobar(r, 'inicio: anillo con 5 arcos (cuatro áreas + todo junto)', (await page.locator('[data-arco-curso]').count()) === 5)
   await foto('inicio')
 
   // 2. Con 1.1, 2.1, L1 y la 3.1 hecha (fuera de orden).
   await preparar({ lecciones: lecciones('1.1', '2.1', 'L1', '3.1') })
-  comprobar(r, 'inicio: «3 de 40» (la 3.1 aún no cuenta: lineal)', /3 de 40/.test(await page.locator('[data-boton-curso]').textContent()))
+  comprobar(r, 'inicio: «3 de 55» (la 3.1 aún no cuenta: lineal)', /3 de 55/.test(await page.locator('[data-boton-curso]').textContent()))
   await page.locator('[data-boton-curso]').click()
   await espera(1500)
   comprobar(r, 'el botón abre #/curso', page.url().endsWith('#/curso'), page.url())
-  comprobar(r, 'curso: 8 %', (await page.locator('[data-porcentaje]').textContent()) === '8%', await page.locator('[data-porcentaje]').textContent())
+  comprobar(r, 'curso: 5 %', (await page.locator('[data-porcentaje]').textContent()) === '5%', await page.locator('[data-porcentaje]').textContent())
   comprobar(r, 'curso: barra de la cabecera', (await page.locator('[data-barra-curso]').count()) === 1)
-  comprobar(r, 'curso: una fila por bloque', (await page.locator('[data-fila-bloque]').count()) === 3)
-  comprobar(r, 'curso: barra por bloques', (await page.locator('[data-avance-curso] [data-segmento-bloque]').count()) === 3)
+  comprobar(r, 'curso: una fila por bloque', (await page.locator('[data-fila-bloque]').count()) === 4)
+  comprobar(r, 'curso: barra por bloques', (await page.locator('[data-avance-curso] [data-segmento-bloque]').count()) === 4)
   comprobar(r, 'curso: Bloque 1 x/11', /\/11/.test(await page.locator('[data-fila-bloque="1"]').textContent()))
   comprobar(r, 'curso: «Sigue aquí» = 1.2', (await page.getAttribute('[data-sigue-aqui]', 'data-sigue-aqui')) === '1.2')
   comprobar(r, 'curso: sin «Cuando quieras»', (await page.getByText('Cuando quieras').count()) === 0)
   comprobar(r, 'curso: sin «Tus rutas»', (await page.locator('[data-tarjeta-ruta]').count()) === 0)
-  comprobar(r, 'carrusel: 3 bloques + «Próximamente»', (await page.locator('[data-tarjeta-bloque]').count()) === 4)
+  comprobar(r, 'carrusel: 4 bloques + «Próximamente»', (await page.locator('[data-tarjeta-bloque]').count()) === 5)
   comprobar(r, 'carrusel: abre en el bloque 1', Math.abs(await posicion()) < 0.01, String(await posicion()))
   comprobar(r, 'bloque 1: chip «Ahora»', (await page.getAttribute('[data-tarjeta-bloque="1"]', 'data-estado')) === 'ahora')
   // Tarjeta compacta (pedido del usuario): solo «Bloque N», el título y la barra con x/y.
@@ -115,16 +115,16 @@ for (const tema of ['claro', 'oscuro']) {
   const c = await page.locator('[data-carrusel-bloques]').boundingBox()
   await deslizar(300, 210, c.y + c.height / 2, 30)
   comprobar(r, 'carrusel: deslizar a la izquierda → bloque 2', Math.abs((await posicion()) - 1) < 0.01, String(await posicion()))
-  await page.locator('[data-punto-bloque="3"]').click()
+  await page.locator('[data-punto-bloque="4"]').click()
   await espera(1200)
-  comprobar(r, 'carrusel: el puntito lleva a «Próximamente»', Math.abs((await posicion()) - 3) < 0.01, String(await posicion()))
+  comprobar(r, 'carrusel: el puntito lleva a «Próximamente»', Math.abs((await posicion()) - 4) < 0.01, String(await posicion()))
   await foto('pronto')
 
   // Etapas (fase 4): escalera de 5 (1 ahora, 2 siguiente, 3–5 próximamente); el letrero sigue al bloque del centro y
   // tocar una etapa mueve el carrusel a su primer bloque.
   comprobar(r, 'etapas: 5 filas', (await page.locator('[data-etapa]').count()) === 5)
   const estados = await page.$$eval('[data-etapa]', (els) => els.map((e) => e.dataset.estado).join(','))
-  comprobar(r, 'etapas: ahora, siguiente, pronto×3', estados === 'ahora,siguiente,pronto,pronto,pronto', estados)
+  comprobar(r, 'etapas: ahora, siguiente, siguiente, pronto×2', estados === 'ahora,siguiente,siguiente,pronto,pronto', estados)
   comprobar(r, 'etapa 1: «Bloques 1–2»', /Bloques 1–2/.test(await page.textContent('[data-etapa="1"]')))
   comprobar(r, 'letrero en «Próximamente»: «Más bloques»', (await page.getAttribute('[data-letrero-etapa]', 'data-letrero-etapa')) === 'pronto')
   await page.locator('[data-etapa="2"]').click()
@@ -152,7 +152,7 @@ for (const tema of ['claro', 'oscuro']) {
 
   // 4. Bloque 1 completo + la 3.6: el bloque 1 «Hecho», el carrusel abre en el 2, la 3.6 no cuenta.
   await preparar({ ...BLOQUE1, lecciones: { ...BLOQUE1.lecciones, '3.6': hecha } }, '#/curso')
-  comprobar(r, 'bloque 1 completo: 11 de 40 (la 3.6 no cuenta)', /11 de 40/.test(await page.locator('[data-avance-curso]').textContent()))
+  comprobar(r, 'bloque 1 completo: 11 de 55 (la 3.6 no cuenta)', /11 de 55/.test(await page.locator('[data-avance-curso]').textContent()))
   comprobar(r, 'bloque 1: «Hecho»', (await page.getAttribute('[data-tarjeta-bloque="1"]', 'data-estado')) === 'hecha')
   comprobar(r, 'carrusel: abre en el bloque 2', Math.abs((await posicion()) - 1) < 0.01, String(await posicion()))
   comprobar(r, '«Sigue aquí» = 3.1', (await page.getAttribute('[data-sigue-aqui]', 'data-sigue-aqui')) === '3.1')
@@ -173,14 +173,19 @@ for (const tema of ['claro', 'oscuro']) {
   await foto('insignia')
   await page.keyboard.press('Escape')
   await espera(800)
-  // Deslizar la página de lado pasa al bloque 3; del 3 ya no se pasa.
+  // Deslizar la página de lado pasa al bloque 3 y luego al 4 (etapa 3); del 4 ya no se pasa.
   await page.evaluate(() => window.scrollTo(0, 0))
   await espera(300)
   await deslizar(340, 30, 420)
   comprobar(r, 'deslizar: bloque 2 → bloque 3', page.url().endsWith('#/curso/bloque/3'), page.url())
-  await deslizar(340, 30, 420)
-  comprobar(r, 'deslizar: del bloque 3 no hay más', page.url().endsWith('#/curso/bloque/3'), page.url())
   comprobar(r, 'bloque 3: insignia + 18 islas', (await page.locator('[data-punto]').count()) === 19, String(await page.locator('[data-punto]').count()))
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await espera(300)
+  await deslizar(340, 30, 420)
+  comprobar(r, 'deslizar: bloque 3 → bloque 4', page.url().endsWith('#/curso/bloque/4'), page.url())
+  await deslizar(340, 30, 420)
+  comprobar(r, 'deslizar: del bloque 4 no hay más', page.url().endsWith('#/curso/bloque/4'), page.url())
+  comprobar(r, 'bloque 4: insignia + 15 islas', (await page.locator('[data-punto]').count()) === 16, String(await page.locator('[data-punto]').count()))
   await foto('bloque3')
 
   comprobar(r, 'sin errores de la página', errores.length === 0, errores.join(' | '))

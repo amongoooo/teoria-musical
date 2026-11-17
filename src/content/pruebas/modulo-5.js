@@ -10,6 +10,17 @@ const VOZ = {
   V7: ['G3', 'B3', 'F4', 'G4'],
   vi: ['A3', 'C4', 'E4', 'A4'],
 }
+// Para la 5.4: las mismas voces que la lección (bajo en la octava 2) y La menor con el V mayor (E, con Sol♯).
+const VOZ_LOOP = {
+  C: ['C3', 'C4', 'E4', 'G4'],
+  G: ['G2', 'B3', 'D4', 'G4'],
+  Am: ['A2', 'C4', 'E4', 'A4'],
+  F: ['F2', 'C4', 'F4', 'A4'],
+  Dm: ['D3', 'D4', 'F4', 'A4'],
+  Em: ['E3', 'B3', 'E4', 'G4'],
+  E: ['E3', 'B3', 'E4', 'G#4'],
+}
+const loop = (acordes) => ({ etiqueta: 'Escuchar', notas: acordes.map((a) => VOZ_LOOP[a]), intervalo: 0.85, duracion: 0.8 })
 const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
 const frase = (romanos) => ({ etiqueta: 'Escuchar', notas: romanos.map((rn) => VOZ[rn]), intervalo: 0.95, duracion: 0.9 })
 
@@ -78,6 +89,28 @@ export default {
       opciones: ['B♭ → F', 'C7 → F', 'C7 → Dm', 'Gm → C'],
       correcta: 0,
       explicacion: 'El IV de Fa es **B♭**: B♭ → F es plagal. C7 → F es auténtica, C7 → Dm rota y Gm → C, semicadencia.',
+    },
+  ],
+  '5.4': [
+    {
+      pregunta: '¿Qué **loop** suena?',
+      sonidos: [loop(['C', 'G', 'Am', 'F'])],
+      opciones: ['I–V–vi–IV', 'vi–IV–I–V', 'I–IV–V–IV', 'I–vi–IV–V'],
+      correcta: 0,
+      explicacion: '**C – G – Am – F**: empieza en casa y pasa por el V, el vi y el IV. El loop más usado del pop.',
+    },
+    {
+      pregunta: '¿En cuál el penúltimo acorde **pide volver** a casa?',
+      sonidos: [loop(['Am', 'Dm', 'E', 'Am']), loop(['Am', 'Dm', 'Em', 'Am'])],
+      correcta: 0,
+      mezclar: true,
+      explicacion: '**Am – Dm – E – Am**: E lleva Sol♯, la sensible, que sube a La. Con Em (i–iv–v) no hay sensible: el loop gira sin cerrarse.',
+    },
+    {
+      pregunta: 'Con la casa en **La**, Am – F – C – G es…',
+      opciones: ['i–VI–III–VII', 'i–iv–v', 'I–V–vi–IV', 'i–VII–VI–V'],
+      correcta: 0,
+      explicacion: 'Desde La: Am = **i**, F = **VI**, C = **III** y G = **VII** (sin sensible). Los mismos acordes que vi–IV–I–V de Do.',
     },
   ],
 }

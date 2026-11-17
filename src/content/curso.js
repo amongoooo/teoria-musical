@@ -95,6 +95,32 @@ export const BLOQUES = [
       M('3.7', { opcional: true }),
     ],
   },
+  // Etapa 3 «Construir canciones» (plan aprobado: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n), con la 5.1–5.4.
+  // Ritmo y Letras no tienen lecciones nuevas: avanzan con metas de práctica que solo están en el curso.
+  {
+    numero: 4,
+    etapa: 3,
+    titulo: 'Funciones y loops',
+    meta: 'Tu loop con letra',
+    descripcion: 'Qué trabajo hace cada acorde, tensión, cadencias y los loops del pop, con semicorcheas, síncopa y palabras nuevas.',
+    paradas: [
+      A('5.1'), M('intervalos:5'),
+      R('seguir:7', { tipo: 'meta', modo: 'seguir', nivel: 7, dificultad: 2, titulo: 'Seguir · nivel 7', texto: 'Llega a las semicorcheas: cuatro golpes en cada tiempo, «1 e y a».' }),
+      A('funciones:3'),
+      L('vocab:amor', { tipo: 'meta', clave: 'vocab', tema: 'amor', palabras: 10, titulo: 'Vocabulario · Amor', texto: 'Aprende 10 palabras del tema Amor y desamor.' }),
+      A('5.2'),
+      R('eco:6', { tipo: 'meta', modo: 'eco', nivel: 6, dificultad: 2, titulo: 'Eco · nivel 6', texto: 'Escucha un compás y repítelo: llega a la síncopa.' }),
+      A('acordes:5'), M('intervalos:6'), A('5.3'),
+      L('vocab:dinero', { tipo: 'meta', clave: 'vocab', tema: 'dinero', palabras: 10, titulo: 'Vocabulario · Dinero', texto: 'Aprende 10 palabras del tema Dinero.' }),
+      A('5.4'), A('funciones:4'), M('absoluto:4'),
+      paso('tres', 'reto:curso-loop', {
+        tipo: 'reto',
+        id: 'curso-loop',
+        titulo: 'Tu loop con letra',
+        texto: 'En FL Studio, arma un loop de 4 compases en menor (acordes, bajo y un beat de trap o dembow) y escribe encima 4 versos con palabras del tema Amor o Dinero.',
+      }),
+    ],
+  },
 ]
 
 export const getBloque = (n) => BLOQUES.find((b) => b.numero === Number(n)) ?? null
