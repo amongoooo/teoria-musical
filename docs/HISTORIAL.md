@@ -364,3 +364,13 @@ Pedido del usuario: «que las vistas previas de ritmo y letras también se vean 
 - **Letras**: 6 letras en el Cuaderno (más esquemas y palabras) con el ritmo de pintado al azar; 7 palabras en Vocabulario.
 - **Pruebas** (Playwright, 375 px, claro y oscuro): en varias vueltas salen fallos en Oído y Ritmo, la buena se marca en verde, los tiempos de acierto difieren entre tarjetas; Letras con un fallo forzado (`Math.random`). `npm run build` sin errores.
 
+
+## 2026-11-17 · Ritmo: guía del medidor, pad de seguimiento y respuesta con la bocina
+
+Pedido del usuario: «la barra horizontal que cuenta la precisión del toque tendrá una barra vertical deslizándose en cada golpe a tocar, donde caería el dedo; en Eco, encima del botón que presionamos, un botón de seguimiento que se pone de color cada que suena (pregunta y respuesta); el botón de la bocina se habilita solo cuando el jugador terminó su turno y muestra la respuesta correcta» y, después, «en Seguir, al dar Continuar, las teclas solo se apagan y encienden en otro orden; sin transición a menos que subas de nivel».
+
+- **Guía** (`Medidor` con `guia`, pieza `Guia` en `components/PiezasRitmo.jsx`): `guia()` de `pages/Ritmo.jsx` da `{ d, antes, despues }` = segundos de «ahora» (reloj de audio − latencia − inicio − compensación) al golpe más cercano de los compases `toca` y la mitad del hueco con sus vecinos; la barra se mueve en cada fotograma y se desvanece en la orilla o al saltar al golpe siguiente. Solo en Seguir (Eco no tiene medidor: delataría el patrón).
+- **Pad de seguimiento** (Eco): `Pad` con la prop nueva **`soloVer`** (no se toca, `aria-hidden`, sin hundirse) y `chico`, encima del tuyo; el reloj del entrenador cuenta los golpes del patrón que ya sonaron en cada compás `demo` / `respuesta` y sube `destellos` (el pad se ilumina con `destello`).
+- **Bocina**: desactivada hasta `fase === 'evaluada'`; entonces el plan es `entrada → respuesta → cierre` (Seguir) o `entrada → demo → respuesta → cierre` (Eco). `respuesta` es un tipo nuevo de `eventosCompas` (`theory/ritmo.js`) que suena como la demo y enciende **tu** pad. Ya no existe «volver a empezar con la demo» antes de evaluar.
+- **Sin transición en Seguir**: la ronda va con `key` del nivel (`nivel-N`) en lugar del número de ronda: el patrón nuevo solo cambia los aros del contador; entra desde la derecha al cambiar de nivel. Eco sigue entrando cada ronda.
+- **Pruebas** (`docs/pruebas/ritmo.mjs`, 375 px, claro y oscuro): bocina apagada jugando y lista al evaluar, la guía barre (valores distintos con opacidad), el pad se ilumina con la respuesta, el de seguimiento con la demo de Eco, y el repaso de Eco pasa por demo y respuesta. `npm run build` sin errores.

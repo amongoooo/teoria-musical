@@ -54,9 +54,11 @@ export default function Ritmo({ modo: modoId }) {
 // ---------------------------------------------------------------------------
 // Entrenador: una ronda = una pista de compases (iniciarPista). Cada compás tiene un tipo (entrada | demo | toca |
 // cierre) que se decide cuando la pista lo pide (≈ 0,25 s antes de que empiece) y se guarda en `tipos`.
-//  - Seguir: entrada → toca × 2 → cierre (con la bocina: entrada → demo → toca × 2 → cierre).
+//  - Seguir: entrada → toca × 2 → cierre.
 //  - Eco: entrada → (demo → toca) en bucle hasta que en un toca haya toques → cierre. 6 ciclos sin tocar: pausa.
-//  - Repaso (bocina ya evaluada): entrada → demo → cierre, sin evaluar.
+//    El pad de seguimiento (arriba) se ilumina con cada golpe de la demo: hace primero lo que hay que copiar.
+//  - Repaso (bocina, solo con la ronda ya evaluada; pedido del usuario): la app toca la respuesta correcta en el pad,
+//    sin evaluar. Seguir: entrada → respuesta → cierre. Eco: entrada → demo → respuesta → cierre (pregunta y respuesta).
 // ---------------------------------------------------------------------------
 
 /** Ciclos de Eco sin tocar antes de quedar en pausa. */
@@ -101,7 +103,12 @@ function Entrenador({ modo }) {
   const [evaluacion, setEvaluacion] = useState(null)
   const [resultado, setResultado] = useState(null)
   const [comp, setComp] = useState(compensacionActual())
+  const compRef = useRef(comp)
+  compRef.current = comp
   const [error, setError] = useState(null)
+  // Destellos de los pads cuando SUENA un golpe del patrón: el de seguimiento (demo de Eco) y el tuyo (la respuesta).
+  const [destellos, setDestellos] = useState({ demo: 0, respuesta: 0 })
+  const ultimoGolpe = useRef('')
   const control = useRef({ evaluada: false, revisados: -1, ciclos: 0 })
 
   // Al abrir el modo, el nivel es el más alto al que has llegado (como en el de oído).
@@ -173,8 +180,7 @@ function Entrenador({ modo }) {
     if (import.meta.env.DEV) window.__ritmo = { pista: pistaRef.current, ronda: r, tipos: tiposRef.current, tiempoAudio, latenciaAudio }
   }
 
-  const planJuego = (conDemo) =>
-    eco ? { clase: 'eco' } : { clase: 'lista', lista: conDemo ? ['entrada', 'demo', 'toca', 'toca', 'cierre'] : ['entrada', 'toca', 'toca', 'cierre'] }
+  const planJuego = () => (eco ? { clase: 'eco' } : { clase: 'lista', lista: ['entrada', 'toca', 'toca', 'cierre'] })
 
   // Desde una meta de una ruta o del curso: sin vidas y a tempo normal (ahí se aprende, no se compite).
   const guiada = () => metaGuiada()?.practica === 'ritmo'
@@ -188,7 +194,7 @@ function Entrenador({ modo }) {
     rondaRef.current = r
     setRonda(r)
     window.scrollTo(0, 0)
-    arrancar(r, planJuego(false))
+    arrancar(r, planJuego())
   }
 
   const empezar = () => {
@@ -211,14 +217,14 @@ function Entrenador({ modo }) {
     window.scrollTo(0, 0)
   }
 
-  /** Reinicia la ronda (tras una pausa o con la bocina). */
-  const otraVez = (conDemo) => arrancar(rondaRef.current, planJuego(conDemo))
+  /** Reinicia la ronda (tras una pausa). */
+  const otraVez = () => arrancar(rondaRef.current, planJuego())
 
-  /** Bocina: antes de evaluar, vuelve a empezar con el patrón sonando primero; ya evaluada, solo lo hace sonar. */
+  /** Bocina (solo con tu turno terminado): la app toca la respuesta correcta en el pad. */
   const escuchar = () => {
-    if (!rondaRef.current) return
-    if (fase === 'evaluada') arrancar(rondaRef.current, { clase: 'lista', lista: ['entrada', 'demo', 'cierre'], repaso: true })
-    else otraVez(true)
+    if (!rondaRef.current || fase !== 'evaluada') return
+    const lista = eco ? ['entrada', 'demo', 'respuesta', 'cierre'] : ['entrada', 'respuesta', 'cierre']
+    arrancar(rondaRef.current, { clase: 'lista', lista, repaso: true })
   }
 
   /** Cierra la ronda: registra el resultado, las vidas y el texto. */
@@ -269,6 +275,17 @@ function Entrenador({ modo }) {
     const casilla = Math.floor(dentro / pasoDe(r))
     const tiempo = Math.floor(dentro / pista.pulso)
     setReloj((a) => (a && a.k === k && a.casilla === casilla ? a : { k, casilla, tiempo, rel }))
+
+    // Un golpe del patrón acaba de sonar en una demo o en la respuesta: su pad se ilumina.
+    const t = tiposRef.current[k]
+    if (t === 'demo' || t === 'respuesta') {
+      const n = r.patron.filter((c) => (c / r.porTiempo) * pista.pulso <= dentro).length
+      const clave = `${r.n}:${k}:${n}`
+      if (n > 0 && clave !== ultimoGolpe.current) {
+        ultimoGolpe.current = clave
+        setDestellos((d) => ({ ...d, [t]: d[t] + 1 }))
+      }
+    }
 
     const c = control.current
     const plan = planRef.current
@@ -416,17 +433,36 @@ function Entrenador({ modo }) {
     }
   }
 
+  /**
+   * Guía del medidor (Seguir): cuánto le falta (−) o le sobra (+) a «ahora» respecto al golpe a tocar más cercano, con
+   * el retraso del dispositivo descontado igual que en los toques. Solo mientras es tu turno.
+   */
+  const guia = () => {
+    const pista = pistaRef.current
+    const r = rondaRef.current
+    const plan = planRef.current
+    if (!pista || !r || control.current.evaluada || plan?.clase !== 'lista') return null
+    const ks = plan.lista.flatMap((t, kk) => (t === 'toca' ? [kk] : []))
+    const ts = objetivosDe(r, ks, pista.pulso).map((o) => o.t)
+    if (!ts.length) return null
+    const ahora = tiempoAudio() - latenciaAudio() - pista.inicio - compRef.current
+    let i = 0
+    for (let j = 1; j < ts.length; j++) if (Math.abs(ahora - ts[j]) < Math.abs(ahora - ts[i])) i = j
+    const hueco = (a, b) => (a === undefined || b === undefined ? Infinity : Math.abs(b - a) / 2)
+    return { d: ahora - ts[i], antes: hueco(ts[i - 1], ts[i]), despues: hueco(ts[i], ts[i + 1]) }
+  }
+
   // Toques del compás `toca` de Eco que suena (un puntito neutro por toque).
   const toquesEco = eco && !evaluacion && tipo === 'toca' && ronda ? toquesDe([k], ronda).length : 0
 
   const verPatron = !eco || evaluacion || admin
   const patron = ronda && verPatron ? ronda.patron.map((c) => c / ronda.porTiempo) : []
-  const colorCabezal = tipo === 'demo' ? 'var(--color-sky-500)' : tipo === 'toca' ? undefined : 'var(--color-zinc-500)'
+  const colorCabezal = tipo === 'demo' ? 'var(--color-sky-500)' : tipo === 'toca' || tipo === 'respuesta' ? undefined : 'var(--color-zinc-500)'
 
   // Botón de abajo.
   let accion
   if (!jugando) accion = { label: 'Empezar', onClick: empezar, flotante: true }
-  else if (fase === 'pausa') accion = { label: 'Continuar', onClick: () => otraVez(false), ayuda: eco ? 'Cuando quieras, otra vez' : 'No tocaste: cuando quieras, otra vez' }
+  else if (fase === 'pausa') accion = { label: 'Continuar', onClick: otraVez, ayuda: eco ? 'Cuando quieras, otra vez' : 'No tocaste: cuando quieras, otra vez' }
   else if (fase !== 'evaluada') {
     const ayuda =
       tipo === 'demo' ? 'Escucha el patrón' : tipo === 'toca' ? (eco ? 'Tu turno: repítelo' : 'Toca los golpes con aro') : 'Entra después de la cuenta'
@@ -461,10 +497,11 @@ function Entrenador({ modo }) {
       }
     : null
 
-  // Pad: la cuenta en la entrada, la oreja mientras suena el patrón y «Toca» en tu turno.
+  // Pad: la cuenta en la entrada y «Toca» en tu turno; mientras suena el patrón de Eco, en blanco y apagado (lo hace el
+  // pad de seguimiento de arriba).
   let contenidoPad = 'Toca'
   if (tipo === 'entrada') contenidoPad = <span className="font-dato text-6xl font-medium tabular-nums">{Math.max(0, reloj?.tiempo ?? 0) + 1}</span>
-  else if (tipo === 'demo') contenidoPad = <Oreja className="size-14" />
+  else if (tipo === 'demo') contenidoPad = <span className="block size-14" />
   const latido = sonando && k >= 0 ? k * TIEMPOS + reloj.tiempo : -1
 
   if (fin) {
@@ -489,7 +526,8 @@ function Entrenador({ modo }) {
         golpes={golpes}
         barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.aprobado), acento: `var(--color-dificultad-${dificultad})` }}
         vidas={vidasVista || null}
-        bocina={jugando ? { onClick: escuchar, disabled: !ronda, sonando: tipo === 'demo' } : null}
+        // La bocina solo se habilita con tu turno terminado (pedido del usuario): entonces toca la respuesta correcta.
+        bocina={jugando ? { onClick: escuchar, disabled: !ronda || fase !== 'evaluada', sonando: repaso && Boolean(sonando) } : null}
       />
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-5 pb-64 pt-4">
@@ -497,7 +535,9 @@ function Entrenador({ modo }) {
           <ArranqueOido modo={modo} datos={datos} tienda={tiendaRitmo} Icono={Metronomo} />
         ) : (
           <motion.div
-            key={ronda.n}
+            // En Seguir (pedido del usuario) la ronda nueva no se desliza: las casillas solo se apagan y se encienden
+            // con el patrón nuevo; la transición queda para cuando cambia el nivel. En Eco, cada ronda entra.
+            key={eco ? ronda.n : `nivel-${ronda.nivel}`}
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
@@ -540,11 +580,35 @@ function Entrenador({ modo }) {
               colorCabezal={colorCabezal}
             />
 
-            {!eco && <Medidor error={error} tolerancia={margenEfectivo(margen, ronda, pulsoDe(ronda))} vacio="" />}
+            {!eco && <Medidor error={error} tolerancia={margenEfectivo(margen, ronda, pulsoDe(ronda))} vacio="" guia={guia} />}
 
             <Historial filas={eco && !evaluacion ? null : porCompas} toques={toquesEco} />
 
-            <Pad onToque={toque} color={modo.acento} latido={latido} mostrarLatido={latido >= 0} atenuado={tipo === 'demo'} data-pad={tipo ?? ''}>
+            {/* Eco es pregunta y respuesta: el pad de seguimiento toca primero lo que hay que copiar. */}
+            {eco && (
+              <Pad
+                soloVer
+                chico
+                color={modo.acento}
+                destello={{ n: destellos.demo, fuerza: 1 }}
+                atenuado={tipo !== 'demo'}
+                data-pad-seguimiento={tipo === 'demo' ? 'suena' : ''}
+                data-destellos={destellos.demo}
+              >
+                <Oreja className="size-8" />
+              </Pad>
+            )}
+
+            <Pad
+              onToque={toque}
+              color={modo.acento}
+              latido={latido}
+              mostrarLatido={latido >= 0}
+              atenuado={tipo === 'demo'}
+              destello={{ n: destellos.respuesta, fuerza: 1 }}
+              data-pad={tipo ?? ''}
+              data-destellos={destellos.respuesta}
+            >
               {contenidoPad}
             </Pad>
           </motion.div>
