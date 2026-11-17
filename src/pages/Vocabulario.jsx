@@ -1,6 +1,8 @@
 import { motion } from 'motion/react'
 import { useRef, useState } from 'react'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
+import { PildoraXP, useXPPartida } from '../components/XP.jsx'
+import { XP } from '../progress/xp.js'
 import PanelEntrenamiento from '../components/PanelEntrenamiento.jsx'
 import RimasDiccionario from '../components/RimasDiccionario.jsx'
 import { EJERCICIOS, crearPregunta } from '../letras/vocabulario/ejercicios.js'
@@ -179,12 +181,19 @@ function Entrenador({ modo }) {
   const [respuesta, setRespuesta] = useState(null)
   const [resultado, setResultado] = useState(null)
   const [tanda, setTanda] = useState({ hechas: 0, aciertos: 0 })
+  // Experiencia: 3 por acierto, +5 por palabra nueva y +2 × caja cuando una palabra sube de caja (× combo).
+  const xp = useXPPartida('vocab')
 
   const responder = (id) => {
     if (respuesta) return
     const bien = id === pregunta.correcta
     setRespuesta(id)
-    setResultado(responderVocab(pregunta.tipo, pregunta.palabra.p, bien))
+    const r = responderVocab(pregunta.tipo, pregunta.palabra.p, bien)
+    setResultado(r)
+    const extras = []
+    if (bien && r.nueva) extras.push({ nombre: 'Palabras nuevas', xp: XP.vocab.nueva })
+    else if (bien && r.movida) extras.push({ nombre: 'Palabras que suben de caja', xp: XP.vocab.caja * r.caja })
+    xp.apuntar({ bien, clave: modo.id, area: 'letras', base: XP.base.vocab, extras, metaCumplida: r.metaCumplida, racha: tiendaVocab.rachaActual() })
     setTanda((t) => ({ hechas: t.hechas + 1, aciertos: t.aciertos + (bien ? 1 : 0) }))
   }
 
@@ -246,11 +255,13 @@ function Entrenador({ modo }) {
           data-pregunta={pregunta.tipo}
           data-palabra={w.p}
         >
-          <div className="flex items-center justify-between gap-3">
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(ACENTO) }}>
-              <Pluma className="size-[18px]" />
-              {modo.id === 'repaso' ? `Repaso · ${tipoModo.titulo}` : tipoModo.titulo}
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(ACENTO) }}>
+              <Pluma className="size-[18px] shrink-0" />
+              <span className="truncate">{modo.id === 'repaso' ? `Repaso · ${tipoModo.titulo}` : tipoModo.titulo}</span>
             </span>
+            <span className="ml-auto" />
+            <PildoraXP sesion={xp} acento={ACENTO} />
             {pregunta.motivo === 'nueva' && !respuesta ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-fijate-suave px-2.5 py-1 text-sm font-semibold text-fijate-tinta" data-nueva>
                 <Bombilla className="size-4" /> Nueva

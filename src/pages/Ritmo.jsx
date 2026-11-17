@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { golpeAhora, iniciarPista, latenciaAudio, tiempoAudio } from '../audio/engine.js'
 import ArranqueOido from '../components/ArranqueOido.jsx'
 import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
+import { PildoraXP, useXPPartida } from '../components/XP.jsx'
+import { XP } from '../progress/xp.js'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
 import PanelEntrenamiento, { textoAprobado } from '../components/PanelEntrenamiento.jsx'
 import { avanceNivel } from '../progress/entrenamiento.js'
@@ -77,6 +79,8 @@ function Entrenador({ modo }) {
   const [jugando, setJugando] = useState(false)
   // Fin de la partida (pedido del usuario): al quedarse sin vidas, su pantalla con el resumen.
   const marcador = useMarcador()
+  // Experiencia de la partida (cada ronda buena suma; el desglose, en la píldora y al final).
+  const xp = useXPPartida('ritmo')
   const [fin, setFin] = useState(null)
   const [vidas, setVidas] = useState(null)
   const vidasRef = useRef(null)
@@ -202,12 +206,13 @@ function Entrenador({ modo }) {
     const v = guiada() ? VIDAS_INFINITAS : vidasDe(datos.ajustes)
     cambiarVidas({ infinitas: v === VIDAS_INFINITAS, actual: v, max: v, alcanzados: [datos.nivel] })
     marcador.empezar(datos.nivel)
+    xp.empezar()
     setJugando(true)
     nueva()
   }
 
   const terminar = () => {
-    setFin(marcador.resumen())
+    setFin({ ...marcador.resumen(), xp: { total: xp.total, partes: xp.partes } })
     parar()
     setJugando(false)
     setRonda(null)
@@ -231,6 +236,7 @@ function Entrenador({ modo }) {
   const cerrar = (ev, ks) => {
     control.current.evaluada = true
     const r = rondaRef.current
+    const superadoAntes = tiendaRitmo.datosModo(modo.id).superado?.[r.nivel] ?? 0
     // Una ronda = una respuesta; en tempo lento es práctica (cuenta para el día, no para aprobar el nivel).
     const res = tiendaRitmo.registrarRespuesta(modo.id, {
       item: r.item,
@@ -252,6 +258,27 @@ function Entrenador({ modo }) {
       res.vidas = { antes: vv.actual, despues: actual, fin: actual <= 0 }
     }
     marcador.apuntar(ev.buena, res.nuevoNivel)
+    // XP: 6 (Seguir) o 7 (Eco) por ronda buena, +3 si salió clavada; × dificultad × tempo × vidas × combo.
+    const factores = [{ nombre: 'Dificultad', f: XP.dificultad[dificultad - 1] ?? 1 }]
+    if (r.tempo !== 'normal') factores.push({ nombre: r.tempo === 'lento' ? 'Tempo lento' : 'Tempo rápido', f: XP.tempo[r.tempo] ?? 1 })
+    if (vv && !vv.infinitas) factores.push({ nombre: 'Con vidas', f: XP.vidas })
+    if (superadoAntes > dificultad) factores.push({ nombre: 'Ya lo dominas', f: XP.dominado })
+    const clavado = ev.bien === ev.total && !ev.sobran.length
+    xp.apuntar({
+      bien: ev.buena,
+      clave: modo.id,
+      area: 'ritmo',
+      base: eco ? XP.base.eco : XP.base.seguir,
+      extras: clavado ? [{ nombre: '¡Clavado!', xp: XP.clavado }] : [],
+      factores,
+      metaCumplida: res.metaCumplida,
+      racha: tiendaRitmo.rachaActual(),
+    })
+    if (res.aprobado?.mejora) {
+      const d = res.aprobado.dificultad
+      const ganado = superadoAntes ? XP.dificultadEntrenador * (d - superadoAntes) : XP.nivelEntrenador + XP.dificultadEntrenador * (d - 1)
+      xp.logro(`Nivel ${res.aprobado.nivel} aprobado`, ganado, { area: 'ritmo' })
+    }
     setEvaluacion({ ks, ev })
     setResultado(res)
     setFase('evaluada')
@@ -546,11 +573,13 @@ function Entrenador({ modo }) {
             data-fase={fase ?? tipo ?? ''}
             data-repaso={repaso || undefined}
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
-                <Metronomo className="size-[18px]" />
-                Ritmo · {modo.titulo}
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
+                <Metronomo className="size-[18px] shrink-0" />
+                <span className="truncate">Ritmo · {modo.titulo}</span>
               </span>
+              <span className="ml-auto" />
+              <PildoraXP sesion={xp} acento={modo.acento} />
               <motion.span
                 key={nivelVisto}
                 initial={resultado?.subio ? { scale: 0.6, opacity: 0 } : false}

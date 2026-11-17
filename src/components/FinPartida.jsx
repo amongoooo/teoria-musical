@@ -7,6 +7,7 @@ import { Atras, Check } from '../ui/Iconos.jsx'
 import { SALTO, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { VIDRIO } from '../ui/vidrio.js'
+import { TarjetaXP } from './XP.jsx'
 
 /** Relieve de tarjeta, como en el arranque del entrenador. */
 const RELIEVE = { boxShadow: '0 5px 0 var(--color-zinc-200)' }
@@ -36,7 +37,8 @@ export function useMarcador() {
 
 /**
  * Pantalla de fin de partida (pedido del usuario: al quedarse sin vidas): insignia del entrenamiento, «Fin de la
- * partida» y los datos en tarjetas con relieve, como el arranque. «Continuar» (botón flotante) vuelve al panel del
+ * partida» y los datos en tarjetas con relieve, como el arranque; con `resumen.xp` ({ total, partes }), la tarjeta de la
+ * experiencia ganada con su desglose. «Continuar» (botón flotante) vuelve al panel del
  * entrenamiento; «Jugar otra vez», al arranque.
  */
 export default function FinPartida({ resumen, titulo, Icono, acento, volver, etiquetaVolver, onOtra }) {
@@ -88,6 +90,13 @@ export default function FinPartida({ resumen, titulo, Icono, acento, volver, eti
             </div>
           ))}
         </motion.div>
+
+        {/* Experiencia de la partida: tocar la tarjeta despliega de dónde salió. */}
+        {resumen.xp?.total > 0 && (
+          <motion.div variants={itemLista} className="w-full">
+            <TarjetaXP total={resumen.xp.total} partes={resumen.xp.partes} acento={acento} />
+          </motion.div>
+        )}
 
         {subio && (
           <motion.p variants={itemLista} className="inline-flex items-center gap-2 rounded-full bg-bien-suave px-4 py-2 text-base font-semibold text-bien-tinta">

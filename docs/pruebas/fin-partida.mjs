@@ -63,7 +63,7 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'finOido', /\d+\/\d+/.test(aciertos), aciertos)
   await foto('2-fin-oido')
   await boton(page, 'Continuar').click()
-  await page.waitForFunction(() => location.hash === '#/oido')
+  await page.waitForFunction(() => location.hash === '#/entrenar')
   comprobar(r, 'vuelvePanel', true)
 
   // Ritmo (Seguir, 1 vida): una ronda tocando fuera de tiempo.

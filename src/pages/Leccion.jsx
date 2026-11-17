@@ -15,6 +15,9 @@ import MarcaPalabras from '../components/exercises/MarcaPalabras.jsx'
 import FlowEjercicio from '../components/exercises/FlowEjercicio.jsx'
 import PasoTexto from '../components/pasos/PasoTexto.jsx'
 import Rich from '../components/Rich.jsx'
+import { TarjetaXP } from '../components/XP.jsx'
+import { areaDe, xpLeccion } from '../components/useXP.js'
+import { XP, sumarXP } from '../progress/xp.js'
 import { etiquetaPaso } from '../content/actividad.js'
 import { acentoLeccion, codigoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/index.js'
@@ -112,6 +115,7 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   // Repaso del final: { lista: [[paso, ronda]…], i, mal } (null = aún en los pasos de la lección).
   const [repaso, setRepaso] = useState(null)
   const resultadoRepaso = useRef(null) // { bien, total } para la pantalla final
+  const xpFinal = useRef(null) // { total, partes }: la experiencia que dio la lección (pantalla final)
   const { admin, gesto } = useOpciones() // admin: la barra de pasos abre «Ir al paso» y el gesto pasa sin responder
   const [verPasos, setVerPasos] = useState(false)
   // Hasta qué paso se ha llegado avanzando de verdad (los anteriores están resueltos): volver atrás no lo
@@ -140,7 +144,32 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
       (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
       { aciertos: 0, total: 0 },
     )
+    // Experiencia: la primera vez, completar + aciertos a la primera + perfecta (se cuenta sola, del progreso); al
+    // repetirla, el 25 % y lo que mejores tu mejor resultado; el repaso bien, 3 cada una (al libro).
+    const antes = getProgresoLeccion(leccion.id)
+    const yaHecha = antes?.completada && !antes.saltada
+    const xpAntes = yaHecha ? (xpLeccion(antes)?.total ?? 0) : 0
     completarLeccion(leccion.id, suma)
+    const nueva = xpLeccion(getProgresoLeccion(leccion.id))
+    const partes = {}
+    const area = areaDe(leccion.id)
+    if (!yaHecha) {
+      partes['Lección completada'] = nueva.completar
+      if (nueva.aciertos) partes['Aciertos a la primera'] = nueva.aciertos
+      if (nueva.perfecta) partes['Lección perfecta'] = nueva.perfecta
+    } else if (!getOpciones().admin) {
+      const estaVez = XP.leccion.completar + XP.leccion.acierto * suma.aciertos + (suma.total > 0 && suma.aciertos >= suma.total ? XP.leccion.perfecta : 0)
+      const repetir = Math.round(estaVez * XP.leccion.repetir)
+      sumarXP(area, repetir)
+      partes['Repetir la lección (25 %)'] = repetir
+      if (nueva.total > xpAntes) partes['Mejoraste tu resultado'] = nueva.total - xpAntes
+    }
+    const rep = resultadoRepaso.current
+    if (rep?.bien && !getOpciones().admin) {
+      sumarXP(area, XP.leccion.repaso * rep.bien)
+      partes['Repaso'] = XP.leccion.repaso * rep.bien
+    }
+    xpFinal.current = { total: Object.values(partes).reduce((a, b) => a + b, 0), partes }
     setTerminado(true)
   }, [leccion.id])
 
@@ -201,7 +230,7 @@ function Visor({ leccion, soloReto, guiada, onRepetir }) {
   }, [])
 
   if (terminado) {
-    return <Final leccion={leccion} modulo={modulo} enRuta={enRuta} puntos={puntos.current} repaso={resultadoRepaso.current} onRepetir={onRepetir} />
+    return <Final leccion={leccion} modulo={modulo} enRuta={enRuta} puntos={puntos.current} repaso={resultadoRepaso.current} xp={xpFinal.current} onRepetir={onRepetir} />
   }
   if (faltan.length > 0) return <AntesTeConviene leccion={leccion} faltan={faltan} acento={acento} onSalir={salir} onSeguir={() => setFaltan([])} />
 
@@ -1053,7 +1082,7 @@ function Flechita({ gesto, visible, cubre, invertido, color }) {
   )
 }
 
-function Final({ leccion, modulo, enRuta, puntos, repaso = null, onRepetir }) {
+function Final({ leccion, modulo, enRuta, puntos, repaso = null, xp = null, onRepetir }) {
   const suma = Object.values(puntos).reduce(
     (acc, p) => ({ aciertos: acc.aciertos + p.aciertos, total: acc.total + p.total }),
     { aciertos: 0, total: 0 },
@@ -1098,6 +1127,13 @@ function Final({ leccion, modulo, enRuta, puntos, repaso = null, onRepetir }) {
           </div>
         )}
       </motion.div>
+
+      {/* Experiencia que dio la lección: tocar la tarjeta despliega de dónde salió. */}
+      {xp?.total > 0 && (
+        <motion.div variants={itemLista}>
+          <TarjetaXP total={xp.total} partes={xp.partes} acento={acentoLeccion(leccion.id) ?? 'var(--color-zinc-900)'} />
+        </motion.div>
+      )}
 
       {leccion.resumen && (
         <motion.section variants={itemLista} className="flex flex-col gap-3 rounded-3xl border border-zinc-200 bg-white p-5">

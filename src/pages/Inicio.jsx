@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import BotonNovedades from '../components/Novedades.jsx'
 import { BotonCurso, TarjetaHoy } from '../components/Tarjetas.jsx'
+import { InsigniaNivel } from '../components/XP.jsx'
 import { useCurso } from '../components/cursoModulo.js'
 import { rutas } from '../router.js'
 import { itemLista, lista } from '../ui/movimiento.js'
@@ -24,6 +25,10 @@ export default function Inicio() {
       {/* Opciones ya no va aquí: es la pestaña Configuración de la barra de abajo. */}
       <motion.header variants={itemLista} className="flex items-center gap-3">
         <BotonNovedades />
+        {/* Tu nivel de jugador (experiencia): abre la hoja con la XP, las áreas y los títulos. */}
+        <span className="ml-auto">
+          <InsigniaNivel />
+        </span>
       </motion.header>
       <motion.div variants={itemLista} className="-mt-2 flex items-center justify-center gap-3">
         {/* Insignia del juego: el ícono de la app, entra con rebote. */}
