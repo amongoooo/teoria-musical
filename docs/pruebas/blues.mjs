@@ -36,7 +36,7 @@ const PASOS = 16
   comprobar(r, 'catálogo: 5.5 ← 5.3, 5.4', JSON.stringify(CATALOGO['5.5']?.requiere) === '["5.3","5.4"]', JSON.stringify(CATALOGO['5.5']))
   const { TRAMOS } = await import('../../src/content/rutas.js')
   const paradas = TRAMOS.progresiones.paradas.map((p) => p.id ?? `${p.modo}:${p.nivel}`).join(' ')
-  comprobar(r, 'tramo «Progresiones»: 5.4, Funciones 4, 5.5, Acordes 6', paradas === '5.4 funciones:4 5.5 acordes:6', paradas)
+  comprobar(r, 'tramo «Progresiones»: 5.4, Funciones 4, 5.5, Acordes 6 (y luego la 5.6)', paradas.startsWith('5.4 funciones:4 5.5 acordes:6'), paradas)
   const leccion = (await import('../../src/content/modulo-05/leccion-5-5.js')).default
   comprobar(r, `lección: ${PASOS} pasos, el último un reto`, leccion.pasos.length === PASOS && leccion.pasos.at(-1).tipo === 'reto')
   const rej = leccion.pasos[9].rejilla

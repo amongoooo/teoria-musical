@@ -1,5 +1,6 @@
 // Prueba rápida «¿Ya lo sabes?» · banco del módulo 5 (Armonía funcional y progresiones).
 // 3 preguntas por lección (la prueba toma una al azar). Formato: rondas de `elegir` (src/content/FORMATO.md).
+import { conBeat } from '../../theory/bateria.js'
 
 // Las mismas voces que la lección 5.1: el bajo abajo y las de arriba moviéndose poco.
 const VOZ = {
@@ -25,6 +26,10 @@ const VOZ_SEPTIMAS = { Dm7: ['D3', 'C4', 'F4', 'A4'], G7: ['G2', 'B3', 'F4', 'G4
 const loop = (acordes) => ({ etiqueta: 'Escuchar', notas: acordes.map((a) => VOZ_LOOP[a]), intervalo: 0.85, duracion: 0.8 })
 const septimas = (acordes) => ({ etiqueta: 'Escuchar', notas: acordes.map((a) => VOZ_SEPTIMAS[a]), intervalo: 0.95, duracion: 0.9 })
 const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
+// Para la 5.6: el loop de la lección sobre el beat (conBeat), un acorde por compás o dos, a tiempo o adelantado.
+const VOZ_POP = [['C3', 'C4', 'E4', 'G4'], ['G2', 'B3', 'D4', 'G4'], ['A2', 'C4', 'E4', 'A4'], ['F2', 'C4', 'F4', 'A4']]
+const pop = (tiempos, { veces = 1, adelanto = 0 } = {}) =>
+  Array.from({ length: veces }, () => VOZ_POP.map((notas) => ({ notas, tiempos, adelanto }))).flat()
 const frase = (romanos) => ({ etiqueta: 'Escuchar', notas: romanos.map((rn) => VOZ[rn]), intervalo: 0.95, duracion: 0.9 })
 
 export default {
@@ -135,6 +140,29 @@ export default {
       opciones: ['Am7 – D7 – Gmaj7', 'Dm7 – G7 – Cmaj7', 'Em7 – A7 – Dmaj7', 'Am7 – D7 – G7'],
       correcta: 0,
       explicacion: 'En Sol: el ii es **Am7**, el V7 es **D7** y el I con séptima mayor es **Gmaj7**.',
+    },
+  ],
+  '5.6': [
+    {
+      pregunta: '¿Cada cuánto cambia el **acorde**?',
+      sonidos: [conBeat(pop(2, { veces: 2 }))],
+      opciones: ['Cada 2 compases', 'Cada compás', 'Dos por compás', 'Cada tiempo'],
+      ordenFijo: true,
+      correcta: 2,
+      explicacion: '**C – G – Am – F** en 2 compases: cambia en el 1 y en el 3, **dos veces por compás**.',
+    },
+    {
+      pregunta: '¿En cuál llega el acorde **antes** del compás?',
+      sonidos: [conBeat(pop(4, { adelanto: 0.5 })), conBeat(pop(4))],
+      correcta: 0,
+      mezclar: true,
+      explicacion: 'En el adelantado, cada acorde llega en la «y» del 4, **medio tiempo antes** del bombo del 1: una síncopa.',
+    },
+    {
+      pregunta: 'Para que el pre-coro **empuje** hacia el coro…',
+      opciones: ['Los acordes cambian más seguido', 'Sube el tempo', 'Se quita la batería', 'Se queda en un solo acorde'],
+      correcta: 0,
+      explicacion: 'Se **acelera el ritmo armónico**: el beat sigue igual y la armonía se mueve más rápido. El coro se siente como una llegada.',
     },
   ],
 }

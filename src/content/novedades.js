@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-ritmo-armonico',
+    fecha: '17 nov 2026',
+    titulo: 'Ritmo armónico',
+    cosas: [
+      {
+        texto: 'Lección nueva **A2.6 «Ritmo armónico»**: el mismo loop sobre el mismo beat, **lento, normal y rápido**; el pre-coro que acelera y el acorde que se **adelanta** medio tiempo.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/5.6' },
+      },
+      {
+        texto: 'La **rejilla de compases** ahora muestra cuánto dura cada acorde, con los tiempos que laten debajo. Y un ejercicio nuevo: **toca cuando cambia el acorde**.',
+      },
+      {
+        texto: 'La **ruta de Acordes** suma la lección al final del tramo «Progresiones».',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-blues',
     fecha: '17 nov 2026',
     titulo: 'ii–V–I, blues y las séptimas',

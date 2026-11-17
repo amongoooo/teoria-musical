@@ -178,6 +178,21 @@ arriba toca toda la forma y **enciende cada compás cuando suena**; tocar una ca
 rejilla: { etiqueta: 'Escuchar los 12 compases', compases: [{ cifrado: 'C7', grado: 'I7' }, …], sonido: { notas: [['C3', 'E4', 'G4', 'Bb4'], …], intervalo: 0.75, duracion: 0.7 } }
 ```
 
+**Rejilla con duraciones** (lección 5.6, ritmo armónico): en vez de `compases`, `acordes` con lo que dura cada uno (en tiempos) y
+el sonido hecho con `conBeat` (los mismos acordes sobre la batería). Cada acorde es un bloque tan largo como dura; debajo,
+los tiempos de cada compás laten; un acorde con `adelanto` (0.5 = en la «y» del 4) empieza antes de la línea con el borde en oro.
+Con `versiones`, un control segmentado cambia entre versiones del mismo loop (los bloques se estiran o se parten):
+
+```js
+const acordes = [{ cifrado: 'C', grado: 'I', notas: ['C3', 'C4', 'E4', 'G4'], tiempos: 4, adelanto: 0.5 }, …]
+rejilla: { acordes, sonido: conBeat(acordes, { groove: 'basico', bpm: 90, vueltas: 2, etiqueta: 'Escuchar sobre el beat' }) }
+rejilla: { versiones: [{ nombre: 'Lento', acordes, sonido: conBeat(acordes), etiqueta: 'Un acorde cada 2 compases' }, …] }
+```
+
+`conBeat(acordes, { groove, bpm, vueltas, etiqueta })` (`theory/bateria.js`) sirve como cualquier sonido (`sonidos`, rondas de
+`elegir`, `siente`) y como groove de `pulso`: `{ groove: s.groove, tiempos: s.tiempos, porTiempo: s.porTiempo, toques: cambiosAcordes(acordes) }`
+= «Toca en cada cambio». `groove: null` = sin batería; `'click'` = solo el metrónomo.
+
 `texto` acepta además `circulo`: el **círculo de quintas** táctil (`components/CirculoQuintas.jsx`); tocar una tonalidad la elige
 y suena su escala, y el centro dice su armadura y su relativa:
 
