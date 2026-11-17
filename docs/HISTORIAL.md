@@ -354,3 +354,13 @@ Pedido del usuario: «también lo quería para la parte de intervalos y, si se m
 - **Oído absoluto**: mismo piano a la izquierda (notas de las dos octavas, blancas y negras); a la derecha la oreja que late y, al acertar, el nombre de la nota en verde.
 - **Pruebas** (Playwright, 375 px, claro y oscuro; con la 5.1 hecha para ver Funciones): los cuatro pianos miden lo mismo y están en el mismo lugar; las teclas se encienden y la respuesta se pone verde en cada vuelta. `npm run build` sin errores.
 
+## 2026-11-17 · Vistas previas con tiempos al azar y fallos
+
+Pedido del usuario: «que las vistas previas de ritmo y letras también se vean variadas; que el tiempo de respuesta entre cada preview sea variado para que no se vea todo contestando al mismo tiempo; que a veces se equivoquen y saquen algo mal».
+
+- **`useAzar(activo, prob)`** (`components/VistaPrevia.jsx`): como la escena se vuelve a montar en cada vuelta, sortea ahí cuánto tarda en responder (`retraso`, ±10 % de la vuelta) y si esta vez falla (`falla`: 25 % en Oído y Vocabulario, 35 % en Seguir y Eco). Quieta: sin retraso ni fallo.
+- **Fallos como en los entrenadores** (oro = lo que se tocó, verde suave con ✓ = la buena): piezas `Fallo` y `Correcta`; `Respuestas` con `falla`/`k` (Intervalos, Acordes, Funciones); `MiniPiano` con `correcta` distinta de `tocada` (Oído absoluto toca una tecla a 1–2 semitonos y luego se enciende la buena); Vocabulario elige el otro significado.
+- **Ritmo**: Seguir cambia un poco el tempo en cada vuelta y a veces un golpe sale a destiempo (casilla en oro); Eco empieza a repetir en otro momento y a veces se olvida un golpe (borde de oro). Más patrones (8 en cada uno).
+- **Letras**: 6 letras en el Cuaderno (más esquemas y palabras) con el ritmo de pintado al azar; 7 palabras en Vocabulario.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): en varias vueltas salen fallos en Oído y Ritmo, la buena se marca en verde, los tiempos de acierto difieren entre tarjetas; Letras con un fallo forzado (`Math.random`). `npm run build` sin errores.
+

@@ -62,6 +62,40 @@ function Acierto({ activo, de, redondo = 'rounded-xl', chico = false, children =
   )
 }
 
+/** Capa de oro: lo que se tocó y no era (como en los entrenadores: oro = fíjate). */
+function Fallo({ activo, de, redondo = 'rounded-xl', solido = false, children = null }) {
+  return (
+    <motion.span
+      aria-hidden
+      className={`absolute inset-0 flex items-center justify-center ${solido ? 'bg-fijate' : 'border-2 border-fijate bg-fijate-suave text-fijate-tinta'} ${redondo}`}
+      {...fase(activo, de, 0.9)}
+    >
+      {children}
+    </motion.span>
+  )
+}
+
+/** Tras un fallo, la respuesta buena se marca en verde suave (borde verde y ✓), como en los entrenadores. */
+function Correcta({ activo, de, redondo = 'rounded-xl', children = null }) {
+  return (
+    <motion.span aria-hidden className={`absolute inset-0 flex items-center justify-center gap-1.5 border-2 border-bien bg-bien-suave text-bien-tinta ${redondo}`} {...fase(activo, de, 0.9)}>
+      <Check className="size-4 shrink-0" />
+      {children}
+    </motion.span>
+  )
+}
+
+/**
+ * Azar de una vuelta (pedido del usuario: «que el tiempo de respuesta sea variado y que a veces se equivoquen»): cada
+ * escena se monta de nuevo en cada vuelta y aquí sortea cuánto tarda en responder (`retraso`, fracción de la vuelta) y
+ * si esta vez falla (`falla`, ~1 de cada 4). `k` sirve para elegir qué falla. Quieta: sin retraso ni fallo.
+ */
+function useAzar(activo, prob = 0.25) {
+  const [a] = useState(() => ({ r: Math.random(), f: Math.random(), k: Math.random() }))
+  if (!activo) return { retraso: 0, falla: false, k: 0 }
+  return { retraso: (a.r - 0.5) * 0.2, falla: a.f < prob, k: a.k }
+}
+
 /** Capa celeste: «suena». */
 function Suena({ activo, de, hasta, redondo = 'rounded-lg' }) {
   return <motion.span aria-hidden className={`absolute inset-0 bg-sky-500 ${redondo}`} {...fase(activo, de, hasta)} />
@@ -112,8 +146,10 @@ const cual = (lista, n) => lista[n % lista.length]
 // ---------------------------------------------------------------------------
 
 /** Dos respuestas apiladas; la `bien` se toca en `en` y se pone verde. */
-function Respuestas({ activo, opciones, bien, en, titulo = false }) {
+function Respuestas({ activo, opciones, bien, en, titulo = false, falla = false, k = 0 }) {
   const tres = opciones.length > 2
+  const otras = opciones.map((_, i) => i).filter((i) => i !== bien)
+  const toca = falla ? otras[Math.floor(k * otras.length)] : bien
   return (
     <div className={`flex w-[42%] shrink-0 flex-col justify-center ${tres ? 'gap-1.5' : 'gap-2'}`}>
       {opciones.map((o, i) => (
@@ -124,14 +160,22 @@ function Respuestas({ activo, opciones, bien, en, titulo = false }) {
           }`}
         >
           {o}
-          {i === bien && (
-            <>
-              <Acierto activo={activo} de={en + 0.04} redondo="rounded-[0.6rem]">
-                {o}
-              </Acierto>
-              <Dedo activo={activo} en={en} className="left-1/2 top-1/2 -ml-3.5 -mt-3.5" />
-            </>
+          {i === toca && toca === bien && (
+            <Acierto activo={activo} de={en + 0.04} redondo="rounded-[0.6rem]">
+              {o}
+            </Acierto>
           )}
+          {i === toca && toca !== bien && (
+            <Fallo activo={activo} de={en + 0.04} redondo="rounded-[0.6rem]">
+              {o}
+            </Fallo>
+          )}
+          {i === bien && toca !== bien && (
+            <Correcta activo={activo} de={en + 0.14} redondo="rounded-[0.6rem]">
+              {o}
+            </Correcta>
+          )}
+          {i === toca && <Dedo activo={activo} en={en} className="left-1/2 top-1/2 -ml-3.5 -mt-3.5" />}
         </span>
       ))}
     </div>
@@ -151,6 +195,7 @@ const INTERVALOS = [
 
 function Intervalos({ activo, n }) {
   const v = cual(INTERVALOS, n)
+  const { retraso, falla, k } = useAzar(activo)
   return (
     <ConPiano
       activo={activo}
@@ -159,7 +204,7 @@ function Intervalos({ activo, n }) {
         { st: v.notas[1], de: 0.24, hasta: 0.4 },
       ]}
     >
-      <Respuestas activo={activo} opciones={v.opciones} bien={v.bien} en={0.48} />
+      <Respuestas activo={activo} opciones={v.opciones} bien={v.bien} en={0.5 + retraso} falla={falla} k={k} />
     </ConPiano>
   )
 }
@@ -172,7 +217,7 @@ function Intervalos({ activo, n }) {
  */
 const BLANCAS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16]
 const NEGRAS = [1, 3, 6, 8, 10, 13, 15]
-function MiniPiano({ activo, suenan = [], de = 0.06, hasta = 0.4, tocada = null, en = 0.56 }) {
+function MiniPiano({ activo, suenan = [], de = 0.06, hasta = 0.4, tocada = null, correcta = tocada, en = 0.56 }) {
   const blancas = BLANCAS.length
   const ultima = BLANCAS[blancas - 1]
   const ancho = 100 / blancas
@@ -184,12 +229,10 @@ function MiniPiano({ activo, suenan = [], de = 0.06, hasta = 0.4, tocada = null,
         .map((l, k) => (
           <Suena key={k} activo={activo} de={l.de} hasta={l.hasta} redondo="rounded-b-md" />
         ))}
-      {tocada === st && (
-        <>
-          <Acierto activo={activo} de={en + 0.04} redondo="rounded-b-md" chico={negra} />
-          <Dedo activo={activo} en={en} className={`left-1/2 -ml-3.5 ${negra ? 'bottom-1' : 'bottom-2'}`} />
-        </>
-      )}
+      {tocada === st && tocada === correcta && <Acierto activo={activo} de={en + 0.04} redondo="rounded-b-md" chico={negra} />}
+      {tocada === st && tocada !== correcta && <Fallo activo={activo} de={en + 0.04} redondo="rounded-b-md" solido />}
+      {correcta === st && tocada !== correcta && <Acierto activo={activo} de={en + 0.14} redondo="rounded-b-md" chico={negra} />}
+      {tocada === st && <Dedo activo={activo} en={en} className={`left-1/2 -ml-3.5 ${negra ? 'bottom-1' : 'bottom-2'}`} />}
     </>
   )
   return (
@@ -219,10 +262,10 @@ function MiniPiano({ activo, suenan = [], de = 0.06, hasta = 0.4, tocada = null,
 }
 
 /** El formato de las escenas con piano: el piano a la izquierda (siempre igual) y, a la derecha, lo que se responde. */
-function ConPiano({ activo, suenan, de, hasta, tocada, en, children }) {
+function ConPiano({ activo, suenan, de, hasta, tocada, correcta, en, children }) {
   return (
     <div className="flex h-full gap-3">
-      <MiniPiano activo={activo} suenan={suenan} de={de} hasta={hasta} tocada={tocada} en={en} />
+      <MiniPiano activo={activo} suenan={suenan} de={de} hasta={hasta} tocada={tocada} correcta={correcta} en={en} />
       {children}
     </div>
   )
@@ -242,9 +285,10 @@ const ACORDES = [
 
 function Acordes({ activo, n }) {
   const v = cual(ACORDES, n)
+  const { retraso, falla, k } = useAzar(activo)
   return (
     <ConPiano activo={activo} suenan={v.notas} de={0.08} hasta={0.42}>
-      <Respuestas activo={activo} opciones={['Mayor', 'Menor']} bien={v.bien} en={0.46} />
+      <Respuestas activo={activo} opciones={['Mayor', 'Menor']} bien={v.bien} en={0.5 + retraso} falla={falla} k={k} />
     </ConPiano>
   )
 }
@@ -262,12 +306,13 @@ const CASA = [0, 4, 7]
 
 function Funciones({ activo, n }) {
   const v = cual(FUNCIONES, n)
+  const { retraso, falla, k } = useAzar(activo)
   return (
     <ConPiano
       activo={activo}
       suenan={[...CASA.map((st) => ({ st, de: 0.04, hasta: 0.18 })), ...v.notas.map((st) => ({ st, de: 0.24, hasta: 0.42 }))]}
     >
-      <Respuestas activo={activo} opciones={['T', 'S', 'D']} bien={v.bien} en={0.48} titulo />
+      <Respuestas activo={activo} opciones={['T', 'S', 'D']} bien={v.bien} en={0.52 + retraso} falla={falla} k={k} titulo />
     </ConPiano>
   )
 }
@@ -278,16 +323,21 @@ const NOMBRES = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol�
 
 function Absoluto({ activo, acento, n }) {
   const nota = cual(ABSOLUTO, n)
+  const { retraso, falla, k } = useAzar(activo)
+  // Al fallar, toca una tecla cercana (1 o 2 semitonos arriba o abajo, dentro del piano).
+  const salto = [-2, -1, 1, 2][Math.floor(k * 4)]
+  const tocada = falla ? Math.min(16, Math.max(0, nota + salto)) : nota
+  const en = 0.5 + retraso
   const late = activo
     ? { animate: { scale: [1, 1, 1.18, 1, 1.18, 1, 1] }, transition: { duration: VUELTA, times: [0, 0.05, 0.12, 0.19, 0.26, 0.33, 1], repeat: Infinity } }
     : { animate: { scale: 1 } }
   return (
-    <ConPiano activo={activo} tocada={nota} en={0.5}>
+    <ConPiano activo={activo} tocada={tocada} correcta={nota} en={en}>
       <div className="flex w-[42%] shrink-0 flex-col items-center justify-center gap-2">
         <motion.span className="grid size-14 place-items-center rounded-full text-blanco" style={{ backgroundColor: oscuro(acento) }} {...late}>
           <Oreja className="size-8" />
         </motion.span>
-        <motion.span className="font-titulo text-lg font-extrabold text-bien-tinta" {...fase(activo, 0.56, 0.9, { pop: true })}>
+        <motion.span className="font-titulo text-lg font-extrabold text-bien-tinta" {...fase(activo, en + 0.14, 0.9, { pop: true })}>
           {NOMBRES[nota % 12]}
         </motion.span>
       </div>
@@ -305,11 +355,17 @@ const SEGUIR = [
   [1, 2, 5, 7],
   [0, 4, 5, 7],
   [0, 1, 4, 6],
+  [2, 3, 6, 7],
+  [0, 2, 3, 5, 6],
 ]
 
 function Seguir({ activo, acento, n }) {
   const golpes = cual(SEGUIR, n)
-  const t = (i) => 0.06 + i * 0.085
+  const { retraso, falla, k } = useAzar(activo, 0.35)
+  // El tempo cambia un poco en cada vuelta y, a veces, un golpe sale a destiempo (oro, como «casi» en el entrenador).
+  const paso = 0.075 + (retraso + 0.1) * 0.1
+  const t = (i) => 0.06 + i * paso
+  const tarde = falla ? golpes[Math.floor(k * golpes.length)] : null
   return (
     <div className="flex h-full flex-col gap-2.5">
       <div className="grid grid-cols-8 gap-1">
@@ -321,11 +377,12 @@ function Seguir({ activo, acento, n }) {
           >
             <Suena activo={activo} de={t(i)} hasta={t(i) + 0.075} />
             <span className="relative">{c}</span>
-            {golpes.includes(i) && <Acierto activo={activo} de={t(i) + 0.03} redondo="rounded-md" />}
+            {golpes.includes(i) && i !== tarde && <Acierto activo={activo} de={t(i) + 0.03} redondo="rounded-md" />}
+            {i === tarde && <Fallo activo={activo} de={t(i) + 0.05} redondo="rounded-md" solido />}
           </span>
         ))}
       </div>
-      <Pad activo={activo} acento={acento} toques={golpes.map((i) => t(i) + 0.02)} />
+      <Pad activo={activo} acento={acento} toques={golpes.map((i) => t(i) + (i === tarde ? 0.045 : 0.02))} />
     </div>
   )
 }
@@ -355,10 +412,16 @@ const ECO = [
   [1, 3],
   [0, 1, 2],
   [0, 3],
+  [1, 2, 3],
+  [0, 1, 2, 3],
 ]
 
 function Eco({ activo, acento, n }) {
   const golpes = cual(ECO, n)
+  const { retraso, falla, k } = useAzar(activo, 0.35)
+  // A veces se olvida un golpe al repetirlo (casilla con borde de oro, como «falta» en el entrenador).
+  const olvida = falla ? golpes[Math.floor(k * golpes.length)] : null
+  const tuyo = 0.48 + retraso * 0.6
   const fila = (etiqueta, desde, bien) => (
     <div className="flex items-center gap-2">
       <span className="grid w-9 shrink-0 place-items-center" style={{ color: tinta(acento) }}>
@@ -373,7 +436,8 @@ function Eco({ activo, acento, n }) {
           >
             {!bien && golpes.includes(i) && <Suena activo={activo} de={desde + i * 0.09} hasta={desde + i * 0.09 + 0.07} />}
             <span className="relative">{i + 1}</span>
-            {bien && golpes.includes(i) && (
+            {bien && i === olvida && <Fallo activo={activo} de={desde + i * 0.09} redondo="rounded-md" />}
+            {bien && golpes.includes(i) && i !== olvida && (
               <>
                 <Acierto activo={activo} de={desde + i * 0.09} redondo="rounded-md" />
                 <Dedo activo={activo} en={desde + i * 0.09 - 0.01} className="left-1/2 top-1/2 -ml-3.5 -mt-3.5" />
@@ -387,7 +451,7 @@ function Eco({ activo, acento, n }) {
   return (
     <div className="flex h-full flex-col justify-center gap-3">
       {fila(<Oreja className="size-6" />, 0.06, false)}
-      {fila(<span className="font-juego text-base uppercase">Tú</span>, 0.48, true)}
+      {fila(<span className="font-juego text-base uppercase">Tú</span>, tuyo, true)}
     </div>
   )
 }
@@ -398,15 +462,19 @@ const CUADERNOS = [
   [['luna', 1], ['cuna', 1], ['mar', 2], ['lugar', 2]],
   [['cielo', 1], ['fuego', 2], ['juego', 2], ['suelo', 1]],
   [['barrio', 1], ['esquina', 2], ['diario', 1], ['camina', 2]],
+  [['ciudad', 1], ['verdad', 1], ['ayer', 2], ['volver', 2]],
+  [['camino', 1], ['olvido', 2], ['destino', 1], ['latido', 2]],
 ]
 const ANCHOS = ['w-[46%]', 'w-[34%]', 'w-[40%]', 'w-[30%]']
 
 function Cuaderno({ activo, n }) {
-  const versos = cual(CUADERNOS, n).map(([palabra, rima], i) => ({ ancho: ANCHOS[i], palabra, rima }))
+  const versos = cual(CUADERNOS, n).map(([palabra, rima], i) => ({ ancho: ANCHOS[(i + n) % ANCHOS.length], palabra, rima }))
+  const { retraso } = useAzar(activo)
+  const cada = 0.14 + retraso * 0.25
   return (
     <div className="flex h-full flex-col justify-center gap-1.5 rounded-xl bg-white px-3">
       {versos.map((v, i) => {
-        const de = 0.12 + i * 0.14
+        const de = 0.12 + i * cada
         return (
           <div key={i} className="flex h-6 items-center gap-2">
             <span className={`h-2 rounded-full bg-zinc-200 ${v.ancho}`} />
@@ -435,10 +503,15 @@ const VOCABULARIO = [
   { palabra: 'Anhelo', opciones: ['Deseo muy fuerte de algo', 'Sombra débil'], bien: 0 },
   { palabra: 'Feria', opciones: ['Oscuridad profunda', 'Dinero suelto, el cambio'], bien: 1 },
   { palabra: 'Penumbra', opciones: ['Sombra débil', 'Parte de una ciudad'], bien: 0 },
+  { palabra: 'Nostalgia', opciones: ['Orilla de la calle', 'Tristeza al recordar'], bien: 1 },
+  { palabra: 'Barrio', opciones: ['Parte de una ciudad', 'Deseo muy fuerte'], bien: 0 },
 ]
 
 function Vocabulario({ activo, acento, n }) {
   const v = cual(VOCABULARIO, n)
+  const { retraso, falla } = useAzar(activo)
+  const toca = falla ? 1 - v.bien : v.bien
+  const en = 0.46 + retraso
   return (
     <div className="flex h-full flex-col gap-2">
       <span className="text-center font-titulo text-2xl font-extrabold leading-tight" style={{ color: tinta(acento) }}>
@@ -447,14 +520,22 @@ function Vocabulario({ activo, acento, n }) {
       {v.opciones.map((t, i) => (
         <span key={t} className="relative flex h-9 items-center rounded-xl border-2 border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800">
           {t}
-          {i === v.bien && (
-            <>
-              <motion.span aria-hidden className="absolute inset-0 flex items-center gap-2 rounded-[0.6rem] bg-bien-relleno px-3 text-blanco" {...fase(activo, 0.48, 0.9)}>
-                <Check className="size-4" /> {t}
-              </motion.span>
-              <Dedo activo={activo} en={0.44} className="right-6 top-1/2 -mt-3.5" />
-            </>
+          {i === toca && toca === v.bien && (
+            <motion.span aria-hidden className="absolute inset-0 flex items-center gap-2 rounded-[0.6rem] bg-bien-relleno px-3 text-blanco" {...fase(activo, en + 0.04, 0.9)}>
+              <Check className="size-4" /> {t}
+            </motion.span>
           )}
+          {i === toca && toca !== v.bien && (
+            <motion.span aria-hidden className="absolute inset-0 flex items-center rounded-[0.6rem] border-2 border-fijate bg-fijate-suave px-3 text-fijate-tinta" {...fase(activo, en + 0.04, 0.9)}>
+              {t}
+            </motion.span>
+          )}
+          {i === v.bien && toca !== v.bien && (
+            <motion.span aria-hidden className="absolute inset-0 flex items-center gap-2 rounded-[0.6rem] border-2 border-bien bg-bien-suave px-3 text-bien-tinta" {...fase(activo, en + 0.14, 0.9)}>
+              <Check className="size-4" /> {t}
+            </motion.span>
+          )}
+          {i === toca && <Dedo activo={activo} en={en} className="right-6 top-1/2 -mt-3.5" />}
         </span>
       ))}
     </div>
