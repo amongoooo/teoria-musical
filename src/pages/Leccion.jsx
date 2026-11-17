@@ -1,6 +1,7 @@
 import { animate, motion, useAnimationControls, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initPiano, pararRitmo, releaseAll, toneStop } from '../audio/engine.js'
+import Analizar from '../components/exercises/Analizar.jsx'
 import Clasificar from '../components/exercises/Clasificar.jsx'
 import Emparejar from '../components/exercises/Emparejar.jsx'
 import EligeEnCirculo from '../components/exercises/EligeEnCirculo.jsx'
@@ -43,6 +44,7 @@ const PASOS = {
   elegir: EscuchaElige,
   emparejar: Emparejar,
   clasificar: Clasificar,
+  analizar: Analizar,
   circulo: EligeEnCirculo,
   tocar: TocaEnPiano,
   frecuencia: ExploraFrecuencia,

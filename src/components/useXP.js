@@ -67,7 +67,7 @@ function calcularFija({ progreso, oido, ritmo, letras, medir }) {
   const metas = new Set()
   const tramos = new Set()
   const meta = (p, area) => {
-    const clave = `${p.modo ?? p.clave}:${p.nivel ?? p.tema ?? ''}:${p.dificultad ?? ''}`
+    const clave = `${p.modo ?? p.clave}:${p.nivel ?? p.tema ?? ''}:${p.dificultad ?? p.palabras ?? p.letras ?? ''}`
     if (metas.has(clave)) return
     metas.add(clave)
     sumar(area, XP.meta)

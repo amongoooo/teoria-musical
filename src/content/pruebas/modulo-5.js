@@ -30,6 +30,17 @@ const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
 const VOZ_POP = [['C3', 'C4', 'E4', 'G4'], ['G2', 'B3', 'D4', 'G4'], ['A2', 'C4', 'E4', 'A4'], ['F2', 'C4', 'F4', 'A4']]
 const pop = (tiempos, { veces = 1, adelanto = 0 } = {}) =>
   Array.from({ length: veces }, () => VOZ_POP.map((notas) => ({ notas, tiempos, adelanto }))).flat()
+// Para la 5.7: frases en Fa y en La mayor (el bajo abajo, como en la lección).
+const VOZ_57 = {
+  Bb: ['Bb2', 'D4', 'F4', 'Bb4'],
+  C: ['C3', 'C4', 'E4', 'G4'],
+  F: ['F2', 'C4', 'F4', 'A4'],
+  A: ['A2', 'C#4', 'E4', 'A4'],
+  E: ['E2', 'B3', 'E4', 'G#4'],
+  'F#m': ['F#2', 'C#4', 'F#4', 'A4'],
+  D: ['D3', 'D4', 'F#4', 'A4'],
+}
+const acordes57 = (lista) => ({ etiqueta: 'Escuchar', notas: lista.map((a) => VOZ_57[a]), intervalo: 0.9, duracion: 0.85 })
 const frase = (romanos) => ({ etiqueta: 'Escuchar', notas: romanos.map((rn) => VOZ[rn]), intervalo: 0.95, duracion: 0.9 })
 
 export default {
@@ -163,6 +174,29 @@ export default {
       opciones: ['Los acordes cambian más seguido', 'Sube el tempo', 'Se quita la batería', 'Se queda en un solo acorde'],
       correcta: 0,
       explicacion: 'Se **acelera el ritmo armónico**: el beat sigue igual y la armonía se mueve más rápido. El coro se siente como una llegada.',
+    },
+  ],
+  '5.7': [
+    {
+      pregunta: '¿Dónde está la **casa**?',
+      sonidos: [acordes57(['Bb', 'C', 'F', 'F'])],
+      opciones: ['F', 'B♭', 'C', 'Dm'],
+      correcta: 0,
+      explicacion: '**B♭ – C – F**: empieza fuera, pero C apunta a **F** y ahí descansa. Es el IV–V–I de Fa mayor.',
+    },
+    {
+      pregunta: '¿Qué **números** tiene este loop?',
+      sonidos: [acordes57(['A', 'E', 'F#m', 'D', 'A'])],
+      opciones: ['I–V–vi–IV', 'I–vi–IV–V', 'vi–IV–I–V', 'I–IV–V–IV'],
+      correcta: 0,
+      explicacion: '**A – E – F♯m – D** en La mayor: casa, el V, el vi menor y el IV. El loop pop, como en «Someone Like You».',
+    },
+    {
+      pregunta: '«Hallelujah» (Leonard Cohen): **G → Am** en Do mayor. ¿Qué **cadencia** es?',
+      opciones: ['Auténtica', 'Plagal', 'Semicadencia', 'Rota'],
+      ordenFijo: true,
+      correcta: 3,
+      explicacion: 'El V va al **vi** en vez de al I: una cadencia **rota**. La letra la llama «the minor fall».',
     },
   ],
 }

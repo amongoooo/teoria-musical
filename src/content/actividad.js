@@ -20,6 +20,7 @@ export const INTERACCIONES = {
   L7: [null, 'Texto + círculo de quintas'],
   L8: [null, 'Texto + letra analizada'],
   L9: [null, 'Texto + mapa de funciones'],
+  L10: [null, 'Texto + rejilla de compases'],
   O1: ['oido', 'Elegir entre sonidos'],
   O2: ['oido', 'Escuchar y elegir'],
   O3: ['oido', 'Quiz'],
@@ -28,6 +29,7 @@ export const INTERACCIONES = {
   O6: ['oido', 'Emparejar'],
   O7: ['oido', 'Encontrar en el círculo'],
   O8: ['oido', 'Clasificar'],
+  O9: ['oido', 'Analiza la rejilla'],
   P1: ['practicar', 'Explorar'],
   P2: ['practicar', 'Extremos'],
   P3: ['practicar', 'Comparar'],
@@ -61,6 +63,7 @@ export function codigoPaso(paso, indice = -1) {
       if (paso.circulo) return 'L7'
       if (paso.letra) return 'L8'
       if (paso.funciones) return 'L9'
+      if (paso.rejilla) return 'L10'
       return paso.roll ? 'L3' : paso.sonidos?.length || paso.fichas?.filas?.length ? 'L2' : 'L1'
     case 'siente':
       return 'L5'
@@ -78,6 +81,8 @@ export function codigoPaso(paso, indice = -1) {
       return 'O7'
     case 'clasificar':
       return 'O8'
+    case 'analizar':
+      return 'O9'
     case 'tocar':
       // `paso` con intervalos con nombre (3.ª mayor, 5.ª justa…) es construir un intervalo, no medir un paso.
       if (paso.objetivo?.tipo === 'paso' && paso.objetivo.rondas?.some((r) => r.intervalo)) return 'P7'

@@ -44,7 +44,7 @@ const PASOS = 14
   comprobar(r, 'catálogo: 5.6 ← 5.4, 2.2 (Armonía, Ritmo, Producción)', JSON.stringify(c?.requiere) === '["5.4","2.2"]' && c?.areas.join() === 'armonia,ritmo,produccion', JSON.stringify(c))
   const { TRAMOS } = await import('../../src/content/rutas.js')
   const paradas = TRAMOS.progresiones.paradas.map((p) => p.id ?? `${p.modo}:${p.nivel}`).join(' ')
-  comprobar(r, 'tramo «Progresiones»: … y la 5.6 al final', paradas === '5.4 funciones:4 5.5 acordes:6 5.6', paradas)
+  comprobar(r, 'tramo «Progresiones»: … la 5.6 y luego la 5.7', paradas.startsWith('5.4 funciones:4 5.5 acordes:6 5.6'), paradas)
   const leccion = (await import('../../src/content/modulo-05/leccion-5-6.js')).default
   comprobar(r, `lección: ${PASOS} pasos, el último un reto`, leccion.pasos.length === PASOS && leccion.pasos.at(-1).tipo === 'reto')
   const v = leccion.pasos[2].rejilla.versiones.map((x) => `${x.nombre}:${x.acordes.length}:${x.sonido.tiempos}`).join(' ')

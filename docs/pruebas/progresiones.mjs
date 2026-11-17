@@ -36,7 +36,7 @@ const comprobar = (r, nombre, ok, detalle = '') => {
   comprobar(r, 'curso: bloque 4 en la etapa 3', b4?.etapa === 3 && ETAPAS[2].titulo === 'Construir canciones')
   comprobar(r, 'curso: bloque 4 con 15 pasos', b4?.paradas.length === 15, String(b4?.paradas.length))
   const total = BLOQUES.flatMap((b) => b.paradas).filter((p) => !p.opcional).length
-  comprobar(r, 'curso: 55 pasos', total === 55, String(total))
+  comprobar(r, 'curso: 70 pasos', total === 70, String(total))
   const areas = b4.paradas.map((p) => p.area[0]).join('')
   comprobar(r, 'curso: bloque 4 mezcla las áreas', /m/.test(areas) && /r/.test(areas) && /l/.test(areas) && /a/.test(areas) && areas.endsWith('t'), areas)
   const leccion = (await import('../../src/content/modulo-05/leccion-5-4.js')).default

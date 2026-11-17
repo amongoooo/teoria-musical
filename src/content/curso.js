@@ -95,7 +95,7 @@ export const BLOQUES = [
       M('3.7', { opcional: true }),
     ],
   },
-  // Etapa 3 «Construir canciones» (plan aprobado: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n), con la 5.1–5.4.
+  // Etapa 3 «Construir canciones» (plan aprobado: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n), con la 5.1–5.4 (bloque 4) y la 5.5–5.7 (bloque 5).
   // Ritmo y Letras no tienen lecciones nuevas: avanzan con metas de práctica que solo están en el curso.
   {
     numero: 4,
@@ -118,6 +118,38 @@ export const BLOQUES = [
         id: 'curso-loop',
         titulo: 'Tu loop con letra',
         texto: 'En FL Studio, arma un loop de 4 compases en menor (acordes, bajo y un beat de trap o dembow) y escribe encima 4 versos con palabras del tema Amor o Dinero.',
+      }),
+    ],
+  },
+  // Bloque 5 (plan aprobado de la 5.7: https://claude.ai/artifact/V9Q8tet1BajDdwTbVjQBfE), al final de la etapa 3: la 5.5–5.7
+  // con sus metas. Ritmo, Melodía y Letras siguen con metas que solo están en el curso; las de Letras piden más de lo que
+  // ya pedían el bloque 1 y la ruta (20 palabras de un tema, una segunda letra en el cuaderno).
+  {
+    numero: 5,
+    etapa: 3,
+    titulo: 'Progresiones y análisis',
+    meta: 'Tu canción, de punta a punta',
+    descripcion: 'Séptimas, el ii–V–I y el blues, cada cuánto cambia el acorde y el método para analizar cualquier canción, con swing y más palabras.',
+    paradas: [
+      A('5.5'),
+      M('intervalos:7', { tipo: 'meta', modo: 'intervalos', nivel: 7, dificultad: 2, titulo: 'Intervalos · nivel 7', texto: 'Se suman las séptimas: la 7.ª menor y la 7.ª mayor, las que dan color a los acordes de séptima.' }),
+      R('seguir:8', { tipo: 'meta', modo: 'seguir', nivel: 8, dificultad: 2, titulo: 'Seguir · nivel 8', texto: 'Llega a la síncopa de semicorchea: golpes en la «e» y en la «a».' }),
+      A('acordes:6'),
+      L('vocab:noche', { palabras: 20, titulo: 'Vocabulario · Noche, 20', texto: 'Llega a 20 palabras del tema Noche.' }),
+      A('5.6'),
+      R('eco:7', { tipo: 'meta', modo: 'eco', nivel: 7, dificultad: 2, titulo: 'Eco · nivel 7', texto: 'Escucha un compás y repítelo: llega a las semicorcheas.' }),
+      M('absoluto:5', { tipo: 'meta', modo: 'absoluto', nivel: 5, dificultad: 1, titulo: 'Oído absoluto · nivel 5', texto: 'Seis notas: se suma Fa.' }),
+      A('5.7'),
+      A('funciones:5'),
+      L('vocab:amor', { tipo: 'meta', clave: 'vocab', tema: 'amor', palabras: 20, titulo: 'Vocabulario · Amor, 20', texto: 'Llega a 20 palabras del tema Amor y desamor.' }),
+      R('seguir:9', { tipo: 'meta', modo: 'seguir', nivel: 9, dificultad: 2, titulo: 'Seguir · nivel 9', texto: 'Llega al swing: las corcheas se reparten largo-corto.' }),
+      A('reto:ruta-progresiones'),
+      L('letra', { letras: 2, titulo: 'Tu segunda letra', texto: 'Escribe otra letra en tu cuaderno (dos con texto) y mira sus rimas y su esquema.' }),
+      paso('tres', 'reto:curso-cancion-completa', {
+        tipo: 'reto',
+        id: 'curso-cancion-completa',
+        titulo: 'Tu canción, de punta a punta',
+        texto: 'En FL Studio, arma 16 compases: un verso con la armonía lenta que acaba en semicadencia, un coro que cierra con una auténtica, tu beat y 8 versos tuyos con palabras de Noche o Amor.',
       }),
     ],
   },

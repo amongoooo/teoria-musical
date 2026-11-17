@@ -168,8 +168,10 @@ export const TRAMOS = {
     ],
   },
   // Plan aprobado de la 5.4: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n y de la 5.5: https://claude.ai/artifact/LqW8UUP3JcQ1h9tsFKbP2T.
-  // La 5.6 (plan: https://claude.ai/artifact/1MKSzMQVTy4c3rXHaCqiN8) va al final; crecerá con la 5.7. La meta de Funciones pide llegar al nivel «Los 7 acordes» con la dificultad 2 (más
-  // tonalidades); la de Acordes, superar el nivel 5 (el último: maj7 y m7), que se abre con la 5.5.
+  // La 5.6 (plan: https://claude.ai/artifact/1MKSzMQVTy4c3rXHaCqiN8) y la 5.7 (plan: https://claude.ai/artifact/V9Q8tet1BajDdwTbVjQBfE)
+  // cierran el tramo, con «Funciones · nivel 5» (dentro de una frase: lo que se analiza) y el reto del módulo 5. La meta
+  // de Funciones nivel 4 pide llegar al nivel «Los 7 acordes» con la dificultad 2 (más tonalidades); la de Acordes,
+  // superar el nivel 5 (el último: maj7 y m7), que se abre con la 5.5.
   progresiones: {
     titulo: 'Progresiones',
     paradas: [
@@ -178,6 +180,14 @@ export const TRAMOS = {
       { tipo: 'leccion', id: '5.5' },
       { tipo: 'meta', modo: 'acordes', nivel: 6, dificultad: 1, titulo: 'Acordes · maj7 y m7', texto: 'Supera el nivel 5, en el que entran la séptima mayor y la menor séptima: el ii–V–I, de oído.' },
       { tipo: 'leccion', id: '5.6' },
+      { tipo: 'leccion', id: '5.7' },
+      { tipo: 'meta', modo: 'funciones', nivel: 5, dificultad: 2, titulo: 'Funciones · nivel 5', texto: 'Llega al último nivel: reconoce la función de cada acorde dentro de una frase, como al analizar una canción.' },
+      {
+        tipo: 'reto',
+        id: 'ruta-progresiones',
+        titulo: 'Analiza y reescribe',
+        texto: 'En FL Studio, saca los acordes de una canción que te guste, ponles número y función, y haz tu versión con otro ritmo armónico y otra cadencia final.',
+      },
     ],
   },
 }

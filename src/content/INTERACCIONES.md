@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7, 4.1–4.5 y 5.1–5.6) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7, 4.1–4.5 y 5.1–5.7) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -21,7 +21,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 | **L8** | Texto + letra analizada | Lee unos versos con sus rimas en color (y, si la lección ya lo enseñó, el esquema, las sílabas con «‿» o «multi N») | `texto` + `letra` (`texto`, `colores`, `esquema`, `silabas`, `multis`, `leyenda`) | Rima consonante / asonante, esquemas, sinalefa, multis (ruta de letras) |
 | **L7** | Texto + círculo de quintas | Lee y toca tonalidades del círculo: cada una suena y el centro dice su armadura y su relativa | `texto` + `circulo` (`inicial`, `menores`, `armaduras`, `resaltar`) | El círculo de quintas, sostenidos y bemoles, relativas y vecinas (3.5) |
 | **L9** | Texto + mapa de funciones | Lee y toca los acordes de una tonalidad repartidos en tres columnas (T · S · D); las notas que comparten con su jefe van en oro | `texto` + `funciones` (`tonalidad`) | Funciones tonales: casa, salir, tensión (5.1) |
-| **L10** | Texto + rejilla de compases | Lee una forma de canción en filas de 4 compases (cifrado, grado y el fondo de su función); al escuchar, cada compás se enciende cuando suena; tocar uno lo toca | `texto` + `rejilla` (`compases`, `sonido`, `etiqueta`); **con duraciones**: `acordes` (cada uno sus `tiempos` y `adelanto`) + `sonido: conBeat(…)`, o `versiones` con control segmentado | El blues de 12 compases (5.5); el mismo loop lento / normal / rápido, el pre-coro que acelera y el acorde adelantado (5.6); otras formas (verso, coro) en el módulo 7 |
+| **L10** | Texto + rejilla de compases | Lee una forma de canción en filas de 4 compases (cifrado, grado y el fondo de su función); al escuchar, cada compás se enciende cuando suena; tocar uno lo toca | `texto` + `rejilla` (`compases`, `sonido`, `etiqueta`); **con duraciones**: `acordes` (cada uno sus `tiempos` y `adelanto`) + `sonido: conBeat(…)`, o `versiones` con control segmentado | El blues de 12 compases (5.5); el mismo loop lento / normal / rápido, el pre-coro que acelera y el acorde adelantado (5.6); «Let It Be» ya analizada (5.7); otras formas (verso, coro) en el módulo 7 |
 
 ## B. Oído y comprensión: elegir (puntúan)
 
@@ -38,6 +38,7 @@ Todas usan `elegir` (`EscuchaElige`), van por **rondas** y al comprobar muestran
 | **O6** | Emparejar | Escucha 3–4 sonidos (A, B…) y pone a cada uno su nombre tocando los nombres de abajo; al comprobar, cada fila dice si está bien o cuál era | `emparejar` con `parejas` (`sonido`, `nombre`, `detalle`) | «Empareja sonido y nombre» (intervalos, 3.2); «Empareja la rotación» (loops que empiezan en C, G, Am o F; 5.4) |
 | **O7** | Encontrar en el círculo | Toca una tonalidad del círculo de quintas como respuesta; al comprobar, la correcta en verde y la elegida en oro | `circulo` con `rondas` (`correcta: 'D'` o `'Em'`, `anillo`, `armaduras`, `resaltar`) | «¿Qué mayor tiene 2♯?», «La dominante de Re», «La relativa de Si♭» (3.5) |
 | **O8** | Clasificar | Toca una ficha que suena (con nombre o de oído) y luego su caja; al comprobar, las bien en verde y las mal pasan a su caja en oro | `clasificar` con `cajas` y `rondas` (`fichas`: `nombre`, `detalle`, `sonido`, `caja`) | «Ordena la familia»: los 7 acordes en T, S o D, en Do, en Sol y de oído (5.1); «Ordena las cadencias»: 4 cajas en rejilla 2 × 2 (`cajas: ['autentica', 'plagal', 'semi', 'rota']`, la fórmula V → I en grande) con finales «G7 → C» y, de oído, frases enteras (5.3) |
+| **O9** | Analiza la rejilla | Escucha una progresión en la rejilla de compases (cada compás se enciende al sonar), toca un compás vacío y luego su número (I, ii, iii, IV, V, vi); la casilla toma el color de su función y el cursor salta al siguiente; al comprobar sale el cifrado | `analizar` con `rondas` (`compases`: `cifrado`, `grado`, `notas`; `dados`, `sonido`) | «Analiza la rejilla»: en Do, en Sol, «Let It Be» (8 compases) y «Hallelujah» (5.7) |
 
 ## C. Teclado (puntúan al cumplir el objetivo)
 
@@ -70,7 +71,7 @@ A 375 px se ve **una octava** y el teclado va a la de `desde`: en P5/P7 elige `d
 | Código | Interacción | Qué hace el usuario | Objetivo |
 |---|---|---|---|
 | **R1** | Dibujar libre | Dibuja N notas como quiera | `libre` (`cantidad`) |
-| **R2** | Copiar un patrón | Dibuja exactamente unas notas (con guía punteada o sin ella); explica fallos y tras 2 ofrece la solución | `copiar` (`notas`, `fantasma`) |
+| **R2** | Copiar un patrón | Dibuja exactamente unas notas (con guía punteada o sin ella); explica fallos y tras 2 ofrece la solución. **Dictado**: con `escuchar`, un botón «Escuchar el original» y se saca de oído (el bajo de un loop, 5.7) | `copiar` (`notas`, `fantasma`, `escuchar`) |
 | **R3** | Dar acentos (velocity) | Sube la fuerza de unas notas y baja la de otras | `velocity` (`fuertes`) |
 
 Variantes del roll: notas de piano o **filas de batería** (`filas: ['hat','snare','kick']`),

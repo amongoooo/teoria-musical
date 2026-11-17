@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-analisis',
+    fecha: '17 nov 2026',
+    titulo: 'Análisis de canciones',
+    cosas: [
+      {
+        texto: 'Lección nueva **A2.7 «Análisis de canciones»**: el método en cuatro preguntas (la casa, los acordes, el número y la cadencia) con «Let It Be», «Hallelujah» y «Hit the Road Jack».',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/5.7' },
+      },
+      {
+        texto: 'Ejercicio nuevo: **analiza la rejilla**. Suena la canción y le pones el número a cada compás; se pinta del color de su función. Y un **dictado del bajo** en el Piano Roll.',
+      },
+      {
+        texto: 'El **Curso completo** suma el **bloque 5 «Progresiones y análisis»** (70 pasos en total), y la ruta de Acordes cierra el módulo con un reto.',
+        donde: { etiqueta: 'Abrir el bloque 5', href: '#/curso/bloque/5' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-ritmo-armonico',
     fecha: '17 nov 2026',
     titulo: 'Ritmo armónico',

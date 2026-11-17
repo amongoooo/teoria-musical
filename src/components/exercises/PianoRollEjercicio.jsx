@@ -3,6 +3,7 @@ import { acentoLeccion } from '../../content/index.js'
 import { PERCUSION, claveNota, esPercusion } from '../../theory/bateria.js'
 import { nombre } from '../../theory/notas.js'
 import PianoRoll, { conIds, nombreFL } from '../PianoRoll.jsx'
+import BotonSonido from '../BotonSonido.jsx'
 import Rich from '../Rich.jsx'
 
 /**
@@ -12,6 +13,7 @@ import Rich from '../Rich.jsx'
  * paso.objetivo:
  *  - { tipo: 'libre', cantidad: 4, mensaje }           → dibujar N notas
  *  - { tipo: 'copiar', notas, fantasma: true, pista }  → dibujar exactamente esas notas
+ *        `escuchar`: un sonido (el original) para sacarlo de oído: botón «Escuchar el original» encima del roll (dictado, 5.7)
  *  - { tipo: 'velocity', fuertes: [0, 4] }             → subir la velocity de las notas
  *        que empiezan en esas casillas y dejar las demás suaves
  */
@@ -101,6 +103,9 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
       {objetivo.instruccion && <p className="text-lg font-semibold leading-snug">
           <Rich>{objetivo.instruccion}</Rich>
         </p>}
+      {objetivo.escuchar && (
+        <BotonSonido sonido={objetivo.escuchar} etiqueta={objetivo.escuchar.etiqueta ?? 'Escuchar el original'} className="w-full" />
+      )}
       <PianoRoll
         roll={roll}
         notas={notas}
