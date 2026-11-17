@@ -1,7 +1,7 @@
 # Catálogo de interacciones de las lecciones
 
 Lista cerrada de **todo lo que el usuario puede hacer** dentro de una lección (sacada de las
-lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7, 4.1–4.5 y 5.1–5.5) y la **plantilla** que siguen. Al escribir una lección nueva, cada
+lecciones 1.1–1.4, 2.1–2.5, 3.1–3.7, 4.1–4.5 y 5.1–5.6) y la **plantilla** que siguen. Al escribir una lección nueva, cada
 paso debe ser una de estas interacciones; si hace falta una que no está, se añade aquí
 (y en `FORMATO.md` si es un tipo de paso nuevo).
 
@@ -21,7 +21,7 @@ escribe en el contenido (`tipo` + opciones, detalle en `FORMATO.md`) y para qué
 | **L8** | Texto + letra analizada | Lee unos versos con sus rimas en color (y, si la lección ya lo enseñó, el esquema, las sílabas con «‿» o «multi N») | `texto` + `letra` (`texto`, `colores`, `esquema`, `silabas`, `multis`, `leyenda`) | Rima consonante / asonante, esquemas, sinalefa, multis (ruta de letras) |
 | **L7** | Texto + círculo de quintas | Lee y toca tonalidades del círculo: cada una suena y el centro dice su armadura y su relativa | `texto` + `circulo` (`inicial`, `menores`, `armaduras`, `resaltar`) | El círculo de quintas, sostenidos y bemoles, relativas y vecinas (3.5) |
 | **L9** | Texto + mapa de funciones | Lee y toca los acordes de una tonalidad repartidos en tres columnas (T · S · D); las notas que comparten con su jefe van en oro | `texto` + `funciones` (`tonalidad`) | Funciones tonales: casa, salir, tensión (5.1) |
-| **L10** | Texto + rejilla de compases | Lee una forma de canción en filas de 4 compases (cifrado, grado y el fondo de su función); al escuchar, cada compás se enciende cuando suena; tocar uno lo toca | `texto` + `rejilla` (`compases`, `sonido`, `etiqueta`) | El blues de 12 compases (5.5); otras formas (verso, coro) en el módulo 7 |
+| **L10** | Texto + rejilla de compases | Lee una forma de canción en filas de 4 compases (cifrado, grado y el fondo de su función); al escuchar, cada compás se enciende cuando suena; tocar uno lo toca | `texto` + `rejilla` (`compases`, `sonido`, `etiqueta`); **con duraciones**: `acordes` (cada uno sus `tiempos` y `adelanto`) + `sonido: conBeat(…)`, o `versiones` con control segmentado | El blues de 12 compases (5.5); el mismo loop lento / normal / rápido, el pre-coro que acelera y el acorde adelantado (5.6); otras formas (verso, coro) en el módulo 7 |
 
 ## B. Oído y comprensión: elegir (puntúan)
 
@@ -89,6 +89,7 @@ Variantes del roll: notas de piano o **filas de batería** (`filas: ['hat','snar
 
 Variantes de T1 ya usadas: solo en el 1 (`cada: 4`), «1 y 2 y» (`cada: 0.5`), en la «y» o en el 3
 (`desfase`), semicorcheas «1 e y a» (`contar: 'e'`, `porTiempo: 4`).
+**Toca en cada cambio** (5.6): el groove es un loop de acordes sobre el beat (`conBeat`) y `toques: cambiosAcordes(acordes)`: se toca cuando cambia el acorde (cada compás, dos por compás o cada 2 compases; el pad late en cada cambio, o sin ayuda con `visual: false`).
 
 ## G. Práctica en FL Studio
 

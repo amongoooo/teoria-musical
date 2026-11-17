@@ -30,7 +30,9 @@ export function partesSonido(sonido) {
   if (sonido.groove) {
     const forma = formaGroove(sonido.groove, sonido)
     const golpes = ORDEN_GOLPES.filter((g) => eventos.some((e) => notasDe(e).includes(g)))
-    partes.groove = { bpm: sonido.bpm ?? 90, tiempos: forma.tiempos, porTiempo: forma.porTiempo, compases: sonido.compases ?? 2, golpes }
+    // `metro` (acordes sobre un beat, `conBeat`): el metrónomo cuenta compases de `metro` tiempos aunque el patrón sea más largo.
+    const metro = sonido.metro ?? forma.tiempos
+    partes.groove = { bpm: sonido.bpm ?? 90, tiempos: metro, porTiempo: forma.porTiempo, compases: ((sonido.compases ?? 2) * forma.tiempos) / metro, golpes }
   }
   return partes
 }

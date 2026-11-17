@@ -175,3 +175,57 @@ export function formaGroove(groove, { tiempos, porTiempo } = {}) {
   const p = porTiempo ?? base.porTiempo ?? 2
   return { eventos: GROOVES[groove] ?? groove, tiempos: t, porTiempo: p, casillas: t * p }
 }
+
+// ---------------------------------------------------------------------------
+// Acordes sobre un beat (lección 5.6, ritmo armónico)
+// ---------------------------------------------------------------------------
+
+/**
+ * Dónde empieza y acaba cada acorde, en tiempos: [{ inicio, fin }]. Cada acorde dura `tiempos`; con `adelanto` (en
+ * tiempos) llega antes de lo que le toca (0.5 = en la «y» del tiempo anterior) y el de antes se corta ahí. Con
+ * `ciclo: true`, el adelanto del PRIMERO también cuenta (al repetir el loop llega antes: su inicio queda negativo y el
+ * último acorde acaba antes del final).
+ */
+export function tramosAcordes(acordes, { ciclo = false } = {}) {
+  const total = acordes.reduce((s, a) => s + a.tiempos, 0)
+  let t = 0
+  const inicios = acordes.map((a, i) => {
+    const s = t - (i > 0 || ciclo ? a.adelanto ?? 0 : 0)
+    t += a.tiempos
+    return s
+  })
+  return acordes.map((_, i) => ({ inicio: inicios[i], fin: i < acordes.length - 1 ? inicios[i + 1] : total + (ciclo ? inicios[0] : 0) }))
+}
+
+/**
+ * Un sonido con ACORDES SOBRE UN BEAT: la batería del `groove` en cada compás y encima los acordes (con su bajo en la
+ * primera nota), cada uno el tiempo que dura. El beat no cambia: solo cambia cada cuánto cambia el acorde.
+ *   conBeat([{ notas: ['C3', 'C4', 'E4', 'G4'], tiempos: 4, adelanto?: 0.5 }, …], { groove: 'basico', bpm: 90, vueltas: 2 })
+ * → sonido `groove` (sirve en `sonidos`, `rejilla` y en las rondas de `pulso`): { groove: [eventos], tiempos, porTiempo,
+ *   bpm, compases: 1, metro: 4, ciclo }. `groove: null` = solo los acordes; `metro` = tiempos por compás (el metrónomo
+ *   de «lo que suena» cuenta de 4 en 4); `ciclo` = tiempos de una vuelta. Las vueltas van ya escritas (así el primer
+ *   acorde también se adelanta al repetir).
+ */
+export function conBeat(acordes, { groove = 'basico', bpm = 90, vueltas = 1, etiqueta, velocidad = 0.6, metro = 4 } = {}) {
+  const forma = groove ? formaGroove(groove) : { eventos: [], porTiempo: 2 }
+  const p = forma.porTiempo
+  const ciclo = acordes.reduce((s, a) => s + a.tiempos, 0)
+  const total = ciclo * vueltas
+  const tramos = tramosAcordes(acordes, { ciclo: true })
+  const eventos = []
+  for (let v = 0; v < vueltas; v++) {
+    acordes.forEach((a, i) => {
+      const inicio = Math.max(0, v * ciclo + tramos[i].inicio)
+      const fin = Math.min(total, v * ciclo + tramos[i].fin + (i === acordes.length - 1 && v === vueltas - 1 ? -tramos[0].inicio : 0))
+      if (fin > inicio) eventos.push({ nota: a.notas, inicio: inicio * p, duracion: (fin - inicio) * p, velocity: velocidad })
+    })
+  }
+  const casillasCompas = metro * p
+  for (let c = 0; c < total / metro; c++) {
+    for (const e of forma.eventos) if (e.inicio < casillasCompas) eventos.push({ ...e, inicio: e.inicio + c * casillasCompas })
+  }
+  return { groove: eventos, tiempos: total, porTiempo: p, bpm, compases: 1, metro, ciclo, ...(etiqueta ? { etiqueta } : {}) }
+}
+
+/** Los tiempos (dentro de una vuelta) en los que cambia el acorde: para «Toca en cada cambio» (`toques` de `pulso`). */
+export const cambiosAcordes = (acordes) => tramosAcordes(acordes).map((t) => t.inicio)
