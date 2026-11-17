@@ -8,6 +8,7 @@ import { Check, Repaso } from '../../ui/Iconos.jsx'
 import { ENTRA_DERECHA, RESORTE, SALTO } from '../../ui/movimiento.js'
 import Pulsable from '../../ui/Pulsable.jsx'
 import { IconoPlay } from '../BotonSonido.jsx'
+import { CADENCIAS } from '../../theory/acordes.js'
 import { LetraFuncion, fondoFuncion } from '../MapaFunciones.jsx'
 import Rich from '../Rich.jsx'
 import Rondas from './Rondas.jsx'
@@ -26,7 +27,9 @@ function mezclar(n) {
 /**
  * «Clasificar» (O8, lección 5.1): fichas que suenan y se mandan a una caja.
  *
- * paso.cajas: ['T', 'S', 'D'] (funciones; el fondo de cada caja, el de su función)
+ * paso.cajas: ['T', 'S', 'D'] (funciones; el fondo de cada caja, el de su función) o
+ *   ['autentica', 'plagal', 'semi', 'rota'] (cadencias, 5.3: la fórmula en grande y su nombre; con 4 cajas, rejilla 2 × 2)
+ * paso.ayuda: lo que dice la barra de abajo antes de empezar (por defecto, «Toca un acorde y luego su caja»)
  * paso.rondas: [{ pregunta, fichas: [{ nombre, detalle, sonido, caja: 'T' }], explicacion }]
  *  - Ficha sin `nombre` = de oído: se ve como A, B, C… con su botón de escuchar.
  *  - Tocar una ficha de abajo la elige (y suena); tocar una caja (o una ficha que ya está en ella) la manda ahí. Sin
@@ -94,7 +97,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
       setAccion({
         label: 'Comprobar',
         disabled: faltan > 0,
-        ayuda: faltan === n ? (ronda.fichas[0].nombre ? 'Toca un acorde y luego su caja' : 'Escucha un sonido y toca su caja') : faltan > 0 ? `Falta${faltan === 1 ? '' : 'n'} ${faltan}` : null,
+        ayuda: faltan === n ? (ronda.fichas[0].nombre ? (paso.ayuda ?? 'Toca un acorde y luego su caja') : 'Escucha un sonido y toca su caja') : faltan > 0 ? `Falta${faltan === 1 ? '' : 'n'} ${faltan}` : null,
         feedback: segundo ? { tipo: 'mal', titulo: `${fijas.filter(Boolean).length} de ${n} bien`, texto: 'Las demás volvieron a tu mano: inténtalo otra vez.' } : null,
         onClick: () => {
           const bien = puesta.map((c, i) => c === ronda.fichas[i].caja)
@@ -189,7 +192,7 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
           </p>
         )}
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${cajas.length === 4 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {cajas.map((c) => {
             const dentro = orden.filter((i) => cajaDe(i) === c)
             const invita = elegida !== null && !respondida
@@ -210,11 +213,11 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
                 }}
                 whileTap={invita ? { scale: 0.98 } : undefined}
                 transition={RESORTE.pulsar}
-                aria-label={`Caja ${c}`}
-                className={`flex min-h-36 min-w-0 flex-col items-center gap-2 rounded-3xl border-2 px-1.5 pb-2 pt-3 transition-colors duration-200 ${invita ? '' : 'border-transparent'}`}
-                style={{ touchAction: 'manipulation', background: fondoFuncion(color, c), ...(invita ? { borderColor: tinta(color), borderStyle: 'dashed' } : null) }}
+                aria-label={`Caja ${CADENCIAS[c]?.nombre ?? c}`}
+                className={`flex ${cajas.length === 4 ? 'min-h-24' : 'min-h-36'} min-w-0 flex-col items-center gap-2 rounded-3xl border-2 px-1.5 pb-2 pt-3 transition-colors duration-200 ${invita ? '' : 'border-transparent'}`}
+                style={{ touchAction: 'manipulation', background: fondoCaja(color, c), ...(invita ? { borderColor: tinta(color), borderStyle: 'dashed' } : null) }}
               >
-                <LetraFuncion f={c} color={color} compacta />
+                {CADENCIAS[c] ? <LetraCadencia c={c} color={color} /> : <LetraFuncion f={c} color={color} compacta />}
                 <span className="flex w-full flex-col gap-1.5">{dentro.map((i) => ficha(i, true))}</span>
               </motion.div>
             )
@@ -224,6 +227,23 @@ export default function Clasificar({ paso, leccionId, setAccion, siguiente, comp
         {!respondida && enMano.length > 0 && <div className="flex flex-wrap justify-center gap-2">{enMano.map((i) => ficha(i, false))}</div>}
       </motion.div>
     </div>
+  )
+}
+
+/** Fondo de una caja: el de su función o, en una cadencia, más intenso cuanto más abierta queda la frase. */
+const fondoCaja = (color, c) =>
+  CADENCIAS[c] ? `color-mix(in oklab, ${color} ${CADENCIAS[c].intensidad}%, var(--color-white))` : fondoFuncion(color, c)
+
+/** Cabecera de una caja de cadencia: la fórmula en grande (V → I) y su nombre. */
+function LetraCadencia({ c, color }) {
+  const { formula, nombre } = CADENCIAS[c]
+  return (
+    <span className="flex flex-col items-center leading-none">
+      <span className="font-titulo text-2xl font-extrabold whitespace-nowrap" style={{ color: tinta(color) }}>
+        {formula}
+      </span>
+      <span className="mt-1 text-sm font-semibold text-zinc-900">{nombre}</span>
+    </span>
   )
 }
 

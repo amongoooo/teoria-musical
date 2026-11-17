@@ -374,3 +374,14 @@ Pedido del usuario: «la barra horizontal que cuenta la precisión del toque ten
 - **Bocina**: desactivada hasta `fase === 'evaluada'`; entonces el plan es `entrada → respuesta → cierre` (Seguir) o `entrada → demo → respuesta → cierre` (Eco). `respuesta` es un tipo nuevo de `eventosCompas` (`theory/ritmo.js`) que suena como la demo y enciende **tu** pad. Ya no existe «volver a empezar con la demo» antes de evaluar.
 - **Sin transición en Seguir**: la ronda va con `key` del nivel (`nivel-N`) en lugar del número de ronda: el patrón nuevo solo cambia los aros del contador; entra desde la derecha al cambiar de nivel. Eco sigue entrando cada ronda.
 - **Pruebas** (`docs/pruebas/ritmo.mjs`, 375 px, claro y oscuro): bocina apagada jugando y lista al evaluar, la guía barre (valores distintos con opacidad), el pad se ilumina con la respuesta, el de seguimiento con la demo de Eco, y el repaso de Eco pasa por demo y respuesta. `npm run build` sin errores.
+
+## 2026-11-17 · Lección 5.3 «Cadencias» (A2.3)
+
+Plan: https://claude.ai/artifact/BSsYcLPWqhmxjSVvgjEprK (el usuario: «deja como lo consideres»; se quedó la fórmula en grande en las cajas y la auténtica perfecta solo como nota).
+
+- **Idea**: la cadencia = los dos últimos acordes de una frase, como la puntuación: **auténtica** V → I (punto final), **plagal** IV → I (amén), **semicadencia** … → V (coma) y **rota** V → vi (sorpresa; Am comparte Do y Mi con C, solo Sol → La).
+- **Pasos** (`content/modulo-05/leccion-5-3.js`, 14, ~15 min): O5 «¿Cuál suena a pregunta?» · L2 «Punto y coma» · O2 «¿Punto o coma?» (4 rondas, Do y Sol) · L2 auténtica (nota: perfecta) · **P9** «Cierra con una auténtica» (A7 → D, B♭7 → E♭, B7 → Em; todas dentro de la octava 4 a 375 px) · L2 plagal (y Fm → C) · O1 «¿Auténtica o plagal?» · L2 rota · R2 «Rompe la cadencia» (G7 → C a G7 → Am: Sol → La) · O1 «¿Final o sorpresa?» · **O8 con 4 cajas** «Ordena las cadencias» (Do con romanos, Sol sin números, de oído) · O3 · L5 auténtica / rota · X1 «Pregunta y respuesta».
+- **Teoría** (`theory/acordes.js`): `CADENCIAS`, `ORDEN_CADENCIAS`, `cadenciaDe(penúltimo, último)`.
+- **Clasificar** acepta `cajas` de cadencia (rejilla 2 × 2, `LetraCadencia` con la fórmula y el nombre, `fondoCaja` por `intensidad`) y `ayuda` propia («Toca un final y luego su caja»).
+- **Encaje**: catálogo `'5.3' ← 5.2`; 3 preguntas en `pruebas/modulo-5.js` (¿qué cadencia? 4 opciones, ¿cuál termina en semicadencia? 3 sonidos, la plagal de Fa); la 5.3 al final del tramo `funciones` (la ruta de Acordes pasa a 23 paradas: `tramos.mjs` y `acordes.mjs` al día; `tension.mjs` acepta el tramo crecido).
+- **Pruebas**: `docs/pruebas/cadencias.mjs` (node + Playwright, 375 px, claro y oscuro: 14 pasos, P9 con bemoles y en menor, roll «Perfecto», cajas 2 × 2 con fórmulas, una ficha mal → oro → rojo en «Rota», Sol todas bien, ronda de oído A B C D).

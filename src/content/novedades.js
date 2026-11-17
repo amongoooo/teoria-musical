@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-cadencias',
+    fecha: '17 nov 2026',
+    titulo: 'Nueva lección: Cadencias',
+    cosas: [
+      {
+        texto: 'La **A2.3** enseña cómo termina una frase, como la puntuación: **auténtica** (punto final), **plagal** (amén), **semicadencia** (coma) y **rota** (sorpresa).',
+        donde: { etiqueta: 'Abrir Armonía 2', href: '#/modulo/5' },
+      },
+      {
+        texto: '**Ordena las cadencias** con cuatro cajas, **resuelve el V7** en tonalidades nuevas y **rompe una cadencia** en el roll cambiando una sola nota.',
+      },
+      {
+        texto: 'La ruta de Acordes suma la lección al final del tramo **«Funciones y cadencias»**.',
+        donde: { etiqueta: 'Abrir la ruta de Acordes', href: '#/ruta/acordes' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-ritmo-guia',
     fecha: '17 nov 2026',
     titulo: 'Ritmo: guía, pad de Eco y la respuesta',

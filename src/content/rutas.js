@@ -155,7 +155,7 @@ export const TRAMOS = {
       },
     ],
   },
-  // Módulo 5 (plan aprobado: https://claude.ai/artifact/HjTYcwyL4xszUxAwx2gJBL): crecerá con la 5.3.
+  // Módulo 5 (plan aprobado: https://claude.ai/artifact/HjTYcwyL4xszUxAwx2gJBL): crecerá con la 5.4.
   // La meta de Acordes pide SUPERAR el nivel 4 (el de la séptima de dominante, que se abre con la 5.2): nivel 5.
   funciones: {
     titulo: 'Funciones y cadencias',
@@ -164,6 +164,7 @@ export const TRAMOS = {
       { tipo: 'meta', modo: 'funciones', nivel: 3, dificultad: 1, titulo: 'Funciones · nivel 3', texto: 'Suena la casa y luego un acorde: llega al nivel en el que entran los parientes, el vi y el ii.' },
       { tipo: 'leccion', id: '5.2' },
       { tipo: 'meta', modo: 'acordes', nivel: 5, dificultad: 1, titulo: 'Acordes · con séptima', texto: 'Supera el nivel 4, en el que entra el acorde con séptima de dominante: el V7, de oído.' },
+      { tipo: 'leccion', id: '5.3' },
     ],
   },
 }
