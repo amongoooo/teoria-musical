@@ -117,14 +117,10 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'ruta: título Acordes', /Acordes/.test(titulo), titulo)
   await foto('ruta-acordes')
 
-  // Panel de Oído: la tarjeta de la ruta de acordes.
+  // Panel de Oído: ya sin la tarjeta de la ruta (pedido del usuario, 2026-11-17).
   await page.goto(BASE + '#/oido')
   await espera(1200)
-  const entrada = page.locator('[data-entrada-ruta="acordes"]')
-  comprobar(r, 'oído: entrada a la ruta', (await entrada.count()) === 1)
-  comprobar(r, 'oído: «0/23 paradas»', /0\/23 paradas/.test(await entrada.textContent().catch(() => '')))
-  await entrada.scrollIntoViewIfNeeded()
-  await foto('oido-entrada-ruta')
+  comprobar(r, 'oído: sin entrada a la ruta', (await page.locator('[data-entrada-ruta]').count()) === 0)
 
   comprobar(r, 'sin errores de JS', errores.length === 0, errores.join(' | '))
   await browser.close()

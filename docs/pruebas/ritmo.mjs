@@ -72,9 +72,9 @@ for (const tema of ['claro', 'oscuro']) {
     { tema, ritmo: RITMO },
   )
 
-  // Practicar: el bloque Ritmo lleva al panel.
-  await page.goto(BASE + '#/practicar')
-  const bloque = page.locator('[data-entrenamiento="ritmo"]')
+  // Entrenar › Ritmo: «tu día» lleva al panel.
+  await page.goto(BASE + '#/entrenar/ritmo')
+  const bloque = page.locator('[data-panel-entrenar="ritmo"]')
   await bloque.waitFor()
   await bloque.scrollIntoViewIfNeeded()
   await espera(900)
@@ -98,6 +98,18 @@ for (const tema of ['claro', 'oscuro']) {
   await foto(page, '4-seguir-entrada', tema)
   const p1 = tocar(page, { ks: [1, 2], desfases: [0.01, -0.02, 0.015] })
   await page.waitForSelector('[data-pad="toca"]')
+  comprobar(r, 'bocinaApagadaJugando', await page.locator('[data-escuchar]').isDisabled())
+  // Guía del medidor: la barra vertical cruza la línea en cada golpe (se mide unos fotogramas).
+  const guias = await page.evaluate(async () => {
+    const vistos = []
+    for (let i = 0; i < 40; i++) {
+      const g = document.querySelector('[data-guia]')
+      if (g?.dataset.guia && Number(g.style.opacity) > 0.5) vistos.push(Number(g.dataset.guia))
+      await new Promise((r) => setTimeout(r, 25))
+    }
+    return vistos
+  })
+  comprobar(r, 'guiaBarre', guias.length > 3 && Math.min(...guias) < Math.max(...guias), JSON.stringify(guias))
   await espera(1500)
   await foto(page, '5-seguir-tocando', tema)
   const info1 = await p1
@@ -109,9 +121,21 @@ for (const tema of ['claro', 'oscuro']) {
   r.ronda1 = info1
   await foto(page, '6-seguir-buena', tema)
 
-  // Ronda fallida (pierde una vida).
+  // Bocina con el turno terminado: la app toca la respuesta en el pad (se ilumina en cada golpe).
+  comprobar(r, 'bocinaListaEvaluada', !(await page.locator('[data-escuchar]').isDisabled()))
+  await page.click('[data-escuchar]')
+  await page.waitForSelector('[data-repaso] [data-pad="respuesta"]', { timeout: 8000 })
+  const conGolpes = await page
+    .waitForFunction(() => Number(document.querySelector('[data-pad]')?.dataset.destellos) > 0, null, { timeout: 5000 })
+    .then(() => true, () => false)
+  comprobar(r, 'respuestaEnElPad', conGolpes)
+  await foto(page, '6b-seguir-respuesta', tema)
+
+  // Ronda fallida (pierde una vida). Subió de nivel: esta ronda sí entra con transición (otro bloque).
+  const bloque1 = await page.locator('[data-ronda]').elementHandle()
   await boton(page, 'Continuar').click()
   await esperarRonda(page, 2)
+  comprobar(r, 'transicionAlSubir', !(await bloque1.evaluate((el) => el.isConnected && el.dataset.ronda === '2')))
   await tocar(page, { ks: [1, 2], desfases: [0.17, -0.17] })
   await evaluada(page)
   await espera(900)
@@ -122,6 +146,13 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'perdioVida', vidas === '2' && golpesVidrio === '1', `vidas ${vidas}, golpes ${golpesVidrio}`)
   await page.evaluate(() => window.scrollTo(0, 0))
   await foto(page, '7-seguir-fallida', tema)
+
+  // Misma ronda de nivel: sin transición (el mismo bloque, solo cambian las casillas).
+  const bloque2 = await page.locator('[data-ronda]').elementHandle()
+  await boton(page, 'Continuar').click()
+  await esperarRonda(page, 3)
+  await espera(300)
+  comprobar(r, 'sinTransicion', await bloque2.evaluate((el) => el.isConnected && el.dataset.ronda === '3'))
 
   // Eco: arranque → demo → ronda buena (sube) → ronda fallida.
   await page.goto(BASE + '#/ritmo/eco')
@@ -135,6 +166,8 @@ for (const tema of ['claro', 'oscuro']) {
   await page.waitForSelector('[data-pad="demo"]')
   await espera(900)
   comprobar(r, 'ecoPatronOculto', (await page.locator('[data-objetivo]').count()) === 0)
+  comprobar(r, 'ecoSeguimiento', Number(await page.getAttribute('[data-pad-seguimiento]', 'data-destellos')) > 0)
+  comprobar(r, 'ecoBocinaApagada', await page.locator('[data-escuchar]').isDisabled())
   await foto(page, '9-eco-escucha', tema)
   await tocar(page, { ks: [2], desfases: [0.01, -0.01] })
   await evaluada(page)
@@ -153,11 +186,16 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'ecoFallida', /faltó|faltaron/.test(fb4), fb4)
   await foto(page, '11-eco-fallida', tema)
 
-  // Bocina tras evaluar: repaso (suena el patrón sin evaluar).
+  // Bocina tras evaluar: pregunta (pad de seguimiento) y respuesta (tu pad), sin evaluar.
   await page.click('[data-escuchar]')
   await page.waitForSelector('[data-repaso]')
   await page.waitForSelector('[data-pad="demo"]', { timeout: 8000 })
-  comprobar(r, 'repaso', true)
+  await page.waitForSelector('[data-pad="respuesta"]', { timeout: 8000 })
+  const conRespuesta = await page
+    .waitForFunction(() => Number(document.querySelector('[data-pad]')?.dataset.destellos) > 0, null, { timeout: 5000 })
+    .then(() => true, () => false)
+  comprobar(r, 'repaso', conRespuesta)
+  await foto(page, '12-eco-respuesta', tema)
 
   comprobar(r, 'sinErrores', errores.length === 0, errores.join(' | '))
   await browser.close()

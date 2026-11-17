@@ -23,6 +23,111 @@ export const NOVEDADES = [
     ],
   },
   {
+    id: '2026-11-17-ritmo-guia',
+    fecha: '17 nov 2026',
+    titulo: 'Ritmo: guía, pad de Eco y la respuesta',
+    cosas: [
+      {
+        texto: 'En **Seguir**, una **barra celeste** cruza el medidor en cada golpe: es donde caería tu dedo si tocaras ahora. Al dar **Continuar**, el patrón nuevo solo se enciende en las casillas (sin deslizar, salvo al subir de nivel).',
+        donde: { etiqueta: 'Abrir Seguir', href: '#/ritmo/seguir' },
+      },
+      {
+        texto: 'En **Eco**, un **pad de seguimiento** arriba del tuyo se ilumina con cada golpe: hace primero lo que tienes que copiar.',
+        donde: { etiqueta: 'Abrir Eco', href: '#/ritmo/eco' },
+      },
+      {
+        texto: 'La **bocina** se enciende al **terminar tu turno**: la app toca en tu pad la **respuesta correcta**.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-previas-azar',
+    fecha: '17 nov 2026',
+    titulo: 'Vistas previas más vivas',
+    cosas: [
+      {
+        texto: 'En **Entrenar**, cada vista previa **responde a su propio ritmo** (ya no todas a la vez) y **a veces se equivoca**: lo que tocó sale en **oro** y la respuesta buena en **verde**, como cuando entrenas.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: '**Ritmo** y **Letras** también cambian en cada vuelta: otros ritmos y tempos, golpes a destiempo u olvidados, más letras y palabras.',
+        donde: { etiqueta: 'Ver Ritmo', href: '#/entrenar/ritmo' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-previas-piano',
+    fecha: '17 nov 2026',
+    titulo: 'El mismo piano en las vistas previas de Oído',
+    cosas: [
+      {
+        texto: '**Intervalos**, **Acordes**, **Funciones** y **Oído absoluto** muestran ahora el **mismo piano**, del mismo tamaño y en el mismo lugar. En Intervalos suenan las dos notas una tras otra; en Funciones, primero la casa (Do) y luego el acorde.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-previas',
+    fecha: '17 nov 2026',
+    titulo: 'Vistas previas con piano y ejemplos variados',
+    cosas: [
+      {
+        texto: 'En **Entrenar**, la vista previa de **Acordes** ahora se ve en un **piano**, y cada vista previa enseña un **ejemplo distinto** en cada vuelta (otros acordes, otras notas, otros ritmos y palabras).',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: 'La **flechita ‹** de un entrenamiento (Intervalos, Ritmo, Vocabulario, el cuaderno…) ahora te regresa a **Entrenar** con su tipo elegido.',
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-contraste',
+    fecha: '17 nov 2026',
+    titulo: 'Contraste alto',
+    cosas: [
+      {
+        texto: 'En **Configuración › Pantalla** hay una opción nueva, **Contraste**: con **Alto**, los bordes y los textos grises se ven **más marcados** y las barras son **sólidas**.',
+        donde: { etiqueta: 'Abrir Configuración', href: '#/configuracion' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-accesibilidad',
+    fecha: '17 nov 2026',
+    titulo: 'La app sigue a tu teléfono',
+    cosas: [
+      {
+        texto: 'Si en tu teléfono activas **Reducir transparencia**, el vidrio se vuelve **sólido** solo (como «Opaco»).',
+        donde: { etiqueta: 'Ver Opciones', href: '#/configuracion' },
+      },
+      {
+        texto: 'Con **Aumentar contraste**, los bordes y los textos grises se ven **más marcados**.',
+      },
+      {
+        texto: 'En la computadora, al moverte con **Tab** se ve un **anillo azul** en lo que vas a tocar. Y los textos chiquitos del **círculo de quintas** se leen mejor.',
+        donde: { etiqueta: 'Abrir el círculo', href: '#/circulo' },
+      },
+    ],
+  },
+  {
+    id: '2026-11-17-entrenar',
+    fecha: '17 nov 2026',
+    titulo: 'Entrenar, con los ejercicios en grande',
+    cosas: [
+      {
+        texto: '**Practicar** ahora se llama **Entrenar**. Arriba eliges **Oído**, **Ritmo** o **Letras**, y cada ejercicio sale **en grande** con una **pequeña animación** de cómo se juega.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: 'Los paneles de entrenamiento ya no llevan los botones de las **rutas**: las rutas viven en **Aprender**.',
+      },
+      {
+        texto: 'En **Aprender › Curso**, el avance va **por bloques**: una barra con un tramo por bloque y una fila por bloque (tocarla te lleva a él). Sin «Tus rutas».',
+        donde: { etiqueta: 'Ver el curso', href: '#/aprender' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-tension',
     fecha: '16 nov 2026',
     titulo: 'Nueva lección: Tensión y resolución',

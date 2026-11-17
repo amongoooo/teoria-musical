@@ -19,7 +19,7 @@ import { etiquetaPaso } from '../content/actividad.js'
 import { acentoLeccion, codigoLeccion, faltanRequisitos, getLeccion, getModulo, leccionDisponible } from '../content/index.js'
 import { datosPrueba, pendientes, pruebaRequisitos } from '../content/pruebas/index.js'
 import { RUTAS } from '../content/rutas.js'
-import { getOpciones, useOpciones } from '../progress/opciones.js'
+import { contrasteAlto, getOpciones, useOpciones, vidrioOpaco } from '../progress/opciones.js'
 import { completarLeccion, getLeccion as getProgresoLeccion, getProgreso, guardarFalladas, guardarPaso } from '../progress/progreso.js'
 import { navegar, origenDeLeccion, rutas } from '../router.js'
 import { claro, oscuro, tinta } from '../ui/color.js'
@@ -599,10 +599,11 @@ export function BarraAccion({ accion, navegacion = null }) {
   // Sin retroalimentación posible (explicaciones, «Empezar»…): solo el botón de vidrio, flotando, sin el panel
   // (pedido del usuario). Su color es un poco translúcido y desenfoca lo de detrás: se nota que es vidrio.
   const flotante = Boolean(accion.flotante) && !feedback && !accion.ayuda
-  const { vidrio: material } = useOpciones()
+  const { vidrio: material, contraste } = useOpciones()
   // Siempre translúcido (pedido del usuario: «como el de Empezar»): el botón flota debajo de la tarjeta de información,
   // así siempre hay algo detrás que se ve. En «Opaco», sólido.
-  const translucido = material !== 'opaco'
+  // Sólido también si el teléfono pide reducir la transparencia o con contraste alto.
+  const translucido = !vidrioOpaco(material) && !contrasteAlto(contraste)
   // Presionado (pedido del usuario, 14 nov): el botón sigue siendo de vidrio —mismo color translúcido, vidrio y
   // reflejo—; solo se hunde (`Pulsable`). Antes se volvía mate.
   const bien = feedback?.tipo === 'bien'

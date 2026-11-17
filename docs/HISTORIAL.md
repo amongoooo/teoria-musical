@@ -302,6 +302,79 @@ Plan aprobado por el usuario («si adelante por favor»): https://claude.ai/arti
 - **Encaje**: catálogo `'5.2' ← 5.1, 4.4`; 3 preguntas en `pruebas/modulo-5.js` (adónde va el Fa, el V7 de Sol, el tritono de oído); tramo `funciones` de la ruta de Acordes: 5.1 → Funciones 3 → **5.2** → meta **«Acordes · con séptima»** (`nivel: 5` = superar el nivel 4, el del V7, que ya tenía candado hasta la 5.2 con `requiereNivel`).
 - **Pruebas**: `docs/pruebas/tension.mjs` (node + Playwright, 375 px, claro y oscuro: 13 pasos, P8 con 4 casillas y guía 3M·3m·3m, «¡G7!», «¡D7!», «¡V7 = C7!», P9 con fallo «bajó», dos rojas, A7 → Dm, roll «Perfecto», banco, catálogo y tramo). Pasan también `acordes.mjs`, `diatonicos.mjs`, `voicings.mjs` y `funciones.mjs`.
 
+## 2026-11-17 · Entrenar (antes Practicar) con barra de tipos y vistas previas; Curso por bloques
+
+Pedido del usuario: «en el apartado de practicar (pasará a llamarse entrenar), los tipos de práctica se mostrarán en una barra superior (como en Aprender); los ejercicios en grande y, si es posible, una pequeña preview de cómo se juega; quitar los botones de rutas en los apartados de entrenamiento; quitar los botones de las rutas en Aprender › Curso y mostrar el avance del curso con el avance de los bloques y no de las rutas».
+
+- **Entrenar** (`pages/Practicar.jsx`; la pestaña conserva el id interno `practicar`): nombre «Entrenar» en la barra de pestañas; rutas `#/entrenar`, `#/entrenar/ritmo`, `#/entrenar/letras` (`rutas.practicar(vista)`; `#/practicar` sigue sirviendo) y la pestaña recuerda el último tipo, como Aprender. Arriba, en vidrio, el selector **Oído | Ritmo | Letras** (ícono + nombre, marca blanca con `layoutId`, el ícono elegido en la tinta de su área). Debajo: «ENTRENAR» + título, **tu día** (insignia, racha, «m/5 min hoy» y barrita; lleva al panel con la semana y las estadísticas; en Letras, al de vocabulario) y los **ejercicios en grande** (tarjeta con relieve: vista previa, nombre en `font-juego text-2xl`, ficha del nivel —«Nivel 2», «3 notas»— y una línea de qué se hace; 2 columnas en pantallas anchas). Funciones con candado: punteada, vista previa gris y quieta, «Termina la A2.1», tiembla. Ya no está «Hoy» de todas las prácticas (sigue en Inicio).
+- **Vistas previas** (`components/VistaPrevia.jsx`): una escena por ejercicio en bucle de 4,2 s (solo opacidad y transform): **Intervalos** (dos notas en un mini roll → el dedo toca «5.ª J» → verde con ✓), **Acordes** (tres notas juntas → «Mayor»), **Funciones** (la ficha G sube a la caja D), **Oído absoluto** (la oreja late → se toca La en un teclado), **Seguir** (la cuenta 1 y 2 y… avanza en celeste, los golpes con aro se ponen verdes y el pad se ilumina), **Eco** (arriba suena, abajo «Tú» lo repites), **Cuaderno** (cuatro versos: noche / calle / coche / valle se pintan con sus colores de rima y A B A B) y **Vocabulario** («Madrugada» → «Primeras horas del día»). El **dedo** = círculo con borde blanco que se hunde. Solo se anima en pantalla (`useInView`); con «reducir movimiento» o con candado queda quieta en el último cuadro (la respuesta puesta). `data-vista-previa`, `data-animada`.
+- **Sin entradas a rutas en los entrenamientos**: fuera `EntradaRuta` de los paneles de oído y ritmo y del cuaderno de letras (se borró `components/EntradaRuta.jsx`).
+- **Aprender › Curso** (`ContenidoCurso` de `pages/Curso.jsx`): fuera «Tus rutas» (`TarjetaRuta`); la tarjeta de avance lleva **`BarraBloques`** (`components/BarraCurso.jsx`: un segmento por bloque, ancho según sus pasos; hecho = verde, el de ahora = color del área del paso actual, los demás neutro; se llenan uno tras otro) y **una fila por bloque** (número en un cuadrito o ✓, título, mini barra y x/y; tocarla abre el bloque; `data-fila-bloque`) en lugar de las filas por área. La cabecera de `#/curso` también usa `BarraBloques`; la de cada bloque sigue apilada por áreas. Inicio (anillo por áreas) no cambia.
+- Pruebas: puestas al día `curso.mjs` (filas y barra por bloque, sin «Tus rutas»), `ritmo.mjs` y `letras.mjs` (entran por Entrenar), `acordes.mjs`, `melodia.mjs`, `ruta-letras.mjs` y `ruta-ritmo.mjs` (sin entradas a rutas). Pasan `curso`, `ritmo` (servidor de desarrollo), `letras` y `funciones`. Revisado a 375 px en claro y oscuro y con «reducir movimiento».
+
+## 2026-11-17 · Skills de diseño: apple-design instalada y arreglos de accesibilidad
+
+Pedido del usuario: «puedes abrir estas skills y decirme qué le podemos instalar al proyecto? son de diseño» (zip con apple-design, diseno-mawy y animaciones-mawy) y, tras la recomendación, «va dale».
+
+- **Revisión**: apple-design (principios de Apple: resortes, 1:1, interrumpible, inercia, goma, materiales, accesibilidad) encaja con la app; diseno-mawy es para landings y paneles y choca con decisiones aprobadas (vidrio solo arriba, 4 pestañas, botones tecla, 90 ms); animaciones-mawy es para reels de Instagram (Edge + ffmpeg en Windows): no se instala.
+- **Instalada** `.claude/skills/apple-design/SKILL.md`: solo los principios (§1–17 y la tabla rápida), sin las 14 reglas de restaurante ni las de video; descripción en español y nota de que la skill `diseno` manda si chocan.
+- **Skill `diseno`**: sección nueva **5b «Accesibilidad y revisión»** (lo que pide el teléfono, piso de 12 px, foco visible, títulos balanceados, matriz de estados, nada solo por color, textos sin frases de folleto, gestos con velocidad y proyección) y lo que no se toma de mawy; §6 con la prueba de contraste. Línea en `REGISTRO.md`.
+- **Reducir transparencia**: `vidrioOpaco()` en `progress/opciones.js` (Opaco o `prefers-reduced-transparency: reduce`) pone la clase `opaco` y escucha cambios; también el script de `index.html`; la barra de la lección usa `vidrioOpaco(material)`.
+- **Aumentar contraste**: `@media (prefers-contrast: more)` en `index.css`: `zinc-200…500` más marcados en claro, oscuro y `.tema-claro`, y vidrio sólido con borde.
+- **Foco visible** (`:focus-visible`, anillo azul de 3 px) y `text-wrap: balance` en `h1–h3` / `pretty` en `p`, en `@layer base` (las utilidades los pueden cambiar).
+- **12 px**: los dos textos menores (menores y armaduras del círculo de quintas, `CirculoNodos.jsx`) pasan a 12.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): con `contrast: 'more'` cambia `--color-zinc-500`; Tab deja un anillo de 3 px; simulando reducir transparencia, `<html>` lleva `opaco` y la barra de la lección no es translúcida; el círculo se ve bien con los textos a 12 px. `npm run build` sin errores.
+
+## 2026-11-17 · Opción «Contraste: Alto» en Configuración
+
+Pedido del usuario: «¿dónde está lo de reducir transparencia y aumentar contraste?» (son ajustes del sistema; en Android casi no llegan al navegador) y, tras ofrecer la opción, «va dale por favor».
+
+- **Opción** `contraste: 'normal' | 'alto'` en `teoria-musical:opciones:v1` (`CONTRASTES`, `setContraste`, `contrasteAlto()`, `aplicarContraste()` en `progress/opciones.js`; también al arrancar en `main.jsx` y antes de pintar en `index.html`). Con «Alto» o con `prefers-contrast: more`, clase `contraste-alto` en <html> (escucha si el sistema cambia).
+- **CSS** (`index.css`): el bloque `@media (prefers-contrast: more)` pasa a la clase: `html.contraste-alto.dark`, `html.contraste-alto:not(.dark)` y `.contraste-alto .tema-claro` con los grises más marcados; vidrio sólido con borde y sin reflejo.
+- **Configuración › Pantalla**: fila «Contraste» (Normal | Alto) bajo Vidrio, con su nota. La barra de la lección deja de ser translúcida con contraste alto.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): «Alto» cambia `--color-zinc-500` (#707279 → #50525a; oscuro #a0a1a7 → #c4c5c9), se guarda al recargar, la barra de la lección no es translúcida y «Normal» lo regresa. `npm run build` sin errores.
+
+## 2026-11-17 · Vistas previas con piano y ejemplos variados; ‹ vuelve a Entrenar
+
+Pedido del usuario (con captura): «que en vez de aparecer los chords [en el roll] aparezcan con el piano como en Oído absoluto; además, que haya ejemplos variados (en oído absoluto que no solo toque La)» y «al entrar a un entrenamiento y volver con la flechita, manda directo a la página vieja de entrenamiento de oído, en vez de a la pestaña de Entrenar con Oído seleccionado».
+
+- **`MiniPiano`** (`components/VistaPrevia.jsx`): teclas blancas desde Do (7 o 10) con sus negras; `suenan` se encienden en celeste y `tocada` recibe el dedo y el verde (en una negra, ✓ chico). Lo usan **Acordes** (tres teclas a la vez; C, Dm, F, Em, D, Cm, E, Am) y **Oído absoluto** (las 12 notas, blancas y negras).
+- **Un ejemplo por vuelta**: `VistaPrevia` cuenta las vueltas (`setInterval` de 4,2 s mientras se ve) y vuelve a montar la escena con `key`, así la animación arranca con el ejemplo nuevo. Listas por escena: `INTERVALOS`, `ACORDES`, `FUNCIONES` (G → D, F → S, Am → T…), `ABSOLUTO`, `SEGUIR`, `ECO`, `CUADERNOS` (ABAB, AABB, ABBA) y `VOCABULARIO` (palabras del vocabulario real).
+- **Arreglo**: al volver a montar una escena, motion no arrancaba sus animaciones (heredaba el `initial={false}` de la página y las variantes de la lista); la escena va dentro de `PresenceContext.Provider value={null}` y `MotionContext.Provider value={{}}`.
+- **‹ vuelve a Entrenar** (`rutas.practicar(tipo)`): arranque, juego y fin de partida de Oído y Ritmo, sus paneles (antes con casita), el panel de Vocabulario (antes al cuaderno) y el cuaderno de Letras (antes casita). El ‹ de una letra sigue yendo al cuaderno y el del entrenador de vocabulario a su panel.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): las vistas previas cambian `data-vuelta` y se animan en cada vuelta (acordes y notas distintos, también teclas negras); Intervalos/Seguir/Vocabulario/Cuaderno → ‹ → `#/entrenar` (Oído), `#/entrenar/ritmo`, `#/entrenar/letras` con su tipo elegido. `npm run build` sin errores.
+
+## 2026-11-17 · El mismo piano en las vistas previas de Oído
+
+Pedido del usuario: «también lo quería para la parte de intervalos y, si se muestra, en funciones; además, mantener el mismo formato de piano entre las muestras».
+
+- **`MiniPiano`** siempre igual: 10 teclas blancas (Do a Mi de arriba), mismo alto y ancho; `suenan` acepta `{ st, de, hasta }` por tecla (notas una tras otra) o números (todas juntas). **`ConPiano`** = el formato común: piano a la izquierda y, a la derecha (42 %), lo que se responde.
+- **Intervalos**: suenan las dos notas seguidas (C→G 5.ª J, D→E 2.ª M, E→A 4.ª J, A→C 3.ª m, D→B 6.ª M, G→C 5.ª J bajando, C→C 8.ª J) y se elige entre dos nombres. Se quitó el mini roll (`Roll`).
+- **Funciones**: suena la casa (C, Do–Mi–Sol) y luego el acorde (G, F, Am, Dm, Em, B°); se elige **T · S · D** (tres botones más bajos, `Respuestas` con `titulo`).
+- **Oído absoluto**: mismo piano a la izquierda (notas de las dos octavas, blancas y negras); a la derecha la oreja que late y, al acertar, el nombre de la nota en verde.
+- **Pruebas** (Playwright, 375 px, claro y oscuro; con la 5.1 hecha para ver Funciones): los cuatro pianos miden lo mismo y están en el mismo lugar; las teclas se encienden y la respuesta se pone verde en cada vuelta. `npm run build` sin errores.
+
+## 2026-11-17 · Vistas previas con tiempos al azar y fallos
+
+Pedido del usuario: «que las vistas previas de ritmo y letras también se vean variadas; que el tiempo de respuesta entre cada preview sea variado para que no se vea todo contestando al mismo tiempo; que a veces se equivoquen y saquen algo mal».
+
+- **`useAzar(activo, prob)`** (`components/VistaPrevia.jsx`): como la escena se vuelve a montar en cada vuelta, sortea ahí cuánto tarda en responder (`retraso`, ±10 % de la vuelta) y si esta vez falla (`falla`: 25 % en Oído y Vocabulario, 35 % en Seguir y Eco). Quieta: sin retraso ni fallo.
+- **Fallos como en los entrenadores** (oro = lo que se tocó, verde suave con ✓ = la buena): piezas `Fallo` y `Correcta`; `Respuestas` con `falla`/`k` (Intervalos, Acordes, Funciones); `MiniPiano` con `correcta` distinta de `tocada` (Oído absoluto toca una tecla a 1–2 semitonos y luego se enciende la buena); Vocabulario elige el otro significado.
+- **Ritmo**: Seguir cambia un poco el tempo en cada vuelta y a veces un golpe sale a destiempo (casilla en oro); Eco empieza a repetir en otro momento y a veces se olvida un golpe (borde de oro). Más patrones (8 en cada uno).
+- **Letras**: 6 letras en el Cuaderno (más esquemas y palabras) con el ritmo de pintado al azar; 7 palabras en Vocabulario.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): en varias vueltas salen fallos en Oído y Ritmo, la buena se marca en verde, los tiempos de acierto difieren entre tarjetas; Letras con un fallo forzado (`Math.random`). `npm run build` sin errores.
+
+
+## 2026-11-17 · Ritmo: guía del medidor, pad de seguimiento y respuesta con la bocina
+
+Pedido del usuario: «la barra horizontal que cuenta la precisión del toque tendrá una barra vertical deslizándose en cada golpe a tocar, donde caería el dedo; en Eco, encima del botón que presionamos, un botón de seguimiento que se pone de color cada que suena (pregunta y respuesta); el botón de la bocina se habilita solo cuando el jugador terminó su turno y muestra la respuesta correcta» y, después, «en Seguir, al dar Continuar, las teclas solo se apagan y encienden en otro orden; sin transición a menos que subas de nivel».
+
+- **Guía** (`Medidor` con `guia`, pieza `Guia` en `components/PiezasRitmo.jsx`): `guia()` de `pages/Ritmo.jsx` da `{ d, antes, despues }` = segundos de «ahora» (reloj de audio − latencia − inicio − compensación) al golpe más cercano de los compases `toca` y la mitad del hueco con sus vecinos; la barra se mueve en cada fotograma y se desvanece en la orilla o al saltar al golpe siguiente. Solo en Seguir (Eco no tiene medidor: delataría el patrón).
+- **Pad de seguimiento** (Eco): `Pad` con la prop nueva **`soloVer`** (no se toca, `aria-hidden`, sin hundirse) y `chico`, encima del tuyo; el reloj del entrenador cuenta los golpes del patrón que ya sonaron en cada compás `demo` / `respuesta` y sube `destellos` (el pad se ilumina con `destello`).
+- **Bocina**: desactivada hasta `fase === 'evaluada'`; entonces el plan es `entrada → respuesta → cierre` (Seguir) o `entrada → demo → respuesta → cierre` (Eco). `respuesta` es un tipo nuevo de `eventosCompas` (`theory/ritmo.js`) que suena como la demo y enciende **tu** pad. Ya no existe «volver a empezar con la demo» antes de evaluar.
+- **Sin transición en Seguir**: la ronda va con `key` del nivel (`nivel-N`) en lugar del número de ronda: el patrón nuevo solo cambia los aros del contador; entra desde la derecha al cambiar de nivel. Eco sigue entrando cada ronda.
+- **Pruebas** (`docs/pruebas/ritmo.mjs`, 375 px, claro y oscuro): bocina apagada jugando y lista al evaluar, la guía barre (valores distintos con opacidad), el pad se ilumina con la respuesta, el de seguimiento con la demo de Eco, y el repaso de Eco pasa por demo y respuesta. `npm run build` sin errores.
+
 ## 2026-11-17 · Lección 5.3 «Cadencias» (A2.3)
 
 Plan: https://claude.ai/artifact/BSsYcLPWqhmxjSVvgjEprK (el usuario: «deja como lo consideres»; se quedó la fórmula en grande en las cajas y la auténtica perfecta solo como nota).

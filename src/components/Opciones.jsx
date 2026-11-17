@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { desbloquearAdmin, salirAdmin } from '../progress/admin.js'
-import { setGesto, setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
+import { setContraste, setGesto, setOctavas, setTema, setVidrio, useOpciones } from '../progress/opciones.js'
 import Hoja from '../ui/Hoja.jsx'
 import { RESORTE, SUBE } from '../ui/movimiento.js'
 import { Bombilla, Candado, Check, Opciones as IconoOpciones } from '../ui/Iconos.jsx'
@@ -23,6 +23,11 @@ const VIDRIOS = [
   { id: 'opaco', nombre: 'Opaco' },
 ]
 
+const CONTRASTES = [
+  { id: 'normal', nombre: 'Normal' },
+  { id: 'alto', nombre: 'Alto' },
+]
+
 const OCTAVAS = [
   { id: 'vista', nombre: 'Mover la vista' },
   { id: 'teclas', nombre: 'Mover las teclas' },
@@ -35,7 +40,7 @@ const GESTOS = [
 
 /**
  * Botón redondo de Opciones (engranaje, 44 px) que abre una hoja inferior con los ajustes.
- * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono / Programar: a ciertas horas, ProgramarTema), Vidrio (Desenfoque / Opaco), Barra de octavas
+ * Apariencia (Claro / Oscuro / Automático, que sigue al teléfono / Programar: a ciertas horas, ProgramarTema), Vidrio (Desenfoque / Opaco), Contraste (Normal / Alto), Barra de octavas
  * (Mover la vista / Mover las teclas: sentido del deslizador de octavas del piano), Gesto del botón de las lecciones
  * (Normal / Invertir el gesto), Tu progreso
  * (pasarlo a otro dispositivo) y Administrador (con PIN: todas las lecciones abiertas y saltar entre pasos).
@@ -72,6 +77,10 @@ const NOTA_VIDRIO = {
   desenfoque: 'Las barras que flotan dejan ver la lección desenfocada.',
   opaco: 'Barras sólidas: más contraste y menos trabajo para el teléfono.',
 }
+const NOTA_CONTRASTE = {
+  normal: null,
+  alto: 'Bordes y textos grises más marcados, y barras sólidas.',
+}
 const NOTA_OCTAVAS = {
   vista: 'Octavas 3 · 4 · 5: deslizar a la derecha lleva la vista a las agudas.',
   teclas: 'Octavas 5 · 4 · 3: deslizar a la derecha arrastra el teclado y trae las graves.',
@@ -82,7 +91,7 @@ const NOTA_GESTO = {
 }
 
 export function PanelOpciones({ onCerrar, titulo = 'Opciones' }) {
-  const { tema, vidrio, octavas, gesto } = useOpciones()
+  const { tema, vidrio, contraste, octavas, gesto } = useOpciones()
   return (
     <div className="flex flex-col gap-7">
       <div className="flex flex-col gap-1">
@@ -104,6 +113,9 @@ export function PanelOpciones({ onCerrar, titulo = 'Opciones' }) {
         </Fila>
         <Fila titulo="Vidrio" id="opciones-vidrio" nota={NOTA_VIDRIO[vidrio]}>
           <Segmentado opciones={VIDRIOS} valor={vidrio} onCambiar={setVidrio} etiqueta="opciones-vidrio" capa="vidrio-activo" />
+        </Fila>
+        <Fila titulo="Contraste" id="opciones-contraste" nota={NOTA_CONTRASTE[contraste]}>
+          <Segmentado opciones={CONTRASTES} valor={contraste} onCambiar={setContraste} etiqueta="opciones-contraste" capa="contraste-activo" />
         </Fila>
       </Grupo>
 

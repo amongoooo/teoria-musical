@@ -94,8 +94,9 @@ const TINTA_PAD = '#2b2c34'
  * pasan, los `children` (la cuenta, un ícono…). `atenuado`: se ve apagado pero se puede tocar (no es tu turno).
  * `chico`: el pad mini de los sonidos de las lecciones (BotonSonido con `ver`). `destello` = { n, fuerza }: cada vez que
  * cambia `n`, se ilumina solo (cuando SUENA su golpe), con la intensidad `fuerza` (la velocity, 0–1).
+ * `soloVer`: el pad no se toca, solo se ilumina con `destello` (el de seguimiento de Eco: hace primero lo que hay que copiar).
  */
-export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled, atenuado, chico = false, destello, children, ref, ...props }) {
+export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí al pulso', disabled, atenuado, chico = false, soloVer = false, destello, children, ref, ...props }) {
   const [golpes, setGolpes] = useState(0)
   const [fuerza, setFuerza] = useState(1)
   const luces = golpes + (destello?.n ?? 0)
@@ -108,16 +109,18 @@ export function Pad({ onToque, latido, mostrarLatido, color, texto = 'Toca aquí
       ref={ref}
       type="button"
       disabled={disabled}
+      tabIndex={soloVer ? -1 : undefined}
+      aria-hidden={soloVer || undefined}
       onPointerDown={(e) => {
-        if (disabled) return
+        if (disabled || soloVer) return
         e.preventDefault()
         setGolpes((g) => g + 1)
         setFuerza(1)
         onToque(e)
       }}
-      whileTap={disabled ? undefined : { scale: 0.97 }}
+      whileTap={disabled || soloVer ? undefined : { scale: 0.97 }}
       transition={RESORTE.pulsar}
-      className={`relative block w-full select-none ${chico ? 'h-20 rounded-[1.25rem] p-1.5' : 'h-40 rounded-[1.75rem] p-2.5'} transition-opacity duration-200 disabled:opacity-40 ${atenuado ? 'opacity-60' : ''}`}
+      className={`relative block w-full select-none ${soloVer ? 'pointer-events-none' : ''} ${chico ? 'h-20 rounded-[1.25rem] p-1.5' : 'h-40 rounded-[1.75rem] p-2.5'} transition-opacity duration-200 disabled:opacity-40 ${atenuado ? 'opacity-60' : ''}`}
       style={{
         backgroundColor: MARCO,
         boxShadow: '0 8px 20px rgb(0 0 0 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.05)',
@@ -252,8 +255,11 @@ export function Contador({ tiempos, division, actual, cada, desfase, patron, col
  * Con `ritmo` (pedido del usuario) un **puntito celeste barre** la barra y cruza la línea del centro justo en cada pulso
  * (`periodo` y `desfase` en tiempos, como useLatido): es el tiempo que pasa. Con `media` (desviación media, en s) sale un
  * **cuadrito** centrado en la línea cuyo ancho es esa desviación (sin texto).
+ * Con `guia` (entrenamiento de ritmo; pedido del usuario) una **barra vertical** cruza el medidor en cada golpe que hay
+ * que tocar: es dónde caería tu toque si tocaras ahora. `guia()` se lee en cada fotograma y devuelve
+ * `{ d, antes, despues }` (segundos respecto al golpe más cercano y la mitad del hueco hasta el golpe de cada lado) o null.
  */
-export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás si tocas antes o después', rango = RANGO, ritmo = null, periodo = 1, desfase = 0, media = null }) {
+export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás si tocas antes o después', rango = RANGO, ritmo = null, periodo = 1, desfase = 0, media = null, guia = null }) {
   const hay = error !== undefined && error !== null
   const bien = hay && Math.abs(error) <= tolerancia
   const pos = hay ? 50 + (Math.max(-rango, Math.min(rango, error)) / rango) * 50 : 50
@@ -283,6 +289,7 @@ export function Medidor({ error, tolerancia = TOLERANCIA, vacio = 'Aquí verás 
         )}
         <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-bien-relleno" />
         {ritmo && <Barrido ritmo={ritmo} periodo={periodo} desfase={desfase} rango={rango} />}
+        {guia && <Guia guia={guia} rango={rango} />}
         {hay && (
           <motion.div
             className={`absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-colors duration-200 ${bien ? 'bg-bien-relleno' : 'bg-fijate'}`}
@@ -325,4 +332,39 @@ function Barrido({ ritmo, periodo, desfase, rango }) {
     return () => cancelAnimationFrame(frame)
   }, [ritmo, periodo, desfase, rango])
   return <div ref={ref} aria-hidden data-barrido className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500" style={{ left: '0%', opacity: 0 }} />
+}
+
+/**
+ * Dónde caería el dedo: una barra vertical celeste que barre el medidor de izquierda a derecha y cruza la línea del
+ * centro justo en cada golpe que hay que tocar. Se desvanece al llegar a la orilla o a la mitad del hueco con el golpe
+ * de al lado (ahí salta al siguiente).
+ */
+function Guia({ guia, rango }) {
+  const ref = useRef(null)
+  const leer = useRef(guia)
+  leer.current = guia
+  useEffect(() => {
+    let frame = 0
+    const tic = () => {
+      const el = ref.current
+      if (el) {
+        const g = leer.current()
+        if (!g) {
+          el.style.opacity = '0'
+          el.dataset.guia = ''
+        } else {
+          const limite = Math.min(rango, g.d < 0 ? g.antes : g.despues)
+          const x = Math.max(-1, Math.min(1, g.d / rango))
+          const opacidad = limite > 0 ? Math.max(0, Math.min(1, ((limite - Math.abs(g.d)) / limite) * 4)) : 0
+          el.style.left = `${50 + x * 50}%`
+          el.style.opacity = String(opacidad)
+          el.dataset.guia = String(Math.round(g.d * 1000))
+        }
+      }
+      frame = requestAnimationFrame(tic)
+    }
+    tic()
+    return () => cancelAnimationFrame(frame)
+  }, [rango])
+  return <div ref={ref} aria-hidden data-guia="" className="absolute inset-y-1 w-1 -translate-x-1/2 rounded-full bg-sky-500" style={{ left: '0%', opacity: 0 }} />
 }
