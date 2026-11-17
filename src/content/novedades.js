@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-entrenar',
+    fecha: '17 nov 2026',
+    titulo: 'Entrenar, con los ejercicios en grande',
+    cosas: [
+      {
+        texto: '**Practicar** ahora se llama **Entrenar**. Arriba eliges **Oído**, **Ritmo** o **Letras**, y cada ejercicio sale **en grande** con una **pequeña animación** de cómo se juega.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: 'Los paneles de entrenamiento ya no llevan los botones de las **rutas**: las rutas viven en **Aprender**.',
+      },
+      {
+        texto: 'En **Aprender › Curso**, el avance va **por bloques**: una barra con un tramo por bloque y una fila por bloque (tocarla te lleva a él). Sin «Tus rutas».',
+        donde: { etiqueta: 'Ver el curso', href: '#/aprender' },
+      },
+    ],
+  },
+  {
     id: '2026-11-16-tension',
     fecha: '16 nov 2026',
     titulo: 'Nueva lección: Tensión y resolución',

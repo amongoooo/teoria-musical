@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
-import EntradaRuta from '../components/EntradaRuta.jsx'
 import Flow from '../components/Flow.jsx'
 import { Estrofa, Leyenda } from '../components/LetraAnalizada.jsx'
 import { Segmentado } from '../components/Opciones.jsx'
@@ -81,7 +80,6 @@ function Cuaderno() {
 
       <motion.section variants={itemLista} className="flex flex-col gap-3">
         <TarjetaVocabulario />
-        <EntradaRuta id="letras" />
       </motion.section>
 
       {letras.length > 0 && (

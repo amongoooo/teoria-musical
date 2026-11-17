@@ -28,3 +28,30 @@ export default function BarraCurso({ areas, total, alto = 'h-2.5', fondo = 'bg-z
     </div>
   )
 }
+
+/**
+ * Barra del Curso completo POR BLOQUES (pedido del usuario, 2026-11-17: «el avance de los bloques y no de las rutas»):
+ * un segmento por bloque, tan ancho como sus pasos, que se llena con lo hecho de ese bloque. Hecho = verde; el de
+ * ahora, del color del área del paso en el que vas; los demás, en neutro. Los segmentos se llenan uno tras otro.
+ */
+export function BarraBloques({ bloques, actual = null, alto = 'h-2.5', fondo = 'bg-zinc-200', retraso = 0.2, className = '', ...props }) {
+  return (
+    <div className={`flex w-full gap-1 ${alto} ${className}`} role="img" {...props}>
+      {bloques.map((b, k) => {
+        const color = b.estado === 'hecha' ? 'var(--color-bien)' : b.estado === 'ahora' && actual ? actual.acento : 'var(--color-neutro)'
+        return (
+          <span key={b.numero} className={`block h-full min-w-0 overflow-hidden rounded-full ${fondo}`} style={{ flexGrow: b.total, flexBasis: 0 }}>
+            <motion.span
+              data-segmento-bloque={b.numero}
+              className="block h-full rounded-full"
+              style={{ backgroundColor: color }}
+              initial={{ width: 0 }}
+              animate={{ width: `${b.total ? (b.hechas / b.total) * 100 : 0}%` }}
+              transition={{ ...RESORTE.suave, delay: retraso + k * 0.1 }}
+            />
+          </span>
+        )
+      })}
+    </div>
+  )
+}

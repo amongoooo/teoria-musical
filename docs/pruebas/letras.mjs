@@ -29,8 +29,8 @@ for (const tema of ['claro', 'oscuro']) {
     localStorage.setItem('teoria-musical:opciones:v1', JSON.stringify({ tema }))
   }, tema)
 
-  await page.goto(BASE + '#/practicar')
-  const bloque = page.locator('[data-entrenamiento="letras"]')
+  await page.goto(BASE + '#/entrenar/letras')
+  const bloque = page.locator('[data-ejercicio-entrenar="cuaderno"]')
   await bloque.waitFor()
   await bloque.scrollIntoViewIfNeeded()
   await espera(900)

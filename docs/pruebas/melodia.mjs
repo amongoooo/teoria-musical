@@ -104,15 +104,9 @@ for (const tema of ['claro', 'oscuro']) {
   const t2b = await page.locator('[data-letrero="pasos-intervalos"]').textContent()
   comprobar(r, 'absoluto nivel 2 → tramo 2: 2/4', /2\/4/.test(t2b), t2b)
 
-  // Panel de oído: Melodía y Acordes, en ese orden.
+  // Panel de oído: ya sin entradas a las rutas (pedido del usuario, 2026-11-17).
   await ir('#/oido')
-  const entradas = await page.$$eval('[data-entrada-ruta]', (els) => els.map((e) => e.dataset.entradaRuta).join())
-  comprobar(r, 'oído: entradas Melodía y Acordes', entradas === 'melodia,acordes', entradas)
-  await page.locator('[data-entrada-ruta="melodia"]').scrollIntoViewIfNeeded()
-  await foto('oido')
-  await page.locator('[data-entrada-ruta="melodia"]').click()
-  await espera(1500)
-  comprobar(r, 'la entrada abre la ruta', page.url().endsWith('#/ruta/melodia'), page.url())
+  comprobar(r, 'oído: sin entradas a las rutas', (await page.locator('[data-entrada-ruta]').count()) === 0)
 
   // Prueba rápida del tramo 3.
   await preparar()
