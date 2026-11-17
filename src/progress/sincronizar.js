@@ -3,7 +3,8 @@
 // Código = versión + base64url( deflate-raw( JSON ) ):
 //   «1…» comprimido (CompressionStream; Chrome, Safari 16.4+, Firefox)
 //   «0…» sin comprimir (respaldo para navegadores viejos)
-// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, l: vocabulario de letras, c: opciones }.
+// El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, l: vocabulario de letras, x: experiencia
+// (progress/xp.js: total por área de cada dispositivo), c: opciones }.
 // (`r` se añadió con el entrenamiento de ritmo y `l` con el vocabulario —con su `repaso`—: los códigos de antes no
 // los traen y se leen igual.)
 //
@@ -15,6 +16,7 @@ import { tiendaRitmo } from './ritmo.js'
 import { tiendaVocab } from './vocabulario.js'
 import { combinarRepaso } from '../letras/vocabulario/repaso.js'
 import { TEMAS, getOpciones, setTema } from './opciones.js'
+import { combinarCompactos, importarCompacto, libroCompacto, revisarCompacto } from './xp.js'
 
 const VERSION = 1
 
@@ -51,6 +53,7 @@ export function datosActuales() {
     o: entrenamiento(getOido()),
     r: entrenamiento(tiendaRitmo.leer()),
     l: { ...entrenamiento(tiendaVocab.leer()), repaso: tiendaVocab.leer().repaso ?? {} },
+    x: libroCompacto(),
     c: { tema: getOpciones().tema },
   }
 }
@@ -215,6 +218,7 @@ function revisar(d) {
       r.completada = true
       r.aciertos = num(l.aciertos)
       r.total = num(l.total)
+      if (l.mejor != null) r.mejor = num(l.mejor)
       if (esFecha(l.fecha)) r.fecha = l.fecha
       if (l.saltada === true) r.saltada = true
     }
@@ -234,6 +238,8 @@ function revisar(d) {
     o: revisarEntrenamiento(d.o),
     r: revisarEntrenamiento(d.r),
     l: { ...revisarEntrenamiento(d.l), repaso: revisarRepaso(d.l?.repaso) },
+    // Libro de XP (compacto: total por área de cada dispositivo).
+    x: revisarCompacto(d.x),
     c: { tema },
   }
 }
@@ -256,6 +262,9 @@ export function combinarLeccion(a, b) {
     r.completada = true
     r.aciertos = mejor.aciertos ?? 0
     r.total = mejor.total ?? 0
+    const mejores = [a, b].filter((x) => x.completada && !x.saltada).map((x) => x.mejor ?? x.aciertos ?? 0)
+    if (mejores.length) r.mejor = Math.max(...mejores)
+    else delete r.mejor
     const fecha = mayorFecha(a.completada && a.fecha, b.completada && b.fecha)
     if (fecha) r.fecha = fecha
     // Saltada con la prueba rápida solo si ningún dispositivo la hizo de verdad.
@@ -340,6 +349,7 @@ export function combinar(a, b) {
     o: combinarEntrenamiento(a.o, b.o, tiendaOido.migrar),
     r: combinarEntrenamiento(a.r, b.r, tiendaRitmo.migrar),
     l: { ...combinarEntrenamiento(a.l, b.l, tiendaVocab.migrar), repaso: combinarRepaso(a.l?.repaso, b.l?.repaso) },
+    x: combinarCompactos(a.x, b.x),
   }
 }
 
@@ -364,6 +374,7 @@ export function importar(datos, { conTema = false } = {}) {
   importarOido({ ...getOido(), ...junto.o })
   tiendaRitmo.importar({ ...tiendaRitmo.leer(), ...junto.r })
   tiendaVocab.importar({ ...tiendaVocab.leer(), ...junto.l })
+  importarCompacto(datos.x)
   if (conTema && datos.c?.tema) setTema(datos.c.tema)
   return junto
 }

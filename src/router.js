@@ -88,6 +88,21 @@ export function navegar(href) {
  * Solo mientras la app esté abierta; se olvida al abrir otra lección desde otro lugar.
  */
 let origenLeccion = null
+let origenModulo = false
+// Entrar a un módulo desde Aprender › Módulos (pedido del usuario): su cabecera lleva la flechita ‹ de vuelta a Módulos
+// en lugar de la casita. Vale mientras se va del módulo a sus lecciones y pruebas (o a otro módulo). Un solo oyente
+// (antes que los de useRuta, que vuelven a pintar).
+if (typeof window !== 'undefined') {
+  let previa = parse(window.location.hash)
+  window.addEventListener('hashchange', () => {
+    const nueva = parse(window.location.hash)
+    if (nueva.pagina === 'modulo' && previa.pagina === 'aprender' && previa.id === 'modulos') origenModulo = true
+    else if (!['modulo', 'leccion', 'prueba'].includes(nueva.pagina)) origenModulo = false
+    previa = nueva
+  })
+}
+/** Con el módulo abierto desde Aprender › Módulos: a dónde lleva la flechita ‹ de su cabecera (o null: casita). */
+export const volverDeModulo = () => (origenModulo ? { href: rutas.aprender('modulos'), etiqueta: 'Volver a Módulos' } : null)
 export const marcarOrigenLeccion = (id, href) => {
   origenLeccion = { id, href }
 }

@@ -2,6 +2,7 @@
 // pages/Inicio.jsx. Curso completo (anillo + botón), «Hoy» (racha y minutos), cuadritos de módulos y rutas y
 // las tarjetitas de las herramientas (Círculo, Piano libre, Flow).
 import { motion } from 'motion/react'
+import { useXP } from './useXP.js'
 import { Cuadrito } from './NavegadorModulos.jsx'
 import { codigoLeccion, moduloDisponible, nombreModulo } from '../content/index.js'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
@@ -323,6 +324,7 @@ export function TarjetaHoy({ href = null }) {
   })
   const racha = Math.max(...datos.map((d) => d.racha))
   const minutos = Math.floor(datos.reduce((s, d) => s + d.segundos, 0) / 60)
+  const xpHoy = useXP().hoy
   const contenido = (
     <>
       <span className="flex w-14 shrink-0 flex-col items-center font-juego leading-none text-zinc-900">
@@ -332,7 +334,9 @@ export function TarjetaHoy({ href = null }) {
       <span className="flex min-w-0 flex-1 flex-col gap-2.5">
         <span className="flex items-baseline justify-between gap-2">
           <span className="font-titulo text-xl font-bold text-zinc-900">Hoy</span>
-          <span className="font-dato text-sm font-medium tabular-nums text-zinc-500">{minutos} min</span>
+          <span className="font-dato text-sm font-medium tabular-nums text-zinc-500" data-xp-hoy={xpHoy}>
+            {minutos} min · +{xpHoy} XP
+          </span>
         </span>
         <span className="flex gap-1.5" aria-hidden>
           {datos.map((d, i) => {
@@ -353,7 +357,7 @@ export function TarjetaHoy({ href = null }) {
     </>
   )
   const clase = 'flex w-full items-center gap-4 rounded-[1.75rem] bg-white p-4 text-left'
-  const etiqueta = `Hoy: racha de ${racha} ${racha === 1 ? 'día' : 'días'}, ${minutos} minutos de práctica`
+  const etiqueta = `Hoy: racha de ${racha} ${racha === 1 ? 'día' : 'días'}, ${minutos} minutos de práctica, ${xpHoy} XP`
   if (!href) {
     return (
       <div className={clase} aria-label={etiqueta} data-tarjeta-hoy>

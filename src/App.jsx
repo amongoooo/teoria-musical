@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import BarraPestanas, { indicePestana } from './components/BarraPestanas.jsx'
 import CabeceraModulo from './components/CabeceraModulo.jsx'
 import MetaCumplida, { acentoPractica } from './components/MetaCumplida.jsx'
+import { CelebracionNivel } from './components/XP.jsx'
 import { useMedirMetas } from './components/rutaModulo.js'
 import { marcarCumplida, soltarMeta, useMetaGuiada } from './progress/metaGuiada.js'
 import Aprender from './pages/Aprender.jsx'
@@ -149,6 +150,8 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
       {guia && enPractica && !guia.cumplida && <VigilaMeta guia={guia} />}
+      {/* Subir de nivel de jugador (experiencia): baja un panel con el nivel y el título, en cualquier pantalla. */}
+      <CelebracionNivel />
       {/* Las pestañas (fase 3 del rediseño): fuera de la transición, se quedan quietas al cambiar de pestaña. */}
       <AnimatePresence initial={false}>{indicePestana(ruta.pagina) >= 0 && <BarraPestanas key="pestanas" ruta={ruta} />}</AnimatePresence>
     </MotionConfig>

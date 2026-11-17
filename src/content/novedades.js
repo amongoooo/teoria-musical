@@ -5,6 +5,28 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-experiencia',
+    fecha: '17 nov 2026',
+    titulo: 'Experiencia y niveles de jugador',
+    cosas: [
+      {
+        texto: 'Ahora ganas **experiencia (XP)**: arriba en Inicio está tu **nivel** y tu **título** (Aprendiz, Músico de cuarto, Beatmaker…). Tócalo para ver tu XP **por área** y los títulos que vienen.',
+        donde: { etiqueta: 'Ir a Inicio', href: '#/' },
+      },
+      {
+        texto: 'En los entrenamientos, cada acierto suma **+XP**. Dan más la **dificultad** alta, el modo **Rápido**, el **Contrarreloj**, jugar **con vidas** y los **aciertos seguidos**. Toca la píldora de XP para ver **de dónde salió**. Después de **20 minutos** en el mismo modo, da la mitad: conviene variar.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: 'Al terminar una lección o una partida ves la XP ganada con su desglose. Repetir una lección nunca te quita XP.',
+      },
+      {
+        texto: 'Si entras a un módulo desde **Aprender › Módulos**, la **flechita ‹** de arriba te regresa ahí.',
+        donde: { etiqueta: 'Ver los módulos', href: '#/aprender/modulos' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-cadencias',
     fecha: '17 nov 2026',
     titulo: 'Nueva lección: Cadencias',

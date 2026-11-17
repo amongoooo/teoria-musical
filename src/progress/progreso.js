@@ -4,7 +4,7 @@
 // {
 //   version: 1,
 //   lecciones: {
-//     '1.1': { paso: 3, completada: true, fecha: '2026-11-08', aciertos: 8, total: 10 }
+//     '1.1': { paso: 3, completada: true, fecha: '2026-11-08', aciertos: 8, total: 10, mejor: 9 }  // mejor = la XP
 //   },
 //   retos: {
 //     '1.1': { hecho: true, fecha: '2026-11-08', nota: 'Al subir se siente…' }
@@ -107,7 +107,8 @@ export function completarLeccion(id, { aciertos = 0, total = 0 } = {}) {
     ...p,
     lecciones: {
       ...p.lecciones,
-      [id]: { ...sinSaltada(actual), paso: 0, completada: true, fecha: hoy(), aciertos, total },
+      // `mejor`: los aciertos a la primera más altos (la XP de la lección no baja si la repites peor).
+      [id]: { ...sinSaltada(actual), paso: 0, completada: true, fecha: hoy(), aciertos, total, mejor: Math.max(actual.completada && !actual.saltada ? (actual.mejor ?? actual.aciertos ?? 0) : 0, aciertos) },
     },
   })
 }
@@ -127,7 +128,9 @@ export function saltarLecciones(ids, clave, resultado) {
     if (lecciones[id]?.completada) continue
     lecciones[id] = { ...lecciones[id], paso: 0, completada: true, saltada: true, fecha: hoy() }
   }
-  const pruebas = clave ? { ...p.pruebas, [clave]: { fecha: hoy(), ...resultado } } : p.pruebas
+  const previa = clave ? p.pruebas?.[clave] : null
+  const mejor = Math.max(previa?.mejor ?? previa?.aciertos ?? 0, resultado?.aciertos ?? 0)
+  const pruebas = clave ? { ...p.pruebas, [clave]: { fecha: hoy(), ...resultado, mejor } } : p.pruebas
   escribir({ ...p, lecciones, ...(pruebas ? { pruebas } : {}) })
 }
 

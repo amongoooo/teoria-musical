@@ -5,6 +5,9 @@ import { reproducir, seguirNotas } from '../audio/sonido.js'
 import Piano from '../components/Piano.jsx'
 import ArranqueOido from '../components/ArranqueOido.jsx'
 import FinPartida, { useMarcador } from '../components/FinPartida.jsx'
+import { PildoraXP, useXPPartida } from '../components/XP.jsx'
+import { areaDeAcento } from '../components/useXP.js'
+import { XP, factorTiempo } from '../progress/xp.js'
 import CabeceraEntrenador from '../components/CabeceraEntrenador.jsx'
 import PanelEntrenamiento, { nivelesAbiertos, textoAprobado } from '../components/PanelEntrenamiento.jsx'
 import { metaGuiada } from '../progress/metaGuiada.js'
@@ -101,6 +104,8 @@ function Entrenador({ modo }) {
   const [jugando, setJugando] = useState(false)
   // Fin de la partida (pedido del usuario): al quedarse sin vidas, su pantalla con el resumen.
   const marcador = useMarcador()
+  // Experiencia de la partida (cada acierto suma; el desglose, en la píldora y al final).
+  const xp = useXPPartida('oido')
   const [fin, setFin] = useState(null)
   const [vidas, setVidas] = useState(null)
   const [golpes, setGolpes] = useState(0)
@@ -206,13 +211,14 @@ function Entrenador({ modo }) {
       alcanzados: [rapido ? inicio.length : datosModo(modo.id).nivel],
     })
     marcador.empezar(rapido ? inicio.length : datosModo(modo.id).nivel, rapido ? 'Notas' : 'Nivel')
+    xp.empezar()
     setJugando(true)
     nueva()
   }
 
   // Sin vidas: la pantalla de fin de partida (desde ahí, al panel o a otra partida).
   const terminar = () => {
-    setFin(marcador.resumen())
+    setFin({ ...marcador.resumen(), xp: { total: xp.total, partes: xp.partes } })
     clearTimeout(temporizador.current)
     pararSonar.current?.()
     releaseAll()
@@ -239,6 +245,7 @@ function Entrenador({ modo }) {
     const bien = id === pregunta.item
     setRespuesta(id)
     setPulsada(tecla)
+    const superadoAntes = datosModo(modo.id).superado?.[pregunta.nivel] ?? 0
     const r = registrarRespuesta(modo.id, {
       item: pregunta.item,
       elemento: pregunta.elemento,
@@ -284,7 +291,43 @@ function Entrenador({ modo }) {
       r.vidas = { antes: vv.actual, despues: actual, fin }
     }
     marcador.apuntar(bien, rapido ? partidaRef.current.notas.length : r.nuevoNivel)
+    apuntarXP(bien, r, superadoAntes)
     setResultado(r)
+  }
+
+  /**
+   * XP de la respuesta (sistema de experiencia): 4 por acierto × dificultad × modo (Rápido ×1,5 y +1 por nota de más;
+   * Contrarreloj ×1,3 y hasta +50 % si respondes pronto) × vidas (×1,2; Escalada ×1,5) × combo, con cansancio y «ya lo
+   * dominas» (menos dificultad de la que ya aprobaste en ese nivel). Aprobar un nivel sale en el desglose.
+   */
+  const apuntarXP = (bien, r, superadoAntes) => {
+    const vv = vidasRef.current
+    const extras = rapido ? [{ nombre: 'Notas en juego', xp: Math.max(0, partidaRef.current.notas.length - (vv?.inicio ?? partidaRef.current.notas.length)) }] : []
+    const factores = [{ nombre: 'Dificultad', f: XP.dificultad[dificultad - 1] ?? 1 }]
+    if (rapido) factores.push({ nombre: 'Modo Rápido', f: XP.rapido })
+    if (segundosPorNota) {
+      factores.push({ nombre: 'Contrarreloj', f: XP.contrarreloj })
+      if (reloj) factores.push({ nombre: 'Respuesta rápida', f: factorTiempo((performance.now() - reloj.desde) / Math.max(1, reloj.hasta - reloj.desde)) })
+    }
+    if (vv?.escalada) factores.push({ nombre: 'Escalada', f: XP.escalada })
+    else if (vv && !vv.infinitas) factores.push({ nombre: 'Con vidas', f: XP.vidas })
+    if (!rapido && superadoAntes > dificultad) factores.push({ nombre: 'Ya lo dominas', f: XP.dominado })
+    xp.apuntar({
+      bien,
+      clave: modo.id,
+      area: areaDeAcento(modo.acento),
+      base: XP.base.oido,
+      extras,
+      factores,
+      metaCumplida: r.metaCumplida,
+      racha: tiendaOido.rachaActual(),
+    })
+    // Aprobar un nivel (la XP fija ya lo cuenta: aquí solo sale en el desglose).
+    if (r.aprobado?.mejora) {
+      const d = r.aprobado.dificultad
+      const ganado = superadoAntes ? XP.dificultadEntrenador * (d - superadoAntes) : XP.nivelEntrenador + XP.dificultadEntrenador * (d - 1)
+      xp.logro(`Nivel ${r.aprobado.nivel} aprobado`, ganado, { area: areaDeAcento(modo.acento) })
+    }
   }
 
   // Contrarreloj: si se acaba el tiempo sin responder, cuenta como fallo.
@@ -390,12 +433,16 @@ function Entrenador({ modo }) {
             transition={{ ...RESORTE.pantalla, opacity: { duration: 0.2 } }}
             className="flex flex-col gap-5"
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
-                <Oreja className="size-[18px]" />
-                {modo.titulo}
-                {juego && ` · ${juego.nombre}`}
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-semibold" style={{ color: tinta(modo.acento) }}>
+                <Oreja className="size-[18px] shrink-0" />
+                <span className="truncate">
+                  {modo.titulo}
+                  {juego && ` · ${juego.nombre}`}
+                </span>
               </span>
+              <span className="ml-auto" />
+              <PildoraXP sesion={xp} acento={modo.acento} />
               {/* Indicador del nivel (sin el círculo: el avance va en la barra de arriba). */}
               <motion.span
                 key={nivelVisto}

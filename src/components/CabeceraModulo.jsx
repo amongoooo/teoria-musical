@@ -7,7 +7,7 @@ import { RESORTE } from '../ui/movimiento.js'
 import { BotonInicio } from '../ui/Volver.jsx'
 import { Atras } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
-import { rutas } from '../router.js'
+import { rutas, volverDeModulo } from '../router.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import BotonOpciones from './Opciones.jsx'
 import BarraCurso, { BarraBloques } from './BarraCurso.jsx'
@@ -79,6 +79,8 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
   return (
     <Fila
       chico={chico}
+      // Abierto desde Aprender › Módulos (pedido del usuario): la flechita ‹ vuelve ahí en lugar de la casita.
+      volver={ruta ? null : volverDeModulo()}
       titulo={modulo.titulo}
       barra={<BarraLecciones valores={valores} color={modulo.acento} aria-label={ruta ? `Ruta de ${modulo.titulo.toLowerCase()}: ${hechas} de ${total} paradas` : `${nombreModulo(modulo)}: ${hechas} de ${total} lecciones completadas`} />}
     />
@@ -92,7 +94,7 @@ function Fila({ chico, titulo, barra, volver = null }) {
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-4 sm:pt-6">
         <div className="pointer-events-auto shrink-0">
           {volver ? (
-            <Pulsable href={volver.href} aria-label={volver.etiqueta} data-volver-curso className={`grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}>
+            <Pulsable href={volver.href} aria-label={volver.etiqueta} data-volver-curso={volver.etiqueta === 'Volver al curso completo' || undefined} data-volver={volver.href} className={`grid size-11 shrink-0 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}>
               <Atras className="size-6" />
             </Pulsable>
           ) : (
