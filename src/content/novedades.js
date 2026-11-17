@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-ritmo-guia',
+    fecha: '17 nov 2026',
+    titulo: 'Ritmo: guía, pad de Eco y la respuesta',
+    cosas: [
+      {
+        texto: 'En **Seguir**, una **barra celeste** cruza el medidor en cada golpe: es donde caería tu dedo si tocaras ahora. Al dar **Continuar**, el patrón nuevo solo se enciende en las casillas (sin deslizar, salvo al subir de nivel).',
+        donde: { etiqueta: 'Abrir Seguir', href: '#/ritmo/seguir' },
+      },
+      {
+        texto: 'En **Eco**, un **pad de seguimiento** arriba del tuyo se ilumina con cada golpe: hace primero lo que tienes que copiar.',
+        donde: { etiqueta: 'Abrir Eco', href: '#/ritmo/eco' },
+      },
+      {
+        texto: 'La **bocina** se enciende al **terminar tu turno**: la app toca en tu pad la **respuesta correcta**.',
+      },
+    ],
+  },
+  {
     id: '2026-11-17-previas-azar',
     fecha: '17 nov 2026',
     titulo: 'Vistas previas más vivas',

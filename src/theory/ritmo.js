@@ -215,12 +215,13 @@ function generar(nivel, eco, anterior, tempo = 'normal') {
  *  - entrada: un compás de clic para entrar («1, 2, 3, 4»)
  *  - demo: el fondo y el patrón (con el tom)
  *  - toca: solo el fondo (el patrón lo pones tú)
+ *  - respuesta: lo mismo que demo, pero es la respuesta correcta que la app toca en el pad al repasar con la bocina
  *  - cierre: el primer golpe del fondo, para acabar en el 1
  */
 export function eventosCompas(tipo, ronda) {
   if (tipo === 'entrada') return CLIC
   if (tipo === 'cierre') return ronda.fondo.filter((e) => e.t === 0)
-  if (tipo === 'demo') {
+  if (tipo === 'demo' || tipo === 'respuesta') {
     return [...ronda.fondo, ...ronda.patron.map((c) => ({ nota: 'tom', t: c / ronda.porTiempo, velocity: 0.95, duracion: 0.2 }))]
   }
   return ronda.fondo
