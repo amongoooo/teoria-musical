@@ -5,6 +5,17 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-previas-piano',
+    fecha: '17 nov 2026',
+    titulo: 'El mismo piano en las vistas previas de Oído',
+    cosas: [
+      {
+        texto: '**Intervalos**, **Acordes**, **Funciones** y **Oído absoluto** muestran ahora el **mismo piano**, del mismo tamaño y en el mismo lugar. En Intervalos suenan las dos notas una tras otra; en Funciones, primero la casa (Do) y luego el acorde.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-previas',
     fecha: '17 nov 2026',
     titulo: 'Vistas previas con piano y ejemplos variados',

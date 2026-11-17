@@ -344,3 +344,13 @@ Pedido del usuario (con captura): «que en vez de aparecer los chords [en el rol
 - **‹ vuelve a Entrenar** (`rutas.practicar(tipo)`): arranque, juego y fin de partida de Oído y Ritmo, sus paneles (antes con casita), el panel de Vocabulario (antes al cuaderno) y el cuaderno de Letras (antes casita). El ‹ de una letra sigue yendo al cuaderno y el del entrenador de vocabulario a su panel.
 - **Pruebas** (Playwright, 375 px, claro y oscuro): las vistas previas cambian `data-vuelta` y se animan en cada vuelta (acordes y notas distintos, también teclas negras); Intervalos/Seguir/Vocabulario/Cuaderno → ‹ → `#/entrenar` (Oído), `#/entrenar/ritmo`, `#/entrenar/letras` con su tipo elegido. `npm run build` sin errores.
 
+## 2026-11-17 · El mismo piano en las vistas previas de Oído
+
+Pedido del usuario: «también lo quería para la parte de intervalos y, si se muestra, en funciones; además, mantener el mismo formato de piano entre las muestras».
+
+- **`MiniPiano`** siempre igual: 10 teclas blancas (Do a Mi de arriba), mismo alto y ancho; `suenan` acepta `{ st, de, hasta }` por tecla (notas una tras otra) o números (todas juntas). **`ConPiano`** = el formato común: piano a la izquierda y, a la derecha (42 %), lo que se responde.
+- **Intervalos**: suenan las dos notas seguidas (C→G 5.ª J, D→E 2.ª M, E→A 4.ª J, A→C 3.ª m, D→B 6.ª M, G→C 5.ª J bajando, C→C 8.ª J) y se elige entre dos nombres. Se quitó el mini roll (`Roll`).
+- **Funciones**: suena la casa (C, Do–Mi–Sol) y luego el acorde (G, F, Am, Dm, Em, B°); se elige **T · S · D** (tres botones más bajos, `Respuestas` con `titulo`).
+- **Oído absoluto**: mismo piano a la izquierda (notas de las dos octavas, blancas y negras); a la derecha la oreja que late y, al acertar, el nombre de la nota en verde.
+- **Pruebas** (Playwright, 375 px, claro y oscuro; con la 5.1 hecha para ver Funciones): los cuatro pianos miden lo mismo y están en el mismo lugar; las teclas se encienden y la respuesta se pone verde en cada vuelta. `npm run build` sin errores.
+

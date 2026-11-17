@@ -111,31 +111,18 @@ const cual = (lista, n) => lista[n % lista.length]
 // Escenas
 // ---------------------------------------------------------------------------
 
-/** Mini piano roll (4 filas) con notas: cada una { fila 0 = abajo, x, ancho en %, de }. */
-function Roll({ activo, acento, notas }) {
-  return (
-    <div className="relative h-full flex-1 overflow-hidden rounded-xl bg-white">
-      {[1, 2, 3].map((k) => (
-        <span key={k} className="absolute inset-x-0 h-px bg-zinc-200" style={{ top: `${k * 25}%` }} />
-      ))}
-      {notas.map((n, i) => (
-        <motion.span
-          key={i}
-          className="absolute h-[18%] rounded-md"
-          style={{ left: `${n.x}%`, width: `${n.ancho}%`, bottom: `${n.fila * 25 + 3.5}%`, backgroundColor: oscuro(acento), originX: 0 }}
-          {...fase(activo, n.de, 0.9, { pop: true, escala: 0.4 })}
-        />
-      ))}
-    </div>
-  )
-}
-
 /** Dos respuestas apiladas; la `bien` se toca en `en` y se pone verde. */
-function Respuestas({ activo, opciones, bien, en }) {
+function Respuestas({ activo, opciones, bien, en, titulo = false }) {
+  const tres = opciones.length > 2
   return (
-    <div className="flex w-[42%] shrink-0 flex-col justify-center gap-2">
+    <div className={`flex w-[42%] shrink-0 flex-col justify-center ${tres ? 'gap-1.5' : 'gap-2'}`}>
       {opciones.map((o, i) => (
-        <span key={o} className="relative grid h-11 place-items-center rounded-xl border-2 border-zinc-200 bg-white font-dato text-base font-medium text-zinc-800">
+        <span
+          key={o}
+          className={`relative grid place-items-center rounded-xl border-2 border-zinc-200 bg-white text-zinc-800 ${tres ? 'h-9' : 'h-11'} ${
+            titulo ? 'font-titulo text-lg font-extrabold' : 'font-dato text-base font-medium'
+          }`}
+        >
           {o}
           {i === bien && (
             <>
@@ -151,39 +138,52 @@ function Respuestas({ activo, opciones, bien, en }) {
   )
 }
 
-/** Intervalos: dos notas en el roll (la 2.ª más arriba o más abajo) y su nombre entre dos. */
+/** Intervalos: suenan dos notas, una tras otra, en el piano; se elige su distancia. Una distinta en cada vuelta. */
 const INTERVALOS = [
-  { notas: [0, 3], opciones: ['3.ª M', '5.ª J'], bien: 1 },
-  { notas: [0, 1], opciones: ['2.ª M', '6.ª m'], bien: 0 },
-  { notas: [3, 1], opciones: ['4.ª J', '3.ª m'], bien: 1 },
-  { notas: [0, 2], opciones: ['7.ª M', '4.ª J'], bien: 1 },
-  { notas: [3, 0], opciones: ['8.ª J', '2.ª m'], bien: 0 },
-  { notas: [1, 2], opciones: ['2.ª M', '5.ª J'], bien: 0 },
+  { notas: [0, 7], opciones: ['3.ª M', '5.ª J'], bien: 1 },
+  { notas: [2, 4], opciones: ['2.ª M', '6.ª m'], bien: 0 },
+  { notas: [4, 9], opciones: ['3.ª m', '4.ª J'], bien: 1 },
+  { notas: [9, 12], opciones: ['3.ª m', '7.ª M'], bien: 0 },
+  { notas: [2, 11], opciones: ['4.ª J', '6.ª M'], bien: 1 },
+  { notas: [7, 0], opciones: ['5.ª J', '2.ª m'], bien: 0 },
+  { notas: [0, 12], opciones: ['5.ª J', '8.ª J'], bien: 1 },
 ]
 
-function Intervalos({ activo, acento, n }) {
+function Intervalos({ activo, n }) {
   const v = cual(INTERVALOS, n)
   return (
-    <div className="flex h-full gap-3">
-      <Roll activo={activo} acento={acento} notas={[{ fila: v.notas[0], x: 8, ancho: 38, de: 0.05 }, { fila: v.notas[1], x: 54, ancho: 38, de: 0.22 }]} />
+    <ConPiano
+      activo={activo}
+      suenan={[
+        { st: v.notas[0], de: 0.06, hasta: 0.2 },
+        { st: v.notas[1], de: 0.24, hasta: 0.4 },
+      ]}
+    >
       <Respuestas activo={activo} opciones={v.opciones} bien={v.bien} en={0.48} />
-    </div>
+    </ConPiano>
   )
 }
 
 /**
- * Mini piano (una octava y algo; pedido del usuario: las previas de Acordes y Oído absoluto con piano). `blancas`
- * teclas blancas desde Do; `suenan` = semitonos (0 = Do) que se encienden en celeste; `tocada` = la tecla que toca el
- * dedo en `en` y se pone verde.
+ * Mini piano (pedido del usuario: las previas de Intervalos, Acordes, Funciones y Oído absoluto con el MISMO piano):
+ * siempre 10 teclas blancas desde Do (Do a Mi de la octava de arriba) y del mismo tamaño. `suenan` = semitonos (0 = Do)
+ * que se encienden en celeste, cada uno con `{ st, de, hasta }` o todos juntos (números, con `de` y `hasta`);
+ * `tocada` = la tecla que toca el dedo en `en` y se pone verde.
  */
 const BLANCAS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16]
 const NEGRAS = [1, 3, 6, 8, 10, 13, 15]
-function MiniPiano({ activo, blancas = 7, suenan = [], de = 0.06, hasta = 0.4, tocada = null, en = 0.56 }) {
+function MiniPiano({ activo, suenan = [], de = 0.06, hasta = 0.4, tocada = null, en = 0.56 }) {
+  const blancas = BLANCAS.length
   const ultima = BLANCAS[blancas - 1]
   const ancho = 100 / blancas
+  const luces = suenan.map((x) => (typeof x === 'number' ? { st: x, de, hasta } : x))
   const capas = (st, negra) => (
     <>
-      {suenan.includes(st) && <Suena activo={activo} de={de} hasta={hasta} redondo="rounded-b-md" />}
+      {luces
+        .filter((l) => l.st === st)
+        .map((l, k) => (
+          <Suena key={k} activo={activo} de={l.de} hasta={l.hasta} redondo="rounded-b-md" />
+        ))}
       {tocada === st && (
         <>
           <Acierto activo={activo} de={en + 0.04} redondo="rounded-b-md" chico={negra} />
@@ -218,6 +218,16 @@ function MiniPiano({ activo, blancas = 7, suenan = [], de = 0.06, hasta = 0.4, t
   )
 }
 
+/** El formato de las escenas con piano: el piano a la izquierda (siempre igual) y, a la derecha, lo que se responde. */
+function ConPiano({ activo, suenan, de, hasta, tocada, en, children }) {
+  return (
+    <div className="flex h-full gap-3">
+      <MiniPiano activo={activo} suenan={suenan} de={de} hasta={hasta} tocada={tocada} en={en} />
+      {children}
+    </div>
+  )
+}
+
 /** Acordes: suenan tres teclas a la vez y se elige mayor o menor. Un acorde distinto en cada vuelta. */
 const ACORDES = [
   { notas: [0, 4, 7], bien: 0 }, // C
@@ -233,74 +243,55 @@ const ACORDES = [
 function Acordes({ activo, n }) {
   const v = cual(ACORDES, n)
   return (
-    <div className="flex h-full gap-3">
-      <MiniPiano activo={activo} blancas={10} suenan={v.notas} de={0.08} hasta={0.42} />
+    <ConPiano activo={activo} suenan={v.notas} de={0.08} hasta={0.42}>
       <Respuestas activo={activo} opciones={['Mayor', 'Menor']} bien={v.bien} en={0.46} />
-    </div>
+    </ConPiano>
   )
 }
 
-/** Funciones: un acorde sube a su caja (T, S o D). Uno distinto en cada vuelta. */
+/** Funciones (en Do mayor): suena primero Do (la casa) y luego un acorde; se elige si es T, S o D. Uno por vuelta. */
 const FUNCIONES = [
-  { acorde: 'G', caja: 2 },
-  { acorde: 'F', caja: 1 },
-  { acorde: 'Am', caja: 0 },
-  { acorde: 'Dm', caja: 1 },
-  { acorde: 'C', caja: 0 },
-  { acorde: 'B°', caja: 2 },
+  { notas: [7, 11, 14], bien: 2 }, // G → D
+  { notas: [5, 9, 12], bien: 1 }, // F → S
+  { notas: [9, 12, 16], bien: 0 }, // Am → T
+  { notas: [2, 5, 9], bien: 1 }, // Dm → S
+  { notas: [4, 7, 11], bien: 0 }, // Em → T
+  { notas: [11, 14, 5], bien: 2 }, // B° → D
 ]
+const CASA = [0, 4, 7]
 
-function Funciones({ activo, acento, n }) {
-  const { acorde, caja } = cual(FUNCIONES, n)
-  const x = `${(caja - 1) * 108}%`
-  const mueve = activo
-    ? {
-        initial: { opacity: 0 },
-        animate: { opacity: [0, 0, 1, 1, 1, 0, 0], x: ['0%', '0%', '0%', '0%', x, x, '0%'], y: [0, 0, 0, 0, -58, -58, 0] },
-        transition: { duration: VUELTA, times: [0, 0.05, 0.1, 0.32, 0.46, 0.92, 1], repeat: Infinity, ease: 'easeInOut' },
-      }
-    : { initial: false, animate: { opacity: 1, x, y: -58 } }
+function Funciones({ activo, n }) {
+  const v = cual(FUNCIONES, n)
   return (
-    <div className="relative h-full">
-      <div className="grid grid-cols-3 gap-2">
-        {['T', 'S', 'D'].map((f, i) => (
-          <span
-            key={f}
-            className="relative grid h-12 place-items-center rounded-xl font-titulo text-2xl font-extrabold"
-            style={{ backgroundColor: `color-mix(in oklab, ${acento} ${[14, 26, 40][i]}%, var(--color-white))`, color: tinta(acento) }}
-          >
-            {f}
-          </span>
-        ))}
-      </div>
-      <motion.span
-        className="absolute bottom-0 left-[calc((100%-1rem)/3+0.5rem)] z-10 grid h-10 w-[calc((100%-1rem)/3)] place-items-center rounded-xl border-2 border-zinc-200 bg-white font-titulo text-xl font-bold text-zinc-900"
-        {...mueve}
-      >
-        {acorde}
-        <Acierto activo={activo} de={0.5} redondo="rounded-[0.6rem]">
-          {acorde}
-        </Acierto>
-        <Dedo activo={activo} en={0.3} className="left-1/2 top-1/2 -ml-3.5 -mt-3.5" />
-      </motion.span>
-    </div>
+    <ConPiano
+      activo={activo}
+      suenan={[...CASA.map((st) => ({ st, de: 0.04, hasta: 0.18 })), ...v.notas.map((st) => ({ st, de: 0.24, hasta: 0.42 }))]}
+    >
+      <Respuestas activo={activo} opciones={['T', 'S', 'D']} bien={v.bien} en={0.48} titulo />
+    </ConPiano>
   )
 }
 
-/** Oído absoluto: suena una nota (oreja que late) y se toca su tecla. Una nota distinta en cada vuelta. */
-const ABSOLUTO = [9, 2, 6, 11, 4, 1, 7, 10, 5, 3, 0, 8]
+/** Oído absoluto: suena una nota (oreja que late) y se toca su tecla; luego sale su nombre. Una nota por vuelta. */
+const ABSOLUTO = [9, 2, 6, 11, 4, 13, 7, 10, 16, 3, 0, 8, 14, 5, 1]
+const NOMBRES = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si']
 
 function Absoluto({ activo, acento, n }) {
+  const nota = cual(ABSOLUTO, n)
   const late = activo
     ? { animate: { scale: [1, 1, 1.18, 1, 1.18, 1, 1] }, transition: { duration: VUELTA, times: [0, 0.05, 0.12, 0.19, 0.26, 0.33, 1], repeat: Infinity } }
     : { animate: { scale: 1 } }
   return (
-    <div className="flex h-full items-center gap-3">
-      <motion.span className="grid size-16 shrink-0 place-items-center rounded-full text-blanco" style={{ backgroundColor: oscuro(acento) }} {...late}>
-        <Oreja className="size-9" />
-      </motion.span>
-      <MiniPiano activo={activo} blancas={7} tocada={cual(ABSOLUTO, n)} en={0.56} />
-    </div>
+    <ConPiano activo={activo} tocada={nota} en={0.5}>
+      <div className="flex w-[42%] shrink-0 flex-col items-center justify-center gap-2">
+        <motion.span className="grid size-14 place-items-center rounded-full text-blanco" style={{ backgroundColor: oscuro(acento) }} {...late}>
+          <Oreja className="size-8" />
+        </motion.span>
+        <motion.span className="font-titulo text-lg font-extrabold text-bien-tinta" {...fase(activo, 0.56, 0.9, { pop: true })}>
+          {NOMBRES[nota % 12]}
+        </motion.span>
+      </div>
+    </ConPiano>
   )
 }
 
