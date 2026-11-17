@@ -155,7 +155,7 @@ export const TRAMOS = {
       },
     ],
   },
-  // Módulo 5 (plan aprobado: https://claude.ai/artifact/HjTYcwyL4xszUxAwx2gJBL): crecerá con la 5.4.
+  // Módulo 5 (plan aprobado: https://claude.ai/artifact/HjTYcwyL4xszUxAwx2gJBL); la 5.4 abre el tramo «Progresiones».
   // La meta de Acordes pide SUPERAR el nivel 4 (el de la séptima de dominante, que se abre con la 5.2): nivel 5.
   funciones: {
     titulo: 'Funciones y cadencias',
@@ -165,6 +165,15 @@ export const TRAMOS = {
       { tipo: 'leccion', id: '5.2' },
       { tipo: 'meta', modo: 'acordes', nivel: 5, dificultad: 1, titulo: 'Acordes · con séptima', texto: 'Supera el nivel 4, en el que entra el acorde con séptima de dominante: el V7, de oído.' },
       { tipo: 'leccion', id: '5.3' },
+    ],
+  },
+  // Plan aprobado de la 5.4: https://claude.ai/artifact/5y8ppYbWa9MwyVdc2Bh31n. Crecerá con la 5.5, la 5.6 y la 5.7.
+  // La meta de Funciones pide llegar al nivel «Los 7 acordes» con la dificultad 2 (más tonalidades).
+  progresiones: {
+    titulo: 'Progresiones',
+    paradas: [
+      { tipo: 'leccion', id: '5.4' },
+      { tipo: 'meta', modo: 'funciones', nivel: 4, dificultad: 2, titulo: 'Funciones · nivel 4', texto: 'Llega al nivel en el que entran los 7 acordes (el iii y el vii°), ahora en más tonalidades.' },
     ],
   },
 }
@@ -209,10 +218,10 @@ export const RUTAS = {
     nombre: 'Acordes',
     titulo: 'Ruta de acordes',
     acento: 'var(--color-armonia)',
-    descripcion: 'Notas, intervalos y escalas, tríadas, acordes de la tonalidad, inversiones, voicings y funciones.',
+    descripcion: 'Notas, intervalos y escalas, tríadas, acordes de la tonalidad, inversiones, voicings, funciones y progresiones.',
     modulos: [1, 3, 4, 5],
     practica: 'oido',
-    tramos: ['notas-teclado', 'intervalos-escalas', 'triadas', 'acordes-tonalidad', 'funciones'],
+    tramos: ['notas-teclado', 'intervalos-escalas', 'triadas', 'acordes-tonalidad', 'funciones', 'progresiones'],
   },
 }
 
