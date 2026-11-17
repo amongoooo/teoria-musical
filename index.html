@@ -22,6 +22,9 @@
         // «Opaco» en Opciones o «Reducir transparencia» en el teléfono: el vidrio pasa a sólido.
         if (o.vidrio === 'opaco' || matchMedia('(prefers-reduced-transparency: reduce)').matches)
           document.documentElement.classList.add('opaco')
+        // «Alto» contraste en Opciones o «Aumentar contraste» del sistema.
+        if (o.contraste === 'alto' || matchMedia('(prefers-contrast: more)').matches)
+          document.documentElement.classList.add('contraste-alto')
         var t = o.tema
         var tel = matchMedia('(prefers-color-scheme: dark)').matches
         var osc = t === 'oscuro' || (t === 'sistema' && tel)

@@ -325,3 +325,12 @@ Pedido del usuario: «puedes abrir estas skills y decirme qué le podemos instal
 - **12 px**: los dos textos menores (menores y armaduras del círculo de quintas, `CirculoNodos.jsx`) pasan a 12.
 - **Pruebas** (Playwright, 375 px, claro y oscuro): con `contrast: 'more'` cambia `--color-zinc-500`; Tab deja un anillo de 3 px; simulando reducir transparencia, `<html>` lleva `opaco` y la barra de la lección no es translúcida; el círculo se ve bien con los textos a 12 px. `npm run build` sin errores.
 
+## 2026-11-17 · Opción «Contraste: Alto» en Configuración
+
+Pedido del usuario: «¿dónde está lo de reducir transparencia y aumentar contraste?» (son ajustes del sistema; en Android casi no llegan al navegador) y, tras ofrecer la opción, «va dale por favor».
+
+- **Opción** `contraste: 'normal' | 'alto'` en `teoria-musical:opciones:v1` (`CONTRASTES`, `setContraste`, `contrasteAlto()`, `aplicarContraste()` en `progress/opciones.js`; también al arrancar en `main.jsx` y antes de pintar en `index.html`). Con «Alto» o con `prefers-contrast: more`, clase `contraste-alto` en <html> (escucha si el sistema cambia).
+- **CSS** (`index.css`): el bloque `@media (prefers-contrast: more)` pasa a la clase: `html.contraste-alto.dark`, `html.contraste-alto:not(.dark)` y `.contraste-alto .tema-claro` con los grises más marcados; vidrio sólido con borde y sin reflejo.
+- **Configuración › Pantalla**: fila «Contraste» (Normal | Alto) bajo Vidrio, con su nota. La barra de la lección deja de ser translúcida con contraste alto.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): «Alto» cambia `--color-zinc-500` (#707279 → #50525a; oscuro #a0a1a7 → #c4c5c9), se guarda al recargar, la barra de la lección no es translúcida y «Normal» lo regresa. `npm run build` sin errores.
+

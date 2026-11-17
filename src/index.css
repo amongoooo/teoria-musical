@@ -378,32 +378,34 @@ html.cambiando-tema * {
   }
 }
 
-/* «Aumentar contraste» del teléfono: grises más marcados (bordes y textos secundarios) y vidrio sólido con borde. */
-@media (prefers-contrast: more) {
-  .dark {
-    --color-zinc-200: #6a6c74;
-    --color-zinc-300: #7d7f86;
-    --color-zinc-400: #a0a1a7;
-    --color-zinc-500: #c4c5c9;
-  }
-  :root:not(.dark),
-  .tema-claro {
-    --color-zinc-200: #a0a1a7;
-    --color-zinc-300: #8a8b91;
-    --color-zinc-400: #6a6c73;
-    --color-zinc-500: #50525a;
-  }
-  .vidrio {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: var(--color-white) !important;
-    border-color: var(--color-zinc-300) !important;
-  }
-  .vidrio.vidrio-color {
-    background-color: rgb(255 255 255 / 0.2) !important;
-    border-color: rgb(255 255 255 / 0.6) !important;
-  }
-  .vidrio-reflejo {
-    display: none;
-  }
+/*
+ * Más contraste (Opciones → Contraste → «Alto», o «Aumentar contraste» del sistema: clase `contraste-alto` en <html>,
+ * la ponen src/progress/opciones.js y el script de index.html): grises más marcados (bordes y textos secundarios)
+ * y vidrio sólido con borde.
+ */
+html.contraste-alto.dark {
+  --color-zinc-200: #6a6c74;
+  --color-zinc-300: #7d7f86;
+  --color-zinc-400: #a0a1a7;
+  --color-zinc-500: #c4c5c9;
+}
+html.contraste-alto:not(.dark),
+.contraste-alto .tema-claro {
+  --color-zinc-200: #a0a1a7;
+  --color-zinc-300: #8a8b91;
+  --color-zinc-400: #6a6c73;
+  --color-zinc-500: #50525a;
+}
+.contraste-alto .vidrio {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: var(--color-white) !important;
+  border-color: var(--color-zinc-300) !important;
+}
+.contraste-alto .vidrio.vidrio-color {
+  background-color: rgb(255 255 255 / 0.2) !important;
+  border-color: rgb(255 255 255 / 0.6) !important;
+}
+.contraste-alto .vidrio-reflejo {
+  display: none;
 }

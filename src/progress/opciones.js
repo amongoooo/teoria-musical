@@ -1,6 +1,6 @@
 // Opciones de la app (tema claro / oscuro y cómo se ve el vidrio), en localStorage.
 //
-// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema' | 'programa', programa: { claro: 420, oscuro: 1200 }, vidrio: 'desenfoque' | 'opaco', octavas: 'vista' | 'teclas', gesto: 'pagina' | 'invertido', admin: boolean }
+// Forma de los datos: { tema: 'claro' | 'oscuro' | 'sistema' | 'programa', programa: { claro: 420, oscuro: 1200 }, vidrio: 'desenfoque' | 'opaco', contraste: 'normal' | 'alto', octavas: 'vista' | 'teclas', gesto: 'pagina' | 'invertido', admin: boolean }
 // (programa: a qué hora del día empieza el modo claro y a cuál el oscuro, en minutos desde las 0:00, o null si no se ha
 //  puesto; cada punto manda desde su hora hasta la del otro. Sin ninguno, «Programar» se comporta como Automático)
 // (admin: modo administrador, se activa con PIN en Opciones: todas las lecciones abiertas y saltar entre pasos; ver admin.js)
@@ -12,11 +12,12 @@
 import { useSyncExternalStore } from 'react'
 
 const CLAVE = 'teoria-musical:opciones:v1'
-const PREDETERMINADAS = { tema: 'claro', programa: { claro: null, oscuro: null }, reloj: '24', vidrio: 'desenfoque', octavas: 'vista', gesto: 'pagina', admin: false }
+const PREDETERMINADAS = { tema: 'claro', programa: { claro: null, oscuro: null }, reloj: '24', vidrio: 'desenfoque', contraste: 'normal', octavas: 'vista', gesto: 'pagina', admin: false }
 export const TEMAS = ['claro', 'oscuro', 'sistema', 'programa']
 export const MINUTOS_DIA = 24 * 60
 export const RELOJES = ['24', '12'] // formato de las horas de «Programar»: 24 h o am/pm
 export const VIDRIOS = ['desenfoque', 'opaco']
+export const CONTRASTES = ['normal', 'alto']
 export const SENTIDOS_OCTAVAS = ['vista', 'teclas']
 export const GESTOS = ['pagina', 'invertido']
 const COLOR_BARRA = { claro: '#f4f4f5', oscuro: '#07080f' } // <meta name="theme-color">
@@ -33,6 +34,7 @@ function leer() {
     cache.programa = limpiarPrograma(cache.programa)
     if (!RELOJES.includes(cache.reloj)) cache.reloj = PREDETERMINADAS.reloj
     if (!VIDRIOS.includes(cache.vidrio)) cache.vidrio = PREDETERMINADAS.vidrio
+    if (!CONTRASTES.includes(cache.contraste)) cache.contraste = PREDETERMINADAS.contraste
     if (!SENTIDOS_OCTAVAS.includes(cache.octavas)) cache.octavas = PREDETERMINADAS.octavas
     if (!GESTOS.includes(cache.gesto)) cache.gesto = PREDETERMINADAS.gesto
     cache.admin = cache.admin === true
@@ -129,6 +131,23 @@ export function setVidrio(vidrio) {
   aplicarVidrio(vidrio)
 }
 
+// «Aumentar contraste» del sistema (iPhone, Mac). En Android casi nunca llega al navegador: por eso también es opción.
+const masContraste = () => typeof matchMedia === 'function' && matchMedia('(prefers-contrast: more)')
+
+/** ¿Más contraste? Con «Alto» en Opciones o si el sistema lo pide. */
+export const contrasteAlto = (contraste = leer().contraste) => contraste === 'alto' || Boolean(masContraste()?.matches)
+
+/** Pone o quita la clase `contraste-alto` en <html>: grises más marcados y vidrio sólido (reglas en src/index.css). */
+export function aplicarContraste(contraste = leer().contraste) {
+  document.documentElement.classList.toggle('contraste-alto', contrasteAlto(contraste))
+}
+
+export function setContraste(contraste) {
+  if (!CONTRASTES.includes(contraste)) return
+  escribir({ ...leer(), contraste })
+  aplicarContraste(contraste)
+}
+
 /** Sentido de la barra de octavas: 'vista' (a la derecha = más agudo) o 'teclas' (al revés: se arrastra el teclado). */
 export function setOctavas(octavas) {
   if (!SENTIDOS_OCTAVAS.includes(octavas)) return
@@ -149,6 +168,7 @@ export function setAdmin(admin) {
 // En «Automático», seguir al teléfono si cambia de modo con la app abierta.
 sistema()?.addEventListener?.('change', () => aplicarTema(leer().tema, { fundido: true }))
 menosTransparencia()?.addEventListener?.('change', () => aplicarVidrio())
+masContraste()?.addEventListener?.('change', () => aplicarContraste())
 
 // En «Programar», cambiar a la hora puesta aunque la app siga abierta (y al volver a ella).
 if (typeof window !== 'undefined') {

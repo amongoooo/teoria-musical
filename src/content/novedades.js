@@ -5,6 +5,17 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-contraste',
+    fecha: '17 nov 2026',
+    titulo: 'Contraste alto',
+    cosas: [
+      {
+        texto: 'En **Configuración › Pantalla** hay una opción nueva, **Contraste**: con **Alto**, los bordes y los textos grises se ven **más marcados** y las barras son **sólidas**.',
+        donde: { etiqueta: 'Abrir Configuración', href: '#/configuracion' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-accesibilidad',
     fecha: '17 nov 2026',
     titulo: 'La app sigue a tu teléfono',
