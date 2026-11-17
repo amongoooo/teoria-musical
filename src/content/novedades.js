@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-accesibilidad',
+    fecha: '17 nov 2026',
+    titulo: 'La app sigue a tu teléfono',
+    cosas: [
+      {
+        texto: 'Si en tu teléfono activas **Reducir transparencia**, el vidrio se vuelve **sólido** solo (como «Opaco»).',
+        donde: { etiqueta: 'Ver Opciones', href: '#/configuracion' },
+      },
+      {
+        texto: 'Con **Aumentar contraste**, los bordes y los textos grises se ven **más marcados**.',
+      },
+      {
+        texto: 'En la computadora, al moverte con **Tab** se ve un **anillo azul** en lo que vas a tocar. Y los textos chiquitos del **círculo de quintas** se leen mejor.',
+        donde: { etiqueta: 'Abrir el círculo', href: '#/circulo' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-entrenar',
     fecha: '17 nov 2026',
     titulo: 'Entrenar, con los ejercicios en grande',

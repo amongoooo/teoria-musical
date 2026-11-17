@@ -312,3 +312,16 @@ Pedido del usuario: «en el apartado de practicar (pasará a llamarse entrenar),
 - **Aprender › Curso** (`ContenidoCurso` de `pages/Curso.jsx`): fuera «Tus rutas» (`TarjetaRuta`); la tarjeta de avance lleva **`BarraBloques`** (`components/BarraCurso.jsx`: un segmento por bloque, ancho según sus pasos; hecho = verde, el de ahora = color del área del paso actual, los demás neutro; se llenan uno tras otro) y **una fila por bloque** (número en un cuadrito o ✓, título, mini barra y x/y; tocarla abre el bloque; `data-fila-bloque`) en lugar de las filas por área. La cabecera de `#/curso` también usa `BarraBloques`; la de cada bloque sigue apilada por áreas. Inicio (anillo por áreas) no cambia.
 - Pruebas: puestas al día `curso.mjs` (filas y barra por bloque, sin «Tus rutas»), `ritmo.mjs` y `letras.mjs` (entran por Entrenar), `acordes.mjs`, `melodia.mjs`, `ruta-letras.mjs` y `ruta-ritmo.mjs` (sin entradas a rutas). Pasan `curso`, `ritmo` (servidor de desarrollo), `letras` y `funciones`. Revisado a 375 px en claro y oscuro y con «reducir movimiento».
 
+## 2026-11-17 · Skills de diseño: apple-design instalada y arreglos de accesibilidad
+
+Pedido del usuario: «puedes abrir estas skills y decirme qué le podemos instalar al proyecto? son de diseño» (zip con apple-design, diseno-mawy y animaciones-mawy) y, tras la recomendación, «va dale».
+
+- **Revisión**: apple-design (principios de Apple: resortes, 1:1, interrumpible, inercia, goma, materiales, accesibilidad) encaja con la app; diseno-mawy es para landings y paneles y choca con decisiones aprobadas (vidrio solo arriba, 4 pestañas, botones tecla, 90 ms); animaciones-mawy es para reels de Instagram (Edge + ffmpeg en Windows): no se instala.
+- **Instalada** `.claude/skills/apple-design/SKILL.md`: solo los principios (§1–17 y la tabla rápida), sin las 14 reglas de restaurante ni las de video; descripción en español y nota de que la skill `diseno` manda si chocan.
+- **Skill `diseno`**: sección nueva **5b «Accesibilidad y revisión»** (lo que pide el teléfono, piso de 12 px, foco visible, títulos balanceados, matriz de estados, nada solo por color, textos sin frases de folleto, gestos con velocidad y proyección) y lo que no se toma de mawy; §6 con la prueba de contraste. Línea en `REGISTRO.md`.
+- **Reducir transparencia**: `vidrioOpaco()` en `progress/opciones.js` (Opaco o `prefers-reduced-transparency: reduce`) pone la clase `opaco` y escucha cambios; también el script de `index.html`; la barra de la lección usa `vidrioOpaco(material)`.
+- **Aumentar contraste**: `@media (prefers-contrast: more)` en `index.css`: `zinc-200…500` más marcados en claro, oscuro y `.tema-claro`, y vidrio sólido con borde.
+- **Foco visible** (`:focus-visible`, anillo azul de 3 px) y `text-wrap: balance` en `h1–h3` / `pretty` en `p`, en `@layer base` (las utilidades los pueden cambiar).
+- **12 px**: los dos textos menores (menores y armaduras del círculo de quintas, `CirculoNodos.jsx`) pasan a 12.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): con `contrast: 'more'` cambia `--color-zinc-500`; Tab deja un anillo de 3 px; simulando reducir transparencia, `<html>` lleva `opaco` y la barra de la lección no es translúcida; el círculo se ve bien con los textos a 12 px. `npm run build` sin errores.
+

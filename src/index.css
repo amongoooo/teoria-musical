@@ -356,3 +356,54 @@ html.cambiando-tema * {
   background-color: rgb(255 255 255 / 0.2) !important;
   border-color: rgb(255 255 255 / 0.5) !important;
 }
+
+/*
+ * Accesibilidad (skill apple-design §14 y skill de diseño, «Accesibilidad»).
+ * «Reducir transparencia» del teléfono ya pone la clase `opaco` (src/progress/opciones.js e index.html).
+ */
+@layer base {
+  /* Teclado en la computadora: anillo de foco visible (solo con teclado, no al tocar ni con el mouse). */
+  :focus-visible {
+    outline: 3px solid var(--color-azul);
+    outline-offset: 2px;
+  }
+  /* Títulos sin una palabra sola en la última línea; párrafos sin viudas. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* «Aumentar contraste» del teléfono: grises más marcados (bordes y textos secundarios) y vidrio sólido con borde. */
+@media (prefers-contrast: more) {
+  .dark {
+    --color-zinc-200: #6a6c74;
+    --color-zinc-300: #7d7f86;
+    --color-zinc-400: #a0a1a7;
+    --color-zinc-500: #c4c5c9;
+  }
+  :root:not(.dark),
+  .tema-claro {
+    --color-zinc-200: #a0a1a7;
+    --color-zinc-300: #8a8b91;
+    --color-zinc-400: #6a6c73;
+    --color-zinc-500: #50525a;
+  }
+  .vidrio {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: var(--color-white) !important;
+    border-color: var(--color-zinc-300) !important;
+  }
+  .vidrio.vidrio-color {
+    background-color: rgb(255 255 255 / 0.2) !important;
+    border-color: rgb(255 255 255 / 0.6) !important;
+  }
+  .vidrio-reflejo {
+    display: none;
+  }
+}
