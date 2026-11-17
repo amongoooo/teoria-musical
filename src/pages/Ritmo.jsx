@@ -44,6 +44,8 @@ export default function Ritmo({ modo: modoId }) {
       modos={MODOS_RITMO}
       ruta={rutas.ritmo}
       Icono={Metronomo}
+      volver={rutas.practicar('ritmo')}
+      etiquetaVolver="Volver a Entrenar"
     />
   )
 }
@@ -472,8 +474,8 @@ function Entrenador({ modo }) {
         titulo={modo.titulo}
         Icono={Metronomo}
         acento={`var(--color-dificultad-${dificultad})`}
-        volver={rutas.ritmo()}
-        etiquetaVolver="Volver al entrenamiento de ritmo"
+        volver={rutas.practicar('ritmo')}
+        etiquetaVolver="Volver a Entrenar"
         onOtra={() => setFin(null)}
       />
     )
@@ -482,8 +484,8 @@ function Entrenador({ modo }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <CabeceraEntrenador
-        volver={rutas.ritmo()}
-        etiquetaVolver="Volver al entrenamiento de ritmo"
+        volver={rutas.practicar('ritmo')}
+        etiquetaVolver="Volver a Entrenar"
         golpes={golpes}
         barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.aprobado), acento: `var(--color-dificultad-${dificultad})` }}
         vidas={vidasVista || null}

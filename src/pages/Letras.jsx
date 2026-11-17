@@ -57,7 +57,10 @@ function Cuaderno() {
   const abrir = (datos) => navegar(rutas.letras(nuevaLetra(datos)))
   return (
     <motion.main variants={lista} initial="oculta" animate="visible" className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-5 py-6 sm:py-10">
-      <BotonInicio />
+      {/* ‹ a Entrenar con Letras elegido (pedido del usuario: volver a la pestaña, no a la página vieja). */}
+      <Pulsable href={rutas.practicar('letras')} aria-label="Volver a Entrenar" className={`grid size-11 place-items-center rounded-full text-zinc-700 ${VIDRIO}`}>
+        <Atras className="size-6" />
+      </Pulsable>
       <motion.header variants={itemLista} className="flex flex-col gap-2">
         <h1 className="font-titulo text-4xl font-extrabold tracking-tight sm:text-5xl">Letras</h1>
         <p className="text-lg text-zinc-600">Pega una letra y mira cómo rima: sílabas, rimas y multis.</p>

@@ -5,6 +5,20 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-previas',
+    fecha: '17 nov 2026',
+    titulo: 'Vistas previas con piano y ejemplos variados',
+    cosas: [
+      {
+        texto: 'En **Entrenar**, la vista previa de **Acordes** ahora se ve en un **piano**, y cada vista previa enseña un **ejemplo distinto** en cada vuelta (otros acordes, otras notas, otros ritmos y palabras).',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: 'La **flechita ‹** de un entrenamiento (Intervalos, Ritmo, Vocabulario, el cuaderno…) ahora te regresa a **Entrenar** con su tipo elegido.',
+      },
+    ],
+  },
+  {
     id: '2026-11-17-contraste',
     fecha: '17 nov 2026',
     titulo: 'Contraste alto',

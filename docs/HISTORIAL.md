@@ -334,3 +334,13 @@ Pedido del usuario: «¿dónde está lo de reducir transparencia y aumentar cont
 - **Configuración › Pantalla**: fila «Contraste» (Normal | Alto) bajo Vidrio, con su nota. La barra de la lección deja de ser translúcida con contraste alto.
 - **Pruebas** (Playwright, 375 px, claro y oscuro): «Alto» cambia `--color-zinc-500` (#707279 → #50525a; oscuro #a0a1a7 → #c4c5c9), se guarda al recargar, la barra de la lección no es translúcida y «Normal» lo regresa. `npm run build` sin errores.
 
+## 2026-11-17 · Vistas previas con piano y ejemplos variados; ‹ vuelve a Entrenar
+
+Pedido del usuario (con captura): «que en vez de aparecer los chords [en el roll] aparezcan con el piano como en Oído absoluto; además, que haya ejemplos variados (en oído absoluto que no solo toque La)» y «al entrar a un entrenamiento y volver con la flechita, manda directo a la página vieja de entrenamiento de oído, en vez de a la pestaña de Entrenar con Oído seleccionado».
+
+- **`MiniPiano`** (`components/VistaPrevia.jsx`): teclas blancas desde Do (7 o 10) con sus negras; `suenan` se encienden en celeste y `tocada` recibe el dedo y el verde (en una negra, ✓ chico). Lo usan **Acordes** (tres teclas a la vez; C, Dm, F, Em, D, Cm, E, Am) y **Oído absoluto** (las 12 notas, blancas y negras).
+- **Un ejemplo por vuelta**: `VistaPrevia` cuenta las vueltas (`setInterval` de 4,2 s mientras se ve) y vuelve a montar la escena con `key`, así la animación arranca con el ejemplo nuevo. Listas por escena: `INTERVALOS`, `ACORDES`, `FUNCIONES` (G → D, F → S, Am → T…), `ABSOLUTO`, `SEGUIR`, `ECO`, `CUADERNOS` (ABAB, AABB, ABBA) y `VOCABULARIO` (palabras del vocabulario real).
+- **Arreglo**: al volver a montar una escena, motion no arrancaba sus animaciones (heredaba el `initial={false}` de la página y las variantes de la lista); la escena va dentro de `PresenceContext.Provider value={null}` y `MotionContext.Provider value={{}}`.
+- **‹ vuelve a Entrenar** (`rutas.practicar(tipo)`): arranque, juego y fin de partida de Oído y Ritmo, sus paneles (antes con casita), el panel de Vocabulario (antes al cuaderno) y el cuaderno de Letras (antes casita). El ‹ de una letra sigue yendo al cuaderno y el del entrenador de vocabulario a su panel.
+- **Pruebas** (Playwright, 375 px, claro y oscuro): las vistas previas cambian `data-vuelta` y se animan en cada vuelta (acordes y notas distintos, también teclas negras); Intervalos/Seguir/Vocabulario/Cuaderno → ‹ → `#/entrenar` (Oído), `#/entrenar/ritmo`, `#/entrenar/letras` con su tipo elegido. `npm run build` sin errores.
+

@@ -56,8 +56,8 @@ function Panel() {
       modos={MODOS_VOCAB}
       ruta={rutas.vocabulario}
       Icono={Pluma}
-      volver={rutas.letras()}
-      etiquetaVolver="Volver al cuaderno de letras"
+      volver={rutas.practicar('letras')}
+      etiquetaVolver="Volver a Entrenar"
       arriba={<RepasoDeHoy />}
     >
       <Temas />
