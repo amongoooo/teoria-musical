@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-previas-azar',
+    fecha: '17 nov 2026',
+    titulo: 'Vistas previas más vivas',
+    cosas: [
+      {
+        texto: 'En **Entrenar**, cada vista previa **responde a su propio ritmo** (ya no todas a la vez) y **a veces se equivoca**: lo que tocó sale en **oro** y la respuesta buena en **verde**, como cuando entrenas.',
+        donde: { etiqueta: 'Abrir Entrenar', href: '#/entrenar' },
+      },
+      {
+        texto: '**Ritmo** y **Letras** también cambian en cada vuelta: otros ritmos y tempos, golpes a destiempo u olvidados, más letras y palabras.',
+        donde: { etiqueta: 'Ver Ritmo', href: '#/entrenar/ritmo' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-previas-piano',
     fecha: '17 nov 2026',
     titulo: 'El mismo piano en las vistas previas de Oído',
