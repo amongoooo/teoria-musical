@@ -94,6 +94,8 @@ Séptimas y resolución (lección 5.2): `SEPTIMAS` (`dom7` = mayor + 7.ª menor,
 `nombreAcorde` → «Sol séptima», `acordeDeGrado('F4', 'V7')` → C7 (en menor, `{ menor: true }`, también mayor con 7.ª: E7 en La menor),
 `TRITONO` (6) y `resolucionV7('G3')` → `{ v7, tonica: 'C4', sensible: { desde: 'B3', hacia: 'C4' }, septima: { desde: 'F4', hacia: 'E4' }, acordes }`
 (`menor: true`: la 7.ª baja un tono; `acordes` = el V7 y el acorde al que llega, para el sonido).
+Cadencias (lección 5.3): `CADENCIAS` (`autentica`, `plagal`, `semi`, `rota`: `formula` «V → I», `nombre`, `corto`, `intensidad` del fondo de su caja),
+`ORDEN_CADENCIAS` y `cadenciaDe('V7', 'vi')` → 'rota' (los dos últimos grados de una frase; otra cosa → null).
 
 Notas en notación inglesa con octava (`C4` = Do central, `F#4`, `Bb3`). Golpes de batería:
 `'kick'` (bombo), `'snare'` (caja), `'hat'` (hi-hat), `'clap'` (palmas), `'click'` (metrónomo):
@@ -239,6 +241,8 @@ fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Pun
 {
   tipo: 'clasificar',
   cajas: ['T', 'S', 'D'],                  // ids de FUNCIONES (theory/acordes.js): fondo y letra de cada función
+                                           // o de CADENCIAS: ['autentica', 'plagal', 'semi', 'rota'] (5.3; rejilla 2 × 2)
+  ayuda: 'Toca un final y luego su caja',  // opcional: lo que dice la barra antes de empezar
   rondas: [
     {
       pregunta: 'Los 7 acordes de **Do mayor**',
@@ -250,7 +254,7 @@ fila dice si está bien (✓) o cuál era (bombilla) y muestra su `detalle`. Pun
 ```
 
 Las fichas salen abajo en orden al azar. Tocar una la elige (y suena); tocar una caja, o una ficha que ya está en ella, la
-manda ahí; sin ninguna elegida, tocar una ya puesta la devuelve. Con todas puestas, «Comprobar»: las bien en verde con ✓,
+manda ahí (con cadencias, la caja muestra la fórmula —V → I— y el nombre; `cadenciaDe('V7', 'I')` da la caja de una ficha); sin ninguna elegida, tocar una ya puesta la devuelve. Con todas puestas, «Comprobar»: las bien en verde con ✓,
 las mal pasan a su caja en oro con bombilla. Puntúa una ficha por acierto. 7 fichas caben a 375 px.
 
 ### `circulo`

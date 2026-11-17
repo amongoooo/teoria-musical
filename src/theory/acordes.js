@@ -205,3 +205,31 @@ export function resolucionV7(raiz, { menor = false } = {}) {
   const llegada = [Note.simplify(Note.transpose(f, '-5P')), Note.simplify(Note.transpose(q, '-2M')), sensible.hacia, septima.hacia]
   return { v7, tonica, tipoTonica: menor ? 'menor' : 'mayor', sensible, septima, acordes: [v7, llegada] }
 }
+
+// ——— Cadencias (lección 5.3): cómo termina una frase ———
+
+/**
+ * Las cuatro cadencias, de la más cerrada a la más abierta. `formula` = lo que se ve en grande (los dos últimos grados),
+ * `corto` = lo que se siente (la puntuación) e `intensidad` = cuánto color lleva su caja en Clasificar (más abierta =
+ * más intensa, como T → S → D).
+ */
+export const CADENCIAS = {
+  autentica: { id: 'autentica', formula: 'V → I', nombre: 'Auténtica', corto: 'Punto final', intensidad: 12 },
+  plagal: { id: 'plagal', formula: 'IV → I', nombre: 'Plagal', corto: 'Amén', intensidad: 18 },
+  rota: { id: 'rota', formula: 'V → vi', nombre: 'Rota', corto: 'Sorpresa', intensidad: 28 },
+  semi: { id: 'semi', formula: '… → V', nombre: 'Semicadencia', corto: 'Coma', intensidad: 40 },
+}
+export const ORDEN_CADENCIAS = ['autentica', 'plagal', 'semi', 'rota']
+
+/**
+ * La cadencia que forman los dos últimos grados de una frase: cadenciaDe('V7', 'I') → 'autentica',
+ * cadenciaDe('IV', 'I') → 'plagal', cadenciaDe('ii', 'V') → 'semi', cadenciaDe('V', 'vi') → 'rota'; otra cosa → null.
+ */
+export function cadenciaDe(penultimo, ultimo) {
+  const dominante = /^V7?$/.test(penultimo)
+  if (/^V7?$/.test(ultimo)) return 'semi'
+  if (ultimo === 'I' && dominante) return 'autentica'
+  if (ultimo === 'I' && /^iv$/i.test(penultimo)) return 'plagal'
+  if (ultimo === 'vi' && dominante) return 'rota'
+  return null
+}

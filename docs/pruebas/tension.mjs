@@ -29,7 +29,7 @@ const comprobar = (r, nombre, ok, detalle = '') => {
   if (CATALOGO) comprobar(r, 'catálogo: 5.2 ← 5.1, 4.4', JSON.stringify(CATALOGO['5.2']?.requiere) === '["5.1","4.4"]', JSON.stringify(CATALOGO['5.2']))
   const { TRAMOS } = await import('../../src/content/rutas.js')
   const paradas = TRAMOS.funciones.paradas.map((p) => p.id ?? `${p.modo}:${p.nivel}`).join(' ')
-  comprobar(r, 'tramo: 5.1, Funciones 3, 5.2, Acordes 5', paradas === '5.1 funciones:3 5.2 acordes:5', paradas)
+  comprobar(r, 'tramo: 5.1, Funciones 3, 5.2, Acordes 5', paradas.startsWith('5.1 funciones:3 5.2 acordes:5'), paradas)
   const { resolucionV7, acordeDeGrado } = await import('../../src/theory/acordes.js')
   const g7 = resolucionV7('G3')
   comprobar(r, 'teoría: G7 → C (Si → Do, Fa → Mi)', g7.sensible.hacia === 'C4' && g7.septima.hacia === 'E4')

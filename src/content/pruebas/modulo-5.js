@@ -5,7 +5,9 @@
 const VOZ = {
   I: ['C3', 'C4', 'E4', 'G4'],
   IV: ['F3', 'C4', 'F4', 'A4'],
+  ii: ['D3', 'D4', 'F4', 'A4'],
   V: ['G3', 'B3', 'D4', 'G4'],
+  V7: ['G3', 'B3', 'F4', 'G4'],
   vi: ['A3', 'C4', 'E4', 'A4'],
 }
 const dos = (a, b) => ({ notas: [a, b], modo: 'acorde', duracion: 1.4 })
@@ -53,6 +55,29 @@ export default {
       correcta: 0,
       mezclar: true,
       explicacion: '**Si–Fa**: 6 semitonos, el intervalo más inestable. Do–Sol y Do–Fa suenan estables.',
+    },
+  ],
+  '5.3': [
+    {
+      pregunta: '¿Qué **cadencia** cierra la frase?',
+      sonidos: [frase(['I', 'IV', 'V7', 'vi'])],
+      opciones: ['Auténtica', 'Plagal', 'Semicadencia', 'Rota'],
+      ordenFijo: true,
+      correcta: 3,
+      explicacion: '**C – F – G7 – Am**: el V7 prometía C y llegó Am, el vi. Cadencia **rota**.',
+    },
+    {
+      pregunta: '¿Cuál termina en **semicadencia**?',
+      sonidos: [frase(['I', 'vi', 'ii', 'V']), frase(['I', 'vi', 'V', 'I']), frase(['I', 'vi', 'IV', 'I'])],
+      correcta: 0,
+      mezclar: true,
+      explicacion: '**C – Am – Dm – G**: se queda en el V, como una coma. Las otras llegan a casa (auténtica y plagal).',
+    },
+    {
+      pregunta: 'En **Fa mayor**, ¿cuál es la cadencia **plagal**?',
+      opciones: ['B♭ → F', 'C7 → F', 'C7 → Dm', 'Gm → C'],
+      correcta: 0,
+      explicacion: 'El IV de Fa es **B♭**: B♭ → F es plagal. C7 → F es auténtica, C7 → Dm rota y Gm → C, semicadencia.',
     },
   ],
 }
