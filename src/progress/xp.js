@@ -51,15 +51,21 @@ export const XP = {
   dia: { meta: 30, racha: 5, rachaMax: 50, tres: 50 },
 }
 
-/** Títulos del jugador: cada 5 niveles uno nuevo. */
+/**
+ * Títulos del jugador (pedido del usuario: «una leyenda no llega en el nivel 30»): cada uno más lejos que el anterior
+ * (4, 5, 8, 10, 14, 18 y 25 niveles de distancia) y cada nivel cuesta más. Con unos 200 XP al día: Músico de cuarto en
+ * una semana, Beatmaker en un mes, Productor en unos 3 meses, Compositor en 7, Maestro en más de un año, Virtuoso en
+ * unos 2 años y medio y Leyenda en unos 5.
+ */
 export const TITULOS = [
   { desde: 1, nombre: 'Aprendiz' },
   { desde: 5, nombre: 'Músico de cuarto' },
   { desde: 10, nombre: 'Beatmaker' },
-  { desde: 15, nombre: 'Productor' },
-  { desde: 20, nombre: 'Compositor' },
-  { desde: 25, nombre: 'Maestro' },
-  { desde: 30, nombre: 'Leyenda' },
+  { desde: 18, nombre: 'Productor' },
+  { desde: 28, nombre: 'Compositor' },
+  { desde: 42, nombre: 'Maestro' },
+  { desde: 60, nombre: 'Virtuoso' },
+  { desde: 85, nombre: 'Leyenda' },
 ]
 
 export const tituloDe = (nivel) => [...TITULOS].reverse().find((t) => nivel >= t.desde) ?? TITULOS[0]

@@ -266,7 +266,7 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
             <motion.section key={b.clave} variants={itemLista} layout="position" className="flex flex-col gap-3">
               <Titulo id={`bloque-${b.clave}`}>{b.titulo}</Titulo>
               <div role="radiogroup" aria-labelledby={`bloque-${b.clave}`} className="grid gap-2" style={{ gridTemplateColumns: `repeat(${b.opciones.length}, minmax(0, 1fr))` }}>
-                {b.opciones.map(({ id, nombre }) => {
+                {b.opciones.map(({ id, nombre, nota }) => {
                   const Dibujo = DIBUJOS_BLOQUE[`${b.clave}:${id}`]
                   return (
                     <Bloque
@@ -280,6 +280,12 @@ export default function ArranqueOido({ modo, datos, tienda = tiendaOido, Icono =
                     >
                       {Dibujo && <Dibujo className="h-11 w-18" />}
                       <span className="font-juego text-base font-semibold leading-tight tracking-tight">{nombre}</span>
+                      {nota && (
+                        <span data-nota-bloque className={`inline-flex items-center gap-1 px-1 text-center text-sm font-semibold leading-tight ${elegido === id ? 'text-blanco/90' : 'text-zinc-500'}`}>
+                          <Candado className="size-3.5 shrink-0" />
+                          {nota}
+                        </span>
+                      )}
                     </Bloque>
                   )
                 })}

@@ -27,7 +27,7 @@ import {
   tempoDe,
 } from '../theory/ritmo.js'
 import { tinta } from '../ui/color.js'
-import { Metronomo, Oreja } from '../ui/Iconos.jsx'
+import { Candado, Metronomo, Oreja } from '../ui/Iconos.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import { BarraAccion } from './Leccion.jsx'
@@ -419,6 +419,8 @@ function Entrenador({ modo }) {
   const k = reloj?.k ?? -1
   const tipo = sonando ? (k < 0 ? 'entrada' : tiposRef.current[k]) : null
   const repaso = Boolean(planRef.current?.repaso)
+  // Tempo lento: práctica (cuenta para el día, no para el nivel).
+  const lento = jugando && ronda?.tempo === 'lento'
 
   // Estado de cada golpe, con los toques que hay: antes de evaluar, lo que aún no pasa queda pendiente.
   let porCompas = []
@@ -499,6 +501,8 @@ function Entrenador({ modo }) {
     const exp = explicar(ev)
     let texto = exp.texto
     texto += textoAprobado(modo, resultado)
+    // Tempo lento (pedido del usuario: que se vea que no sube de nivel): es práctica.
+    if (lento) texto += ' **Tempo lento: es práctica, no sube de nivel.**'
     if (resultado?.metaCumplida) texto += ' **¡Cumpliste tus 5 minutos de hoy!**'
     if (resultado?.vidas?.despues > resultado?.vidas?.antes) texto += ' **¡+1 vida!**'
     if (fin) texto += ' **¡Se acabaron las vidas!**'
@@ -551,7 +555,8 @@ function Entrenador({ modo }) {
         volver={rutas.practicar('ritmo')}
         etiquetaVolver="Volver a Entrenar"
         golpes={golpes}
-        barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.aprobado), acento: `var(--color-dificultad-${dificultad})` }}
+        // En tempo lento la barra de aciertos va en gris: no se llena (no sube de nivel).
+        barra={{ clave: `${modo.id}-${jugando}`, avance, lleno: Boolean(resultado?.aprobado), acento: lento ? 'var(--color-zinc-400)' : `var(--color-dificultad-${dificultad})` }}
         vidas={vidasVista || null}
         // La bocina solo se habilita con tu turno terminado (pedido del usuario): entonces toca la respuesta correcta.
         bocina={jugando ? { onClick: escuchar, disabled: !ronda || fase !== 'evaluada', sonando: repaso && Boolean(sonando) } : null}
@@ -586,9 +591,13 @@ function Entrenador({ modo }) {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={RESORTE.pulsar}
                 data-nivel={nivelVisto}
-                className="font-juego text-lg font-semibold tracking-wide"
-                style={{ color: tinta(modo.acento) }}
+                data-sin-nivel={lento || undefined}
+                aria-label={lento ? `Nivel ${nivelVisto}: en tempo lento no sube` : undefined}
+                className={`inline-flex shrink-0 items-center gap-1 font-juego text-lg font-semibold tracking-wide ${lento ? 'text-zinc-500' : ''}`}
+                style={lento ? undefined : { color: tinta(modo.acento) }}
               >
+                {/* Tempo lento: el nivel en gris con candado (no sube). */}
+                {lento && <Candado className="size-4" />}
                 Nivel {nivelVisto}
               </motion.span>
             </div>

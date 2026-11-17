@@ -366,7 +366,8 @@ const comun = {
       titulo: 'Tempo',
       defecto: 'normal',
       opciones: [
-        { id: 'lento', nombre: 'Lento' },
+        // `nota`: lo que sale debajo del nombre (pedido del usuario: que se vea que en lento no se sube de nivel).
+        { id: 'lento', nombre: 'Lento', nota: 'No sube de nivel' },
         { id: 'normal', nombre: 'Normal' },
         { id: 'rapido', nombre: 'Rápido' },
       ],

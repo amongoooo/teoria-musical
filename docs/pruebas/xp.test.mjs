@@ -28,13 +28,23 @@ prueba('curva: 200 + 100 × (n − 1)', () => {
   assert.equal(m.paraSiguiente, 300)
 })
 
-prueba('títulos cada 5 niveles', () => {
+prueba('títulos cada vez más lejos (Leyenda en el 85)', () => {
   assert.equal(tituloDe(1).nombre, 'Aprendiz')
   assert.equal(tituloDe(4).nombre, 'Aprendiz')
   assert.equal(tituloDe(5).nombre, 'Músico de cuarto')
   assert.equal(tituloDe(12).nombre, 'Beatmaker')
-  assert.equal(tituloDe(40).nombre, 'Leyenda')
+  assert.equal(tituloDe(30).nombre, 'Compositor')
+  assert.equal(tituloDe(84).nombre, 'Virtuoso')
+  assert.equal(tituloDe(85).nombre, 'Leyenda')
   assert.equal(nivelDeXP(0).siguienteTitulo.desde, 5)
+  // Los huecos entre títulos crecen.
+  const huecos = xp.TITULOS.slice(1).map((t, i) => t.desde - xp.TITULOS[i].desde)
+  for (let i = 1; i < huecos.length; i++) assert.ok(huecos[i] > huecos[i - 1], `hueco ${i}`)
+  // Leyenda: más de 350 000 XP (años de práctica diaria).
+  let total = 0
+  for (let n = 1; n < 85; n++) total += costoNivel(n)
+  assert.ok(total > 350000, String(total))
+  assert.equal(nivelDeXP(total).titulo, 'Leyenda')
 })
 
 prueba('multiplicadores: Rápido, dificultad 3, vidas y combo ≈ 13', () => {
