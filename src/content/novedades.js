@@ -5,6 +5,21 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-17-lento-titulos',
+    fecha: '17 nov 2026',
+    titulo: 'Tempo lento y títulos más lejanos',
+    cosas: [
+      {
+        texto: 'En **Ritmo**, el tempo **Lento** ahora dice que **no sube de nivel**: el nivel sale en gris con candado y la barra no se llena. Es para practicar sin prisa.',
+        donde: { etiqueta: 'Abrir Seguir', href: '#/ritmo/seguir' },
+      },
+      {
+        texto: 'Los **títulos** quedan cada vez más lejos: **Productor** en el nivel 18, **Compositor** en el 28, **Maestro** en el 42, **Virtuoso** en el 60 y **Leyenda** en el **85**.',
+        donde: { etiqueta: 'Ir a Inicio', href: '#/' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-experiencia',
     fecha: '17 nov 2026',
     titulo: 'Experiencia y niveles de jugador',

@@ -76,7 +76,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.waitForSelector('[data-panel-nivel]')
   await espera(600)
   comprobar(r, 'hojaAreas', (await page.locator('[data-xp-area="melodia"]').count()) === 1 && (await page.locator('[data-xp-area="general"]').count()) === 1)
-  comprobar(r, 'hojaTitulos', (await page.locator('[data-titulo]').count()) === 7 && (await page.getAttribute('[data-titulo="Aprendiz"]', 'data-actual')) === 'true')
+  comprobar(r, 'hojaTitulos', (await page.locator("[data-titulo]").count()) === 8 && (await page.getAttribute('[data-titulo="Aprendiz"]', 'data-actual')) === 'true')
   await foto('2-hoja-nivel')
   await page.keyboard.press('Escape')
   await espera(400)
@@ -145,6 +145,29 @@ for (const tema of ['claro', 'oscuro']) {
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
   await espera(300)
   await foto('7-fin-partida')
+
+  // Ritmo en tempo lento: el bloque dice que no sube de nivel; jugando, «Nivel N» gris con candado y el aviso al evaluar.
+  await page.goto(BASE + '#/') // (venimos del fin de la partida en esta misma ruta)
+  await page.waitForSelector('[data-insignia-nivel]')
+  await espera(900) // que termine de salir la pantalla anterior (si no, vuelve la misma, con su estado)
+  await page.goto(BASE + '#/ritmo/seguir')
+  await page.locator('[data-boton-configurar]').first().click() // abre Configurar
+  const lento = page.locator('[data-bloque="tempo:lento"]')
+  await lento.waitFor()
+  await lento.scrollIntoViewIfNeeded()
+  await lento.click()
+  await espera(500)
+  comprobar(r, 'bloqueLento', /No sube de nivel/.test(await lento.innerText()))
+  await foto('9-lento-arranque')
+  await page.locator('[data-barra-accion] button', { hasText: 'Empezar' }).first().click()
+  await page.waitForFunction(() => window.__ritmo?.ronda?.n >= 1)
+  await page.waitForSelector('[data-sin-nivel]')
+  comprobar(r, 'nivelGrisLento', true)
+  await tocar(page, [1, 2], [0.01, -0.01])
+  await page.waitForSelector('[data-fase="evaluada"]', { timeout: 30000 })
+  await espera(500)
+  comprobar(r, 'avisoLento', /no sube de nivel/.test(await page.locator('[data-barra-accion]').innerText()))
+  await foto('10-lento-jugando')
 
   // Módulos: desde Aprender › Módulos, flechita ‹ que vuelve ahí; abierto directo, la casita.
   await page.goto(BASE + '#/aprender/modulos')
