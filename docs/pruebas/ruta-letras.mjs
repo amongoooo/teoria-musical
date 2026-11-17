@@ -192,9 +192,9 @@ for (const tema of ['claro', 'oscuro']) {
   comprobar(r, 'flow: acentos en el pulso = acierto', (await page.getAttribute('[data-paso-flow]', 'data-resultado')) === 'bien')
   await foto('flow-bien')
 
-  // 7) El cuaderno lleva a la ruta.
+  // 7) El cuaderno ya no lleva a la ruta (pedido del usuario, 2026-11-17).
   await preparar({ ruta: '#/letras' })
-  comprobar(r, 'cuaderno: entrada a la ruta 0/10', (await page.textContent('[data-entrada-ruta="letras"]')).includes('0/10'))
+  comprobar(r, 'cuaderno: sin entrada a la ruta', (await page.locator('[data-entrada-ruta]').count()) === 0)
   await foto('cuaderno', true)
 
   comprobar(r, 'sin errores en la consola', errores.length === 0, errores.join(' | '))

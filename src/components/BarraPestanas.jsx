@@ -11,7 +11,7 @@ import { MATRACA, flotar, gradosMatraca } from './CaminoLecciones.jsx'
  * BARRA DE PESTAÑAS (fase 3 del rediseño, hecha a partir de la barra de puntitos; cambio pedido por el usuario:
  * «mejor que sí sean íconos y al seleccionarlos se despliega su texto y su botón se hace más grande»).
  * La misma píldora de vidrio que la barra de puntitos, abajo y en el mismo sitio, con 5 pestañas de izquierda a
- * derecha: Herramientas (lápiz) · Practicar (pesas) · Inicio (casita) · Aprender (libro) · Configuración (engrane).
+ * derecha: Herramientas (lápiz) · Entrenar (pesas) · Inicio (casita) · Aprender (libro) · Configuración (engrane).
  *  - Las demás: solo su ícono en un círculo de 44 px, en gris.
  *  - La elegida CRECE (más alta y ancha), despliega su NOMBRE junto al ícono y lleva detrás la MARCA (píldora de
  *    superficie que pasa de una a otra con resorte: `layoutId`).
@@ -25,16 +25,18 @@ import { MATRACA, flotar, gradosMatraca } from './CaminoLecciones.jsx'
  */
 export const PESTANAS = [
   { id: 'herramientas', nombre: 'Herramientas', Icono: Lapiz },
-  { id: 'practicar', nombre: 'Practicar', Icono: Pesas },
+  { id: 'practicar', nombre: 'Entrenar', Icono: Pesas },
   { id: 'inicio', nombre: 'Inicio', Icono: Inicio },
   { id: 'aprender', nombre: 'Aprender', Icono: Libro },
   { id: 'configuracion', nombre: 'Configuración', Icono: Opciones },
 ]
 export const indicePestana = (pagina) => PESTANAS.findIndex((p) => p.id === pagina)
 
-/** Aprender recuerda su última vista (Rutas o Biblioteca) mientras la app esté abierta. */
+/** Aprender y Entrenar recuerdan su última vista (Curso | Rutas | Módulos; Oído | Ritmo | Letras) mientras la app esté abierta. */
 let vistaAprender = null
-const enlace = (id) => (id === 'inicio' ? rutas.inicio() : id === 'aprender' ? rutas.aprender(vistaAprender) : `#/${id}`)
+let vistaEntrenar = null
+const enlace = (id) =>
+  id === 'inicio' ? rutas.inicio() : id === 'aprender' ? rutas.aprender(vistaAprender) : id === 'practicar' ? rutas.practicar(vistaEntrenar) : `#/${id}`
 
 /** Cuánto se corre la marca hacia el dedo (imán) y hasta dónde. */
 const IMAN = 0.35
@@ -44,6 +46,7 @@ export default function BarraPestanas({ ruta }) {
   const reducir = useReducedMotion()
   const indiceRuta = indicePestana(ruta.pagina)
   if (ruta.pagina === 'aprender') vistaAprender = ruta.id
+  if (ruta.pagina === 'practicar') vistaEntrenar = ruta.id
   const [foco, setFoco] = useState(indiceRuta)
   const focoRef = useRef(foco)
   const arrastre = useRef(null)

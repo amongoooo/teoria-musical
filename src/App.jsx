@@ -40,7 +40,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'prueba') return <Prueba id={ruta.id} />
   if (ruta.pagina === 'importar') return <Importar codigo={ruta.id} />
   if (ruta.pagina === 'aprender') return <Aprender vista={ruta.id} />
-  if (ruta.pagina === 'practicar') return <Practicar />
+  if (ruta.pagina === 'practicar') return <Practicar vista={ruta.id} />
   if (ruta.pagina === 'herramientas') return <Herramientas />
   if (ruta.pagina === 'configuracion') return <Configuracion />
   return <Inicio />
@@ -84,7 +84,7 @@ export default function App() {
   }, [ruta.pagina, enPractica])
   const metaCumplida = guia?.cumplida && enPractica
   // Rutas | Biblioteca son la misma página (el selector se desliza): sin transición de pantalla entre ellas.
-  const clave = metaCumplida ? 'meta-cumplida' : ruta.pagina === 'aprender' ? 'aprender' : `${ruta.pagina}:${ruta.id ?? ''}${ruta.reto ? ':reto' : ''}`
+  const clave = metaCumplida ? 'meta-cumplida' : ruta.pagina === 'aprender' || ruta.pagina === 'practicar' ? ruta.pagina : `${ruta.pagina}:${ruta.id ?? ''}${ruta.reto ? ':reto' : ''}`
 
   // Dirección: 1 = avanzar (entra por la derecha), -1 = volver.
   // Entre módulos (swipe de página o pestaña de Módulos): el siguiente entra por la derecha y el anterior por la izquierda.

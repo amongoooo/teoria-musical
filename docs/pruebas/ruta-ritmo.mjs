@@ -142,11 +142,10 @@ for (const [tema, reducir] of [['claro', false], ['oscuro', false], ['claro', tr
   await espera(1000)
   comprobar(r, 'lineal: «Seguir · nivel 5» bloqueada', (await page.getByRole('group', { name: 'Seguir · nivel 5' }).textContent()).includes('Antes: Eco · nivel 3'))
 
-  // 5) El panel de ritmo lleva a la ruta.
+  // 5) El panel de ritmo ya no lleva a la ruta (pedido del usuario, 2026-11-17).
   await page.goto(BASE + '#/ritmo')
   await espera(900)
-  await page.locator('[data-entrada-ruta="ritmo"]').scrollIntoViewIfNeeded()
-  comprobar(r, 'panel de ritmo: entrada a la ruta 3/10', (await page.textContent('[data-entrada-ruta="ritmo"]')).includes('3/10'))
+  comprobar(r, 'panel de ritmo: sin entrada a la ruta', (await page.locator('[data-entrada-ruta]').count()) === 0)
 
   // 6) Flow con candado sin la 2.4.
   await preparar({ ruta: '#/letras' })

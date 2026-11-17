@@ -26,7 +26,6 @@ import {
 } from '../theory/ritmo.js'
 import { tinta } from '../ui/color.js'
 import { Metronomo, Oreja } from '../ui/Iconos.jsx'
-import EntradaRuta from '../components/EntradaRuta.jsx'
 import Pulsable from '../ui/Pulsable.jsx'
 import { RESORTE } from '../ui/movimiento.js'
 import { BarraAccion } from './Leccion.jsx'
@@ -45,7 +44,6 @@ export default function Ritmo({ modo: modoId }) {
       modos={MODOS_RITMO}
       ruta={rutas.ritmo}
       Icono={Metronomo}
-      despues={<EntradaRuta id="ritmo" />}
     />
   )
 }

@@ -1,12 +1,11 @@
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import BarraCurso from '../components/BarraCurso.jsx'
+import { BarraBloques } from '../components/BarraCurso.jsx'
 import CaminoLecciones from '../components/CaminoLecciones.jsx'
 import useCambioModulo from '../components/CambioModulo.jsx'
-import { Cuadrito } from '../components/NavegadorModulos.jsx'
-import { ACENTO_CURSO, ICONO_AREA, accionPaso, moduloDeBloque, rutaDeBloque, useCurso } from '../components/cursoModulo.js'
-import { useCarruselModulos, useModulosYPracticas, useRuta } from '../components/rutaModulo.js'
-import { AREAS, ORDEN_AREAS, etapaDeBloque, getBloque } from '../content/curso.js'
+import { ACENTO_CURSO, accionPaso, moduloDeBloque, rutaDeBloque, useCurso } from '../components/cursoModulo.js'
+import { useCarruselModulos, useModulosYPracticas } from '../components/rutaModulo.js'
+import { AREAS, etapaDeBloque, getBloque } from '../content/curso.js'
 import { codigoLeccion } from '../content/index.js'
 import { navegar, rutas } from '../router.js'
 import BarraProgreso from '../ui/BarraProgreso.jsx'
@@ -20,16 +19,14 @@ import useTemblor from '../ui/useTemblor.js'
 
 /** Relieve sólido bajo tarjetas (como el labio de las islas). */
 const RELIEVE = '0 5px 0 var(--color-zinc-200)'
-/** Rutas en «Tus rutas» (en el orden de las áreas del curso). */
-const RUTAS_CURSO = ['melodia', 'acordes', 'ritmo', 'letras']
 
 /**
  * CURSO COMPLETO (#/curso; maqueta: https://claude.ai/artifact/7pwg9QVpih3UueHpwWQooH, cambios aprobados:
  * https://claude.ai/artifact/K9mUUjKNofxBuLNV2QsoEZ; etapas: https://claude.ai/artifact/JT5CGCcMc457BZF8XTYe8L): las
- * rutas a la par, en bloques agrupados en ETAPAS. De arriba abajo: título y tarjeta de avance (%, barra apilada y una
- * fila por área), «Sigue aquí» (el siguiente paso, del color de su ruta), «Tu camino» (escalera de las 5 etapas y
- * carrusel de bloques con el nombre de la etapa encima) y «Tus rutas». La cabecera fija (casita · barra del curso en
- * los colores de las áreas · engrane) vive en App.jsx, como la de los módulos.
+ * rutas a la par, en bloques agrupados en ETAPAS. De arriba abajo: título y tarjeta de avance (%, barra por bloques y
+ * una fila por bloque), «Sigue aquí» (el siguiente paso, del color de su área) y «Tu camino» (escalera de las 5 etapas
+ * y carrusel de bloques con el nombre de la etapa encima). Sin «Tus rutas» (pedido del usuario, 2026-11-17). La
+ * cabecera fija (casita · barra del curso por bloques · engrane) vive en App.jsx, como la de los módulos.
  * Con `bloque` (#/curso/bloque/2), ese bloque abierto como CAMINO DE ISLAS, igual que una ruta.
  */
 export default function Curso({ bloque = null }) {
@@ -116,7 +113,7 @@ function Resumen() {
 }
 
 /**
- * Lo de la página del curso (avance, «Sigue aquí», «Tu camino» y «Tus rutas»), sin su `main`: lo usan #/curso y la
+ * Lo de la página del curso (avance, «Sigue aquí» y «Tu camino»), sin su `main`: lo usan #/curso y la
  * pestaña Aprender › Curso (pedido del usuario: «muestra la página de curso completo directamente»). Cada sección es
  * un `itemLista`: el `main` de quien lo pone hace la entrada escalonada.
  */
@@ -147,15 +144,6 @@ export function ContenidoCurso() {
         <EscaleraEtapas estado={estado} onBloque={(n) => irBloque.current?.(n)} />
         <CarruselBloques curso={curso} irBloque={irBloque} />
       </motion.section>
-
-      <motion.section variants={itemLista} className="flex flex-col gap-3">
-        <Titulo>Tus rutas</Titulo>
-        <div className="flex flex-col gap-3">
-          {RUTAS_CURSO.map((id) => (
-            <TarjetaRuta key={id} id={id} />
-          ))}
-        </div>
-      </motion.section>
     </>
   )
 }
@@ -164,7 +152,11 @@ function Titulo({ children }) {
   return <h2 className="text-center font-juego text-2xl font-semibold uppercase tracking-wide text-zinc-800">{children}</h2>
 }
 
-/** % grande, «x de 40», la barra apilada y una fila por área (cuadrito con su ícono, nombre, mini barra y x/y). */
+/**
+ * % grande, «x de 40», la barra por bloques y una fila por BLOQUE (pedido del usuario: el avance de los bloques, no
+ * de las rutas): su número en un cuadrito (verde con ✓ si está hecho), su título, mini barra y x/y. Tocar una fila
+ * entra al bloque.
+ */
 function TarjetaAvance({ estado, porcentaje }) {
   return (
     <div className="flex flex-col gap-4 rounded-[1.75rem] border-2 border-zinc-200 bg-white p-5" style={{ boxShadow: RELIEVE }} data-avance-curso>
@@ -177,22 +169,37 @@ function TarjetaAvance({ estado, porcentaje }) {
           {estado.hechas} de {estado.total}
         </span>
       </div>
-      <BarraCurso areas={estado.areas} total={estado.total} alto="h-3" fondo="bg-zinc-100" aria-label={`${estado.hechas} de ${estado.total} pasos`} />
-      <ul className="flex flex-col gap-3">
-        {ORDEN_AREAS.map((a) => {
-          const area = AREAS[a]
-          const { hechas, total } = estado.areas[a]
-          const Icono = ICONO_AREA[a]
+      <BarraBloques bloques={estado.bloques} actual={estado.actual} alto="h-3" fondo="bg-zinc-100" aria-label={`${estado.hechas} de ${estado.total} pasos`} />
+      <ul className="-mx-2 flex flex-col">
+        {estado.bloques.map((b) => {
+          const hecha = b.estado === 'hecha'
+          const ahora = b.estado === 'ahora'
+          const acento = hecha ? 'var(--color-bien)' : ahora && estado.actual ? estado.actual.acento : ACENTO_CURSO
           return (
-            <li key={a} className="flex items-center gap-3" data-area={a}>
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl text-blanco" style={{ backgroundColor: oscuro(area.acento) }} aria-hidden>
-                <Icono className="size-5" />
-              </span>
-              <span className="w-20 shrink-0 text-base font-semibold">{area.nombre}</span>
-              <BarraProgreso valor={hechas / total} color={area.acento} fondo="bg-zinc-100" alto="h-1.5" className="flex-1" aria-hidden />
-              <span className="w-12 shrink-0 text-right font-dato text-sm font-medium tabular-nums" style={{ color: tinta(area.acento) }}>
-                {hechas}/{total}
-              </span>
+            <li key={b.numero}>
+              <Pulsable
+                href={rutas.bloque(b.numero)}
+                tipo="tarjeta"
+                data-fila-bloque={b.numero}
+                data-estado={b.estado}
+                aria-label={`Bloque ${b.numero}: ${b.titulo}, ${b.hechas} de ${b.total} pasos`}
+                className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left"
+              >
+                <span
+                  className="grid size-9 shrink-0 place-items-center rounded-xl font-dato text-base font-medium text-blanco"
+                  style={{ backgroundColor: hecha ? 'var(--color-bien-relleno)' : oscuro(acento) }}
+                  aria-hidden
+                >
+                  {hecha ? <Check className="size-5" /> : b.numero}
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span className={`truncate text-base leading-tight ${ahora ? 'font-bold' : 'font-semibold'}`}>{b.titulo}</span>
+                  <BarraProgreso valor={b.hechas / b.total} color={acento} fondo="bg-zinc-100" alto="h-1.5" aria-hidden />
+                </span>
+                <span className="w-11 shrink-0 text-right font-dato text-sm font-medium tabular-nums" style={{ color: hecha ? 'var(--color-bien-tinta)' : tinta(acento) }}>
+                  {b.hechas}/{b.total}
+                </span>
+              </Pulsable>
             </li>
           )
         })}
@@ -507,45 +514,6 @@ function TarjetaPronto({ numero, centro, onTocar }) {
       <span className="flex items-center gap-3 text-zinc-500">
         <span className="h-2 flex-1 rounded-full border-2 border-dashed border-zinc-300" />
         <Candado className="size-5" />
-      </span>
-    </Pulsable>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// «Tus rutas»: cada ruta con su avance y «Sigue: …».
-// ---------------------------------------------------------------------------
-
-function TarjetaRuta({ id }) {
-  const { ruta, modulo, estado } = useRuta(id)
-  const sigue = estado.actual >= 0 ? estado.paradas[estado.actual] : null
-  return (
-    <Pulsable
-      href={rutas.ruta(id)}
-      tipo="tarjeta"
-      data-tarjeta-ruta={id}
-      aria-label={`${ruta.titulo}: ${estado.hechas} de ${estado.total}`}
-      className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
-      style={{ boxShadow: RELIEVE }}
-    >
-      <Cuadrito modulo={modulo} tam={56} hecho={estado.hechas === estado.total} />
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="font-titulo text-lg font-bold">{ruta.nombre}</span>
-          <span className="font-juego text-base tabular-nums" style={{ color: tinta(modulo.acento) }}>
-            {estado.hechas}/{estado.total}
-          </span>
-        </span>
-        <span className="truncate text-sm text-zinc-500">
-          {sigue ? (
-            <>
-              Sigue: <b className="font-semibold text-zinc-700">{sigue.tipo === 'leccion' ? `${codigoLeccion(sigue.id)} ${sigue.titulo}` : sigue.titulo}</b>
-            </>
-          ) : (
-            '¡Ruta completa!'
-          )}
-        </span>
-        <BarraProgreso valor={estado.hechas / estado.total} color={modulo.acento} fondo="bg-zinc-100" alto="h-1.5" aria-hidden />
       </span>
     </Pulsable>
   )

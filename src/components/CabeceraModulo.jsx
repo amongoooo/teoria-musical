@@ -10,7 +10,7 @@ import Pulsable from '../ui/Pulsable.jsx'
 import { rutas } from '../router.js'
 import { VIDRIO } from '../ui/vidrio.js'
 import BotonOpciones from './Opciones.jsx'
-import BarraCurso from './BarraCurso.jsx'
+import BarraCurso, { BarraBloques } from './BarraCurso.jsx'
 import { useCurso } from './cursoModulo.js'
 
 /** Alto de la cabecera fija (fila de 44 px + márgenes + desvanecido), sin contar la zona segura de arriba. */
@@ -34,7 +34,8 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
   const deRuta = useRuta(ruta) // también para módulos (los hooks van siempre); solo se usa con `ruta`
   const deCurso = useCurso() // solo se usa con `curso`
   const chico = useTituloEscondido(curso ? `curso-${bloque}` : (ruta ?? numero))
-  // Curso completo (#/curso y cada bloque): la barra APILADA en los colores de las áreas (lo del curso o lo del bloque).
+  // Curso completo (#/curso): un segmento por BLOQUE (pedido del usuario). En un bloque: la barra APILADA en los
+  // colores de las áreas de sus pasos.
   if (curso) {
     const b = bloque ? deCurso.estado.bloques.find((x) => x.numero === Number(bloque)) : null
     const areas = b ? Object.fromEntries(Object.keys(deCurso.estado.areas).map((a) => [a, { hechas: b.paradas.filter((p) => !p.opcional && p.hecha && p.area === a).length }])) : deCurso.estado.areas
@@ -46,7 +47,13 @@ export default function CabeceraModulo({ numero, ruta = null, curso = false, blo
         // En un bloque, la flechita ‹ vuelve al Curso completo (pedido del usuario: en lugar de la casita).
         volver={b ? { href: rutas.curso(), etiqueta: 'Volver al curso completo' } : null}
         titulo={b ? b.titulo : 'Curso completo'}
-        barra={<BarraCurso areas={areas} total={total} retraso={0} aria-label={`${b ? `Bloque ${b.numero}` : 'Curso completo'}: ${hechas} de ${total} pasos`} data-barra-curso />}
+        barra={
+          b ? (
+            <BarraCurso areas={areas} total={total} retraso={0} aria-label={`Bloque ${b.numero}: ${hechas} de ${total} pasos`} data-barra-curso />
+          ) : (
+            <BarraBloques bloques={deCurso.estado.bloques} actual={deCurso.estado.actual} retraso={0} aria-label={`Curso completo: ${hechas} de ${total} pasos`} data-barra-curso />
+          )
+        }
       />
     )
   }
