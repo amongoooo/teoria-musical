@@ -92,11 +92,18 @@ export function diatonicos(tonica, { menor = false } = {}) {
  * El acorde de un número romano en una tonalidad: acordeDeGrado('G3', 'vi') → { raiz: 'E4', tipo: 'menor', … }.
  * 'V7' = la dominante con séptima (5.2): acordeDeGrado('F4', 'V7') → C7 (C5 · E5 · G5 · B♭5); en menor también es
  * mayor con 7.ª (sale de la menor armónica): acordeDeGrado('A3', 'V7', { menor: true }) → E7.
+ * Otras séptimas (5.5): el grado + '7' o 'maj7'. Sobre una tríada mayor, '7' = séptima de dominante ('I7', 'IV7' del
+ * blues: C7 y F7 en Do) y 'maj7' = séptima mayor ('Imaj7' → Cmaj7); sobre una menor, '7' = menor séptima ('ii7' → Dm7).
  */
 export function acordeDeGrado(tonica, romano, opciones) {
-  if (romano === 'V7') {
-    const v = diatonicos(tonica, opciones)[4]
-    return { ...v, romano: 'V7', tipo: 'dom7', notas: triada(v.raiz, 'dom7'), cifrado: cifrado(v.raiz, 'dom7') }
+  const [, grado, septima] = /^(.*?)(maj7|7)?$/.exec(romano)
+  if (septima) {
+    const t = diatonicos(tonica, opciones)
+    const base = romano === 'V7' ? t[4] : t.find((a) => a.romano === grado)
+    if (!base) return null
+    const tipo = romano === 'V7' || (base.tipo === 'mayor' && septima === '7') ? 'dom7' : base.tipo === 'mayor' ? 'maj7' : base.tipo === 'menor' && septima === '7' ? 'm7' : null
+    if (!tipo) return null
+    return { ...base, romano, tipo, notas: triada(base.raiz, tipo), cifrado: cifrado(base.raiz, tipo) }
   }
   return diatonicos(tonica, opciones).find((a) => a.romano === romano) ?? null
 }

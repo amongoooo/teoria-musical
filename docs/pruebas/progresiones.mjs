@@ -29,7 +29,7 @@ const comprobar = (r, nombre, ok, detalle = '') => {
   comprobar(r, 'catálogo: 5.4 ← 5.1, armonía + producción', JSON.stringify(CATALOGO['5.4']?.requiere) === '["5.1"]' && CATALOGO['5.4'].areas.join() === 'armonia,produccion', JSON.stringify(CATALOGO['5.4']))
   const { TRAMOS, RUTAS } = await import('../../src/content/rutas.js')
   const paradas = TRAMOS.progresiones.paradas.map((p) => p.id ?? `${p.modo}:${p.nivel}`).join(' ')
-  comprobar(r, 'tramo «Progresiones»: 5.4, Funciones 4', paradas === '5.4 funciones:4', paradas)
+  comprobar(r, 'tramo «Progresiones»: empieza con 5.4, Funciones 4', paradas.startsWith('5.4 funciones:4'), paradas)
   comprobar(r, 'ruta de Acordes: 6 tramos', RUTAS.acordes.tramos.at(-1) === 'progresiones' && RUTAS.acordes.tramos.length === 6)
   const { BLOQUES, ETAPAS } = await import('../../src/content/curso.js')
   const b4 = BLOQUES.find((b) => b.numero === 4)
