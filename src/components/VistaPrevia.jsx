@@ -1,7 +1,7 @@
 import { MotionContext, PresenceContext, motion, useInView, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { claro, oscuro, tinta } from '../ui/color.js'
-import { Check, Oreja } from '../ui/Iconos.jsx'
+import { Candado, Check, Oreja } from '../ui/Iconos.jsx'
 
 /**
  * VISTA PREVIA de un ejercicio (pestaña Entrenar; pedido del usuario: «una pequeña preview de cómo se juega»): una
@@ -542,6 +542,63 @@ function Vocabulario({ activo, acento, n }) {
   )
 }
 
+/**
+ * Árbol de géneros: el tronco pasa sus tres pruebas (los puntitos se llenan de verde), queda dominado (✓) y sus ramas
+ * se abren: las líneas se vuelven verdes y los candados se cambian por el contorno del área con un destello en oro.
+ */
+const ARBOLES = [
+  { tronco: 'Pop', ramas: ['Rock', 'Funk'] },
+  { tronco: 'Boom bap', ramas: ['Lo-fi', 'Trap', 'D&B'] },
+  { tronco: 'House', ramas: ['Techno', 'Garage'] },
+  { tronco: 'Dembow', ramas: ['Afro', 'Moombah'] },
+]
+
+function Generos({ activo, acento, n }) {
+  const { tronco, ramas } = cual(ARBOLES, n)
+  const xs = ramas.map((_, i) => ((i + 1) * 100) / (ramas.length + 1))
+  const dom = 0.46
+  return (
+    <div className="relative h-full">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
+        {xs.map((x) => (
+          <g key={x}>
+            <path d={`M50 30 C50 48 ${x} 44 ${x} 60`} fill="none" strokeWidth="3" vectorEffect="non-scaling-stroke" style={{ stroke: 'var(--color-zinc-300)' }} />
+            <motion.path d={`M50 30 C50 48 ${x} 44 ${x} 60`} fill="none" strokeWidth="3" vectorEffect="non-scaling-stroke" style={{ stroke: 'var(--color-bien)' }} {...fase(activo, dom + 0.08)} />
+          </g>
+        ))}
+      </svg>
+      {/* El tronco: tres puntitos (las pruebas) que se llenan y luego el ✓ */}
+      <div className="absolute left-1/2 top-0 flex -translate-x-1/2 items-center gap-2">
+        <span className="relative grid size-10 place-items-center rounded-xl border-[3px] bg-white" style={{ borderColor: acento }}>
+          <span className="flex gap-0.5">
+            {[0, 1, 2].map((k) => (
+              <span key={k} className="relative size-1.5 rounded-full bg-zinc-200">
+                <motion.span className="absolute inset-0 rounded-full bg-bien" {...fase(activo, 0.1 + k * 0.11, 0.9, { pop: true, escala: 0.2 })} />
+              </span>
+            ))}
+          </span>
+          <Acierto activo={activo} de={dom} redondo="rounded-[0.6rem]" />
+          {[0, 1, 2].map((k) => (
+            <Dedo key={k} activo={activo} en={0.1 + k * 0.11} className="left-1/2 top-1/2 -ml-3.5 -mt-3.5" />
+          ))}
+        </span>
+        <span className="font-titulo text-base font-bold text-zinc-800">{tronco}</span>
+      </div>
+      {/* Las ramas: de candado a abiertas, con un destello en oro */}
+      {ramas.map((r, i) => (
+        <div key={r} className="absolute bottom-0 flex -translate-x-1/2 flex-col items-center gap-0.5" style={{ left: `${xs[i]}%` }}>
+          <span className="relative grid size-9 place-items-center rounded-xl bg-zinc-100 text-zinc-500">
+            <Candado className="size-4" />
+            <motion.span className="absolute inset-0 rounded-xl border-[3px] bg-white" style={{ borderColor: acento }} {...fase(activo, dom + 0.14 + i * 0.05, 0.9, { pop: true })} />
+            <motion.span className="absolute -inset-1 rounded-[0.9rem] border-[3px] border-fijate" {...fase(activo, dom + 0.14 + i * 0.05, dom + 0.3 + i * 0.05)} />
+          </span>
+          <span className="text-sm font-bold leading-tight text-zinc-700">{r}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const ESCENAS = {
   intervalos: Intervalos,
   acordes: Acordes,
@@ -549,6 +606,7 @@ const ESCENAS = {
   absoluto: Absoluto,
   seguir: Seguir,
   eco: Eco,
+  generos: Generos,
   cuaderno: Cuaderno,
   vocabulario: Vocabulario,
 }

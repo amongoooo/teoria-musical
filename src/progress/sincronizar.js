@@ -4,7 +4,8 @@
 //   «1…» comprimido (CompressionStream; Chrome, Safari 16.4+, Firefox)
 //   «0…» sin comprimir (respaldo para navegadores viejos)
 // El JSON lleva { v: 1, p: progreso (lecciones y retos), o: oído, r: ritmo, l: vocabulario de letras, x: experiencia
-// (progress/xp.js: total por área de cada dispositivo), c: opciones }.
+// (progress/xp.js: total por área de cada dispositivo), g: árbol de géneros (progress/generos.js: { rock: 7 }, bits de
+// las tres pruebas), c: opciones }.
 // (`r` se añadió con el entrenamiento de ritmo y `l` con el vocabulario —con su `repaso`—: los códigos de antes no
 // los traen y se leen igual.)
 //
@@ -17,6 +18,7 @@ import { tiendaVocab } from './vocabulario.js'
 import { combinarRepaso } from '../letras/vocabulario/repaso.js'
 import { TEMAS, getOpciones, setTema } from './opciones.js'
 import { combinarCompactos, importarCompacto, libroCompacto, revisarCompacto } from './xp.js'
+import { combinarGeneros, importarGeneros, leerGeneros, revisarGeneros } from './generos.js'
 
 const VERSION = 1
 
@@ -54,6 +56,7 @@ export function datosActuales() {
     r: entrenamiento(tiendaRitmo.leer()),
     l: { ...entrenamiento(tiendaVocab.leer()), repaso: tiendaVocab.leer().repaso ?? {} },
     x: libroCompacto(),
+    g: leerGeneros().pruebas,
     c: { tema: getOpciones().tema },
   }
 }
@@ -240,6 +243,7 @@ function revisar(d) {
     l: { ...revisarEntrenamiento(d.l), repaso: revisarRepaso(d.l?.repaso) },
     // Libro de XP (compacto: total por área de cada dispositivo).
     x: revisarCompacto(d.x),
+    g: revisarGeneros(d.g),
     c: { tema },
   }
 }
@@ -350,6 +354,7 @@ export function combinar(a, b) {
     r: combinarEntrenamiento(a.r, b.r, tiendaRitmo.migrar),
     l: { ...combinarEntrenamiento(a.l, b.l, tiendaVocab.migrar), repaso: combinarRepaso(a.l?.repaso, b.l?.repaso) },
     x: combinarCompactos(a.x, b.x),
+    g: combinarGeneros(a.g, b.g),
   }
 }
 
@@ -375,6 +380,7 @@ export function importar(datos, { conTema = false } = {}) {
   tiendaRitmo.importar({ ...tiendaRitmo.leer(), ...junto.r })
   tiendaVocab.importar({ ...tiendaVocab.leer(), ...junto.l })
   importarCompacto(datos.x)
+  importarGeneros(junto.g)
   if (conTema && datos.c?.tema) setTema(datos.c.tema)
   return junto
 }

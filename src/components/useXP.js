@@ -9,6 +9,7 @@ import { useCuaderno } from '../progress/letras.js'
 import { tiendaOido } from '../progress/oido.js'
 import { useProgreso } from '../progress/progreso.js'
 import { tiendaRitmo } from '../progress/ritmo.js'
+import { cuentaGeneros, usarGeneros } from '../progress/generos.js'
 import { hoy as diaDeHoy } from '../progress/entrenamiento.js'
 import { AREAS_XP, XP, nivelDeXP, usarXP, xpJugada } from '../progress/xp.js'
 import { MODOS_OIDO } from '../theory/oido.js'
@@ -47,9 +48,9 @@ const xpSuperado = (m) =>
 
 /**
  * XP fija: { total, porArea }. Lecciones (completar, aciertos a la primera, perfecta, saltadas), pruebas rápidas,
- * retos, niveles aprobados de oído y ritmo, metas cumplidas, tramos, bloques y etapas, primera letra y primer flow.
+ * retos, niveles aprobados de oído y ritmo, metas cumplidas, tramos, bloques y etapas, primera letra, primer flow y géneros dominados.
  */
-function calcularFija({ progreso, oido, ritmo, letras, medir }) {
+function calcularFija({ progreso, oido, ritmo, letras, generos, medir }) {
   const porArea = Object.fromEntries(AREAS_XP.map((a) => [a, 0]))
   const sumar = (a, v) => (porArea[AREAS_XP.includes(a) ? a : 'general'] += v)
 
@@ -93,6 +94,8 @@ function calcularFija({ progreso, oido, ritmo, letras, medir }) {
 
   if (letras.some((l) => l.texto.split('\n').filter((v) => v.trim()).length >= 2)) sumar('letras', XP.primeraLetra)
   if (letras.some((l) => Object.keys(l.flows ?? {}).length)) sumar('letras', XP.primerFlow)
+  // Árbol de géneros: cada género dominado.
+  sumar('produccion', XP.genero * cuentaGeneros(generos).dominados)
 
   return { total: Object.values(porArea).reduce((s, v) => s + v, 0), porArea }
 }
@@ -106,9 +109,10 @@ export function useXP() {
   const oido = tiendaOido.usar()
   const ritmo = tiendaRitmo.usar()
   const libro = usarXP()
+  const generos = usarGeneros()
   const { letras } = useCuaderno()
   const medidor = useMedirMetas()
-  const fija = calcularFija({ progreso, oido, ritmo, letras, medir: medidor.meta })
+  const fija = calcularFija({ progreso, oido, ritmo, letras, generos, medir: medidor.meta })
   const jugada = xpJugada(libro)
   const porArea = Object.fromEntries(AREAS_XP.map((a) => [a, Math.round(fija.porArea[a] + jugada.porArea[a])]))
   const total = Math.round(fija.total + jugada.total)

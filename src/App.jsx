@@ -13,6 +13,7 @@ import Practicar from './pages/Practicar.jsx'
 import Circulo from './pages/Circulo.jsx'
 import PianoLibre from './pages/PianoLibre.jsx'
 import CajaRitmos from './pages/CajaRitmos.jsx'
+import Generos from './pages/Generos.jsx'
 import Ruta from './pages/Ruta.jsx'
 import Curso from './pages/Curso.jsx'
 import { ORDEN_RUTAS } from './content/rutas.js'
@@ -39,6 +40,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'circulo') return <Circulo />
   if (ruta.pagina === 'piano') return <PianoLibre />
   if (ruta.pagina === 'caja') return <CajaRitmos />
+  if (ruta.pagina === 'generos') return <Generos id={ruta.id} />
   if (ruta.pagina === 'ruta') return <Ruta id={ruta.id} />
   if (ruta.pagina === 'curso') return <Curso bloque={ruta.id} />
   if (ruta.pagina === 'prueba') return <Prueba id={ruta.id} />
