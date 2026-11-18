@@ -2,7 +2,7 @@ import { LayoutGroup, motion } from 'motion/react'
 import { CuadritoModulo, CuadritoRuta } from '../components/Tarjetas.jsx'
 import { AREAS_CONOCIMIENTO, color } from '../content/areas.js'
 import { MODULOS } from '../content/index.js'
-import { ORDEN_RUTAS, RUTAS } from '../content/rutas.js'
+import { ORDEN_RUTAS, RUTAS, RUTAS_PROXIMAS } from '../content/rutas.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
 import { tinta } from '../ui/color.js'
@@ -112,17 +112,22 @@ function Rutas() {
       <Encabezado antetitulo="Por habilidad" titulo="Rutas" />
       {Object.keys(AREAS_CONOCIMIENTO).map((area) => {
         const suyas = ORDEN_RUTAS.filter((id) => RUTAS[id].area === area)
+        const proximas = RUTAS_PROXIMAS.filter((r) => r.area === area)
         return (
           <motion.section key={area} variants={itemLista} className="flex flex-col gap-3" data-area-rutas={area}>
             <NombreArea area={area} />
             <ol className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5">
-              {suyas.length ? (
-                suyas.map((id) => (
-                  <li key={id}>
-                    <CuadritoRuta id={id} />
-                  </li>
-                ))
-              ) : (
+              {suyas.map((id) => (
+                <li key={id}>
+                  <CuadritoRuta id={id} />
+                </li>
+              ))}
+              {proximas.map((r) => (
+                <li key={r.id}>
+                  <RutaProxima nombre={r.nombre} />
+                </li>
+              ))}
+              {!suyas.length && !proximas.length && (
                 <li>
                   <RutaProxima />
                 </li>
@@ -135,16 +140,17 @@ function Rutas() {
   )
 }
 
-/** Un área que aún no tiene ruta: cuadrito punteado con candado, «Próximamente». */
-function RutaProxima() {
+/** Una ruta que aún no existe (o un área sin rutas): cuadrito punteado con candado, su nombre y «Próximamente». */
+function RutaProxima({ nombre = null }) {
   return (
-    <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label="Ruta próximamente">
+    <div className="flex flex-col items-center gap-2 px-1 pt-1 pb-2 text-center" aria-label={nombre ? `Ruta de ${nombre}: próximamente` : 'Ruta próximamente'} data-ruta-proxima={nombre ?? ''}>
       <span className="relative grid size-19 place-items-center rounded-3xl border-2 border-dashed border-zinc-300 bg-white" aria-hidden>
         <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-zinc-400 text-white">
           <Candado className="size-3.5" />
         </span>
       </span>
-      <span className="text-base font-semibold leading-snug text-zinc-500">Próximamente</span>
+      {nombre && <span className="-mb-1.5 text-base font-semibold leading-snug text-zinc-600">{nombre}</span>}
+      <span className={`${nombre ? 'text-sm' : 'text-base'} font-semibold leading-snug text-zinc-500`}>Próximamente</span>
     </div>
   )
 }

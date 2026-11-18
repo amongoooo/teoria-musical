@@ -11,7 +11,7 @@
 //  - Barra de pestañas (pedido del usuario): Lapiz (Herramientas) · Pesas (Practicar) · Inicio · Libro (Aprender)
 //    · Opciones (Configuración)
 //  - Rutas: Cuadritos (botón «Módulos y prácticas», sobre la barra de puntitos) · Corchea (la ruta y el área de
-//    Melodía; las demás rutas usan el ícono de su práctica)
+//    Melodía; las demás rutas usan el ícono de su práctica) · Pads (la ruta de Beats, el área Producción y la Caja de ritmos)
 //  - Prueba rápida «¿Ya lo sabes?»: Saltar (doble flecha: saltar lo que ya dominas)
 //  - Arranque del entrenador de oído: Info (burbuja «más información», oro) · Circulo8 (modo Normal) · Rayo (Rápido)
 //    · Cronometro (Contrarreloj)
@@ -302,6 +302,19 @@ export function Cuadritos(props) {
       <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8" />
       <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8" />
       <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" />
+    </Icono>
+  )
+}
+
+/** Pads: un controlador con 4 pads (uno encendido): la ruta de Beats y la Caja de ritmos (área Producción). */
+export function Pads(props) {
+  return (
+    <Icono {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <rect x="7" y="7" width="4" height="4" rx="1" fill="currentColor" />
+      <rect x="13" y="7" width="4" height="4" rx="1" />
+      <rect x="7" y="13" width="4" height="4" rx="1" />
+      <rect x="13" y="13" width="4" height="4" rx="1" />
     </Icono>
   )
 }

@@ -30,7 +30,7 @@ const hecha = { paso: 0, completada: true, aciertos: 5, total: 5 }
   comprobar(r, '3 tramos', m.tramos.length === 3, m.tramos.join())
   comprobar(r, '13 paradas', m.paradas.length === 13, String(m.paradas.length))
   comprobar(r, 'tramo 1 compartido con acordes', m.tramos[0] === 'notas-teclado' && RUTAS.acordes.tramos[0] === 'notas-teclado')
-  comprobar(r, 'orden de las rutas', ORDEN_RUTAS.join() === 'ritmo,letras,melodia,acordes', ORDEN_RUTAS.join())
+  comprobar(r, 'orden de las rutas', ORDEN_RUTAS.join() === 'ritmo,letras,melodia,acordes,beats', ORDEN_RUTAS.join())
   const metas = m.paradas.filter((p) => p.tipo === 'meta').map((p) => `${p.modo}:${p.nivel}`).join()
   comprobar(r, 'metas de Oído', metas === 'absoluto:2,intervalos:5,absoluto:4,intervalos:6', metas)
   comprobar(r, 'termina con el reto', m.paradas.at(-1).tipo === 'reto' && m.paradas.at(-1).id === 'ruta-melodia')

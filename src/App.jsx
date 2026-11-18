@@ -12,9 +12,11 @@ import Herramientas from './pages/Herramientas.jsx'
 import Practicar from './pages/Practicar.jsx'
 import Circulo from './pages/Circulo.jsx'
 import PianoLibre from './pages/PianoLibre.jsx'
+import CajaRitmos from './pages/CajaRitmos.jsx'
 import Ruta from './pages/Ruta.jsx'
 import Curso from './pages/Curso.jsx'
 import { ORDEN_RUTAS } from './content/rutas.js'
+import { MODULOS_POR_AREA } from './content/index.js'
 import { useRuta } from './router.js'
 import Importar from './pages/Importar.jsx'
 import Inicio from './pages/Inicio.jsx'
@@ -36,6 +38,7 @@ function Pagina({ ruta }) {
   if (ruta.pagina === 'vocabulario') return <Vocabulario modo={ruta.id} />
   if (ruta.pagina === 'circulo') return <Circulo />
   if (ruta.pagina === 'piano') return <PianoLibre />
+  if (ruta.pagina === 'caja') return <CajaRitmos />
   if (ruta.pagina === 'ruta') return <Ruta id={ruta.id} />
   if (ruta.pagina === 'curso') return <Curso bloque={ruta.id} />
   if (ruta.pagina === 'prueba') return <Prueba id={ruta.id} />
@@ -56,6 +59,9 @@ function direccionRuta(de, a) {
   const d = (ORDEN_RUTAS.indexOf(a) - ORDEN_RUTAS.indexOf(de) + n) % n
   return d === 1 ? 1 : d === n - 1 ? -1 : ORDEN_RUTAS.indexOf(a) > ORDEN_RUTAS.indexOf(de) ? 1 : -1
 }
+
+/** Posición de un módulo en el orden en que se ven (por área: Producción 1 = módulo 12 va antes que el 10). */
+const ordenModulo = (numero) => MODULOS_POR_AREA.findIndex((m) => m.numero === Number(numero))
 
 /** Páginas de práctica donde vale una meta guiada (entrenadores de oído, ritmo y vocabulario, con sus paneles). */
 const PAGINAS_PRACTICA = ['oido', 'ritmo', 'vocabulario']
@@ -101,7 +107,9 @@ export default function App() {
     const entrePestanas = indicePestana(ruta.pagina) >= 0 && indicePestana(previa.pagina) >= 0
     const dir = entrePestanas
       ? indicePestana(ruta.pagina) > indicePestana(previa.pagina) ? 1 : -1
-      : entreModulos || entreBloques
+      : entreModulos
+      ? ordenModulo(ruta.id) > ordenModulo(previa.id) ? 1 : -1
+      : entreBloques
       ? Number(ruta.id) > Number(previa.id) ? 1 : -1
       : entreRutas
         ? direccionRuta(previa.id, ruta.id)

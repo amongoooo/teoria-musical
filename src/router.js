@@ -13,6 +13,7 @@ function parse(hash) {
   if (partes[0] === 'letras' && partes[1] === 'vocabulario') return { pagina: 'vocabulario', id: partes[2] ?? null }
   if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'piano') return { pagina: 'piano' }
+  if (partes[0] === 'caja') return { pagina: 'caja' }
   if (partes[0] === 'ruta' && partes[1]) return { pagina: 'ruta', id: partes[1] }
   if (partes[0] === 'curso') return { pagina: 'curso', id: partes[1] === 'bloque' && partes[2] ? partes[2] : null }
   if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
@@ -63,6 +64,8 @@ export const rutas = {
   circulo: () => '#/circulo',
   /** Piano libre (antes estaba al final de Inicio). */
   piano: () => '#/piano',
+  /** Caja de ritmos: el Channel rack libre (se abre con la P1.1). */
+  caja: () => '#/caja',
   /** Una ruta de curso (se ve igual que un módulo). */
   ruta: (id) => `#/ruta/${id}`,
   /** Curso completo (las rutas a la par, en bloques agrupados en etapas) y un bloque abierto como camino de islas. */

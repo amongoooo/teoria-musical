@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { TarjetaCirculo, TarjetaFlow, TarjetaPiano } from '../components/Tarjetas.jsx'
+import { TarjetaCaja, TarjetaCirculo, TarjetaFlow, TarjetaPiano } from '../components/Tarjetas.jsx'
 import { herramientaAbierta } from '../content/rutas.js'
 import { useOpciones } from '../progress/opciones.js'
 import { useProgreso } from '../progress/progreso.js'
@@ -7,7 +7,8 @@ import { itemLista, lista } from '../ui/movimiento.js'
 
 /**
  * Pestaña HERRAMIENTAS (fase 3 del rediseño; maqueta aprobada: https://claude.ai/artifact/6EWwNQ4puh3mtiT1T8Pfne): el
- * Piano libre (abierto desde el principio), el Círculo de quintas (se abre con la 3.5) y el Flow (con la 2.4). Cada
+ * Piano libre (abierto desde el principio), el Círculo de quintas (se abre con la 3.5), el Flow (con la 2.4) y la Caja de
+ * ritmos (con la P1.1). Cada
  * herramienta nueva entra aquí, con el color de su área; las que usan algo que enseña una lección van punteadas con
  * candado hasta hacerla.
  */
@@ -32,6 +33,9 @@ export default function Herramientas() {
       </motion.div>
       <motion.div variants={itemLista}>
         <TarjetaFlow abierta={herramientaAbierta('flow', progreso, admin)} />
+      </motion.div>
+      <motion.div variants={itemLista}>
+        <TarjetaCaja abierta={herramientaAbierta('caja', progreso, admin)} />
       </motion.div>
     </motion.main>
   )

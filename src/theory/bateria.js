@@ -2,7 +2,7 @@
 // En el Piano Roll y en los sonidos, una «nota» puede ser 'kick', 'snare', 'hat', 'clap' o 'click'.
 import { midi } from './notas.js'
 
-export const PERCUSION = { kick: 'Bombo', snare: 'Caja', hat: 'Hi-hat', clap: 'Palmas', click: 'Clic' }
+export const PERCUSION = { kick: 'Bombo', snare: 'Caja', hat: 'Hi-hat', clap: 'Palmas', click: 'Clic', tom: 'Percusión' }
 
 export const esPercusion = (n) => typeof n === 'string' && n in PERCUSION
 

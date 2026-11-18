@@ -110,6 +110,12 @@ Variantes de T1 ya usadas: solo en el 1 (`cada: 4`), «1 y 2 y» (`cada: 0.5`), 
 
 El quiz O3 también lee versos: `letra` en una ronda de `elegir` («¿Qué esquema tiene?», «¿Cuántas sílabas?»).
 
+## I. Producción (puntúan)
+
+| Código | Nombre | Qué hace el usuario | Tipo en el contenido | Ejemplos |
+|---|---|---|---|---|
+| **S1** | Channel rack | El Channel rack de FL Studio en el celular (`components/ChannelRack.jsx`): una fila por sonido (Kick, Clap, Hat, Perc) y 16 pasos en 4 grupos de tono alterno. Tocar un paso lo enciende o lo apaga; arrastrar el dedo pinta la fila. «Reproducir» lo repite en bucle (lo que cambias se oye al tiempo siguiente) y la luz de cada fila la silencia. Al 1.er error, lo de más tachado en oro y cuántos golpes faltan o sobran por fila (sin decir dónde); al 2.º, la solución con lo que faltaba con borde rojo | `rack` con `rack: { filas, bpm, patron, fijas }` y `objetivo`: `capas` (oír cada sonido solo), `copiar` (`patron`, `guia`, `escuchar` = dictado), `libre` | P1.1: «Escucha cada capa», «Pon el backbeat», «Los hats, el motor» (con guía), «Escucha y copia el bombo» y «Copia el beat entero» (dictados) |
+
 ## Prueba rápida «¿Ya lo sabes?» (hecha)
 
 Al tocar el cuadrito de un módulo o de una ruta sube una hoja con «¿Ya lo sabes?»: **una pregunta por lección
@@ -151,4 +157,4 @@ Ideas para cuando lleguen esos temas; aún **no existen** (Emparejar ya existe: 
 
 - **Ordenar** (arrastrar tarjetas: grados de una escala, partes de una canción) — módulos 3, 8.
 - **Dictado**: oír una melodía corta y dibujarla en el Piano Roll (R2 sin guía y sin verla).
-- **Mezclador / perillas** (volumen, filtro, paneo con antes/después) — módulos de producción.
+- **Mezclador / perillas** (volumen, filtro, paneo con antes/después) — Producción 2 y 3 (Sound design, Mezcla y máster).

@@ -365,6 +365,40 @@ export function iniciarPista(porCompas, { bpm = 90, tiempos = 4 } = {}) {
   return pista
 }
 
+/**
+ * Bucle del CHANNEL RACK (components/ChannelRack.jsx): repite `pasos` semicorcheas a `bpm` y en cada TIEMPO pregunta
+ * qué suena (`golpesDe(paso)` → [{ nota: 'kick', velocity }]), así un paso que el dedo enciende o apaga se oye al tiempo
+ * siguiente, sin cortar el bucle. Es una reproducción más («un sonido a la vez»): para lo que sonaba y la para
+ * cualquier otro sonido (o `pararRitmo`). Devuelve { inicio, paso, parar } (`inicio`: tiempo de audio del primer paso;
+ * `paso`: segundos por semicorchea), para que el cabezal siga lo que se oye.
+ */
+export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar } = {}) {
+  pararProgramado()
+  const pista = iniciarPista(
+    (k) => {
+      const base = (k * 4) % pasos
+      const eventos = []
+      for (let s = 0; s < 4; s++) for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: s / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
+      return eventos
+    },
+    { bpm, tiempos: 1 },
+  )
+  let vivo = true
+  const pararPista = pista.parar
+  const parar = () => {
+    if (!vivo) return
+    vivo = false
+    pararPista()
+    if (sesion === yo) sesion = null
+    alParar?.()
+  }
+  // `pararRitmo` (al cambiar de paso en una lección) también lo apaga y avisa.
+  pista.parar = parar
+  const yo = { parar }
+  sesion = yo
+  return { inicio: pista.inicio, paso: pista.pulso / 4, parar }
+}
+
 /** Un golpe de batería AHORA mismo, sin el margen de programación de Tone (para el pad: tiene que sonar al tocar). */
 export function golpeAhora(nombre, velocity = 0.9) {
   startAudio()
