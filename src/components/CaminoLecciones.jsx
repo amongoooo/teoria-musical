@@ -2148,6 +2148,8 @@ function IslaRetos({ acento, completo, descripcion, onClick, bloqueada = false }
 function estadoParada(p, progreso) {
   if (p.hecha) return 'hecha'
   if (p.estado === 'bloqueada') return 'bloqueada'
+  // Una lección que aún no existe (p. ej. las de Producción 1 en la ruta de Beats): «Próximamente», y la ruta espera ahí.
+  if (p.tipo === 'leccion' && !getLeccion(p.id)) return 'proximamente'
   if (p.estado === 'opcional') return 'opcional'
   if (p.tipo === 'leccion' && progreso.lecciones[p.id]?.paso > 0) return 'empezada'
   return 'nueva'
@@ -2182,7 +2184,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   const lleno = estado === 'hecha' || estado === 'nueva' || estado === 'empezada'
   const reto = p.tipo === 'reto'
   const opcional = estado === 'opcional'
-  const tema = estado === 'bloqueada' ? 'gris' : opcional ? 'blanco' : reto && !p.hecha ? 'borde' : 'color'
+  const tema = estado === 'bloqueada' ? 'gris' : opcional || estado === 'proximamente' ? 'blanco' : reto && !p.hecha ? 'borde' : 'color'
   const enColor = tema === 'color'
   const tipo = (p.opcional ? 'Opcional · ' : '') + { leccion: `Lección ${codigoLeccion(p.id)}`, meta: 'Práctica', abre: 'Se abre', reto: 'Reto en FL Studio' }[p.tipo]
   // Lo que va antes: la isla actual de este camino o, en el Curso completo, el siguiente paso si está en otro bloque.
@@ -2228,6 +2230,7 @@ function ParadaAbierta({ parada: p, estado, ruta, acento, progreso, actual, indi
   } else if (p.tipo === 'meta') boton = { texto: 'Practicar', onClick: () => ruta.meta(p).ir() }
   else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'flow') boton = { texto: 'Ir a Letras', onClick: () => navegar(rutas.letras()) }
   else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'circulo') boton = { texto: 'Ir al círculo', onClick: () => navegar(rutas.circulo()) }
+  else if (p.tipo === 'abre' && p.hecha && p.herramienta === 'caja') boton = { texto: 'Ir a la Caja de ritmos', onClick: () => navegar(rutas.caja()) }
   else if (reto) boton = { texto: p.hecha ? '¡Hecho!' : 'Lo hice', check: p.hecha, onClick: () => guardarReto(p.id, { hecho: !p.hecha }) }
 
   return (

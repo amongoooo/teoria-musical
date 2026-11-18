@@ -1,4 +1,4 @@
-// Mapa de los 10 módulos del curso (según el plan).
+// Mapa de los módulos del curso (según el plan; el orden de la lista es el orden en que se ven).
 // `area` = su área principal (src/content/areas.js) y `acento` = el color de esa área (pedido del usuario: el color
 // dice el tipo de ruta, no el módulo), como variable de src/index.css: `--color-armonia` (barras, bordes) y sus
 // variantes `-relleno`, `-tinta` y `-suave`, que cambian con el tema. Usa los helpers de src/ui/color.js:
@@ -159,8 +159,63 @@ export const MODULOS = [
       { id: '9.7', titulo: 'Rearmonización' },
     ],
   },
+  // ÁREA PRODUCCIÓN (propuesta aprobada: https://claude.ai/artifact/EqP6ik7JikQGsfGUnek2uT): tres módulos nuevos que
+  // van ANTES del 10 en esta lista (el orden de la lista es el que se ve: Producción 1, 2, 3), y el 10 «De la teoría a
+  // la canción» queda como Producción 4. Sus `numero` (12, 13, 14) son ids internos y no cambian.
   {
-    numero: 10,
+    numero: 12, // se ve como «Producción 1» (lecciones P1.1…P1.5)
+    titulo: 'Beats en FL Studio',
+    descripcion: 'El Channel rack, el groove de cada género, hi-hats, el 808 y del patrón al beat.',
+    siente: 'Cada sonido tiene un papel: el bombo pesa, la caja golpea, los hats empujan.',
+    reto: 'Un beat de 8 compases con hats, 808 afinado y una variación.',
+    area: 'produccion',
+    acento: 'var(--color-produccion)',
+    lecciones: [
+      { id: '12.1', titulo: 'Anatomía de un beat' },
+      { id: '12.2', titulo: 'El groove de cada género' },
+      { id: '12.3', titulo: 'Hi-hats y rolls' },
+      { id: '12.4', titulo: 'El 808: el bombo que canta' },
+      { id: '12.5', titulo: 'Del patrón al beat' },
+    ],
+  },
+  {
+    numero: 13, // se ve como «Producción 2»
+    titulo: 'Sound design',
+    descripcion: 'Ondas y timbre, filtro, envolvente, LFO, samples y tu propio 808.',
+    siente: 'El timbre es la cara del sonido: brillante, oscuro, suave o agresivo.',
+    reto: 'Un preset tuyo, de la onda al efecto.',
+    area: 'produccion',
+    acento: 'var(--color-produccion)',
+    lecciones: [
+      { id: '13.1', titulo: 'Ondas y timbre' },
+      { id: '13.2', titulo: 'El filtro' },
+      { id: '13.3', titulo: 'La envolvente (ADSR)' },
+      { id: '13.4', titulo: 'LFO y modulación' },
+      { id: '13.5', titulo: 'Samplear y cortar' },
+      { id: '13.6', titulo: 'Diseña tu 808 y tu pad' },
+    ],
+  },
+  {
+    numero: 14, // se ve como «Producción 3»
+    titulo: 'Mezcla y máster',
+    descripcion: 'Volumen, paneo, EQ, compresión, reverb, sidechain, máster y publicar.',
+    siente: 'Una buena mezcla no se nota: todo se oye y nada estorba.',
+    reto: 'Tu canción mezclada, masterizada y exportada.',
+    area: 'produccion',
+    acento: 'var(--color-produccion)',
+    lecciones: [
+      { id: '14.1', titulo: 'Volumen y headroom' },
+      { id: '14.2', titulo: 'Paneo y estéreo' },
+      { id: '14.3', titulo: 'EQ: cortar antes que subir' },
+      { id: '14.4', titulo: 'Compresión' },
+      { id: '14.5', titulo: 'Reverb y delay' },
+      { id: '14.6', titulo: 'Sidechain' },
+      { id: '14.7', titulo: 'El máster' },
+      { id: '14.8', titulo: 'Exportar y publicar' },
+    ],
+  },
+  {
+    numero: 10, // se ve como «Producción 4»
     titulo: 'De la teoría a la canción',
     descripcion: 'Forma, arco de tensión, arreglo por capas, dinámica, sonido y emoción.',
     siente: 'La canción entera cuenta una historia emocional.',

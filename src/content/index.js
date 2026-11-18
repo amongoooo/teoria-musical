@@ -33,6 +33,8 @@ import leccion54 from './modulo-05/leccion-5-4.js'
 import leccion55 from './modulo-05/leccion-5-5.js'
 import leccion56 from './modulo-05/leccion-5-6.js'
 import leccion57 from './modulo-05/leccion-5-7.js'
+// Producción 1 «Beats en FL Studio» (módulo 12; se ve como P1.x).
+import leccion121 from './modulo-12/leccion-12-1.js'
 // Lecciones de la ruta de letras: llevan `ruta: 'letras'` y también `modulo: 11` (el Módulo de Letras).
 import letrasL1 from './ruta-letras/leccion-L1.js'
 import letrasL2 from './ruta-letras/leccion-L2.js'
@@ -69,6 +71,7 @@ const LECCIONES = {
   [leccion55.id]: leccion55,
   [leccion56.id]: leccion56,
   [leccion57.id]: leccion57,
+  [leccion121.id]: leccion121,
   [letrasL1.id]: letrasL1,
   [letrasL2.id]: letrasL2,
   [letrasL3.id]: letrasL3,

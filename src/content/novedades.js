@@ -5,6 +5,28 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-18-produccion',
+    fecha: '18 nov 2026',
+    titulo: 'Producción: tu primer beat',
+    cosas: [
+      {
+        texto: 'Llega el área **Producción**, en rojo coral. Lección nueva **P1.1 «Anatomía de un beat»**: el papel de cada sonido (bombo, palmas, hats y percusión) quitando y poniendo capas.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/12.1' },
+      },
+      {
+        texto: 'Ejercicio nuevo: el **Channel rack**, como el de FL Studio. 16 pasos por sonido: toca o arrastra el dedo para encenderlos y usa la luz de cada fila para silenciarla.',
+      },
+      {
+        texto: 'Herramienta nueva: la **Caja de ritmos**, tu beat libre con su tempo. Se abre al terminar la P1.1.',
+        donde: { etiqueta: 'Ir a Herramientas', href: '#/herramientas' },
+      },
+      {
+        texto: 'Ruta nueva: **Beats**, con 4 tramos de tu primer beat a una canción. Sound design y Mezcla y máster vienen después.',
+        donde: { etiqueta: 'Abrir la ruta', href: '#/ruta/beats' },
+      },
+    ],
+  },
+  {
     id: '2026-11-17-analisis',
     fecha: '17 nov 2026',
     titulo: 'Análisis de canciones',

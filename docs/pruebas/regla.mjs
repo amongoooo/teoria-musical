@@ -8,7 +8,7 @@
 //    que pasa por el centro, al soltar siempre un puntito en el centro; lanzar deprisa suma inercia; pasado el último
 //    (o el primero), goma y se queda en el último (o el primero); tocar sin mover no cambia nada.
 //  - #/modulo/1 (6 puntitos) y la computadora (1280 px) sin regla.
-//  - Bucle: deslizar a la izquierda recorre ritmo → letras → acordes → ritmo… y a la derecha al revés, sin tope.
+//  - Bucle: deslizar a la izquierda recorre acordes → beats → ritmo → letras → melodia → acordes… y a la derecha al revés, sin tope.
 // Uso: npm run dev -- --port 5199   y   node docs/pruebas/regla.mjs [carpeta-de-capturas]
 import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -78,7 +78,7 @@ for (const tema of ['claro', 'oscuro']) {
   await page.mouse.wheel(0, -900)
   await espera(1200)
   const numeros = await page.$$eval('[data-regla] [aria-hidden].font-dato', (ns) => ns.map((n) => n.textContent).join(''))
-  comprobar(r, 'números de tramo 1 2 3 4 5', numeros === '12345', numeros)
+  comprobar(r, 'números de tramo 1 2 3 4 5 6', numeros === '123456', numeros)
   await foto('regla-cerrada')
 
   // Tocar el puntito a la derecha del centro: abre su isla y la regla lo centra.
@@ -158,9 +158,9 @@ for (const tema of ['claro', 'oscuro']) {
   await espera(1300)
   comprobar(r, 'lanzar 1,4 puntitos deprisa → avanza 3 o más', (await n()) - antes >= 3, `${antes} → ${await n()}`)
   comprobar(r, 'tras lanzar, en el centro', (await alCentro(await n())) < 3, String(await alCentro(await n())))
-  await arrastrar(-1200) // más allá del último: goma
-  comprobar(r, 'hasta el final → el último (22)', (await n()) === 22, String(await n()))
-  await arrastrar(1200)
+  await arrastrar(-1800) // más allá del último: goma (31 paradas × 44 px)
+  comprobar(r, 'hasta el final → el último (31)', (await n()) === 31, String(await n()))
+  await arrastrar(1800)
   comprobar(r, 'hasta el principio → el primero (0)', (await n()) === 0, String(await n()))
   // Tocar sin mover (en el centro): no cambia.
   antes = await n()
@@ -187,15 +187,15 @@ for (const tema of ['claro', 'oscuro']) {
     await page.mouse.up()
     await espera(1500)
   }
-  // Bucle sin tope: a la izquierda siempre la siguiente (… acordes → ritmo → letras → melodia → acordes → ritmo) y a
-  // la derecha siempre la anterior (… ritmo → acordes → melodia → letras → ritmo → acordes).
+  // Bucle sin tope: a la izquierda siempre la siguiente (… acordes → beats → ritmo → letras → melodia → acordes) y a
+  // la derecha siempre la anterior (… acordes → melodia → letras → ritmo → beats → acordes).
   await page.goto(BASE + '#/ruta/acordes')
   await espera(2000)
-  for (const sig of ['ritmo', 'letras', 'melodia', 'acordes', 'ritmo']) {
+  for (const sig of ['beats', 'ritmo', 'letras', 'melodia', 'acordes']) {
     await deslizar(340, 30)
     comprobar(r, `izquierda → ${sig}`, page.url().endsWith(`#/ruta/${sig}`), page.url())
   }
-  for (const ant of ['acordes', 'melodia', 'letras', 'ritmo', 'acordes']) {
+  for (const ant of ['melodia', 'letras', 'ritmo', 'beats', 'acordes']) {
     await deslizar(30, 340)
     comprobar(r, `derecha → ${ant}`, page.url().endsWith(`#/ruta/${ant}`), page.url())
   }

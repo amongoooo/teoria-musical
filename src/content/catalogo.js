@@ -49,6 +49,8 @@ export const CATALOGO = {
   '5.5': l(['armonia'], 'intermedio', ['5.3', '5.4']),
   '5.6': l(['armonia', 'ritmo', 'produccion'], 'intermedio', ['5.4', '2.2']),
   '5.7': l(['armonia'], 'intermedio', ['5.3', '5.5', '5.6']),
+  // Producción 1 · Beats en FL Studio (propuesta aprobada: https://claude.ai/artifact/EqP6ik7JikQGsfGUnek2uT)
+  '12.1': l(['produccion', 'ritmo'], 'principiante', ['2.2']),
   // Ruta de letras
   L1: l(['letras'], 'principiante'),
   L2: l(['letras'], 'principiante', ['L1']),

@@ -34,6 +34,7 @@ import { MODULOS } from './modulos.js'
 export const HERRAMIENTAS = {
   flow: { nombre: 'Flow', leccion: '2.4' },
   circulo: { nombre: 'Círculo de quintas', leccion: '3.5' },
+  caja: { nombre: 'Caja de ritmos', leccion: '12.1' },
 }
 
 /** ¿Está abierta la herramienta? */
@@ -190,6 +191,70 @@ export const TRAMOS = {
       },
     ],
   },
+  // RUTA DE BEATS (área Producción; propuesta aprobada: https://claude.ai/artifact/EqP6ik7JikQGsfGUnek2uT). Las lecciones de
+  // Producción 1 que aún no existen salen «Próximamente» en el camino (la ruta es lineal: espera ahí).
+  'primer-beat': {
+    titulo: 'Tu primer beat',
+    paradas: [
+      { tipo: 'leccion', id: '2.2' },
+      { tipo: 'leccion', id: '12.1' },
+      { tipo: 'abre', herramienta: 'caja', titulo: 'Caja de ritmos', texto: 'El Channel rack libre: 16 pasos, tu tempo y tu patrón guardado.' },
+      { tipo: 'leccion', id: '12.2' },
+      { tipo: 'meta', modo: 'eco', nivel: 5, dificultad: 2, titulo: 'Eco · nivel 5', texto: 'Escucha un compás y repítelo: llega al contratiempo, los golpes que caen en las «y».' },
+      { tipo: 'leccion', id: '2.5' },
+      {
+        tipo: 'reto',
+        id: 'ruta-beats-generos',
+        titulo: 'Tu beat en dos géneros',
+        texto: 'En FL Studio, el mismo kit en dos patrones: uno de boom bap a 90 BPM y uno de dembow a 95.',
+      },
+    ],
+  },
+  '808-hihats': {
+    titulo: '808 y hi-hats',
+    paradas: [
+      { tipo: 'leccion', id: '1.4' },
+      { tipo: 'leccion', id: '12.3' },
+      { tipo: 'meta', modo: 'seguir', nivel: 7, dificultad: 2, titulo: 'Seguir · nivel 7', texto: 'Semicorcheas a tiempo: cuatro golpes en cada tiempo, el motor de los hi-hats.' },
+      { tipo: 'leccion', id: '12.4' },
+      { tipo: 'leccion', id: '12.5' },
+      {
+        tipo: 'reto',
+        id: 'ruta-beats-trap',
+        titulo: 'Tu beat de trap de 8 compases',
+        texto: 'Hats con un roll, el 808 afinado a la tónica y una variación en el compás 8.',
+      },
+    ],
+  },
+  'acordes-beat': {
+    titulo: 'Acordes en el beat',
+    paradas: [
+      { tipo: 'leccion', id: '4.5' },
+      { tipo: 'leccion', id: '5.4' },
+      { tipo: 'meta', modo: 'eco', nivel: 7, dificultad: 2, titulo: 'Eco · nivel 7', texto: 'Semicorcheas de memoria: escucha un compás y repítelo.' },
+      { tipo: 'leccion', id: '5.6' },
+      {
+        tipo: 'reto',
+        id: 'ruta-beats-loop',
+        titulo: 'Acordes, 808 y batería',
+        texto: 'Un loop de 8 compases: tu progresión, el 808 en la fundamental de cada acorde y tu batería.',
+      },
+    ],
+  },
+  'loop-cancion': {
+    titulo: 'Del loop a la canción',
+    paradas: [
+      { tipo: 'leccion', id: '10.1' },
+      { tipo: 'leccion', id: '10.3' },
+      { tipo: 'meta', modo: 'seguir', nivel: 9, dificultad: 2, titulo: 'Seguir · nivel 9', texto: 'Swing a tiempo: las semicorcheas que se balancean.' },
+      {
+        tipo: 'reto',
+        id: 'ruta-beats-completo',
+        titulo: 'Tu primer beat completo',
+        texto: 'De 2 a 3 minutos con intro, verso y coro, listo para que alguien le escriba encima.',
+      },
+    ],
+  },
 }
 
 export const RUTAS = {
@@ -237,15 +302,32 @@ export const RUTAS = {
     practica: 'oido',
     tramos: ['notas-teclado', 'intervalos-escalas', 'triadas', 'acordes-tonalidad', 'funciones', 'progresiones'],
   },
+  beats: {
+    id: 'beats',
+    area: 'produccion', // su área de conocimiento (content/areas.js): fila de Aprender › Rutas
+    nombre: 'Beats',
+    titulo: 'Ruta de beats',
+    acento: 'var(--color-produccion)',
+    descripcion: 'El Channel rack, el groove de cada género, hi-hats y 808, y acordes y bajo dentro del beat, en FL Studio.',
+    modulos: [2, 12, 1, 4, 5, 10],
+    practica: 'ritmo',
+    tramos: ['primer-beat', '808-hihats', 'acordes-beat', 'loop-cancion'],
+  },
 }
+
+/** Rutas de un área que aún no existen: salen en Aprender › Rutas, punteadas y con «Próximamente». */
+export const RUTAS_PROXIMAS = [
+  { id: 'sound-design', area: 'produccion', nombre: 'Sound design' },
+  { id: 'mezcla', area: 'produccion', nombre: 'Mezcla y máster' },
+]
 
 // Las paradas de cada ruta, en orden, con el tramo al que pertenecen.
 for (const ruta of Object.values(RUTAS)) {
   ruta.paradas = ruta.tramos.flatMap((tramo) => TRAMOS[tramo].paradas.map((p) => ({ ...p, tramo })))
 }
 
-/** Orden de las rutas (en Inicio y al deslizar entre rutas, en bucle). Melodía justo antes de Acordes: la prepara. */
-export const ORDEN_RUTAS = ['ritmo', 'letras', 'melodia', 'acordes']
+/** Orden de las rutas (en Inicio y al deslizar entre rutas, en bucle). Melodía justo antes de Acordes: la prepara; Beats al final. */
+export const ORDEN_RUTAS = ['ritmo', 'letras', 'melodia', 'acordes', 'beats']
 
 export const getRuta = (id) => RUTAS[id]
 

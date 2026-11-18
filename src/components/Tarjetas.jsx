@@ -453,3 +453,84 @@ export function TarjetaFlow({ abierta }) {
     </Pulsable>
   )
 }
+
+const LECCION_CAJA = codigoLeccion(HERRAMIENTAS.caja.leccion)
+
+/**
+ * Tarjetita de la CAJA DE RITMOS (Herramientas; área Producción): un mini Channel rack. Punteada, con candado y que
+ * tiembla hasta terminar la P1.1, como la del Flow.
+ */
+export function TarjetaCaja({ abierta }) {
+  const [ref, temblar] = useTemblor()
+  const acento = 'var(--color-produccion)'
+  // Un compás en miniatura: bombo, palmas y hats (como el boom bap de la P1.1).
+  const filas = [
+    [0, 7, 10],
+    [4, 12],
+    [0, 2, 4, 6, 8, 10, 12, 14],
+  ]
+  const dibujo = (
+    <span className="relative grid size-20 shrink-0 place-items-center" aria-hidden>
+      <svg viewBox="0 0 80 40" className="w-full">
+        {filas.flatMap((pasos, f) =>
+          Array.from({ length: 16 }, (_, p) => (
+            <rect
+              key={`${f}-${p}`}
+              x={p * 5 + Math.floor(p / 4) * 0.6}
+              y={4 + f * 11.5}
+              width={3.8}
+              height={9}
+              rx={1.2}
+              style={{ fill: abierta && pasos.includes(p) ? acento : Math.floor(p / 4) % 2 ? 'var(--color-zinc-300)' : 'var(--color-zinc-200)' }}
+            />
+          )),
+        )}
+      </svg>
+      {!abierta && (
+        <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-zinc-400 text-white">
+          <Candado className="size-3.5" />
+        </span>
+      )}
+    </span>
+  )
+  if (!abierta) {
+    return (
+      <div ref={ref}>
+        <Pulsable
+          tipo="tarjeta"
+          onClick={temblar}
+          data-tarjeta-caja="bloqueada"
+          aria-label={`Caja de ritmos: se abre al terminar la lección ${LECCION_CAJA}`}
+          className="flex w-full items-center gap-4 rounded-3xl border-2 border-dashed border-zinc-300 p-3 pr-4 text-left"
+        >
+          {dibujo}
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-juego text-lg uppercase tracking-wide text-zinc-500">Caja de ritmos</span>
+            <span className="text-base font-semibold text-zinc-500">Termina la {LECCION_CAJA}</span>
+          </span>
+        </Pulsable>
+      </div>
+    )
+  }
+  return (
+    <Pulsable
+      href={rutas.caja()}
+      tipo="tarjeta"
+      data-tarjeta-caja="abierta"
+      aria-label="Caja de ritmos: tu beat en el Channel rack"
+      className="flex items-center gap-4 rounded-3xl border-2 border-zinc-200 bg-white p-3 pr-4 text-left"
+      style={{ boxShadow: RELIEVE }}
+    >
+      {dibujo}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="font-juego text-lg uppercase tracking-wide text-zinc-800">Caja de ritmos</span>
+        <span className="font-titulo text-xl font-bold leading-tight" style={{ color: tinta(acento) }}>
+          Tu beat en el Channel rack
+        </span>
+      </span>
+      <span className="text-2xl text-zinc-400" aria-hidden>
+        ›
+      </span>
+    </Pulsable>
+  )
+}

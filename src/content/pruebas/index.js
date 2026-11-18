@@ -16,9 +16,10 @@ import modulo2 from './modulo-2.js'
 import modulo3 from './modulo-3.js'
 import modulo4 from './modulo-4.js'
 import modulo5 from './modulo-5.js'
+import modulo12 from './modulo-12.js'
 
 /** id de lección → sus preguntas (rondas de `elegir`, o de `circulo` con `tipo: 'circulo'`). */
-export const PREGUNTAS = { ...modulo1, ...modulo2, ...modulo3, ...modulo4, ...modulo5, ...letras }
+export const PREGUNTAS = { ...modulo1, ...modulo2, ...modulo3, ...modulo4, ...modulo5, ...modulo12, ...letras }
 
 /** ¿Esta lección entra en las pruebas? (existe y tiene preguntas). */
 const conPreguntas = (id) => leccionDisponible(id) && PREGUNTAS[id]?.length > 0

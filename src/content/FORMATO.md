@@ -129,6 +129,7 @@ pendiente; si una lección no tiene banco, no entra en la prueba. Reglas: al niv
 | `pulso` | `components/exercises/Pulso.jsx` | Ritmo en bucle: tocar al pulso, tap tempo, explorar tempos |
 | `marcar` | `components/exercises/MarcaPalabras.jsx` | Tocar palabras o sílabas en unos versos (ruta de letras) |
 | `flow` | `components/exercises/FlowEjercicio.jsx` | Acomodar las sílabas de un verso para que las tónicas caigan en el pulso |
+| `rack` | `components/exercises/RackEjercicio.jsx` | Channel rack de FL Studio (S1): oír cada capa, copiar un patrón (con guía o de oído) o hacer uno libre |
 
 ### `marcar`
 
@@ -462,6 +463,31 @@ objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, g
   // muestra en lugar de los BPM: así sirve también para comparar versiones (p. ej. cuánto swing).
   // Textos opcionales: elige ('Elige cuánto swing'), prueba ('Prueba 3 cantidades de swing'), tituloBien.
 ```
+
+### `rack` (Channel rack, Producción)
+
+```js
+import { CORCHEAS, sinFila, sonidoRack } from '../../theory/rack.js'
+{
+  tipo: 'rack',
+  titulo: 'Pon el backbeat',
+  // filas: 'kick' (Kick, bombo), 'clap' (Clap, palmas), 'snare' (Snare, caja), 'hat' (Hat), 'tom' (Perc, percusión)
+  rack: { filas: ['kick', 'clap'], bpm: 90, patron: { kick: [0, 8] }, fijas: ['kick'] },  // patron = lo que ya viene puesto
+  objetivo: {
+    tipo: 'copiar',              // 'capas' = oír cada fila sola (silenciando las demás) · 'libre' = `golpes: 6` encendidos
+    instruccion: 'El bombo ya está. Pon las **palmas** en el **2** y en el **4**.',
+    patron: { clap: [4, 12] },   // pasos 0–15 (0 = el 1; 4 = el 2; 8 = el 3; 12 = el 4); solo cuentan las filas no `fijas`
+    guia: false,                 // true = contorno punteado de lo que va
+    escuchar: false,             // true = dictado: botón «Escuchar el original» (el patrón entero, sin verlo)
+    pista: '…',                  // sale con el 1.er error, junto a «Al bombo le faltan 2 golpes y le sobra 1.»
+    explicacion: '…',
+  },
+}
+```
+
+Un patrón también sirve como **sonido** de cualquier paso: `sonidoRack(patron, { bpm, compases, etiqueta, mudas })` (un groove
+de 16 casillas; `sinFila(patron, 'hat')` = el mismo sin una fila, para «¿Qué le falta?»). Ejemplos en `PATRONES` de
+`theory/rack.js` (`boomBap`, `pop`) y `CORCHEAS` / `SEMICORCHEAS` para los hats.
 
 ## Crear un tipo de paso nuevo
 

@@ -49,6 +49,7 @@ export const INTERACCIONES = {
   E1: ['practicar', 'Marcar palabras'],
   E2: ['practicar', 'Marcar sílabas'],
   E3: ['practicar', 'Acomodar el flow'],
+  S1: ['practicar', 'Channel rack'],
   X1: ['reto', null], // la etiqueta dice solo «Reto en FL»
 }
 
@@ -99,6 +100,8 @@ export function codigoPaso(paso, indice = -1) {
       return paso.rondas?.some((r) => r.unidad === 'silaba') ? 'E2' : 'E1'
     case 'flow':
       return 'E3'
+    case 'rack':
+      return 'S1'
     case 'reto':
       return 'X1'
     default:
