@@ -25,7 +25,7 @@ import {
   rondasReconoce,
   seAbrenCon,
 } from '../theory/generos.js'
-import { GENEROS, PASOS, avisoRack, cambiosPatron, comparar, normalizar, sonidoGenero } from '../theory/rack.js'
+import { GENEROS, PASOS, avisoRack, cambiosPatron, comparar, marcasRack, normalizar, sonidoGenero } from '../theory/rack.js'
 import { Atras, Bombilla, Candado, Check } from '../ui/Iconos.jsx'
 import { RESORTE, itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
@@ -368,7 +368,7 @@ function Ficha({ id, estado, estados, datos, ctx, onDominar, logro }) {
           <Candado className="size-5 shrink-0" />
           {estado === 'leccion'
             ? `Se abre con la ${codigoLeccion(g.leccion)}.`
-            : g.abre && !padres.some((p) => estados[p] !== 'dominado')
+            : g.abre
               ? `Se abre con la ${codigoLeccion(g.abre)}.`
               : `Domina ${lista2(padres.filter((p) => estados[p] !== 'dominado').map((p) => GENEROS[p].nombre))} para abrirlo.`}
         </p>
@@ -655,7 +655,7 @@ function Programalo({ id }) {
     } else if (total >= 2) {
       setResultado({ ...r, rojo: true })
       setPatron(meta)
-    } else setResultado({ ...r, texto: avisoRack(r, filas) })
+    } else setResultado({ ...r, texto: avisoRack(r, filas, meta, patron) })
   }
 
   const igual = comparar(patron, inicio, filas).ok
@@ -665,17 +665,14 @@ function Programalo({ id }) {
     accion = {
       label: 'Continuar',
       onClick: () => volverAlArbol(id, null),
-      feedback: { tipo: 'error', titulo: 'Así queda.', texto: `${Object.keys(resultado.faltan).length ? 'Con borde rojo, lo que faltaba. ' : ''}Vuelve a intentarlo cuando quieras.` },
+      feedback: { tipo: 'error', titulo: 'Así queda.', texto: `${Object.keys(resultado.faltan).length + Object.keys(resultado.distintos ?? {}).length ? 'Con borde rojo, lo que faltaba. ' : ''}Vuelve a intentarlo cuando quieras.` },
     }
   else if (resultado) accion = { label: 'Comprobar', onClick: comprobar, feedback: { tipo: 'mal', titulo: 'Casi.', texto: resultado.texto } }
   else accion = { label: 'Comprobar', onClick: comprobar, disabled: igual, ayuda: igual ? (g.padres ? `Empieza desde ${GENEROS[g.padres[0]].nombre}` : 'Toca los pasos para encenderlos') : null }
 
-  let marcas = null
-  if (resultado && !resultado.ok) {
-    marcas = {}
-    if (resultado.rojo) for (const [f, l] of Object.entries(resultado.faltan)) for (const p of l) marcas[`${f}:${p}`] = 'mal'
-    else for (const [f, l] of Object.entries(resultado.sobran)) for (const p of l) marcas[`${f}:${p}`] = 'sobra'
-  }
+  const marcas = marcasRack(resultado)
+  // El pincel, si el género o su padre llevan rolls o suaves (drill, jersey club, dubstep: P1.3).
+  const pinceles = Boolean(meta.tipo || inicio.tipo)
 
   return (
     <div className="flex min-h-dvh flex-col" data-prueba-programa={id}>
@@ -692,6 +689,7 @@ function Programalo({ id }) {
           swing={g.swing ?? null}
           color={ACENTO}
           marcas={marcas}
+          pinceles={pinceles}
         />
       </main>
       <BarraAccion accion={accion} />

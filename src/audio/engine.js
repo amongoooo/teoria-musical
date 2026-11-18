@@ -381,8 +381,12 @@ export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar, swing = () 
       // Swing (la perilla del rack): los pasos impares se retrasan hasta 1/3 de casilla (se lee en cada tiempo: girar
       // la perilla se oye enseguida).
       const sw = Math.max(0, Math.min(1, swing() || 0)) / 3
-      for (let s = 0; s < 4; s++)
-        for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: (s + (s % 2 ? sw : 0)) / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
+      // `dentro` (0–1): dónde cae el golpe dentro de la casilla (los rolls de la P1.3); con swing, el roll se aprieta en
+      // lo que queda de la casilla.
+      for (let s = 0; s < 4; s++) {
+        const d = s % 2 ? sw : 0
+        for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: (s + d + (g.dentro ?? 0) * (1 - d)) / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
+      }
       return eventos
     },
     { bpm, tiempos: 1 },

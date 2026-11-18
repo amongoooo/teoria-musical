@@ -5,6 +5,25 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-18-rolls',
+    fecha: '18 nov 2026',
+    titulo: 'Hi-hats y rolls',
+    cosas: [
+      {
+        texto: 'Lección nueva **P1.3 «Hi-hats y rolls»**: corcheas, tresillos y semicorcheas, golpes **suaves** y **rolls** de 2 y de 3, como en el trap.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/12.3' },
+      },
+      {
+        texto: 'El Channel rack tiene **pincel**: Golpe, Suave, ×2 y ×3. Eliges uno y pintas los pasos. En la **Caja de ritmos** sale al terminar la lección.',
+        donde: { etiqueta: 'Abrir la Caja de ritmos', href: '#/caja' },
+      },
+      {
+        texto: 'En el **árbol de géneros** se abren tres ramas con la lección: **drill**, **jersey club** y **dubstep**.',
+        donde: { etiqueta: 'Abrir el árbol', href: '#/generos' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-arbol',
     fecha: '18 nov 2026',
     titulo: 'El árbol de géneros',

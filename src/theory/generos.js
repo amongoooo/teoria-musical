@@ -25,8 +25,8 @@ const leccionHecha = (progreso, id) => Boolean(progreso?.lecciones?.[id]?.comple
 /**
  * Estado de un género en el árbol:
  *  - 'dominado': pasó las tres pruebas (✓ verde).
- *  - 'abierto': se puede practicar (los de la P1.2 al terminarla; los demás al dominar a sus padres).
- *  - 'leccion': sus padres están dominados, pero hace falta además una lección («Se abre con la P1.3»).
+ *  - 'abierto': se puede practicar (los de `abre` al terminar su lección: P1.2 y P1.3; los demás al dominar a sus padres).
+ *  - 'leccion': sus padres están dominados, pero hace falta además una lección («Se abre con la P1.4»).
  *  - 'bloqueado': falta dominar a su padre (o a sus dos padres).
  * `domina(id)` dice si un género está dominado (progress/generos.js). En modo administrador, todo abierto.
  */
@@ -90,7 +90,10 @@ export function filasDeGenero(id) {
   return Object.keys(FILAS_RACK).filter((f) => ids.some((x) => GENEROS[x].patron[f]?.length))
 }
 
-/** Los géneros que se abren al dominar este (para el destello en oro). */
+/**
+ * Los géneros que se abren al dominar este (para el destello en oro). Los que abre una lección (`abre`: el trap con la
+ * P1.2; drill, jersey club y dubstep con la P1.3) no dependen del padre: no cuentan.
+ */
 export function seAbrenCon(id, { domina, progreso, admin = false }) {
-  return hijosDe(id).filter((h) => estadoGenero(h, { domina, progreso, admin }) === 'abierto')
+  return hijosDe(id).filter((h) => !GENEROS[h].abre && estadoGenero(h, { domina, progreso, admin }) === 'abierto')
 }

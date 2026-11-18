@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { acentoLeccion } from '../../content/index.js'
-import { FILAS_BASICAS, FILAS_RACK, avisoRack, comparar, golpes, normalizar, sonidoRack } from '../../theory/rack.js'
+import { FILAS_BASICAS, FILAS_RACK, avisoRack, comparar, cuantos, golpes, marcasRack, mezclar, normalizar, sonidoRack } from '../../theory/rack.js'
 import { POP } from '../../ui/movimiento.js'
 import BotonSonido from '../BotonSonido.jsx'
 import ChannelRack from '../ChannelRack.jsx'
@@ -10,7 +10,8 @@ import Rich from '../Rich.jsx'
 /**
  * Paso `rack` (S1 «Channel rack», Producción 1): el Channel rack de FL Studio en el celular (components/ChannelRack.jsx).
  *
- * paso.rack: { filas: ['kick', 'clap', 'hat', 'tom'], bpm: 90, patron (lo que ya viene puesto), fijas: ['kick'] }
+ * paso.rack: { filas: ['kick', 'clap', 'hat', 'tom'], bpm: 90, patron (lo que ya viene puesto), fijas: ['kick'],
+ *             pinceles: true (P1.3: el pincel Golpe · Suave · ×2 · ×3; los patrones pueden llevar `tipo`, theory/rack.js) }
  * paso.objetivo:
  *  - { tipo: 'capas', mensaje }                       → escuchar cada fila SOLA (silenciando las demás) mientras suena
  *  - { tipo: 'copiar', patron, guia, escuchar, explicacion, pista }
@@ -18,7 +19,7 @@ import Rich from '../Rich.jsx'
  *        `escuchar: true` = dictado: botón «Escuchar el original» (el patrón, sin verlo).
  *        Se puede fallar: al 1.er error, los pasos de más tachados en oro y cuántos faltan o sobran por fila (sin decir
  *        dónde); al 2.º, la solución con lo que faltaba en rojo, y va al repaso.
- *  - { tipo: 'libre', golpes: 6, mensaje }            → encender al menos N pasos
+ *  - { tipo: 'libre', golpes: 6, rolls: 1, suaves: 1, mensaje } → encender al menos N pasos (y, si se piden, rolls y suaves)
  */
 export default function RackEjercicio(props) {
   const { objetivo } = props.paso
@@ -115,7 +116,7 @@ function Copiar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
   const filas = filasDe(paso)
   const fijas = paso.rack?.fijas ?? []
   const editables = filas.filter((f) => !fijas.includes(f))
-  const meta = normalizar({ ...normalizar(paso.rack?.patron, filas), ...objetivo.patron }, filas)
+  const meta = normalizar(mezclar(normalizar(paso.rack?.patron, filas), objetivo.patron), filas)
   const [patron, setPatron] = useState(() => normalizar(paso.rack?.patron, filas))
   const [mudas, setMudas] = useState([])
   const [intentos, setIntentos] = useState(0)
@@ -136,7 +137,7 @@ function Copiar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
         avanza: true,
         feedback: resultado?.ok
           ? { tipo: 'bien', titulo: '¡Así suena!', texto: objetivo.explicacion ?? 'Dale a Reproducir para escucharlo.' }
-          : { tipo: 'error', titulo: 'Así queda.', texto: [objetivo.explicacion, Object.keys(resultado?.faltan ?? {}).length ? 'Con borde rojo, lo que faltaba.' : null].filter(Boolean).join(' ') },
+          : { tipo: 'error', titulo: 'Así queda.', texto: [objetivo.explicacion, Object.keys(resultado?.faltan ?? {}).length + Object.keys(resultado?.distintos ?? {}).length ? 'Con borde rojo, lo que faltaba.' : null].filter(Boolean).join(' ') },
         onClick: siguiente,
       })
       return
@@ -155,7 +156,7 @@ function Copiar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
         setResultado({ ...r, rojo: true })
         setPatron(meta)
         setSolucion(true)
-      } else setResultado({ ...r, texto: avisoRack(r, editables) })
+      } else setResultado({ ...r, texto: avisoRack(r, editables, meta, patron) })
     }
     const mal = resultado && !resultado.ok
     const vacio = editables.every((f) => !patron[f]?.length)
@@ -168,13 +169,8 @@ function Copiar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
     })
   }, [patron, resultado, intentos, terminado, objetivo, setAccion, siguiente, completar, fallo]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Marcas: en el 1.er error, lo que sobra tachado en oro; con la solución, lo que faltaba en rojo.
-  let marcas = null
-  if (resultado && !resultado.ok) {
-    marcas = {}
-    if (resultado.rojo) for (const [f, l] of Object.entries(resultado.faltan)) for (const p of l) marcas[`${f}:${p}`] = 'mal'
-    else for (const [f, l] of Object.entries(resultado.sobran)) for (const p of l) marcas[`${f}:${p}`] = 'sobra'
-  }
+  // Marcas: en el 1.er error, lo que sobra (o lleva otro pincel) tachado en oro; con la solución, lo que faltaba en rojo.
+  const marcas = marcasRack(resultado)
 
   return (
     <div className="flex flex-col gap-4">
@@ -193,6 +189,7 @@ function Copiar({ paso, leccionId, setAccion, siguiente, completar, fallo }) {
         color={color}
         guia={objetivo.guia && !terminado ? meta : null}
         marcas={marcas}
+        pinceles={Boolean(paso.rack?.pinceles)}
       />
     </div>
   )
@@ -207,24 +204,47 @@ function Libre({ paso, leccionId, setAccion, siguiente }) {
   const [patron, setPatron] = useState(() => normalizar(paso.rack?.patron, filas))
   const [mudas, setMudas] = useState([])
   const meta = paso.objetivo.golpes ?? 6
+  const metaRolls = paso.objetivo.rolls ?? 0
+  const metaSuaves = paso.objetivo.suaves ?? 0
   const n = golpes(patron)
-  const listo = n >= meta
+  const rolls = cuantos(patron, 'roll')
+  const suaves = cuantos(patron, 's')
+  const listo = n >= meta && rolls >= metaRolls && suaves >= metaSuaves
+  // Lo que falta, de uno en uno: primero los pasos, luego el roll y el suave.
+  const ayuda =
+    n < meta
+      ? `Enciende ${meta} pasos (${Math.min(n, meta)}/${meta})`
+      : rolls < metaRolls
+        ? metaRolls === 1 ? 'Haz un roll con ×2 o ×3' : `Haz ${metaRolls} rolls (${rolls}/${metaRolls})`
+        : suaves < metaSuaves
+          ? metaSuaves === 1 ? 'Pon un golpe suave' : `Pon ${metaSuaves} golpes suaves (${suaves}/${metaSuaves})`
+          : null
 
   useEffect(() => {
     setAccion({
       label: 'Continuar',
       avanza: true,
       disabled: !listo,
-      ayuda: listo ? null : `Enciende ${meta} pasos (${Math.min(n, meta)}/${meta})`,
+      ayuda,
       feedback: listo ? { tipo: 'bien', titulo: '¡Tu beat!', texto: paso.objetivo.mensaje } : null,
       onClick: siguiente,
     })
-  }, [listo, n, meta, paso.objetivo.mensaje, setAccion, siguiente])
+  }, [listo, ayuda, paso.objetivo.mensaje, setAccion, siguiente])
 
   return (
     <div className="flex flex-col gap-4">
       <Instruccion texto={paso.objetivo.instruccion} />
-      <ChannelRack filas={filas} patron={patron} onCambio={setPatron} mudas={mudas} onMudas={setMudas} bpm={paso.rack?.bpm ?? 90} color={acentoLeccion(leccionId)} />
+      <ChannelRack
+        filas={filas}
+        patron={patron}
+        onCambio={setPatron}
+        fijas={paso.rack?.fijas ?? []}
+        mudas={mudas}
+        onMudas={setMudas}
+        bpm={paso.rack?.bpm ?? 90}
+        color={acentoLeccion(leccionId)}
+        pinceles={Boolean(paso.rack?.pinceles)}
+      />
     </div>
   )
 }

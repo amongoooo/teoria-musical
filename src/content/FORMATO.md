@@ -500,6 +500,14 @@ import { CORCHEAS, sinFila, sonidoRack } from '../../theory/rack.js'
 }
 ```
 
+**Pinceles: rolls y golpes suaves** (P1.3): con `rack: { …, pinceles: true }` sale encima de las filas el **pincel**
+(Golpe · Suave · ×2 · ×3). En el patrón, lo que no es un golpe normal va aparte, en `tipo` (por fila, paso → `'s'`, `2` o
+`3`): `{ hat: SEMICORCHEAS, tipo: { hat: { 1: 's', 14: 2, 15: 2 } } }`. Sirve igual en `rack.patron`, `objetivo.patron`
+(la fila del objetivo reemplaza a la de `rack.patron` con sus rolls: `mezclar`), en `sonidoRack` y en `GENEROS`. Un roll
+de N suena con N golpes repartidos en la casilla, creciendo; un suave, con menos velocity. El aviso del 1.er error
+también habla de rolls y suaves («A los hats les falta un roll.»). En `libre`, `rolls: 1` y `suaves: 1` piden al menos
+uno de cada (`cuantos(patron, 'roll' | 's')`).
+
 Un patrón también sirve como **sonido** de cualquier paso: `sonidoRack(patron, { bpm, compases, etiqueta, mudas })` (un groove
 de 16 casillas; `sinFila(patron, 'hat')` = el mismo sin una fila, para «¿Qué le falta?»). Ejemplos en `PATRONES` de
 `theory/rack.js` (`boomBap`, `pop`) y `CORCHEAS` / `SEMICORCHEAS` para los hats.
