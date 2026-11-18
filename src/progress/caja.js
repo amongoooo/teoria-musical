@@ -1,5 +1,5 @@
 // Caja de ritmos (#/caja): recuerda el patrón y el tempo (solo en este dispositivo; no viaja con «Tu progreso»).
-import { PATRONES, normalizar } from '../theory/rack.js'
+import { FILAS_CAJA, PATRONES, normalizar } from '../theory/rack.js'
 
 const CLAVE = 'teoria-musical:caja:v1'
 
@@ -7,11 +7,11 @@ const CLAVE = 'teoria-musical:caja:v1'
 export function leerCaja() {
   try {
     const d = JSON.parse(localStorage.getItem(CLAVE))
-    if (d?.patron) return { patron: normalizar(d.patron), bpm: Number(d.bpm) || 90 }
+    if (d?.patron) return { patron: normalizar(d.patron, FILAS_CAJA), bpm: Number(d.bpm) || 90 }
   } catch {
     // Sin almacenamiento: empieza con el ejemplo.
   }
-  return { patron: normalizar(PATRONES.boomBap), bpm: 90 }
+  return { patron: normalizar(PATRONES.boomBap, FILAS_CAJA), bpm: 90 }
 }
 
 export function guardarCaja(datos) {

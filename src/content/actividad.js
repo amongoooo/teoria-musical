@@ -21,6 +21,7 @@ export const INTERACCIONES = {
   L8: [null, 'Texto + letra analizada'],
   L9: [null, 'Texto + mapa de funciones'],
   L10: [null, 'Texto + rejilla de compases'],
+  L11: [null, 'Rack que cambia de género'],
   O1: ['oido', 'Elegir entre sonidos'],
   O2: ['oido', 'Escuchar y elegir'],
   O3: ['oido', 'Quiz'],
@@ -68,6 +69,8 @@ export function codigoPaso(paso, indice = -1) {
       return paso.roll ? 'L3' : paso.sonidos?.length || paso.fichas?.filas?.length ? 'L2' : 'L1'
     case 'siente':
       return 'L5'
+    case 'generos':
+      return 'L11'
     case 'elegir': {
       const rondas = paso.rondas ?? []
       if (indice === 0 && rondas.length === 1) return 'O5'

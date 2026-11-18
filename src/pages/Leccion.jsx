@@ -9,6 +9,7 @@ import EscuchaElige from '../components/exercises/EscuchaElige.jsx'
 import ExploraFrecuencia from '../components/exercises/ExploraFrecuencia.jsx'
 import PianoRollEjercicio from '../components/exercises/PianoRollEjercicio.jsx'
 import RackEjercicio from '../components/exercises/RackEjercicio.jsx'
+import PasoGeneros from '../components/pasos/PasoGeneros.jsx'
 import Pulso from '../components/exercises/Pulso.jsx'
 import RetoFL from '../components/exercises/RetoFL.jsx'
 import TocaEnPiano from '../components/exercises/TocaEnPiano.jsx'
@@ -55,6 +56,7 @@ const PASOS = {
   marcar: MarcaPalabras,
   flow: FlowEjercicio,
   rack: RackEjercicio,
+  generos: PasoGeneros,
 }
 
 /**

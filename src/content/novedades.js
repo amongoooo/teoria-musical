@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-18-generos',
+    fecha: '18 nov 2026',
+    titulo: 'El groove de cada género',
+    cosas: [
+      {
+        texto: 'Lección nueva **P1.2 «El groove de cada género»**: pop, boom bap, trap, house y dembow con el **mismo kit**. Lo que cambia es el tempo, el bombo y la caja.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/12.2' },
+      },
+      {
+        texto: 'Un **rack que cambia de género**: tocas uno y el beat se transforma sin dejar de sonar; lo que cambió brilla en **oro** y el tempo se desliza.',
+      },
+      {
+        texto: 'El Channel rack suma el **hat abierto** (O.Hat) y la **caja**. En la **Caja de ritmos**, «Empezar con» trae los cinco géneros con su tempo.',
+        donde: { etiqueta: 'Abrir la Caja de ritmos', href: '#/caja' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-produccion',
     fecha: '18 nov 2026',
     titulo: 'Producción: tu primer beat',

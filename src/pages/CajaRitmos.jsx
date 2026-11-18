@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import ChannelRack from '../components/ChannelRack.jsx'
 import { guardarCaja, leerCaja } from '../progress/caja.js'
-import { FILAS_BASICAS, PATRONES, normalizar } from '../theory/rack.js'
+import { FILAS_CAJA, GENEROS, normalizar } from '../theory/rack.js'
 import { itemLista, lista } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { BotonInicio } from '../ui/Volver.jsx'
@@ -11,12 +11,8 @@ const ACENTO = 'var(--color-produccion)'
 const BPM_MIN = 60
 const BPM_MAX = 180
 
-/** Para empezar: el beat de la P1.1, el del pop o vacío. */
-const INICIOS = [
-  { id: 'boomBap', nombre: 'Boom bap', patron: PATRONES.boomBap },
-  { id: 'pop', nombre: 'Pop', patron: PATRONES.pop },
-  { id: 'vacio', nombre: 'Vacío', patron: {} },
-]
+/** Para empezar: un género (con su tempo; theory/rack.js → GENEROS, los de la P1.2) o vacío. */
+const INICIOS = [...Object.values(GENEROS).map((g) => ({ id: g.id, nombre: g.nombre, patron: g.patron, bpm: g.bpm })), { id: 'vacio', nombre: 'Vacío', patron: {} }]
 
 /**
  * CAJA DE RITMOS (#/caja; herramienta del área Producción, se abre con la P1.1): el Channel rack libre. El patrón y el
@@ -38,7 +34,7 @@ export default function CajaRitmos() {
 
       <motion.div variants={itemLista}>
         <ChannelRack
-          filas={FILAS_BASICAS}
+          filas={FILAS_CAJA}
           patron={datos.patron}
           onCambio={(patron) => setDatos((x) => ({ ...x, patron }))}
           mudas={mudas}
@@ -67,7 +63,7 @@ export default function CajaRitmos() {
           {INICIOS.map((i) => (
             <Pulsable
               key={i.id}
-              onClick={() => setDatos((x) => ({ ...x, patron: normalizar(i.patron) }))}
+              onClick={() => setDatos((x) => ({ ...x, patron: normalizar(i.patron, FILAS_CAJA), bpm: i.bpm ?? x.bpm }))}
               data-inicio={i.id}
               className="min-h-11 rounded-full border-2 border-zinc-200 bg-white px-4 text-base font-semibold text-zinc-800"
             >
