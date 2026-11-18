@@ -1,4 +1,4 @@
-// Batería sintetizada con Tone.js (sin samples): bombo, caja, hi-hat, palmas, clic de metrónomo y un tom agudo
+// Batería sintetizada con Tone.js (sin samples): bombo, caja, hi-hat (cerrado y abierto), palmas, clic de metrónomo y un tom agudo
 // (el patrón del entrenamiento de ritmo; `toque` es el mismo tom en otra voz, para lo que se toca en vivo en el pad).
 import * as Tone from 'tone'
 
@@ -22,6 +22,11 @@ function crearKit() {
   const hat = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.045, sustain: 0 } }).connect(filtroHat)
   hat.volume.value = -10
 
+  // Hat abierto (Producción, P1.2): el mismo ruido con cola larga. Un hat cerrado lo corta, como en una batería real.
+  const filtroAbierto = new Tone.Filter(7000, 'highpass').toDestination()
+  const ohat = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.32, sustain: 0, release: 0.03 } }).connect(filtroAbierto)
+  ohat.volume.value = -11
+
   const filtroClap = new Tone.Filter(1200, 'bandpass').toDestination()
   const clap = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.001, decay: 0.12, sustain: 0 } }).connect(filtroClap)
   clap.volume.value = 2
@@ -41,7 +46,7 @@ function crearKit() {
     return t
   }
 
-  return { kick, snare, cuerpo, hat, clap, click, tom: crearTom(), toque: crearTom() }
+  return { kick, snare, cuerpo, hat, ohat, clap, click, tom: crearTom(), toque: crearTom() }
 }
 
 /** Toca un golpe de batería en el instante `t` (tiempo del contexto de audio). */
@@ -54,7 +59,15 @@ export function golpe(nombre, t, velocity = 0.8) {
     else if (nombre === 'snare') {
       kit.snare.triggerAttackRelease(0.15, t, v)
       kit.cuerpo.triggerAttackRelease('G2', 0.08, t, v)
-    } else if (nombre === 'hat') kit.hat.triggerAttackRelease(0.04, t, v)
+    } else if (nombre === 'hat') {
+      kit.hat.triggerAttackRelease(0.04, t, v)
+      // El cerrado corta al abierto (el que suene en ese momento).
+      try {
+        kit.ohat.triggerRelease(t)
+      } catch {
+        // no había hat abierto sonando
+      }
+    } else if (nombre === 'ohat') kit.ohat.triggerAttackRelease(0.3, t, v)
     else if (nombre === 'clap') kit.clap.triggerAttackRelease(0.1, t, v)
     else if (nombre === 'click') kit.click.triggerAttackRelease(v >= 0.9 ? 'E6' : 'A5', 0.04, t, v)
     else if (nombre === 'tom' || nombre === 'toque') kit[nombre].triggerAttackRelease('A3', 0.12, t, v)
@@ -63,4 +76,4 @@ export function golpe(nombre, t, velocity = 0.8) {
   }
 }
 
-export const NOMBRES_BATERIA = ['kick', 'snare', 'hat', 'clap', 'click', 'tom']
+export const NOMBRES_BATERIA = ['kick', 'snare', 'hat', 'ohat', 'clap', 'click', 'tom']

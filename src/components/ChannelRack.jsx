@@ -22,9 +22,11 @@ import { IconoPlay } from './BotonSonido.jsx'
  *      'sobra' = paso de más (oro, tachado: primer error) · 'mal' = el que faltaba (contorno rojo grueso sobre rojo
  *      suave: segundo error; no relleno, porque el rojo coral de Producción es el de los pasos encendidos)
  *  - alPaso(paso, audibles): cuando se OYE cada paso del bucle (audibles = filas que suenan en ese momento)
+ *      'cambio' = paso que acaba de cambiar al pasar de un género a otro (contorno de oro que se apaga solo; P1.2)
  *  - extra: algo más en la barra de arriba (el tempo de la Caja de ritmos)
+ *  - api: ref que recibe { empezar, sonando } (para arrancar el bucle desde fuera, p. ej. al elegir un género)
  */
-export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null }) {
+export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null }) {
   const [sonando, setSonando] = useState(false)
   const [cabezal, setCabezal] = useState(null)
   const bucle = useRef(null)
@@ -78,6 +80,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
   }
 
   const alternar = () => (sonando ? parar() : empezar())
+  if (api) api.current = { empezar: () => !bucle.current && empezar(), sonando: () => Boolean(bucle.current) }
 
   // ----- Pintar con el dedo -----
   const arrastre = useRef(null)
@@ -154,7 +157,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
       <div className="flex flex-col gap-1.5 rounded-3xl border border-zinc-200 bg-white p-2 select-none" onContextMenu={(e) => e.preventDefault()}>
         {/* Números de los tiempos: el que suena se marca */}
         <div className="flex items-center gap-2" aria-hidden>
-          <span className="w-[4.25rem] shrink-0" />
+          <span className="w-[4.75rem] shrink-0" />
           <div className="grid flex-1 grid-cols-4 gap-1.5">
             {[0, 1, 2, 3].map((t) => (
               <span key={t} className={`pl-0.5 font-dato text-sm font-medium tabular-nums transition-colors duration-150 ${tiempoActual === t ? 'text-sky-600' : 'text-zinc-500'}`}>
@@ -175,13 +178,13 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
                   aria-pressed={!muda}
                   aria-label={`${info.nombre}: ${muda ? 'silenciado, toca para que suene' : 'suena, toca para silenciarlo'}`}
                   data-luz={f}
-                  className={`flex h-11 w-[4.25rem] shrink-0 items-center gap-1.5 rounded-xl px-2 text-left transition-colors duration-200 ${muda ? 'bg-zinc-100 text-zinc-500' : 'bg-zinc-100 text-zinc-900'}`}
+                  className={`flex h-11 w-[4.75rem] shrink-0 items-center gap-1.5 rounded-xl px-2 text-left transition-colors duration-200 ${muda ? 'bg-zinc-100 text-zinc-500' : 'bg-zinc-100 text-zinc-900'}`}
                 >
                   <Luz encendida={!muda} />
                   <span className="truncate text-sm font-bold">{info.fl}</span>
                 </Pulsable>
               ) : (
-                <span className="flex h-11 w-[4.25rem] shrink-0 items-center gap-1.5 rounded-xl bg-zinc-100 px-2 text-zinc-900" title={info.nombre}>
+                <span className="flex h-11 w-[4.75rem] shrink-0 items-center gap-1.5 rounded-xl bg-zinc-100 px-2 text-zinc-900" title={info.nombre}>
                   <Luz encendida />
                   <span className="truncate text-sm font-bold">{info.fl}</span>
                 </span>
@@ -233,7 +236,9 @@ function Luz({ encendida }) {
 }
 
 /** Un paso del rack. */
-function Paso({ fila, paso, on, oscuro, color, suena, guia, marca, onKeyDown, editable }) {
+function Paso({ fila, paso, on, oscuro, color, suena, guia, marca: m, onKeyDown, editable }) {
+  const cambio = m === 'cambio'
+  const marca = cambio ? undefined : m
   const fondo =
     marca === 'mal' ? 'var(--color-mal-suave)' : marca === 'sobra' ? 'var(--color-fijate)' : on ? color : oscuro ? 'var(--color-zinc-300)' : 'var(--color-zinc-200)'
   return (
@@ -252,6 +257,17 @@ function Paso({ fila, paso, on, oscuro, color, suena, guia, marca, onKeyDown, ed
       className={`relative h-full min-w-0 rounded-[5px] outline-offset-1 ${suena ? 'ring-2 ring-sky-500' : ''} ${marca === 'mal' ? 'border-[3px] border-mal' : guia && !on ? 'border-2 border-dashed border-zinc-500' : ''}`}
       style={{ backgroundColor: fondo, touchAction: 'none', cursor: editable ? 'pointer' : 'default' }}
     >
+      {cambio && (
+        // Lo que cambió al pasar de un género a otro: contorno de oro que aparece con un pop y se apaga.
+        <motion.span
+          aria-hidden
+          data-cambio
+          className="pointer-events-none absolute -inset-[3px] rounded-[7px] border-[3px] border-fijate"
+          initial={{ opacity: 0, scale: 1.25 }}
+          animate={{ opacity: [0, 1, 1, 0], scale: [1.25, 1, 1, 1] }}
+          transition={{ duration: 1.3, times: [0, 0.15, 0.7, 1] }}
+        />
+      )}
       {marca === 'sobra' && (
         // Tachado: lo elegido que sobra (primer error, en oro)
         <span aria-hidden className="absolute inset-0 rounded-[5px]" style={{ background: 'linear-gradient(to top right, transparent calc(50% - 1.5px), var(--color-fijate-tinta) calc(50% - 1.5px), var(--color-fijate-tinta) calc(50% + 1.5px), transparent calc(50% + 1.5px))' }} />

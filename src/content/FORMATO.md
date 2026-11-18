@@ -130,6 +130,7 @@ pendiente; si una lección no tiene banco, no entra en la prueba. Reglas: al niv
 | `marcar` | `components/exercises/MarcaPalabras.jsx` | Tocar palabras o sílabas en unos versos (ruta de letras) |
 | `flow` | `components/exercises/FlowEjercicio.jsx` | Acomodar las sílabas de un verso para que las tónicas caigan en el pulso |
 | `rack` | `components/exercises/RackEjercicio.jsx` | Channel rack de FL Studio (S1): oír cada capa, copiar un patrón (con guía o de oído) o hacer uno libre |
+| `generos` | `components/pasos/PasoGeneros.jsx` | Rack que cambia de género (L11): fichas de géneros sobre el Channel rack; se sigue al escuchar `minimo` |
 
 ### `marcar`
 
@@ -463,6 +464,20 @@ objetivo: { tipo: 'explorar', groove: 'basico', minimo: 3, tempos: [{ bpm: 90, g
   // muestra en lugar de los BPM: así sirve también para comparar versiones (p. ej. cuánto swing).
   // Textos opcionales: elige ('Elige cuánto swing'), prueba ('Prueba 3 cantidades de swing'), tituloBien.
 ```
+
+### `generos` (rack que cambia de género, P1.2)
+
+```js
+{ tipo: 'generos', titulo: 'Cinco géneros, un kit', intro: '…', generos: ['pop', 'boomBap', 'trap', 'house', 'dembow'],
+  minimo: 3, tituloBien: '¡Mismo kit, otro género!', mensaje: 'Cambian tres cosas: …' }
+```
+
+Los géneros viven en `theory/rack.js` → **`GENEROS`** (`{ id, nombre, bpm, rango, patron, huella, padre? }`): los troncos del
+árbol de géneros (pop, boom bap, house, dembow) más el trap (`padre: 'boomBap'`). Ayudas: `sonidoGenero(id, { etiqueta })`
+(el género a su tempo), `filasDeGeneros(ids)` (las filas que hacen falta), `cambiosPatron(antes, despues, filas)`
+(los pasos que cambian; el rack los marca con `marcas: { 'kick:7': 'cambio' }`, contorno de oro que se apaga solo) y
+`CUATRO` (bombo en los cuatro tiempos). Fila **`ohat`** (hat abierto, «O.Hat»; un `hat` cerrado lo corta) y
+`FILAS_CAJA` (las 6 filas de la Caja de ritmos, que empieza con cualquier género a su tempo).
 
 ### `rack` (Channel rack, Producción)
 
