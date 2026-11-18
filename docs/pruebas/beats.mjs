@@ -118,7 +118,7 @@ for (const tema of ['claro', 'oscuro']) {
   await celda('clap', 12).click()
   await boton().click()
   await espera(400)
-  comprobar(r, 'backbeat: 1.er error en oro', /Casi/.test(await info()) && /palmas le falta 1 golpe y le sobra 1/.test(await info()), await info())
+  comprobar(r, 'backbeat: 1.er error en oro', /Casi/.test(await info()) && /palmas les falta 1 golpe y les sobra 1/.test(await info()), await info())
   comprobar(r, 'backbeat: el de más, tachado', (await page.locator('[data-marca="sobra"]').count()) === 1)
   await foto('12.1-backbeat-oro')
   await celda('clap', 0).click()

@@ -38,7 +38,11 @@ export default function CajaRitmos() {
   const [datos, setDatos] = useState(leerCaja)
   const [mudas, setMudas] = useState([])
   const inicios = useInicios()
+  const progreso = useProgreso()
+  const { admin } = useOpciones()
   useEffect(() => guardarCaja(datos), [datos])
+  // El pincel (rolls y suaves) sale al terminar la P1.3 (o si el patrón ya trae rolls: drill, jersey club, dubstep).
+  const pinceles = Boolean(progreso?.lecciones?.['12.3']?.completada || datos.patron.tipo || admin)
 
   const tempo = (d) => setDatos((x) => ({ ...x, bpm: Math.min(BPM_MAX, Math.max(BPM_MIN, x.bpm + d)) }))
 
@@ -60,6 +64,7 @@ export default function CajaRitmos() {
           swing={datos.swing ?? 0}
           onSwing={(swing) => setDatos((x) => ({ ...x, swing }))}
           color={ACENTO}
+          pinceles={pinceles}
           extra={
             <div className="flex items-center gap-1" role="group" aria-label="Tempo">
               <Pulsable onClick={() => tempo(-5)} disabled={datos.bpm <= BPM_MIN} aria-label="Más lento" className="grid size-11 place-items-center rounded-full bg-zinc-100 text-2xl font-semibold text-zinc-700 disabled:text-zinc-400">

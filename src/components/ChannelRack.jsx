@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { bucleRack, golpeAhora, latenciaAudio, tiempoAudio } from '../audio/engine.js'
-import { FILAS_RACK, PASOS, POR_TIEMPO, conPaso, encendido, velocidad } from '../theory/rack.js'
+import { FILAS_RACK, PASOS, PINCELES, POR_TIEMPO, conPaso, golpesPaso, tipoDe, velocidad } from '../theory/rack.js'
 import { RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { IconoPlay } from './BotonSonido.jsx'
@@ -28,9 +28,14 @@ import Perilla from './Perilla.jsx'
  *  - api: ref que recibe { empezar, sonando } (para arrancar el bucle desde fuera, p. ej. al elegir un género)
  *  - swing (0–1) / onSwing: la PERILLA de Swing (árbol de géneros): retrasa los pasos impares, como la de FL. Con
  *      `swing` numérico se ve la perilla; sin `onSwing`, solo enseña el valor (el del género).
+ *  - pinceles: true = el PINCEL de la P1.3 encima de las filas (Golpe · Suave · ×2 · ×3; theory/rack.js → PINCELES):
+ *      lo que pinta el dedo. Tocar un paso con el mismo pincel lo apaga. Los rolls se ven con 2 o 3 barritas y los
+ *      suaves, pálidos. Sin `pinceles`, el dedo pone golpes (lo que ya traiga el patrón se ve igual).
  */
-export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null, swing = null, onSwing }) {
+export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null, swing = null, onSwing, pinceles = false }) {
   const [sonando, setSonando] = useState(false)
+  const [pincel, setPincel] = useState(1)
+  const pincelActivo = pinceles ? pincel : 1
   const [cabezal, setCabezal] = useState(null)
   const bucle = useRef(null)
   const reloj = useRef(0)
@@ -50,7 +55,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
     const b = bucleRack(
       (p) => {
         const { patron: pa, mudas: mu, filas: fi } = actual.current
-        return fi.filter((f) => !mu.includes(f) && encendido(pa, f, p)).map((f) => ({ nota: f, velocity: velocidad(f, p) }))
+        return fi.filter((f) => !mu.includes(f)).flatMap((f) => golpesPaso(pa, f, p).map((g) => ({ nota: f, ...g })))
       },
       {
         bpm,
@@ -96,20 +101,27 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
     const r = el.getBoundingClientRect()
     return Math.min(PASOS - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * PASOS)))
   }
+  // `valor`: null (apagar) o el pincel (1, 's', 2, 3).
   const poner = (fila, paso, valor) => {
     const { patron: pa } = actual.current
-    if (encendido(pa, fila, paso) === valor) return
-    if (valor && !bucle.current) golpeAhora(fila, velocidad(fila, paso))
+    if (tipoDe(pa, fila, paso) === valor) return
     const nuevo = conPaso(pa, fila, paso, valor)
+    if (valor && !bucle.current) escucharPaso(fila, golpesPaso(nuevo, fila, paso))
     actual.current.patron = nuevo
     onCambio(nuevo)
   }
+  // Lo que suena al poner un paso con el rack parado (un roll, con sus golpes a su tempo).
+  const escucharPaso = (fila, lista) => {
+    const casilla = (60 / bpm / POR_TIEMPO) * 1000
+    lista.forEach((g, i) => (i ? setTimeout(() => golpeAhora(fila, g.velocity), g.dentro * casilla) : golpeAhora(fila, g.velocity)))
+  }
+  const valorDe = (fila, p) => (tipoDe(actual.current.patron, fila, p) === pincelActivo ? null : pincelActivo)
   const onDown = (fila) => (e) => {
     if (!editable || fijas.includes(fila)) return
     e.preventDefault()
     e.currentTarget.setPointerCapture?.(e.pointerId)
     const p = pasoDe(e, e.currentTarget)
-    const valor = !encendido(actual.current.patron, fila, p)
+    const valor = valorDe(fila, p)
     arrastre.current = { fila, valor, pointer: e.pointerId, ultimo: p }
     poner(fila, p, valor)
   }
@@ -129,7 +141,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
   const teclado = (fila, paso) => (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return
     e.preventDefault()
-    if (editable && !fijas.includes(fila)) poner(fila, paso, !encendido(patron, fila, paso))
+    if (editable && !fijas.includes(fila)) poner(fila, paso, valorDe(fila, paso))
   }
 
   const silenciar = (fila) => {
@@ -158,6 +170,8 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
         {typeof swing === 'number' && <Perilla valor={swing} onCambio={onSwing} color={color} />}
         {extra ?? <span className="font-dato text-base font-medium tabular-nums text-zinc-600">{bpm} BPM</span>}
       </div>
+
+      {pinceles && editable && <Pinceles pincel={pincel} onPincel={setPincel} color={color} />}
 
       <div className="flex flex-col gap-1.5 rounded-3xl border border-zinc-200 bg-white p-2 select-none" onContextMenu={(e) => e.preventDefault()}>
         {/* Números de los tiempos: el que suena se marca */}
@@ -213,11 +227,11 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
                           key={p}
                           fila={f}
                           paso={p}
-                          on={encendido(patron, f, p)}
+                          tipo={tipoDe(patron, f, p)}
                           oscuro={t % 2 === 1}
                           color={color}
                           suena={cabezal === p}
-                          guia={guia ? encendido(guia, f, p) : false}
+                          guia={guia ? tipoDe(guia, f, p) : null}
                           marca={marcas?.[`${f}:${p}`]}
                           onKeyDown={teclado(f, p)}
                           editable={editable && !fijas.includes(f)}
@@ -240,12 +254,55 @@ function Luz({ encendida }) {
   return <span aria-hidden className={`size-3 shrink-0 rounded-full border-2 transition-colors duration-200 ${encendida ? 'border-bien bg-bien' : 'border-zinc-400 bg-transparent'}`} />
 }
 
-/** Un paso del rack. */
-function Paso({ fila, paso, on, oscuro, color, suena, guia, marca: m, onKeyDown, editable }) {
+/**
+ * El PINCEL (P1.3): control segmentado con lo que pinta el dedo, dibujado como se ve en el paso (una barra, una
+ * pálida, dos, tres). El elegido, en blanco y con el color del área.
+ */
+const NOMBRE_PINCEL = { 1: 'Golpe', s: 'Suave', 2: '×2', 3: '×3' }
+const AYUDA_PINCEL = { 1: 'golpe normal', s: 'golpe suave', 2: 'roll de 2', 3: 'roll de 3' }
+
+function Pinceles({ pincel, onPincel, color }) {
+  return (
+    <div role="radiogroup" aria-label="Pincel" className="grid grid-cols-4 gap-1 rounded-2xl bg-zinc-100 p-1" data-pinceles>
+      {PINCELES.map((x) => {
+        const elegido = pincel === x
+        return (
+          <Pulsable
+            key={x}
+            role="radio"
+            aria-checked={elegido}
+            aria-label={`Pincel: ${AYUDA_PINCEL[x]}`}
+            data-pincel={x}
+            onClick={() => onPincel(x)}
+            className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-sm font-bold transition-colors duration-200 ${elegido ? 'text-zinc-900' : 'text-zinc-600'}`}
+          >
+            {elegido && <motion.span layoutId="pincel-elegido" transition={RESORTE.pulsar} aria-hidden className="absolute inset-0 rounded-xl bg-white shadow-sm" />}
+            <span aria-hidden className="relative flex h-3.5 w-5 items-stretch justify-center gap-[2px]">
+              {Array.from({ length: x === 2 || x === 3 ? x : 1 }, (_, i) => (
+                <span key={i} className="w-1.5 rounded-[2px]" style={{ backgroundColor: elegido ? color : 'currentColor', opacity: x === 's' ? 0.42 : 1 }} />
+              ))}
+            </span>
+            <span className="relative">{NOMBRE_PINCEL[x]}</span>
+          </Pulsable>
+        )
+      })}
+    </div>
+  )
+}
+
+const esRoll = (t) => t === 2 || t === 3
+
+/** Un paso del rack. `tipo` = null (apagado), 1, 's', 2 o 3; `guia` = lo mismo, de lo que hay que poner. */
+function Paso({ fila, paso, tipo, oscuro, color, suena, guia, marca: m, onKeyDown, editable }) {
+  const on = Boolean(tipo)
   const cambio = m === 'cambio'
   const marca = cambio ? undefined : m
+  const lleno = on && tipo === 1
   const fondo =
-    marca === 'mal' ? 'var(--color-mal-suave)' : marca === 'sobra' ? 'var(--color-fijate)' : on ? color : oscuro ? 'var(--color-zinc-300)' : 'var(--color-zinc-200)'
+    marca === 'mal' ? 'var(--color-mal-suave)' : marca === 'sobra' ? 'var(--color-fijate)' : lleno ? color : oscuro ? 'var(--color-zinc-300)' : 'var(--color-zinc-200)'
+  // La guía se ve mientras lo puesto no sea lo que va (también si es otro pincel).
+  const conGuia = Boolean(guia) && guia !== tipo
+  const nombreTipo = tipo === 's' ? ', suave' : esRoll(tipo) ? `, roll de ${tipo}` : ''
   return (
     <motion.button
       type="button"
@@ -253,15 +310,32 @@ function Paso({ fila, paso, on, oscuro, color, suena, guia, marca: m, onKeyDown,
       onKeyDown={onKeyDown}
       data-paso={paso}
       data-on={on || undefined}
+      data-tipo={on && tipo !== 1 ? tipo : undefined}
       data-marca={marca}
       aria-pressed={on}
-      aria-label={`${FILAS_RACK[fila].nombre}, paso ${paso + 1}${marca === 'sobra' ? ', sobra' : marca === 'mal' ? ', faltaba' : ''}`}
+      aria-label={`${FILAS_RACK[fila].nombre}, paso ${paso + 1}${nombreTipo}${marca === 'sobra' ? ', no va así' : marca === 'mal' ? ', así va' : ''}`}
       initial={false}
       animate={{ scale: on && suena ? 1.12 : 1 }}
       transition={RESORTE.pulsar}
-      className={`relative h-full min-w-0 rounded-[5px] outline-offset-1 ${suena ? 'ring-2 ring-sky-500' : ''} ${marca === 'mal' ? 'border-[3px] border-mal' : guia && !on ? 'border-2 border-dashed border-zinc-500' : ''}`}
+      className={`relative h-full min-w-0 rounded-[5px] outline-offset-1 ${suena ? 'ring-2 ring-sky-500' : ''} ${marca === 'mal' ? 'border-[3px] border-mal' : conGuia ? 'border-2 border-dashed border-zinc-500' : ''}`}
       style={{ backgroundColor: fondo, touchAction: 'none', cursor: editable ? 'pointer' : 'default' }}
     >
+      {on && !lleno && marca !== 'sobra' && (
+        // Suave = pálido; roll = 2 o 3 barritas (el hueco entre ellas, del color del paso apagado).
+        <span aria-hidden className="pointer-events-none absolute inset-0 flex gap-[2px] overflow-hidden rounded-[3px]">
+          {Array.from({ length: esRoll(tipo) ? tipo : 1 }, (_, i) => (
+            <span key={i} className="flex-1" style={{ backgroundColor: color, opacity: tipo === 's' ? 0.42 : 1 }} />
+          ))}
+        </span>
+      )}
+      {conGuia && esRoll(guia) && (
+        // Guía de un roll: rayitas punteadas donde se parte el paso.
+        <span aria-hidden className="pointer-events-none absolute inset-0 flex">
+          {Array.from({ length: guia }, (_, i) => (
+            <span key={i} className={`flex-1 ${i ? 'border-l-2 border-dashed border-zinc-500' : ''}`} />
+          ))}
+        </span>
+      )}
       {cambio && (
         // Lo que cambió al pasar de un género a otro: contorno de oro que aparece con un pop y se apaga.
         <motion.span
@@ -274,7 +348,7 @@ function Paso({ fila, paso, on, oscuro, color, suena, guia, marca: m, onKeyDown,
         />
       )}
       {marca === 'sobra' && (
-        // Tachado: lo elegido que sobra (primer error, en oro)
+        // Tachado: lo elegido que sobra o lleva otro pincel (primer error, en oro)
         <span aria-hidden className="absolute inset-0 rounded-[5px]" style={{ background: 'linear-gradient(to top right, transparent calc(50% - 1.5px), var(--color-fijate-tinta) calc(50% - 1.5px), var(--color-fijate-tinta) calc(50% + 1.5px), transparent calc(50% + 1.5px))' }} />
       )}
     </motion.button>

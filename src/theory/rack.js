@@ -26,22 +26,75 @@ export const FILAS_BASICAS = ['kick', 'clap', 'hat', 'tom']
 /** Las filas de la Caja de ritmos: todas (desde la P1.2, también la caja y el hat abierto de los géneros). */
 export const FILAS_CAJA = ['kick', 'clap', 'snare', 'hat', 'ohat', 'tom']
 
-/** Un patrón con todas sus filas (vacías las que falten) y los pasos ordenados y sin repetir. */
-export function normalizar(patron = {}, filas = FILAS_BASICAS) {
-  return Object.fromEntries(filas.map((f) => [f, [...new Set(patron[f] ?? [])].filter((p) => p >= 0 && p < PASOS).sort((a, b) => a - b)]))
+/**
+ * PINCELES del rack (P1.3 «Hi-hats y rolls»; propuesta aprobada: https://claude.ai/artifact/C11uGNnXRJFKmmSF8tth2S): lo
+ * que pinta el dedo. 1 = golpe normal, 's' = suave (poca velocity), 2 = roll de 2 (fusas, 1/32), 3 = roll de 3
+ * (tresillo de semicorchea, 1/24). En el patrón, los pasos que no son golpes normales van aparte, en `tipo`:
+ * { hat: [0, 1, 14], tipo: { hat: { 1: 's', 14: 2 } } }. Los patrones sin `tipo` siguen valiendo tal cual.
+ */
+export const PINCELES = [1, 's', 2, 3]
+const TIPO_VALIDO = new Set(['s', 2, 3])
+
+/** Lo que tiene un paso: null (apagado), 1, 's', 2 o 3. */
+export function tipoDe(patron, fila, paso) {
+  if (!patron[fila]?.includes(paso)) return null
+  return patron.tipo?.[fila]?.[paso] ?? 1
 }
 
-/** Enciende o apaga un paso de una fila: devuelve el patrón nuevo. */
-export function conPaso(patron, fila, paso, encendido) {
+/** Un patrón con todas sus filas (vacías las que falten), los pasos ordenados y sin repetir, y su `tipo` limpio. */
+export function normalizar(patron = {}, filas = FILAS_BASICAS) {
+  const base = Object.fromEntries(filas.map((f) => [f, [...new Set(patron[f] ?? [])].filter((p) => p >= 0 && p < PASOS).sort((a, b) => a - b)]))
+  const tipo = {}
+  for (const f of filas) {
+    const t = Object.entries(patron.tipo?.[f] ?? {})
+      .map(([p, v]) => [Number(p), v === '2' || v === '3' ? Number(v) : v])
+      .filter(([p, v]) => TIPO_VALIDO.has(v) && base[f].includes(p))
+    if (t.length) tipo[f] = Object.fromEntries(t)
+  }
+  return Object.keys(tipo).length ? { ...base, tipo } : base
+}
+
+/**
+ * Pone un paso de una fila: `valor` = false/null (apagado), true o 1 (golpe), 's', 2 o 3 (el pincel). Devuelve el
+ * patrón nuevo.
+ */
+export function conPaso(patron, fila, paso, valor) {
   const actual = patron[fila] ?? []
   const sin = actual.filter((p) => p !== paso)
-  return { ...patron, [fila]: encendido ? [...sin, paso].sort((a, b) => a - b) : sin }
+  const filaTipo = { ...(patron.tipo?.[fila] ?? {}) }
+  delete filaTipo[paso]
+  if (valor && TIPO_VALIDO.has(valor)) filaTipo[paso] = valor
+  const tipo = { ...(patron.tipo ?? {}), [fila]: filaTipo }
+  if (!Object.keys(filaTipo).length) delete tipo[fila]
+  const nuevo = { ...patron, [fila]: valor ? [...sin, paso].sort((a, b) => a - b) : sin }
+  if (Object.keys(tipo).length) nuevo.tipo = tipo
+  else delete nuevo.tipo
+  return nuevo
 }
 
 export const encendido = (patron, fila, paso) => Boolean(patron[fila]?.includes(paso))
 
-/** Golpes en total. */
-export const golpes = (patron) => Object.values(patron).reduce((n, l) => n + l.length, 0)
+/**
+ * Un patrón encima de otro: las filas de `encima` reemplazan a las de `base`, con sus rolls y suaves (los de `base` en
+ * esas filas se van). Para «lo que ya viene puesto + lo que hay que poner».
+ */
+export function mezclar(base = {}, encima = {}) {
+  const filas = Object.keys(encima).filter((f) => FILAS_RACK[f])
+  const tipo = { ...(base.tipo ?? {}) }
+  for (const f of filas) delete tipo[f]
+  Object.assign(tipo, encima.tipo ?? {})
+  const nuevo = { ...base, ...encima }
+  if (Object.keys(tipo).length) nuevo.tipo = tipo
+  else delete nuevo.tipo
+  return nuevo
+}
+
+/** Golpes en total (pasos encendidos). */
+export const golpes = (patron) => Object.entries(patron).reduce((n, [f, l]) => n + (FILAS_RACK[f] && Array.isArray(l) ? l.length : 0), 0)
+
+/** Cuántos pasos de un tipo hay: `cuantos(patron, 'roll')` (2 o 3), `cuantos(patron, 's')`. */
+export const cuantos = (patron, que) =>
+  Object.values(patron.tipo ?? {}).reduce((n, fila) => n + Object.values(fila).filter((v) => (que === 'roll' ? v === 2 || v === 3 : v === que)).length, 0)
 
 /** Los hats en corcheas (un paso sí, uno no) y en semicorcheas (todos). */
 export const CORCHEAS = [0, 2, 4, 6, 8, 10, 12, 14]
@@ -66,7 +119,8 @@ export const CUATRO = [0, 4, 8, 12]
  * simplificados a 16 pasos para aprender la huella de cada uno.
  *
  * Cada género: `tronco` (en qué árbol va), `nivel` (fila del árbol, 0 = el tronco), `padres` (uno o dos; el primero es
- * del que se parte al programarlo), `abre` (lección que lo abre sin padre: los cinco de la P1.2), `leccion` (lección
+ * del que se parte al programarlo), `abre` (lección que lo abre sin dominar al padre: los cinco de la P1.2 y drill,
+ * jersey club y dubstep con la P1.3, pedido del usuario), `leccion` (lección
  * que hace falta ADEMÁS de dominar al padre: «Se abre con la P1.3»), `swing` (0–1, la perilla del rack) y `cambio`
  * (qué cambia respecto al padre, en una frase). El árbol vive en theory/generos.js y pages/Generos.jsx.
  */
@@ -112,9 +166,10 @@ export const GENEROS = {
     cambio: 'El breakbeat **a 174**: el bombo solo en el 1 y la «y» del 3.',
   },
   drill: {
-    id: 'drill', nombre: 'Drill', bpm: 142, rango: '138–145 BPM', tronco: 'boomBap', nivel: 2, padres: ['trap'], leccion: '12.3',
-    patron: { kick: [0, 10, 13], clap: [8, 14], hat: CORCHEAS },
-    cambio: 'Hats que tropiezan y una **palmada corrida** antes del 1.',
+    id: 'drill', nombre: 'Drill', bpm: 142, rango: '138–145 BPM', tronco: 'boomBap', nivel: 2, padres: ['trap'], abre: '12.3',
+    patron: { kick: [0, 10, 13], clap: [8, 14], hat: [0, 3, 6, 8, 11, 14], tipo: { hat: { 6: 3, 14: 3 } } },
+    huella: 'Los hats **tropiezan**: 3 + 3 + 2 con rolls de tresillo. Medio tiempo y una palmada corrida.',
+    cambio: 'Los hats **tropiezan**: en 3 + 3 + 2 con **rolls de tresillo**, y una **palmada corrida** antes del 1.',
   },
   phonk: {
     id: 'phonk', nombre: 'Phonk', bpm: 130, rango: '120–140 BPM', tronco: 'boomBap', nivel: 2, padres: ['trap'], leccion: '12.4',
@@ -139,14 +194,16 @@ export const GENEROS = {
     cambio: 'El bombo **salta** (2-step: el 1 y la «y» del 3) y entran hats en la «a», con **swing**.',
   },
   jersey: {
-    id: 'jersey', nombre: 'Jersey club', bpm: 140, rango: '135–145 BPM', tronco: 'house', nivel: 1, padres: ['house'], leccion: '12.3',
-    patron: { kick: [0, 4, 8, 11, 14], clap: [4, 12], hat: CORCHEAS },
-    cambio: 'A 140, con el bombo en **ráfagas** al final del compás.',
+    id: 'jersey', nombre: 'Jersey club', bpm: 140, rango: '135–145 BPM', tronco: 'house', nivel: 1, padres: ['house'], abre: '12.3',
+    patron: { kick: [0, 4, 8, 11, 14], clap: [4, 12], hat: CORCHEAS, tipo: { kick: { 14: 2 } } },
+    huella: 'A 140, el bombo en **ráfagas** al final del compás; la última, un **roll** de bombo.',
+    cambio: 'A 140, con el bombo en **ráfagas** al final del compás: la última es un **roll de bombo**.',
   },
   dubstep: {
-    id: 'dubstep', nombre: 'Dubstep', bpm: 140, rango: '138–142 BPM', tronco: 'house', nivel: 2, padres: ['garage'], leccion: '12.3',
-    patron: { kick: [0, 10], clap: [8], hat: CORCHEAS },
-    cambio: 'El garage a **medio tiempo**: la palmada solo en el 3.',
+    id: 'dubstep', nombre: 'Dubstep', bpm: 140, rango: '138–142 BPM', tronco: 'house', nivel: 2, padres: ['garage'], abre: '12.3',
+    patron: { kick: [0, 10], clap: [8], hat: CORCHEAS, tipo: { hat: { 2: 3, 10: 3 } } },
+    huella: 'Medio tiempo a 140: la palmada solo en el 3 y hats con **tresillos** que lo arrastran.',
+    cambio: 'El garage a **medio tiempo** (la palmada solo en el 3) con hats en **tresillo** que lo arrastran.',
   },
   // ----- Tronco Dembow (tresillo 3 + 3 + 2) -----
   dembow: {
@@ -184,10 +241,10 @@ export const filasDeGeneros = (ids) => Object.keys(FILAS_RACK).filter((f) => ids
 export const sonidoGenero = (id, opciones = {}) =>
   sonidoRack(GENEROS[id].patron, { bpm: GENEROS[id].bpm, swing: GENEROS[id].swing ?? 0, compases: 2, ...opciones })
 
-/** Los pasos que cambian de un patrón a otro, por fila: { 'kick:7': true }. */
+/** Los pasos que cambian de un patrón a otro, por fila (también si pasan de golpe a roll o a suave): { 'kick:7': true }. */
 export function cambiosPatron(antes, despues, filas) {
   const cambios = {}
-  for (const f of filas) for (let p = 0; p < PASOS; p++) if (encendido(antes, f, p) !== encendido(despues, f, p)) cambios[`${f}:${p}`] = true
+  for (const f of filas) for (let p = 0; p < PASOS; p++) if (tipoDe(antes, f, p) !== tipoDe(despues, f, p)) cambios[`${f}:${p}`] = true
   return cambios
 }
 
@@ -199,8 +256,30 @@ export function cambiosPatron(antes, despues, filas) {
 export function sonidoRack(patron, { bpm = 90, compases = 2, mudas = [], swing = 0, etiqueta } = {}) {
   const groove = Object.entries(patron)
     .filter(([f]) => !mudas.includes(f) && FILAS_RACK[f])
-    .flatMap(([f, pasos]) => pasos.map((inicio) => ({ nota: f, inicio: inicio + retrasoSwing(inicio, swing), velocity: velocidad(f, inicio) })))
+    .flatMap(([f, pasos]) =>
+      pasos.flatMap((inicio) => {
+        const r = retrasoSwing(inicio, swing)
+        return golpesPaso(patron, f, inicio).map((g) => ({ nota: f, inicio: inicio + r + g.dentro * (1 - r), velocity: g.velocity }))
+      }),
+    )
   return { groove, tiempos: 4, porTiempo: POR_TIEMPO, bpm, compases, ...(etiqueta ? { etiqueta } : {}) }
+}
+
+/** Velocity de un golpe suave (respecto al normal). */
+const SUAVE = 0.42
+
+/**
+ * Los golpes que suenan en un paso: [{ velocity, dentro }] (`dentro` = dónde cae dentro de la casilla, de 0 a 1). Un
+ * golpe normal o suave = uno; un roll de N = N golpes repartidos en la casilla que van CRECIENDO (como lo dibuja un
+ * productor), hasta la fuerza normal. Lo usan sonidoRack y el bucle del Channel rack.
+ */
+export function golpesPaso(patron, fila, paso) {
+  const t = tipoDe(patron, fila, paso)
+  if (!t) return []
+  const v = velocidad(fila, paso)
+  if (t === 's') return [{ velocity: v * SUAVE, dentro: 0 }]
+  if (t === 2 || t === 3) return Array.from({ length: t }, (_, i) => ({ velocity: v * (0.55 + (0.45 * (i + 1)) / t), dentro: i / t }))
+  return [{ velocity: v, dentro: 0 }]
 }
 
 /**
@@ -221,40 +300,87 @@ export const sinFila = (patron, fila) => ({ ...patron, [fila]: [] })
 
 /**
  * Compara lo que hizo el usuario con el patrón buscado, fila por fila (solo `filas`).
- * → { ok, faltan: { fila: [pasos] }, sobran: { fila: [pasos] } }
+ * → { ok, faltan: { fila: [pasos] }, sobran: { fila: [pasos] }, distintos: { fila: [pasos] } }
+ * `distintos` = pasos encendidos en los dos pero con otro pincel (golpe, suave, roll de 2 o de 3).
  */
 export function comparar(usuario, objetivo, filas) {
   const faltan = {}
   const sobran = {}
+  const distintos = {}
   for (const f of filas) {
     const u = usuario[f] ?? []
     const o = objetivo[f] ?? []
     const fa = o.filter((p) => !u.includes(p))
     const so = u.filter((p) => !o.includes(p))
+    const di = o.filter((p) => u.includes(p) && tipoDe(usuario, f, p) !== tipoDe(objetivo, f, p))
     if (fa.length) faltan[f] = fa
     if (so.length) sobran[f] = so
+    if (di.length) distintos[f] = di
   }
-  return { ok: !Object.keys(faltan).length && !Object.keys(sobran).length, faltan, sobran }
+  return { ok: !Object.keys(faltan).length && !Object.keys(sobran).length && !Object.keys(distintos).length, faltan, sobran, distintos }
 }
 
 const golpesTexto = (n) => `${n} ${n === 1 ? 'golpe' : 'golpes'}`
+const esRoll = (t) => t === 2 || t === 3
 
 /**
  * El aviso del primer error, sin decir dónde (pista, no respuesta): «Al bombo le faltan 2 golpes y le sobra 1.»
- * Como mucho dos filas.
+ * Con pinceles: «A los hats les falta un roll.» / «A los hats les sobra un roll.» / «A los hats les faltan 2 golpes
+ * suaves.» / «En los hats, un roll no es como el original.» Como mucho dos filas. `objetivo` y `usuario` hacen falta
+ * solo para hablar de rolls y suaves.
  */
-export function avisoRack({ faltan, sobran }, filas) {
+export function avisoRack({ faltan, sobran, distintos = {} }, filas, objetivo = null, usuario = null) {
   const frases = filas
-    .filter((f) => faltan[f] || sobran[f])
+    .filter((f) => faltan[f] || sobran[f] || distintos[f])
     .map((f) => {
+      const al = FILAS_RACK[f].al
+      const Al = `${al[0].toUpperCase()}${al.slice(1)}`
+      // «Al bombo LE falta…», «A los hats LES falta…».
+      const le = /^a (los|las) /.test(al) ? 'les' : 'le'
+      const decir = (lista) => lista.map((x) => x.replace(/^le /, `${le} `)).join(' y ')
       const fa = faltan[f]?.length ?? 0
       const so = sobran[f]?.length ?? 0
       const partes = []
       if (fa) partes.push(fa === 1 ? 'le falta 1 golpe' : `le faltan ${golpesTexto(fa)}`)
       if (so) partes.push(so === 1 ? 'le sobra 1' : `le sobran ${so}`)
-      const al = FILAS_RACK[f].al
-      return `${al[0].toUpperCase()}${al.slice(1)} ${partes.join(' y ')}.`
+      if (partes.length) return `${Al} ${decir(partes)}.`
+      // Mismos pasos, otro pincel: ¿falta o sobra un roll, un suave, o el roll es de otro tamaño?
+      const di = distintos[f] ?? []
+      const o = (p) => (objetivo ? tipoDe(objetivo, f, p) : null)
+      const u = (p) => (usuario ? tipoDe(usuario, f, p) : null)
+      const rollFalta = di.filter((p) => esRoll(o(p)) && !esRoll(u(p))).length
+      const rollSobra = di.filter((p) => esRoll(u(p)) && !esRoll(o(p))).length
+      const rollOtro = di.filter((p) => esRoll(u(p)) && esRoll(o(p))).length
+      const suaveFalta = di.filter((p) => o(p) === 's' && !esRoll(u(p))).length
+      const suaveSobra = di.filter((p) => u(p) === 's' && !esRoll(o(p))).length
+      if (rollFalta) partes.push(rollFalta === 1 ? 'le falta un roll' : `le faltan ${rollFalta} rolls`)
+      if (rollSobra) partes.push(rollSobra === 1 ? 'le sobra un roll' : `le sobran ${rollSobra} rolls`)
+      if (suaveFalta) partes.push(suaveFalta === 1 ? 'le falta un golpe suave' : `le faltan ${suaveFalta} golpes suaves`)
+      if (suaveSobra) partes.push(suaveSobra === 1 ? 'le sobra un golpe suave' : `le sobran ${suaveSobra} golpes suaves`)
+      if (partes.length) return `${Al} ${decir(partes.slice(0, 2))}.${rollOtro ? ` Y ${rollOtro === 1 ? 'un roll es' : `${rollOtro} rolls son`} de otro tamaño.` : ''}`
+      if (rollOtro) return `En ${FILAS_RACK[f].el}, ${rollOtro === 1 ? 'un roll es' : `${rollOtro} rolls son`} de otro tamaño: ¿de 2 o de 3?`
+      return `En ${FILAS_RACK[f].el}, ${di.length === 1 ? 'un golpe no suena' : `${di.length} golpes no suenan`} como en el original.`
     })
   const extra = frases.length > 2 ? ` Y hay algo más en ${frases.length - 2 === 1 ? 'otra fila' : `otras ${frases.length - 2} filas`}.` : ''
   return frases.slice(0, 2).join(' ') + extra
+}
+
+/**
+ * Las marcas del rack después de comprobar: en el 1.er error, lo que sobra o tiene otro pincel tachado en oro
+ * ('sobra'); con la solución (`rojo`), lo que faltaba o tenía otro pincel con borde rojo ('mal').
+ */
+export function marcasRack(resultado) {
+  if (!resultado || resultado.ok) return null
+  const marcas = {}
+  const poner = (grupo, marca) => {
+    for (const [f, l] of Object.entries(grupo ?? {})) for (const p of l) marcas[`${f}:${p}`] = marca
+  }
+  if (resultado.rojo) {
+    poner(resultado.faltan, 'mal')
+    poner(resultado.distintos, 'mal')
+  } else {
+    poner(resultado.sobran, 'sobra')
+    poner(resultado.distintos, 'sobra')
+  }
+  return marcas
 }
