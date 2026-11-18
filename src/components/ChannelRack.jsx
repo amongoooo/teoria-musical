@@ -5,6 +5,7 @@ import { FILAS_RACK, PASOS, POR_TIEMPO, conPaso, encendido, velocidad } from '..
 import { RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import { IconoPlay } from './BotonSonido.jsx'
+import Perilla from './Perilla.jsx'
 
 /**
  * CHANNEL RACK táctil (Producción 1; S1 en content/INTERACCIONES.md), como el de FL Studio: una fila por sonido y
@@ -25,14 +26,16 @@ import { IconoPlay } from './BotonSonido.jsx'
  *      'cambio' = paso que acaba de cambiar al pasar de un género a otro (contorno de oro que se apaga solo; P1.2)
  *  - extra: algo más en la barra de arriba (el tempo de la Caja de ritmos)
  *  - api: ref que recibe { empezar, sonando } (para arrancar el bucle desde fuera, p. ej. al elegir un género)
+ *  - swing (0–1) / onSwing: la PERILLA de Swing (árbol de géneros): retrasa los pasos impares, como la de FL. Con
+ *      `swing` numérico se ve la perilla; sin `onSwing`, solo enseña el valor (el del género).
  */
-export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null }) {
+export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null, swing = null, onSwing }) {
   const [sonando, setSonando] = useState(false)
   const [cabezal, setCabezal] = useState(null)
   const bucle = useRef(null)
   const reloj = useRef(0)
-  const actual = useRef({ patron, mudas, filas, alPaso })
-  actual.current = { patron, mudas, filas, alPaso }
+  const actual = useRef({ patron, mudas, filas, alPaso, swing })
+  actual.current = { patron, mudas, filas, alPaso, swing }
   const editable = Boolean(onCambio)
 
   const parar = () => bucle.current?.parar()
@@ -51,6 +54,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
       },
       {
         bpm,
+        swing: () => actual.current.swing ?? 0,
         alParar: () => {
           if (bucle.current === b) bucle.current = null
           cancelAnimationFrame(reloj.current)
@@ -151,6 +155,7 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
           <IconoPlay sonando={sonando} />
           {sonando ? 'Parar' : 'Reproducir'}
         </Pulsable>
+        {typeof swing === 'number' && <Perilla valor={swing} onCambio={onSwing} color={color} />}
         {extra ?? <span className="font-dato text-base font-medium tabular-nums text-zinc-600">{bpm} BPM</span>}
       </div>
 

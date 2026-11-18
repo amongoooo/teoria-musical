@@ -5,6 +5,27 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-18-arbol',
+    fecha: '18 nov 2026',
+    titulo: 'El árbol de géneros',
+    cosas: [
+      {
+        texto: 'Ejercicio nuevo en **Entrenar › Ritmo**: el **árbol de géneros**. Cuatro troncos (pop, boom bap, house y dembow) y sus ramas: cada una es «su padre más un cambio».',
+        donde: { etiqueta: 'Abrir el árbol', href: '#/generos' },
+      },
+      {
+        texto: 'Cada género se **domina** con tres pruebas: **Escúchalo** (el rack se transforma desde su padre, con el cambio en oro), **Reconócelo** (4 de 5) y **Prográmalo** de oído. Al dominarlo se **abren sus hijos**.',
+      },
+      {
+        texto: 'Nueve ramas nuevas: rock, funk, lo-fi, drum & bass, techno, UK garage, dembow dominicano, afrobeats y moombahton (con dos padres). Otras esperan su lección.',
+      },
+      {
+        texto: 'El Channel rack tiene **perilla de Swing**, como la de FL Studio. En la **Caja de ritmos** la giras tú y «Empezar con» trae los géneros que ya abriste.',
+        donde: { etiqueta: 'Abrir la Caja de ritmos', href: '#/caja' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-generos',
     fecha: '18 nov 2026',
     titulo: 'El groove de cada género',

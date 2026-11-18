@@ -4,6 +4,7 @@ import { TIENDAS_PRACTICA } from '../components/Tarjetas.jsx'
 import VistaPrevia from '../components/VistaPrevia.jsx'
 import { codigoLeccion } from '../content/index.js'
 import { META_SEGUNDOS } from '../progress/entrenamiento.js'
+import { cuentaGeneros, usarGeneros } from '../progress/generos.js'
 import { useOpciones } from '../progress/opciones.js'
 import { useProgreso } from '../progress/progreso.js'
 import { navegar, rutas } from '../router.js'
@@ -21,6 +22,7 @@ const MELODIA = 'var(--color-melodia)'
 const ARMONIA = 'var(--color-armonia)'
 const RITMO = 'var(--color-ritmo)'
 const LETRAS = 'var(--color-letras)'
+const PRODUCCION = 'var(--color-produccion)'
 /** Relieve sólido bajo tarjetas (como el labio de las islas). */
 const RELIEVE = '0 5px 0 var(--color-zinc-200)'
 
@@ -52,6 +54,8 @@ const TIPOS = [
     modos: [
       { id: 'seguir', nombre: 'Seguir', descripcion: 'Toca los golpes sobre el beat.', acento: RITMO, href: rutas.ritmo('seguir') },
       { id: 'eco', nombre: 'Eco', descripcion: 'Escucha un compás y repítelo.', acento: RITMO, href: rutas.ritmo('eco') },
+      // Árbol de géneros (Producción, en coral): domina un género y se abren sus ramas. Se abre con la P1.2.
+      { id: 'generos', nombre: 'Árbol de géneros', descripcion: 'Domina un género y se abren sus ramas.', acento: PRODUCCION, href: rutas.generos(), requiere: '12.2' },
     ],
   },
   {
@@ -193,9 +197,12 @@ function Ejercicio({ tipo, modo: m }) {
   const { admin } = useOpciones()
   const { tienda } = TIENDAS_PRACTICA.find((t) => t.id === tipo.id)
   const estado = tienda.usar()
+  const generos = usarGeneros()
   if (!modoAbierto(m, progreso, admin)) return <EjercicioBloqueado modo={m} />
   const teoria = MODOS_TEORIA.find((x) => x.id === m.id)
-  const nivel = teoria ? nombreNivel(teoria, tienda.datosModo(m.id, estado).nivel) : null
+  // El árbol de géneros no tiene niveles: su ficha dice cuántos dominaste.
+  const cuenta = m.id === 'generos' ? cuentaGeneros(generos) : null
+  const nivel = teoria ? nombreNivel(teoria, tienda.datosModo(m.id, estado).nivel) : cuenta ? `${cuenta.dominados}/${cuenta.total}` : null
   return (
     <Pulsable
       href={m.href}

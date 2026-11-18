@@ -45,6 +45,7 @@ export const XP = {
   etapa: 500,
   primeraLetra: 20,
   primerFlow: 20,
+  genero: 60, // dominar un género del árbol (sus tres pruebas)
   nivelEntrenador: 50,
   dificultadEntrenador: 30,
   vocab: { nueva: 5, caja: 2 },

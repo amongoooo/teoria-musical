@@ -28,9 +28,10 @@ const PASOS = 13
 {
   const r = (resultados.datos = {})
   const { GENEROS, cambiosPatron, filasDeGeneros, FILAS_RACK, FILAS_CAJA } = await import('../../src/theory/rack.js')
-  comprobar(r, '5 géneros de partida', Object.keys(GENEROS).join() === 'pop,boomBap,trap,house,dembow')
-  comprobar(r, 'el trap es hijo del boom bap', GENEROS.trap.padre === 'boomBap' && !GENEROS.pop.padre)
-  const filas = filasDeGeneros(Object.keys(GENEROS))
+  const P12 = Object.keys(GENEROS).filter((id) => GENEROS[id].abre === '12.2')
+  comprobar(r, '5 géneros de partida (los abre la P1.2)', P12.join() === 'pop,boomBap,trap,house,dembow', P12.join())
+  comprobar(r, 'el trap es hijo del boom bap', GENEROS.trap.padres?.join() === 'boomBap' && !GENEROS.pop.padres)
+  const filas = filasDeGeneros(P12)
   comprobar(r, 'filas de los géneros', filas.join() === 'kick,clap,snare,hat,ohat', filas.join())
   const c = Object.keys(cambiosPatron(GENEROS.house.patron, GENEROS.dembow.patron, ['kick']))
   comprobar(r, 'house → dembow: el bombo no cambia', c.length === 0)

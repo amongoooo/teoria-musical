@@ -372,13 +372,17 @@ export function iniciarPista(porCompas, { bpm = 90, tiempos = 4 } = {}) {
  * cualquier otro sonido (o `pararRitmo`). Devuelve { inicio, paso, parar } (`inicio`: tiempo de audio del primer paso;
  * `paso`: segundos por semicorchea), para que el cabezal siga lo que se oye.
  */
-export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar } = {}) {
+export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar, swing = () => 0 } = {}) {
   pararProgramado()
   const pista = iniciarPista(
     (k) => {
       const base = (k * 4) % pasos
       const eventos = []
-      for (let s = 0; s < 4; s++) for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: s / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
+      // Swing (la perilla del rack): los pasos impares se retrasan hasta 1/3 de casilla (se lee en cada tiempo: girar
+      // la perilla se oye enseguida).
+      const sw = Math.max(0, Math.min(1, swing() || 0)) / 3
+      for (let s = 0; s < 4; s++)
+        for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: (s + (s % 2 ? sw : 0)) / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
       return eventos
     },
     { bpm, tiempos: 1 },

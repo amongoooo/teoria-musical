@@ -14,6 +14,8 @@ function parse(hash) {
   if (partes[0] === 'circulo') return { pagina: 'circulo' }
   if (partes[0] === 'piano') return { pagina: 'piano' }
   if (partes[0] === 'caja') return { pagina: 'caja' }
+  // Árbol de géneros (Entrenar › Ritmo): #/generos y sus pruebas #/generos/rock/reconoce | programa.
+  if (partes[0] === 'generos') return { pagina: 'generos', id: partes[1] ? partes.slice(1, 3).join('/') : null }
   if (partes[0] === 'ruta' && partes[1]) return { pagina: 'ruta', id: partes[1] }
   if (partes[0] === 'curso') return { pagina: 'curso', id: partes[1] === 'bloque' && partes[2] ? partes[2] : null }
   if (partes[0] === 'prueba' && partes[1]) return { pagina: 'prueba', id: partes.slice(1).join('/') }
@@ -66,6 +68,8 @@ export const rutas = {
   piano: () => '#/piano',
   /** Caja de ritmos: el Channel rack libre (se abre con la P1.1). */
   caja: () => '#/caja',
+  /** Árbol de géneros (Entrenar › Ritmo; se abre con la P1.2); con id y prueba, una de sus pruebas. */
+  generos: (id, prueba) => (id ? `#/generos/${id}/${prueba}` : '#/generos'),
   /** Una ruta de curso (se ve igual que un módulo). */
   ruta: (id) => `#/ruta/${id}`,
   /** Curso completo (las rutas a la par, en bloques agrupados en etapas) y un bloque abierto como camino de islas. */
