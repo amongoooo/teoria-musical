@@ -19,7 +19,7 @@ import { Pad } from './PiezasRitmo.jsx'
 //    suena) y abajo su nombre. Tocar una tecla la hace sonar.
 //  - frecuencia: la onda, más apretada cuanto más aguda, que corre mientras suena.
 
-const ORDEN_GOLPES = ['kick', 'snare', 'clap', 'hat', 'ohat', 'tom']
+const ORDEN_GOLPES = ['kick', 'snare', 'clap', 'hat', 'ohat', 'tom', 'cencerro']
 
 /** Lo que el sonido trae para ver: { groove?: { bpm, tiempos, golpes, compases }, notas?: [midi…], frecuencia? }. */
 export function partesSonido(sonido) {

@@ -5,6 +5,24 @@
 
 export const NOVEDADES = [
   {
+    id: '2026-11-19-808',
+    fecha: '19 nov 2026',
+    titulo: 'El 808',
+    cosas: [
+      {
+        texto: 'Lección nueva **P1.4 «El 808: el bombo que canta»**: un bombo largo con **nota**. Afinarlo a los acordes, recortar su **cola** y deslizarlo con el **glide**.',
+        donde: { etiqueta: 'Abrir la lección', href: '#/leccion/12.4' },
+      },
+      {
+        texto: 'El Piano roll del 808 trae la **fila del bombo**, la cola que pisa un golpe **en oro** y el pincel **Nota · Slide**, como en FL Studio.',
+      },
+      {
+        texto: 'En el **árbol de géneros** se abren **reggaetón** y **phonk** con la lección, ya con su 808. La **Caja de ritmos** suma el **cencerro**.',
+        donde: { etiqueta: 'Abrir el árbol', href: '#/generos' },
+      },
+    ],
+  },
+  {
     id: '2026-11-18-rolls',
     fecha: '18 nov 2026',
     titulo: 'Hi-hats y rolls',

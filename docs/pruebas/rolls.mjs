@@ -64,7 +64,7 @@ const PASOS = 14
     comprobar(r, `${id}: con rolls`, Boolean(R.GENEROS[id].patron.tipo))
   }
   comprobar(r, 'dominar el trap no «abre» el drill (ya lo abrió la lección)', !G.seAbrenCon('trap', { domina: (x) => x === 'trap', progreso: hecha }).includes('drill'))
-  comprobar(r, 'phonk sigue esperando la P1.4', G.estadoGenero('phonk', { domina: (x) => x === 'trap', progreso: hecha }) === 'leccion')
+  comprobar(r, 'phonk sigue esperando la P1.4', G.estadoGenero('phonk', { domina: (x) => x === 'trap', progreso: hecha }) === 'bloqueado')
 
   const { CATALOGO } = await import('../../src/content/catalogo.js')
   comprobar(r, 'catálogo: 12.3 ← 12.2', CATALOGO['12.3']?.requiere.join() === '12.2' && CATALOGO['12.3'].areas.join() === 'produccion,ritmo')

@@ -18,13 +18,14 @@ export const FILAS_RACK = {
   hat: { id: 'hat', fl: 'Hat', nombre: 'Hi-hat', al: 'a los hats', el: 'los hats', velocity: 0.55 },
   ohat: { id: 'ohat', fl: 'O.Hat', nombre: 'Hat abierto', al: 'al hat abierto', el: 'el hat abierto', velocity: 0.5 },
   tom: { id: 'tom', fl: 'Perc', nombre: 'Percusión', al: 'a la percusión', el: 'la percusión', velocity: 0.6 },
+  cencerro: { id: 'cencerro', fl: 'Cowbell', nombre: 'Cencerro', al: 'al cencerro', el: 'el cencerro', velocity: 0.6 },
 }
 
 /** Las 4 filas de siempre (como el proyecto nuevo de FL: Kick, Clap, Hat… y una percusión). */
 export const FILAS_BASICAS = ['kick', 'clap', 'hat', 'tom']
 
-/** Las filas de la Caja de ritmos: todas (desde la P1.2, también la caja y el hat abierto de los géneros). */
-export const FILAS_CAJA = ['kick', 'clap', 'snare', 'hat', 'ohat', 'tom']
+/** Las filas de la Caja de ritmos: todas (desde la P1.2, también la caja y el hat abierto de los géneros; desde la P1.4, el cencerro del phonk). */
+export const FILAS_CAJA = ['kick', 'clap', 'snare', 'hat', 'ohat', 'tom', 'cencerro']
 
 /**
  * PINCELES del rack (P1.3 «Hi-hats y rolls»; propuesta aprobada: https://claude.ai/artifact/C11uGNnXRJFKmmSF8tth2S): lo
@@ -120,7 +121,8 @@ export const CUATRO = [0, 4, 8, 12]
  *
  * Cada género: `tronco` (en qué árbol va), `nivel` (fila del árbol, 0 = el tronco), `padres` (uno o dos; el primero es
  * del que se parte al programarlo), `abre` (lección que lo abre sin dominar al padre: los cinco de la P1.2 y drill,
- * jersey club y dubstep con la P1.3, pedido del usuario), `leccion` (lección
+ * jersey club y dubstep con la P1.3 y reggaetón y phonk con la P1.4, pedido del usuario), `bajo808` (la línea del 808
+ * que suena con el género, P1.4: [{ nota, paso, pasos, slide? }]; `saturado808` = el del phonk), `leccion` (lección
  * que hace falta ADEMÁS de dominar al padre: «Se abre con la P1.3»), `swing` (0–1, la perilla del rack) y `cambio`
  * (qué cambia respecto al padre, en una frase). El árbol vive en theory/generos.js y pages/Generos.jsx.
  */
@@ -172,9 +174,12 @@ export const GENEROS = {
     cambio: 'Los hats **tropiezan**: en 3 + 3 + 2 con **rolls de tresillo**, y una **palmada corrida** antes del 1.',
   },
   phonk: {
-    id: 'phonk', nombre: 'Phonk', bpm: 130, rango: '120–140 BPM', tronco: 'boomBap', nivel: 2, padres: ['trap'], leccion: '12.4',
-    patron: { kick: [0, 7, 11], clap: [8], hat: SEMICORCHEAS, tom: [0, 3, 6, 10, 12] },
-    cambio: 'El trap con **cencerro** y el 808 distorsionado.',
+    id: 'phonk', nombre: 'Phonk', bpm: 130, rango: '120–140 BPM', tronco: 'boomBap', nivel: 2, padres: ['trap'], abre: '12.4',
+    patron: { kick: [0, 7, 11], clap: [8], hat: SEMICORCHEAS, cencerro: [0, 3, 6, 10, 12] },
+    bajo808: [{ nota: 'A2', paso: 0, pasos: 7 }, { nota: 'A2', paso: 7, pasos: 4 }, { nota: 'C3', paso: 11, pasos: 5, slide: true }],
+    saturado808: true,
+    huella: 'El trap con **cencerro** y un 808 **saturado** que se desliza.',
+    cambio: 'El trap con **cencerro** y el 808 **saturado**.',
   },
   // ----- Tronco House (four on the floor) -----
   house: {
@@ -213,9 +218,11 @@ export const GENEROS = {
     cambio: 'El tronco latino: bombo en los cuatro tiempos y la caja en **3 + 3 + 2**.',
   },
   reggaeton: {
-    id: 'reggaeton', nombre: 'Reggaetón', bpm: 92, rango: '88–100 BPM', tronco: 'dembow', nivel: 1, padres: ['dembow'], leccion: '12.4',
+    id: 'reggaeton', nombre: 'Reggaetón', bpm: 92, rango: '88–100 BPM', tronco: 'dembow', nivel: 1, padres: ['dembow'], abre: '12.4',
     patron: { kick: CUATRO, snare: [3, 6, 11, 14], hat: SEMICORCHEAS },
-    cambio: 'El dembow con **808** y hats más llenos: el sonido de hoy.',
+    bajo808: [{ nota: 'A2', paso: 0, pasos: 3 }, { nota: 'A2', paso: 4, pasos: 3 }, { nota: 'F2', paso: 8, pasos: 3 }, { nota: 'F2', paso: 12, pasos: 3 }],
+    huella: 'El dembow con un **808** que sigue los acordes y hats en semicorcheas.',
+    cambio: 'El dembow con un **808** que sigue los acordes y hats más llenos: el sonido de hoy.',
   },
   dominicano: {
     id: 'dominicano', nombre: 'Dembow dominicano', corto: 'Dembow dom.', bpm: 125, rango: '115–130 BPM', tronco: 'dembow', nivel: 1, padres: ['dembow'],
@@ -237,9 +244,11 @@ export const GENEROS = {
 /** Las filas que hacen falta para tocar varios géneros en un mismo rack (en el orden de FILAS_RACK). */
 export const filasDeGeneros = (ids) => Object.keys(FILAS_RACK).filter((f) => ids.some((id) => GENEROS[id].patron[f]?.length))
 
-/** Un género como sonido (`sonidoRack` a su tempo). */
-export const sonidoGenero = (id, opciones = {}) =>
-  sonidoRack(GENEROS[id].patron, { bpm: GENEROS[id].bpm, swing: GENEROS[id].swing ?? 0, compases: 2, ...opciones })
+/** Un género como sonido (`sonidoRack` a su tempo, con su 808 si lo tiene). */
+export const sonidoGenero = (id, opciones = {}) => {
+  const g = GENEROS[id]
+  return sonidoRack(g.patron, { bpm: g.bpm, swing: g.swing ?? 0, compases: 2, bajo808: g.bajo808, saturado: g.saturado808, ...opciones })
+}
 
 /** Los pasos que cambian de un patrón a otro, por fila (también si pasan de golpe a roll o a suave): { 'kick:7': true }. */
 export function cambiosPatron(antes, despues, filas) {
@@ -253,7 +262,7 @@ export function cambiosPatron(antes, despues, filas) {
  * `{ groove, tiempos: 4, porTiempo: 4, bpm, compases }`. Las filas en `mudas` no suenan.
  * En los hats, el paso del tiempo suena un poco más fuerte (como un hi-hat tocado a mano).
  */
-export function sonidoRack(patron, { bpm = 90, compases = 2, mudas = [], swing = 0, etiqueta } = {}) {
+export function sonidoRack(patron, { bpm = 90, compases = 2, mudas = [], swing = 0, etiqueta, bajo808 = null, saturado = false } = {}) {
   const groove = Object.entries(patron)
     .filter(([f]) => !mudas.includes(f) && FILAS_RACK[f])
     .flatMap(([f, pasos]) =>
@@ -262,8 +271,60 @@ export function sonidoRack(patron, { bpm = 90, compases = 2, mudas = [], swing =
         return golpesPaso(patron, f, inicio).map((g) => ({ nota: f, inicio: inicio + r + g.dentro * (1 - r), velocity: g.velocity }))
       }),
     )
+  if (bajo808 && !mudas.includes('808')) groove.push(...eventos808(bajo808, { saturado }))
   return { groove, tiempos: 4, porTiempo: POR_TIEMPO, bpm, compases, ...(etiqueta ? { etiqueta } : {}) }
 }
+
+// ---------------------------------------------------------------------------
+// EL 808 (P1.4 «El 808: el bombo que canta»; propuesta aprobada: https://claude.ai/artifact/XMnFwLjZLG7f8GjQUdnF4d)
+// ---------------------------------------------------------------------------
+// Una LÍNEA de 808 = [{ nota: 'A2', paso: 0, pasos: 7, slide?: true }] en semicorcheas (paso 16 = el 1 del compás 2).
+// Suena en la voz del 808 (audio/bateria.js → nota808) con `inst: '808'`, una octava más arriba que en FL Studio
+// (para que se oiga en la bocina del celular; lo dice la lección).
+
+/** Los eventos de una línea de 808 (en casillas de semicorchea). */
+export function eventos808(linea = [], { saturado = false, velocity = 0.9 } = {}) {
+  return linea.map((n) => ({
+    nota: n.nota,
+    inicio: n.paso,
+    duracion: n.pasos,
+    velocity: n.velocity ?? velocity,
+    inst: '808',
+    ...(n.slide ? { slide: true } : {}),
+    ...(saturado ? { saturado: true } : {}),
+  }))
+}
+
+/** Pasos que ocupa una línea (o unos acordes): [{ paso, pasos }] → hasta dónde llega. */
+const finDe = (lista = []) => lista.reduce((m, n) => Math.max(m, n.paso + n.pasos), 0)
+
+/**
+ * Un beat del rack con su 808 (y, si se quiere, unos acordes de piano encima) en un solo sonido de las lecciones. Si la
+ * línea dura varios compases, el beat se repite en cada uno. `acordes`: [{ notas: ['A3', 'C4', 'E4'], paso, pasos }].
+ *   con808({ kick: [0, 7, 11], clap: [8], hat: SEMICORCHEAS }, [{ nota: 'A2', paso: 0, pasos: 7 }], { bpm: 140 })
+ */
+export function con808(patron, linea = [], { bpm = 140, vueltas = 2, saturado = false, acordes = [], mudas = [], etiqueta, velocidadAcordes = 0.38 } = {}) {
+  const compases = Math.max(1, Math.ceil(Math.max(finDe(linea), finDe(acordes)) / PASOS))
+  const beat = patron ? sonidoRack(patron, { bpm, compases: 1, mudas }).groove : []
+  const groove = []
+  for (let c = 0; c < compases; c++) for (const e of beat) groove.push({ ...e, inicio: e.inicio + c * PASOS })
+  for (const a of acordes) groove.push({ nota: a.notas, inicio: a.paso, duracion: a.pasos, velocity: velocidadAcordes })
+  groove.push(...eventos808(linea, { saturado }))
+  return { groove, tiempos: compases * 4, porTiempo: POR_TIEMPO, bpm, compases: vueltas, metro: 4, ...(etiqueta ? { etiqueta } : {}) }
+}
+
+/**
+ * El beat de FONDO de un Piano roll del 808 (`roll.fondo`): los golpes del patrón en casillas DEL ROLL (con `porTiempo`
+ * casillas por tiempo; pueden quedar entre casillas), repetido `compases` veces.
+ */
+export function fondoRoll(patron, { compases = 1, porTiempo = POR_TIEMPO, mudas = [] } = {}) {
+  const beat = sonidoRack(patron, { compases: 1, mudas }).groove
+  const k = porTiempo / POR_TIEMPO
+  return Array.from({ length: compases }, (_, c) => beat.map((e) => ({ ...e, inicio: (e.inicio + c * PASOS) * k }))).flat()
+}
+
+/** Una línea de 808 como notas del Piano roll (casillas = semicorcheas): [{ nota, inicio, duracion, slide? }]. */
+export const notasRoll808 = (linea) => linea.map((n) => ({ nota: n.nota, inicio: n.paso, duracion: n.pasos, ...(n.slide ? { slide: true } : {}) }))
 
 /** Velocity de un golpe suave (respecto al normal). */
 const SUAVE = 0.42

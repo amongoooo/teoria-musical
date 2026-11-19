@@ -37,6 +37,7 @@ import leccion57 from './modulo-05/leccion-5-7.js'
 import leccion121 from './modulo-12/leccion-12-1.js'
 import leccion122 from './modulo-12/leccion-12-2.js'
 import leccion123 from './modulo-12/leccion-12-3.js'
+import leccion124 from './modulo-12/leccion-12-4.js'
 // Lecciones de la ruta de letras: llevan `ruta: 'letras'` y también `modulo: 11` (el Módulo de Letras).
 import letrasL1 from './ruta-letras/leccion-L1.js'
 import letrasL2 from './ruta-letras/leccion-L2.js'
@@ -76,6 +77,7 @@ const LECCIONES = {
   [leccion121.id]: leccion121,
   [leccion122.id]: leccion122,
   [leccion123.id]: leccion123,
+  [leccion124.id]: leccion124,
   [letrasL1.id]: letrasL1,
   [letrasL2.id]: letrasL2,
   [letrasL3.id]: letrasL3,

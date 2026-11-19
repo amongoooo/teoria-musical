@@ -31,16 +31,18 @@ import Perilla from './Perilla.jsx'
  *  - pinceles: true = el PINCEL de la P1.3 encima de las filas (Golpe · Suave · ×2 · ×3; theory/rack.js → PINCELES):
  *      lo que pinta el dedo. Tocar un paso con el mismo pincel lo apaga. Los rolls se ven con 2 o 3 barritas y los
  *      suaves, pálidos. Sin `pinceles`, el dedo pone golpes (lo que ya traiga el patrón se ve igual).
+ *  - bajo808 / saturado808: la línea de 808 de un género (P1.4: reggaetón, phonk) que suena con el bucle; no tiene fila
+ *      (el 808 se escribe en el Piano roll, como en FL Studio).
  */
-export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null, swing = null, onSwing, pinceles = false }) {
+export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas = [], onMudas, bpm = 90, color = 'var(--color-produccion)', guia = null, marcas = null, alPaso, extra = null, api = null, swing = null, onSwing, pinceles = false, bajo808 = null, saturado808 = false }) {
   const [sonando, setSonando] = useState(false)
   const [pincel, setPincel] = useState(1)
   const pincelActivo = pinceles ? pincel : 1
   const [cabezal, setCabezal] = useState(null)
   const bucle = useRef(null)
   const reloj = useRef(0)
-  const actual = useRef({ patron, mudas, filas, alPaso, swing })
-  actual.current = { patron, mudas, filas, alPaso, swing }
+  const actual = useRef({ patron, mudas, filas, alPaso, swing, bajo808, saturado808 })
+  actual.current = { patron, mudas, filas, alPaso, swing, bajo808, saturado808 }
   const editable = Boolean(onCambio)
 
   const parar = () => bucle.current?.parar()
@@ -54,8 +56,13 @@ export default function ChannelRack({ filas, patron, onCambio, fijas = [], mudas
     cancelAnimationFrame(reloj.current)
     const b = bucleRack(
       (p) => {
-        const { patron: pa, mudas: mu, filas: fi } = actual.current
-        return fi.filter((f) => !mu.includes(f)).flatMap((f) => golpesPaso(pa, f, p).map((g) => ({ nota: f, ...g })))
+        const { patron: pa, mudas: mu, filas: fi, bajo808: b8, saturado808: sat } = actual.current
+        const golpes = fi.filter((f) => !mu.includes(f)).flatMap((f) => golpesPaso(pa, f, p).map((g) => ({ nota: f, ...g })))
+        // El 808 del género (sin fila): sus notas, con su duración en segundos.
+        for (const n of b8 ?? []) {
+          if (n.paso === p) golpes.push({ nota: n.nota, velocity: 0.9, inst: '808', slide: n.slide, saturado: sat, duracion: (60 / bpm / POR_TIEMPO) * n.pasos * 0.95 })
+        }
+        return golpes
       },
       {
         bpm,

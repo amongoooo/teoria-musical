@@ -435,7 +435,7 @@ function RackTransforma({ id, onEscuchado }) {
           </span>
         </p>
       )}
-      <ChannelRack filas={filas} patron={patron} bpm={actual.bpm} swing={actual.swing ?? (g.swing != null ? 0 : null)} color={ACENTO} marcas={marcas} alPaso={alPaso} />
+      <ChannelRack filas={filas} patron={patron} bpm={actual.bpm} swing={actual.swing ?? (g.swing != null ? 0 : null)} color={ACENTO} marcas={marcas} alPaso={alPaso} bajo808={actual.bajo808} saturado808={actual.saturado808} />
     </div>
   )
 }
@@ -690,6 +690,8 @@ function Programalo({ id }) {
           color={ACENTO}
           marcas={marcas}
           pinceles={pinceles}
+          bajo808={g.bajo808}
+          saturado808={g.saturado808}
         />
       </main>
       <BarraAccion accion={accion} />

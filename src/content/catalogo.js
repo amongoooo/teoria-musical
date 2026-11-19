@@ -53,6 +53,7 @@ export const CATALOGO = {
   '12.1': l(['produccion', 'ritmo'], 'principiante', ['2.2']),
   '12.2': l(['produccion', 'ritmo'], 'principiante', ['12.1', '2.4']),
   '12.3': l(['produccion', 'ritmo'], 'principiante', ['12.2']),
+  '12.4': l(['produccion', 'armonia'], 'principiante', ['12.3', '5.4']),
   // Ruta de letras
   L1: l(['letras'], 'principiante'),
   L2: l(['letras'], 'principiante', ['L1']),
