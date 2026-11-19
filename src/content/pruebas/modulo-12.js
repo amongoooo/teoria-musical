@@ -1,6 +1,6 @@
 // Prueba rápida «¿Ya lo sabes?» · banco de Producción 1 (módulo 12, «Beats en FL Studio»).
 // 3 preguntas por lección (la prueba toma una al azar). Formato: rondas de `elegir` (src/content/FORMATO.md).
-import { CORCHEAS, GENEROS, SEMICORCHEAS, sinFila, sonidoGenero, sonidoRack } from '../../theory/rack.js'
+import { CORCHEAS, GENEROS, SEMICORCHEAS, con808, sinFila, sonidoGenero, sonidoRack } from '../../theory/rack.js'
 
 const BOOM_BAP = { kick: [0, 7, 10], clap: [4, 12], hat: CORCHEAS, tom: [14] }
 const POP = { kick: [0, 8], clap: [4, 12], hat: CORCHEAS }
@@ -8,6 +8,13 @@ const beat = (patron, etiqueta) => sonidoRack(patron, { bpm: 90, compases: 2, et
 /** El trap de la P1.3 con estos rolls en los hats. */
 const trapRoll = (tipoHat, etiqueta) =>
   sonidoRack({ ...GENEROS.trap.patron, hat: SEMICORCHEAS, tipo: { hat: tipoHat } }, { bpm: GENEROS.trap.bpm, compases: 2, etiqueta })
+/** El trap de la P1.4 con un 808 en cada bombo (la última nota puede cambiar y deslizarse) sobre un acorde de La menor. */
+const trap808 = (nota, { ultima = nota, slide = false, etiqueta } = {}) =>
+  con808(
+    GENEROS.trap.patron,
+    [{ nota, paso: 0, pasos: 7 }, { nota, paso: 7, pasos: 4 }, { nota: ultima, paso: 11, pasos: 5, slide }],
+    { bpm: GENEROS.trap.bpm, acordes: [{ notas: ['A3', 'C4', 'E4'], paso: 0, pasos: 16 }], etiqueta },
+  )
 
 export default {
   '12.1': [
@@ -77,6 +84,29 @@ export default {
       opciones: ['Drill', 'Trap', 'Boom bap', 'Dubstep'],
       correcta: 0,
       explicacion: 'Hats en **3 + 3 + 2** con rolls de tresillo: **drill**. El trap los lleva rectos, en semicorcheas.',
+    },
+  ],
+  '12.4': [
+    {
+      pregunta: 'Un acorde de **La menor** con dos 808. **¿Cuál choca?**',
+      sonidos: [trap808('A2'), trap808('A#2')],
+      mezclar: true,
+      correcta: 1,
+      explicacion: 'El 808 en **La♯** choca: medio tono arriba de la tónica. El de **La** encaja.',
+    },
+    {
+      pregunta: 'Escucha la última nota del 808. **¿Qué hace?**',
+      sonidos: [trap808('A2', { ultima: 'E2', slide: true, etiqueta: 'Escuchar' })],
+      opciones: ['Sin glide', 'Glide que sube', 'Glide que baja'],
+      ordenFijo: true,
+      correcta: 2,
+      explicacion: 'Se **desliza hacia abajo**, de La a Mi, sin volver a golpear: un **glide**.',
+    },
+    {
+      pregunta: 'En FL Studio, ¿qué decide **cuánto dura la cola** de un 808?',
+      opciones: ['El largo de la nota en el Piano roll', 'El tempo del proyecto', 'La velocity de la nota', 'La perilla de Swing'],
+      correcta: 0,
+      explicacion: 'La cola es **el largo de la nota**: recórtala para que se apague antes del siguiente bombo.',
     },
   ],
 }

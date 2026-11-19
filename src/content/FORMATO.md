@@ -416,13 +416,22 @@ roll: {
   velocity: true,                          // carril de velocity abajo
   nombres: { C4: 'Redonda', E4: 'Blanca' }, // opcional: texto propio en la columna de la izquierda (más ancha)
   notas: [{ nota: 'C4', inicio: 0, duracion: 2, velocity: 0.8 }],  // inicio/duración en casillas
+  // El 808 (P1.4, interacción S2):
+  instrumento: '808',                      // las notas suenan en la voz del 808 (una octava más arriba que en FL)
+  bombo: [0, 7, 11],                       // fila «Bombo» fija arriba (columnas del roll); la cola que pisa un golpe sale en oro
+  fondo: fondoRoll(patron, { compases, porTiempo }), // eventos que suenan con «Reproducir» (theory/rack.js); pueden llevar acordes
+  slide: true,                             // pincel «Nota · Slide»; las notas slide: { nota, inicio, duracion, slide: true }
 }
 ```
+
+Sonidos con 808 (theory/rack.js): `con808(patron, [{ nota: 'A2', paso: 0, pasos: 7, slide? }], { bpm, acordes: [{ notas, paso, pasos }], saturado, vueltas, etiqueta })`
+= el beat del rack (repetido si la línea dura varios compases) + acordes de piano + el 808 (`inst: '808'`); `notasRoll808(linea)` = la misma
+línea como notas del roll. Un género con `bajo808` (reggaetón, phonk) suena con su 808 en `sonidoGenero` y en el Channel rack.
 
 Objetivos del paso `pianoroll`:
 
 ```js
-objetivo: { tipo: 'libre', cantidad: 4, mensaje: '…' }   // dibujar N notas
+objetivo: { tipo: 'libre', cantidad: 4, mensaje: '…' }   // dibujar N notas (`slides: 1` = y al menos una nota slide, 808)
 objetivo: { tipo: 'copiar', notas: [...], fantasma: true, instruccion: '…', pista: '…', explicacion: '…' }
   // dibujar exactamente esas notas (fantasma: contornos punteados de guía).
   // `escuchar: { notas: [...], intervalo, duracion }` = botón «Escuchar el original» encima del roll: dictado de oído (5.7, el bajo)

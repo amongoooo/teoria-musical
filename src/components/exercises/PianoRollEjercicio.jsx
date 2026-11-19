@@ -11,7 +11,7 @@ import Rich from '../Rich.jsx'
  *
  * paso.roll: configuración del roll (ver FORMATO.md) + `notas` iniciales.
  * paso.objetivo:
- *  - { tipo: 'libre', cantidad: 4, mensaje }           → dibujar N notas
+ *  - { tipo: 'libre', cantidad: 4, mensaje }           → dibujar N notas (`slides: 1` = y al menos un slide: el 808, P1.4)
  *  - { tipo: 'copiar', notas, fantasma: true, pista }  → dibujar exactamente esas notas
  *        `escuchar`: un sonido (el original) para sacarlo de oído: botón «Escuchar el original» encima del roll (dictado, 5.7)
  *  - { tipo: 'velocity', fuertes: [0, 4] }             → subir la velocity de las notas
@@ -38,12 +38,18 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
   useEffect(() => {
     if (objetivo.tipo === 'libre') {
       const cantidad = objetivo.cantidad ?? 3
-      const listo = notas.length >= cantidad
+      const slides = objetivo.slides ?? 0
+      const hechos = notas.filter((n) => n.slide).length
+      const listo = notas.length >= cantidad && hechos >= slides
       setAccion({
         label: 'Continuar',
         avanza: true,
         disabled: !listo,
-        ayuda: listo ? null : `Dibuja ${cantidad} notas (${notas.length}/${cantidad})`,
+        ayuda: listo
+          ? null
+          : notas.length < cantidad
+            ? `Dibuja ${cantidad} notas (${notas.length}/${cantidad})`
+            : `Marca ${slides === 1 ? 'una nota' : `${slides} notas`} con el pincel Slide (${hechos}/${slides})`,
         feedback: listo ? { tipo: 'bien', titulo: '¡Así se escribe música!', texto: objetivo.mensaje } : null,
         onClick: siguiente,
       })
@@ -115,7 +121,7 @@ export default function PianoRollEjercicio({ paso, leccionId, setAccion, siguien
         fantasmaBien={Boolean(resultado?.ok)}
         color={color}
       />
-      {!terminado && objetivo.tipo !== 'velocity' && (
+      {!terminado && objetivo.tipo !== 'velocity' && !roll.slide && (
         <p className="text-base text-zinc-500">
           Toca una casilla para crear una nota y <strong className="font-semibold text-zinc-700">arrastra a la derecha</strong> para alargarla. Toca una nota para borrarla.
         </p>
@@ -169,6 +175,14 @@ function revisarCopia(notas, solucion, { nom, porTiempo, compas }) {
     if (solucion.some((s) => igual(n, s))) continue
     if (solucion.some((s) => claveNota(s.nota) === claveNota(n.nota) && s.inicio === n.inicio)) continue // ya avisada
     problemas.push(`Sobra ${nom(n.nota)} ${momento(n.inicio, porTiempo, compas)}.`)
+  }
+  // El glide (808, P1.4): con las notas bien puestas, ¿llevan el slide que va?
+  if (!problemas.length) {
+    for (const s of solucion) {
+      const n = notas.find((x) => igual(x, s))
+      if (Boolean(n?.slide) === Boolean(s.slide)) continue
+      problemas.push(s.slide ? `A ${nom(s.nota)} ${momento(s.inicio, porTiempo, compas)} le falta el glide.` : `${nom(s.nota)} ${momento(s.inicio, porTiempo, compas)} no lleva glide.`)
+    }
   }
   if (!problemas.length) return { ok: true }
   const extra = problemas.length > 2 ? ` (y ${problemas.length - 2} detalle${problemas.length > 3 ? 's' : ''} más)` : ''

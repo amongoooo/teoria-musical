@@ -2,7 +2,7 @@
 // Usa los samples Salamander (Tone.Sampler) y, si fallan o aún no cargan,
 // un Tone.PolySynth de respaldo para que nunca quede en silencio.
 import * as Tone from 'tone'
-import { NOMBRES_BATERIA, golpe } from './bateria.js'
+import { NOMBRES_BATERIA, callar808, golpe, nota808 } from './bateria.js'
 import { SALAMANDER_NOTES, SALAMANDER_URL } from './salamander.js'
 
 /** Estado: 'loading' | 'ready' | 'fallback' */
@@ -109,7 +109,9 @@ function instrument() {
 }
 
 /** Toca una nota (o un acorde, o un golpe de batería como 'kick') en el instante `t`. */
-function sonar(inst, nota, duracion, t, velocidad) {
+function sonar(inst, nota, duracion, t, velocidad, evento) {
+  // El 808 (P1.4): un evento con `inst: '808'` suena en su voz (con `slide` y `saturado`).
+  if (evento?.inst === '808') return nota808(nota, t, duracion, velocidad, evento)
   const lista = Array.isArray(nota) ? nota : [nota]
   const tonos = lista.filter((n) => !NOMBRES_BATERIA.includes(n))
   lista.filter((n) => NOMBRES_BATERIA.includes(n)).forEach((n) => golpe(n, t, velocidad))
@@ -145,6 +147,7 @@ export function noteOff(note) {
 
 export function releaseAll() {
   ataques.clear()
+  callar808()
   if (sampler && status === 'ready') sampler.releaseAll()
   if (synth) synth.releaseAll()
 }
@@ -210,7 +213,7 @@ export function programar(eventos, { alSonar, alParar } = {}) {
   const latencia = Math.max(0, t0 - tiempoAudio()) + latenciaAudio()
   // En orden de tiempo: los sintes de batería son monofónicos y no admiten golpes programados hacia atrás.
   lista.forEach((e, i) => {
-    const mandar = () => sonar(instrument(), e.nota, e.duracion, t0 + e.t, e.velocidad)
+    const mandar = () => sonar(instrument(), e.nota, e.duracion, t0 + e.t, e.velocidad, e)
     if (e.t < ANTICIPO) mandar()
     else timers.push(setTimeout(mandar, (e.t - ANTICIPO) * 1000))
     if (alSonar) timers.push(setTimeout(() => alSonar(e, i), (e.t + latencia) * 1000))
@@ -287,7 +290,7 @@ export function iniciarRitmo(eventos, { bpm = 90, casillas = 8, porTiempo = 2 } 
     const limite = tiempoAudio() + 0.25
     while (inicio + siguiente * compas < limite) {
       const base = inicio + siguiente * compas
-      eventos.forEach((e) => sonar(instrument(), e.nota, Math.max(0.1, (e.duracion ?? 1) * paso * 0.95), base + e.inicio * paso, e.velocity ?? 0.8))
+      eventos.forEach((e) => sonar(instrument(), e.nota, Math.max(0.1, (e.duracion ?? 1) * paso * 0.95), base + e.inicio * paso, e.velocity ?? 0.8, e))
       siguiente += 1
     }
   }
@@ -343,7 +346,7 @@ export function iniciarPista(porCompas, { bpm = 90, tiempos = 4 } = {}) {
     }
     while (cola.length && cola[0].cuando < limite) {
       const e = cola.shift()
-      sonar(instrument(), e.nota, e.duracion ?? 0.2, e.cuando, e.velocity ?? 0.8)
+      sonar(instrument(), e.nota, e.duracion ?? 0.2, e.cuando, e.velocity ?? 0.8, e)
     }
     if (fin && !cola.length) clearInterval(id)
   }
@@ -385,7 +388,8 @@ export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar, swing = () 
       // lo que queda de la casilla.
       for (let s = 0; s < 4; s++) {
         const d = s % 2 ? sw : 0
-        for (const g of golpesDe(base + s)) eventos.push({ nota: g.nota, t: (s + d + (g.dentro ?? 0) * (1 - d)) / 4, velocity: g.velocity ?? 0.8, duracion: 0.2 })
+        // El 808 (`inst`) trae su duración en segundos; los golpes, 0,2 s.
+        for (const g of golpesDe(base + s)) eventos.push({ ...g, t: (s + d + (g.dentro ?? 0) * (1 - d)) / 4, velocity: g.velocity ?? 0.8, duracion: g.duracion ?? 0.2 })
       }
       return eventos
     },
@@ -405,6 +409,12 @@ export function bucleRack(golpesDe, { bpm = 90, pasos = 16, alParar, swing = () 
   const yo = { parar }
   sesion = yo
   return { inicio: pista.inicio, paso: pista.pulso / 4, parar }
+}
+
+/** Una nota del 808 AHORA mismo (al dibujarla en el Piano roll o tocar su fila). */
+export function nota808Ahora(nota, duracion = 0.5, velocity = 0.9, opciones) {
+  startAudio()
+  nota808(nota, tiempoAudio(), duracion, velocity, opciones)
 }
 
 /** Un golpe de batería AHORA mismo, sin el margen de programación de Tone (para el pad: tiene que sonar al tocar). */

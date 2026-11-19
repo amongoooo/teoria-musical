@@ -26,6 +26,8 @@ export function eventosSonido(sonido, { retraso = 0 } = {}) {
         velocidad: e.velocity ?? 0.8,
         casilla: e.inicio,
         compas: c,
+        // El 808 (P1.4): su voz, el glide y la saturación.
+        ...(e.inst ? { inst: e.inst, slide: e.slide, saturado: e.saturado } : {}),
       })),
     ).flat()
   }

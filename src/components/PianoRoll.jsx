@@ -1,11 +1,12 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { playNotes, playPattern } from '../audio/engine.js'
+import { nota808Ahora, playNotes, playPattern } from '../audio/engine.js'
 import { PERCUSION, claveNota, esPercusion } from '../theory/bateria.js'
 import { midi, nombre, notaDesdeMidi, parseNota } from '../theory/notas.js'
 import { RESORTE } from '../ui/movimiento.js'
 import Pulsable from '../ui/Pulsable.jsx'
 import useSobreBarra from '../ui/useSobreBarra.js'
+import { tinta } from '../ui/color.js'
 import { IconoPlay } from './BotonSonido.jsx'
 
 /**
@@ -24,9 +25,22 @@ import { IconoPlay } from './BotonSonido.jsx'
  *  - soloVelocity: solo se puede cambiar la velocity (no crear ni borrar notas).
  *  - fantasma: notas guía (contorno punteado); `fantasmaBien` las pinta en verde.
  *  - color: color de las notas (acento del módulo).
+ *
+ * El 808 (P1.4; propuesta aprobada: https://claude.ai/artifact/XMnFwLjZLG7f8GjQUdnF4d), con opciones de `roll`:
+ *  - instrumento: '808' → las notas suenan en la voz del 808 (audio/bateria.js → nota808), monofónica.
+ *  - bombo: [0, 7, 11] → fila «Bombo» fija arriba (columnas del roll) para alinear el 808; la cola de una nota que pisa
+ *      un bombo (sin otra nota que empiece ahí) se tacha en oro desde ese golpe: «barro».
+ *  - fondo: eventos que suenan con «Reproducir» además de las notas (el beat: theory/rack.js → fondoRoll).
+ *  - slide: true → pincel «Nota · Slide» encima del roll; con Slide, tocar una nota la marca o la desmarca (no la borra)
+ *      y una nota nueva nace marcada. Una nota slide (`slide: true`) lleva el triangulito de FL y una rampa desde la
+ *      nota anterior: el 808 se desliza hasta ella.
  */
 export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = false, fantasma = [], fantasmaBien = false, color = 'var(--color-melodia)' }) {
   const filas = filasDe(roll)
+  const es808 = roll.instrumento === '808'
+  const bombo = roll.bombo ?? null
+  const [pincel, setPincel] = useState('nota') // 'nota' | 'slide' (solo con roll.slide)
+  const conSlide = Boolean(roll.slide) && Boolean(onCambio) && !soloVelocity
   const columnas = roll.columnas ?? 8
   const porTiempo = roll.porTiempo ?? 2
   const compas = roll.compas ?? null
@@ -39,7 +53,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   const alto = filas.length > 6 ? 'h-8' : 'h-10'
   const nombres = roll.nombres ?? null
   // «Sol♯4» no cabe en w-14 (DM Mono): con alguna fila de Sol♯, la columna se ensancha un poco.
-  const ancho = nombres ? 'w-[6.5rem]' : filas.some(esPercusion) ? 'w-[4.5rem]' : filas.some((f) => /^G#/.test(f)) ? 'w-16' : 'w-14'
+  const ancho = nombres ? 'w-[6.5rem]' : bombo ? 'w-16' : filas.some(esPercusion) ? 'w-[4.5rem]' : filas.some((f) => /^G#/.test(f)) ? 'w-16' : 'w-14'
 
   const areaRef = useRef(null)
   const cajaRef = useRef(null)
@@ -50,11 +64,22 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
   useEffect(() => () => cancelAnimationFrame(reloj.current), [])
 
   const fila = (nota) => filas.findIndex((f) => claveNota(f) === claveNota(nota))
+  // Lo que suena al tocar: el piano o el 808.
+  const oir = (nota, duracion = 0.5, velocidad = 0.8) => (es808 ? nota808Ahora(nota, duracion, velocidad) : playNotes(nota, { duracion, velocidad }))
+  // La nota de antes (la que empieza más cerca antes que ella): de donde sale el glide.
+  const anterior = (n, lista = notas) => lista.filter((m) => m !== n && m.id !== n.id && m.inicio < n.inicio).sort((a, b) => b.inicio - a.inicio)[0] ?? null
+  const oirSlide = (n) => {
+    const a = anterior(n)
+    if (!a || !es808) return oir(n.nota, 0.45)
+    nota808Ahora(a.nota, 0.3)
+    setTimeout(() => nota808Ahora(n.nota, 0.4, 0.8, { slide: true }), 160)
+  }
 
   const reproducir = () => {
     cancelAnimationFrame(reloj.current)
     // Exclusivo: si otro sonido lo corta, el cabezal se va.
-    const total = playPattern(notas, {
+    const lista = es808 ? notas.map((n) => ({ ...n, inst: '808' })) : notas
+    const total = playPattern([...lista, ...(roll.fondo ?? [])], {
       paso,
       alParar: () => {
         cancelAnimationFrame(reloj.current)
@@ -87,11 +112,19 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
     const { c, f } = celda(e)
     const existente = notas.find((n) => fila(n.nota) === f && c >= n.inicio && c < n.inicio + n.duracion)
     if (existente) {
-      arrastre.current = { id: existente.id, inicio: existente.inicio, fila: f, nueva: false, movido: false, pointer: e.pointerId }
+      const marcar = conSlide && pincel === 'slide'
+      arrastre.current = { id: existente.id, inicio: existente.inicio, fila: f, nueva: false, movido: false, marcar, pointer: e.pointerId }
+      // Pincel Slide: tocar una nota la marca o la desmarca (no la borra).
+      if (marcar) {
+        const cambiada = { ...existente, slide: !existente.slide }
+        if (cambiada.slide) oirSlide(cambiada)
+        onCambio(notas.map((n) => (n.id === existente.id ? cambiada : n)))
+      }
       return
     }
-    const nueva = { id: nuevoId(), nota: filas[f], inicio: c, duracion: 1, velocity: roll.velocityInicial ?? 0.78 }
-    playNotes(nueva.nota, { duracion: 0.4, velocidad: nueva.velocity })
+    const nueva = { id: nuevoId(), nota: filas[f], inicio: c, duracion: 1, velocity: roll.velocityInicial ?? 0.78, ...(conSlide && pincel === 'slide' ? { slide: true } : {}) }
+    if (nueva.slide) oirSlide(nueva)
+    else oir(nueva.nota, 0.4, nueva.velocity)
     arrastre.current = { id: nueva.id, inicio: c, fila: f, nueva: true, movido: false, pointer: e.pointerId }
     onCambio([...notas, nueva])
   }
@@ -116,7 +149,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
     const a = arrastre.current
     if (!a || a.pointer !== e.pointerId) return
     arrastre.current = null
-    if (!a.nueva && !a.movido) onCambio(notas.filter((n) => n.id !== a.id))
+    if (!a.nueva && !a.movido && !a.marcar) onCambio(notas.filter((n) => n.id !== a.id))
   }
 
   // ----- Carril de velocity -----
@@ -149,10 +182,18 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
     if (!a?.vel || a.pointer !== e.pointerId) return
     arrastre.current = null
     const enColumna = notas.filter((n) => columnaDe(n) === a.c)
-    if (enColumna.length) playNotes(enColumna.map((n) => n.nota), { modo: 'acorde', duracion: 0.5, velocidad: enColumna[0].velocity })
+    if (enColumna.length && es808) oir(enColumna[0].nota, 0.5, enColumna[0].velocity)
+    else if (enColumna.length) playNotes(enColumna.map((n) => n.nota), { modo: 'acorde', duracion: 0.5, velocidad: enColumna[0].velocity })
   }
 
   const tiempos = Math.ceil(columnas / porTiempo)
+  // La cola que pisa un bombo (sin otra nota que empiece en ese golpe): desde dónde se tacha en oro (en casillas).
+  const choqueDe = (n) => (bombo ?? []).find((c) => c > n.inicio && c < n.inicio + n.duracion && !notas.some((m) => m.id !== n.id && m.inicio === c)) ?? null
+  // Las rampas del glide: de la fila de la nota anterior a la de la nota slide.
+  const rampas = notas
+    .filter((n) => n.slide)
+    .map((n) => ({ n, a: anterior(n) }))
+    .filter(({ n, a }) => a && fila(a.nota) >= 0 && fila(n.nota) >= 0)
   const sinToque = { touchAction: 'none', WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }
 
   return (
@@ -169,6 +210,8 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
         </Pulsable>
         {roll.alternar && <SelectorEtiquetas valor={etiquetas} onCambio={setEtiquetas} />}
       </div>
+
+      {conSlide && <PincelRoll pincel={pincel} onPincel={setPincel} color={color} />}
 
       <div ref={cajaRef} className="overflow-hidden rounded-3xl border border-zinc-200 bg-white select-none" onContextMenu={(e) => e.preventDefault()}>
         {/* Números de tiempo */}
@@ -188,6 +231,25 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
           </div>
         </div>
 
+        {/* El bombo (808): fila fija para alinear; cada golpe se enciende cuando suena */}
+        {bombo && (
+          <div className="flex border-b border-zinc-200 bg-zinc-50" data-bombo>
+            <div className={`flex ${ancho} h-8 shrink-0 items-center border-r border-zinc-200 px-1.5 text-sm font-semibold text-zinc-600`}>Bombo</div>
+            <div className="grid h-8 flex-1" style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))` }}>
+              {Array.from({ length: columnas }, (_, c) => (
+                <span key={c} className={`flex items-center justify-center border-l ${c % porTiempo === 0 ? 'border-zinc-300' : 'border-zinc-100'}`}>
+                  {bombo.includes(c) && (
+                    <span
+                      data-golpe-bombo={c}
+                      className={`h-4 w-[70%] rounded-[4px] transition-colors duration-100 ${cabezal === c ? 'bg-sky-500' : 'bg-zinc-400'}`}
+                    />
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex">
           {/* Teclado de la izquierda: tocar una fila hace sonar su nota */}
           <div className={`tema-claro ${ancho} shrink-0 border-r border-zinc-200`}>
@@ -197,7 +259,7 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
                 <button
                   key={f}
                   type="button"
-                  onPointerDown={() => playNotes(f, { duracion: 0.5 })}
+                  onPointerDown={() => (esPercusion(f) ? playNotes(f, { duracion: 0.5 }) : oir(f))}
                   className={`flex w-full flex-col items-start justify-center border-b px-2 leading-none last:border-b-0 ${alto} ${
                     negra ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-200 bg-white text-zinc-800'
                   }`}
@@ -247,24 +309,66 @@ export default function PianoRoll({ roll = {}, notas, onCambio, soloVelocity = f
             {fantasma.map((n, i) => (
               <Rect key={`f${i}`} n={n} fila={fila(n.nota)} filas={filas.length} columnas={columnas}>
                 <div
-                  className={`size-full rounded-lg border-2 border-dashed transition-colors duration-200 ${
+                  className={`relative size-full rounded-lg border-2 border-dashed transition-colors duration-200 ${
                     fantasmaBien ? 'border-bien bg-bien/10' : 'border-zinc-400 bg-zinc-400/10'
                   }`}
-                />
+                >
+                  {n.slide && <Triangulo className={fantasmaBien ? 'border-l-bien' : 'border-l-zinc-500'} />}
+                </div>
               </Rect>
             ))}
 
+            {rampas.length > 0 && (
+              <svg
+                aria-hidden
+                className="pointer-events-none absolute inset-0 size-full"
+                viewBox={`0 0 ${columnas} ${filas.length}`}
+                preserveAspectRatio="none"
+                data-rampas={rampas.length}
+              >
+                {rampas.map(({ n, a }) => (
+                  <line
+                    key={n.id}
+                    x1={Math.max(a.inicio + 0.3, n.inicio - 0.6)}
+                    y1={fila(a.nota) + 0.5}
+                    x2={n.inicio + 0.45}
+                    y2={fila(n.nota) + 0.5}
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeDasharray="5 4"
+                    vectorEffect="non-scaling-stroke"
+                    style={{ stroke: tinta(color) }}
+                  />
+                ))}
+              </svg>
+            )}
+
             {notas.map((n) => {
               const suena = cabezal !== null && cabezal >= columnaDe(n) && cabezal < columnaDe(n) + n.duracion
+              const choque = choqueDe(n)
               return (
                 <Rect key={n.id} n={n} fila={fila(n.nota)} filas={filas.length} columnas={columnas}>
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: suena ? 1.06 : 1, opacity: 1 }}
                     transition={RESORTE.pulsar}
-                    className="size-full rounded-lg border border-black/15"
+                    className="relative size-full overflow-hidden rounded-lg border border-black/15"
                     style={{ backgroundColor: `color-mix(in oklab, ${color} ${Math.round(30 + 70 * (n.velocity ?? 0.8))}%, var(--color-white))` }}
-                  />
+                    data-nota={n.nota}
+                    data-slide={n.slide ? '' : undefined}
+                  >
+                    {choque !== null && (
+                      <span
+                        data-choque={choque}
+                        className="absolute inset-y-0 right-0 border-l-2 border-fijate-tinta"
+                        style={{
+                          left: `${((choque - n.inicio) / n.duracion) * 100}%`,
+                          backgroundImage: 'repeating-linear-gradient(135deg, var(--color-fijate) 0 4px, var(--color-fijate-claro) 4px 8px)',
+                        }}
+                      />
+                    )}
+                    {n.slide && <Triangulo className="border-l-white" />}
+                  </motion.div>
                 </Rect>
               )
             })}
@@ -328,6 +432,43 @@ function Rect({ n, fila, filas, columnas, children }) {
       }}
     >
       {children}
+    </div>
+  )
+}
+
+/** El triangulito de una nota slide (como el de FL Studio). */
+function Triangulo({ className = '' }) {
+  return <span aria-hidden className={`absolute left-1 top-1/2 -translate-y-1/2 border-y-[5px] border-l-[7px] border-y-transparent ${className}`} />
+}
+
+/** El pincel del roll del 808 (como el del Channel rack): Nota · Slide. */
+function PincelRoll({ pincel, onPincel, color }) {
+  const opciones = [
+    { id: 'nota', texto: 'Nota', ayuda: 'nota normal' },
+    { id: 'slide', texto: 'Slide', ayuda: 'slide, el 808 se desliza hasta ella' },
+  ]
+  return (
+    <div role="radiogroup" aria-label="Pincel" className="grid grid-cols-2 gap-1 rounded-2xl bg-zinc-100 p-1" data-pincel-roll>
+      {opciones.map((o) => {
+        const elegido = pincel === o.id
+        return (
+          <Pulsable
+            key={o.id}
+            role="radio"
+            aria-checked={elegido}
+            aria-label={`Pincel: ${o.ayuda}`}
+            data-pincel={o.id}
+            onClick={() => onPincel(o.id)}
+            className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-sm font-bold transition-colors duration-200 ${elegido ? 'text-zinc-900' : 'text-zinc-600'}`}
+          >
+            {elegido && <motion.span layoutId="pincel-roll-elegido" transition={RESORTE.pulsar} aria-hidden className="absolute inset-0 rounded-xl bg-white shadow-sm" />}
+            <span aria-hidden className="relative block h-3.5 w-7 rounded-[3px]" style={{ backgroundColor: elegido ? color : 'currentColor' }}>
+              {o.id === 'slide' && <span className="absolute left-1 top-1/2 -translate-y-1/2 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />}
+            </span>
+            <span className="relative">{o.texto}</span>
+          </Pulsable>
+        )
+      })}
     </div>
   )
 }
